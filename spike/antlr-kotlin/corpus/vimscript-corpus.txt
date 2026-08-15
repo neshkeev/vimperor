@@ -1,0 +1,1865 @@
+%s/Cinema/Other/g
+%s/\d/\=21*2
+%s/\d\+/\=*&(
+%s/\d\+/\=line('.')
+%s/\d\+/\=printf('0x%04x', submatch(0))
+%s/a/b/gn
+%s/a/b/n
+%s/and/or/gc
+%s/three/3/g
+%s/x/y/n
+%s/zzz/y/n
++0
++2
++30
+,+3s/One/Two/g
+,.+3s/One/Two/g
+-2
+.=
+/one/;/three/d
+/settled
+/three/d
+0read! echo inserted
+1,5=
+1000,1010call add(l, getline('.'))
+1put
+1read! echo inserted
+1stopinsert
+2,3normal A!
+2,3y 3
+2,4call IncrementWholeLine()
+2,4d
+2,4j
+2=#
+2=l
+2=lp
+2=p
+2=p#
+3
+30
+3file
+4y
+7=
+:map t /4\\|a<CR>
+<C-u>norm x
+=
+=foo
+?lavender
+Abolish
+Abolish -buffer foo bar
+Abolish -cmdline foo bar
+Abolish -delete anomol{y,ies}
+Abolish -delete foo
+Abolish -delete neverdefined
+Abolish -nope foo bar
+Abolish Tqbf The quick, brown fox
+Abolish anomol{y,ies} anomal{}
+Abolish foo bar
+Abolish foo-bar baz
+Abolish foo{a,b,c,d} bar{x,y}
+Abolish teh the
+Abolish {,in}consistant{,ly} {}consistent{}
+YRClear
+YRReplace
+YRReplace '-1', P
+YRReplace -1 P
+YRReplace -2 P
+YRReplace -3 P
+YRReplace 1 p
+YRShow
+abbrev <expr> foo 1+1
+abbrev foo bar
+abclear
+action EditorRight
+ascii
+augroup END
+augroup G1
+augroup G2
+augroup TestGroup
+augroup! TestGroup
+autocmd BufEnter * echo "4-BufEnter"
+autocmd BufEnter * echo "bufenter"
+autocmd BufEnter * echo "entered"
+autocmd BufEnter * echo 2
+autocmd BufEnter * stopinsert
+autocmd BufLeave * echo "1-BufLeave"
+autocmd BufLeave * echo "bufleave"
+autocmd BufLeave * echo 3
+autocmd BufNewFile * echo "1-new"
+autocmd BufNewFile * echo "new"
+autocmd BufNewFile *.py echo "py"
+autocmd BufRead * echo "1-read"
+autocmd BufRead * echo "read"
+autocmd BufRead *.py echo "py"
+autocmd BufRead *.txt echo "txt"
+autocmd BufReadPost * echo "2-readpost"
+autocmd BufReadPost * echo "post"
+autocmd BufWrite * echo "write"
+autocmd BufWritePost * echo "2-post"
+autocmd BufWritePost * echo "post"
+autocmd BufWritePre * echo "1-pre"
+autocmd BufWritePre * echo "pre"
+autocmd BufWritePre *.py echo "py"
+autocmd BufWritePre *.txt echo "txt"
+autocmd FileType * echo "2-filetype"
+autocmd FileType * echo "3-filetype"
+autocmd FileType * echo "any"
+autocmd FileType *.txt echo "path"
+autocmd FileType python echo "py"
+autocmd FileType text echo "text-file"
+autocmd FileType {text,python} echo "matched"
+autocmd InsertEnter  echo 23
+autocmd InsertEnter * echo "all"
+autocmd InsertEnter * echo "enter"
+autocmd InsertEnter * echo "entering insert"
+autocmd InsertEnter * echo "hi"
+autocmd InsertEnter * echo "matched"
+autocmd InsertEnter * echo "substitute"
+autocmd InsertEnter * echo 1
+autocmd InsertEnter * echo 2
+autocmd InsertEnter * echo 23
+autocmd InsertEnter * echo mode()
+autocmd InsertEnter *.?y echo "matched"
+autocmd InsertEnter *.py echo "matched"
+autocmd InsertEnter *.py echo "python"
+autocmd InsertEnter *.py echo 23
+autocmd InsertEnter *.txt echo "matched"
+autocmd InsertEnter *.txt echo "text"
+autocmd InsertEnter *.{py,txt} echo "matched"
+autocmd InsertEnter , InsertLeave * echo "triggered"
+autocmd InsertEnter Makefile echo "matched"
+autocmd InsertEnter,InsertLeave * echo "triggered"
+autocmd InsertEnter,InsertLeave,BufEnter * echo "event"
+autocmd InsertEnter,InvalidEvent * echo "test"
+autocmd InsertLeave * echo "leave"
+autocmd InsertLeave * echo "leaving insert"
+autocmd InsertLeave * echo 2
+autocmd InsertLeave * echo 23
+autocmd InsertLeave * echo mode()
+autocmd WinEnter * echo "3-WinEnter"
+autocmd WinEnter * echo "win"
+autocmd WinEnter * stopinsert
+autocmd WinLeave * echo "2-WinLeave"
+autocmd WinLeave * echo "left"
+autocmd!
+cabbrev <expr> myabbrev 1+1
+cabbrev foo bar
+cabbrev foo cmdlineRhs
+cabbrev myabbrev myexpansion
+call 'hello'->foreach('call add(result, v:val)')
+call DeleteLine()
+call MyFunc('foo')
+call Print()
+call T()
+call [1, 2, 3]->foreach('call add(result, v:val * 2)')
+call [1, 2]->foreach('call add(result1, v:val)')->foreach('call add(result2, v:val * 10)')
+call a->add(4)->add(5)
+call a->remove(1)
+call add(a, 1)
+call add(a, 4)
+call add(b, 4)
+call add(l, getline('.'))
+call add(myList, 'four')
+call add(myList, 4)
+call call('Foo', [1, 2])
+call call('Foo', [])
+call dict->remove('a')
+call dict.print()
+call digraph_get('')
+call digraph_get('a')
+call digraph_get('abc')
+call digraph_set('a', 'a')
+call digraph_set('a:', '')
+call digraph_set('a:', 'aa')
+call digraph_set('aaa', 'a')
+call digraph_setlist('oops')
+call digraph_setlist([ ['(0', '⓪'], ['a', 'b', 'c'] ])
+call digraph_setlist([ ['(0', '⓪'], ['a', 'c'] ])
+call digraph_setlist([ ['(0', '⓪'], ['ab', 'cc'] ])
+call digraph_setlist([ ['(0', '⓪'], ['abc', 'c'] ])
+call digraph_setlist([ ['a', 'b', 'c'] ])
+call digraph_setlist([ ['a', 'c'] ])
+call digraph_setlist([ ['a'] ])
+call digraph_setlist([ ['ab', 'cc'] ])
+call digraph_setlist([ ['abc', 'c'] ])
+call digraph_setlist([1])
+call extend(a, [6, 7, 8, 9, 0])
+call extend(a, b)
+call extend(a, b, 'error')
+call extend(a, b, 'something')
+call extend(a, {'c': 3, 'd': 4})
+call extendnew(a, b)
+call extendnew(a, b, 'error')
+call extendnew(a, b, 'something')
+call filter(d, 'v:val > 1')
+call filter(l, 'v:val > 1')
+call filter(l, 'v:val > 2')
+call filter(l, {key -> key > 0})
+call filter(s, 'v:key > 0')
+call flatten('string')
+call flatten(100)
+call flatten(12.34)
+call flatten([1, [2, 3]], -1)
+call flatten([1, [2, 3]], 12.34)
+call flatten(a)
+call flatten({'key': 'value'})
+call flattennew('string')
+call flattennew(100)
+call flattennew(12.34)
+call flattennew([1, [2, 3]], -1)
+call flattennew([1, [2, 3]], 12.34)
+call flattennew(a)
+call flattennew({'key': 'value'})
+call foreach("a\nb", 'call add(result, v:val)')
+call foreach('', 'call add(result, v:val)')
+call foreach('abc', 'call add(result, v:key . v:val)')
+call foreach('hello', function('Process'))
+call foreach('hello', {idx, ch -> add(g:result, idx . ch)})
+call foreach(42, 'let x = v:val')
+call foreach(['a', 'b', 'c'], 'call add(result, v:key . v:val)')
+call foreach([1, 'two', [3]], 'call add(result, v:val)')
+call foreach([1, 2, 3])
+call foreach([1, 2, 3], 'call add(result, v:val * 2)')
+call foreach([1, 2, 3], 'call add(result, v:val) | throw "error"')
+call foreach([1, 2, 3], 'let counter = counter + v:val')
+call foreach([1, 2, 3], 'let used[v:val] = v:key')
+call foreach([1, 2, 3], function('Process'))
+call foreach([1, 2, 3], {idx, val -> add(g:result, idx * val)})
+call foreach([1, 2], 'call add(result, v:val) | call foreach(["a", "b"], "call add(result, v:val)")')
+call foreach([10, 20, 30], 'call add(result, v:key)')
+call foreach([1], 'let x = v:val')
+call foreach([[1, 2], [3, 4]], 'call add(result, v:val[0])')
+call foreach([], 'call add(result, v:val)')
+call foreach([{'a': 1}, {'a': 2}], 'call add(result, v:val.a)')
+call foreach(mylist, 'let x = v:val * 2')
+call foreach({'a': 1, 'b': 2}, 'call add(result, v:key . v:val)')
+call foreach({'a': 1, 'b': 2}, function('Process'))
+call foreach({'a': 1, 'b': 2}, {k, v -> add(g:result, k . v)})
+call foreach({}, 'call add(result, v:val)')
+call histadd('/', 'foo')
+call histadd(':', 'echo hello')
+call histadd('=', '1 + 1')
+call histadd('@', 'my input')
+call histadd('c', 'echo hello')
+call histadd('cmd', 'echo hello')
+call histadd('cmd', 'echo world')
+call histadd('e', '1 + 1')
+call histadd('expr', '1 + 1')
+call histadd('expr', '2 + 2')
+call histadd('i', 'my input')
+call histadd('input', 'first')
+call histadd('input', 'my input')
+call histadd('input', 'second')
+call histadd('s', 'foo')
+call histadd('search', 'abc')
+call histadd('search', 'abx')
+call histadd('search', 'bar')
+call histadd('search', 'baz')
+call histadd('search', 'def')
+call histadd('search', 'foo')
+call histadd('search', 'foobar')
+call histdel('/', 1)
+call histdel('=', 1)
+call histdel('@', 1)
+call histdel('e', 1)
+call histdel('expr', 1)
+call histdel('i', 1)
+call histdel('input', 1)
+call histdel('s', 1)
+call histdel('search', 'foo')
+call histdel('search', 2)
+call indexof([1, 2, 3], 'v:val == 2')
+call map(d, 'v:val * 2')
+call map(l, 'v:val * 2')
+call map(l, 'v:val >= 2 ? call("Error", []) : v:val * 2')
+call map(l, {key -> key * 2})
+call map(s, 'v:val . v:key')
+call mapnew(d, 'v:val * 2')
+call mapnew(l, 'v:val * 2')
+call mapnew(l, 'v:val >= 2 ? call("Error", []) : v:val * 2')
+call mapnew(s, 'v:val . v:key')
+call mapset('i', 0, d)
+call mapset('n', 0)
+call mapset('n', 0, 'notadict')
+call mapset('n', 0, d)
+call mapset('n', 0, {'lhs': 'x', 'expr': 0, 'noremap': 0})
+call mapset('n', 0, {'lhs': 'x', 'rhs': 'yy', 'expr': 0})
+call mapset('n', 0, {'lhs': 'x', 'rhs': 'yy', 'noremap': 0})
+call mapset('n', 0, {'rhs': 'yy', 'expr': 0, 'noremap': 0})
+call mapset('notadict')
+call mapset(d)
+call mapset({'lhs': 'x', 'rhs': 'yy', 'expr': 0, 'noremap': 0})
+call reduce(a, 'Foo', 100)
+call reduce(a, { acc, val, other -> acc + val })
+call remove(a, 1)
+call remove(a, 1, 3)
+call remove(a, 2)
+call remove(dict, 'a')
+call reverse(a)
+call reverse(mylist)
+call sort('string')
+call sort(100)
+call sort(12.34)
+call sort([1, 2, 3], 'UnknownFunc')
+call sort([1, 2, 3], 'n', 'not a dict')
+call sort(a)
+call sort({'key': 'value'})
+call test(printArg(1), printArg(2), printArg(3))
+call uniq('string')
+call uniq(100)
+call uniq(12.34)
+call uniq([1, 2, 3], 'UnknownFunc')
+call uniq([1, 2, 3], 'n', 'not a dict')
+call uniq(a)
+call uniq({'key': 'value'})
+call {'a': 1, 'b': 2}->foreach('call add(result, v:val)')
+clearju
+clearjumps
+cmap <expr> z getcmdtype()
+cmap c q
+cmap cmdline foo
+cmap jj <Esc>
+cmap jjj <Esc>
+cmap z q
+cmapclear!
+copy .
+d
+d 3
+digraph
+digraph (0 10003
+digraph (0 9450
+digraph (0 9450 (1 9312
+digraph (0 9450 (1 9312 (2
+digraph (z 9449
+digraph OK 9450
+digraph a
+digraph aa
+digraph aa nvnvn
+digraph aaaa 9450
+digraph aaaaa
+digraph co 128992
+digraph cr 128308
+digraphs (0 9450 (2 9313 (1 9312
+display abc
+echo "Lorem ipsum\nHello world"
+echo "\n"
+echo "\n\n"
+echo "hello\nworld"
+echo "line 1\nline 2\nline 3\nline 4\nline 5"
+echo "lorem ipsum\n"
+echo '   '
+echo ''
+echo '1.0' != 1.0
+echo '1.0' == 1.0
+echo '123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890'
+echo 'hello'
+echo 'lorem ipsum'
+echo (*
+echo 1
+echo 1.0 != '1.0'
+echo 1.0 == '1.0'
+echo 1.2[0:1]
+echo 2
+echo 3
+echo 3 != [1, 2, 3]
+echo 3 == [1, 2, 3]
+echo 4.5 != {'key1':1}
+echo 4.5 == {'key1':1}
+echo MyBuiltinFn()
+echo TestObjFn()
+echo [1, 2, 3] != 'abc'
+echo [1, 2, 3] == 'abc'
+echo acos('1.0')
+echo acos('cheese')
+echo acos([1.0])
+echo acos({1: 1.0})
+echo and(1.5, 2.5)
+echo and([1, 2, 3], [2, 3, 4])
+echo and({1: 2, 3: 4}, {3: 4, 5: 6})
+echo asin('1.0')
+echo asin('cheese')
+echo asin([1.0])
+echo asin({1: 1.0})
+echo atan('1.0')
+echo atan('cheese')
+echo atan([1.0])
+echo atan({1: 1.0})
+echo atan2('1.0', 1.0)
+echo atan2('cheese', 1.0)
+echo atan2(1.0, '1.0')
+echo atan2(1.0, 'cheese')
+echo atan2(1.0, [1.0])
+echo atan2(1.0, {1: 1.0})
+echo atan2([1.0], 1.0)
+echo atan2({1: 1.0}, 1.0)
+echo bar
+echo baz
+echo baz()
+echo call('Foo', 12)
+echo call('Foo', [])
+echo call('Foo', [], 12)
+echo call(12, [])
+echo call(12.34, [])
+echo call([1,2,3], [])
+echo call({'a':1, 'b':2}, [])
+echo ceil('1.0')
+echo ceil('cheese')
+echo ceil([1.0])
+echo ceil({1: 1.0})
+echo cos('1.0')
+echo cos('cheese')
+echo cos([1.0])
+echo cos({1: 1.0})
+echo cosh('1.0')
+echo cosh('cheese')
+echo cosh([1.0])
+echo cosh({1: 1.0})
+echo count([1, 2, 3, 2, 1], 2, 0, -6)
+echo count([1, 2, 3, 2, 1], 2, 0, 5)
+echo dict[0:1]
+echo err_teapot("0")
+echo err_teapot("1")
+echo err_teapot()
+echo err_teapot(0)
+echo err_teapot(1)
+echo err_teapot([0])
+echo err_teapot({1: 0})
+echo exp('1.0')
+echo exp('cheese')
+echo exp([1.0])
+echo exp({1: 1.0})
+echo extend('string', 1)
+echo extend(1, 1)
+echo extend(1.23, 1)
+echo extend([1,2,3], 'string')
+echo extend([1,2,3], 1)
+echo extend([1,2,3], 1.23)
+echo extendnew('string', 1)
+echo extendnew(1, 1)
+echo extendnew(1.23, 1)
+echo extendnew([1,2,3], 'string')
+echo extendnew([1,2,3], 1)
+echo extendnew([1,2,3], 1.23)
+echo filter('abc', '')
+echo filter('abc', {key, val -> key})
+echo filter(12, 'v:val > 1')
+echo filter([1, 2, 3], function('GreaterThanOne'))
+echo filter([1, 2, 3], {idx, val, other -> val > 1})
+echo filter([1,2,3])
+echo filter([1,2,3], '')
+echo filter([1,2,3], 'v:val > 1', 42)
+echo filter([1,2,3], [9,9,9])
+echo filter({'a': 1, 'b': 2, 'c': 3}, function('GreaterThanOne'))
+echo float2nr('1.0')
+echo float2nr('cheese')
+echo float2nr([1.0])
+echo float2nr({1: 1.0})
+echo floor('1.0')
+echo floor('cheese')
+echo floor([1.0])
+echo floor({1: 1.0})
+echo fmod('42', 7)
+echo fmod(42, '7')
+echo fmod(42, [1, 2])
+echo fmod(42, {1: 2})
+echo fmod([1, 2], 7)
+echo fmod({1: 2}, 7)
+echo foo
+echo foo#bar#baz()
+echo food_is_nice
+echo food_yes
+echo fool
+echo has([])
+echo has_key(1, 'a')
+echo indexof(42, 'v:val == 1')
+echo indexof([1, 2, 3])
+echo indexof([1, 2, 3], 'v:val == 1', 'not a dict')
+echo indexof([1, 2, 3], 'v:val == 1', {}, 'extra')
+echo indexof([1, 2, 3], 42)
+echo indexof([1, 2, 3], function('ThrowError'))
+echo insert([1, 2, 3], 2, [1, 2])
+echo insert([1, 2, 3], 4, -4)
+echo insert([1, 2, 3], 4, 2.3)
+echo insert([1, 2, 3], 4, 4)
+echo insert(a, 4, 2)
+echo insert(b[0], 4, 2)
+echo invert(1.5)
+echo invert([1, 2, 3])
+echo invert({1: 2, 3: 4})
+echo items(1)
+echo items(1.2)
+echo keys('string')
+echo keys(12)
+echo keys(2.3)
+echo keys([1,2,3])
+echo len(4.2)
+echo log('1.0')
+echo log('cheese')
+echo log([1.0])
+echo log({1: 1.0})
+echo log10('1.0')
+echo log10('cheese')
+echo log10([1.0])
+echo log10({1: 1.0})
+echo map('abc', '')
+echo map('abc', {key, val -> 1})
+echo map(12, 'v:val * 2')
+echo map([1, 2, 3], function('Double'))
+echo map([1, 2, 3], {idx, val, other -> val * 2})
+echo map([1,2,3])
+echo map([1,2,3], '')
+echo map([1,2,3], 'v:val * 2', 42)
+echo map([1,2,3], 'xx')
+echo map([1,2,3], [9,9,9])
+echo map({'a': 1, 'b': 2, 'c': 3}, function('Process'))
+echo mapnew('abc', '')
+echo mapnew('abc', {key, val -> 1})
+echo mapnew(12, 'v:val * 2')
+echo mapnew([1, 2, 3], function('Double'))
+echo mapnew([1, 2, 3], {idx, val, other -> val * 2})
+echo mapnew([1,2,3])
+echo mapnew([1,2,3], '')
+echo mapnew([1,2,3], 'v:val * 2', 42)
+echo mapnew([1,2,3], 'xx')
+echo mapnew([1,2,3], [9,9,9])
+echo mapnew({'a': 1, 'b': 2, 'c': 3}, function('Process'))
+echo mode(0, 1)
+echo or(1.5, 2.5)
+echo or([1, 2, 3], [2, 3, 4])
+echo or({1: 2, 3: 4}, {3: 4, 5: 6})
+echo pow('1.0', 2)
+echo pow('cheese', 2)
+echo pow(1.0, '2')
+echo pow(2, 'cheese')
+echo pow(2, [1.0])
+echo pow(2, {1: 1.0})
+echo pow([1.0], 2)
+echo pow({1: 1.0}, 2)
+echo range(-2, 0, -1)
+echo range(1, 5, 0)
+echo range(2, 0)
+echo reduce(12, { acc, val -> acc + val })
+echo reduce(12.34, { acc, val -> acc + val })
+echo reduce([1, 2, 3], '')
+echo reduce([1, 2, 3], 'Foo')
+echo reduce([1, 2, 3], 12)
+echo reduce([1, 2, 3], 12.34)
+echo reduce([1, 2, 3], [1, 2, 3])
+echo reduce([1, 2, 3], {'key1': 1, 'key2': 2})
+echo reduce({'key1': 1, 'key2': 2}, { acc, val -> acc + val })
+echo remove('string', 2)
+echo remove(2, 2)
+echo remove(2.3, 2)
+echo remove(a, -4)
+echo remove(a, 1, -6)
+echo remove(a, 3, -4)
+echo remove(a, 3, 2)
+echo remove(a, 4)
+echo remove(dict, 'a', 1)
+echo remove(dict, 'c')
+echo repeat("lorem ipsum\n", 100)
+echo reverse(1.23)
+echo reverse(12)
+echo reverse({'key1': 1, 'key2': 2})
+echo round('1.0')
+echo round('cheese')
+echo round([1.0])
+echo round({1: 1.0})
+echo sin('1.0')
+echo sin('cheese')
+echo sin([1.0])
+echo sin({1: 1.0})
+echo sinh('1.0')
+echo sinh('cheese')
+echo sinh([1.0])
+echo sinh({1: 1.0})
+echo sort([1, 3, 2], function('Reverse'))
+echo sort([3.5, '1', 2.8], 'f')
+echo sqrt('1.0')
+echo sqrt('cheese')
+echo sqrt([1.0])
+echo sqrt({1: 1.0})
+echo string('hello'[ [2] ])
+echo string('hello'[2.5])
+echo string(1.5[2])
+echo string(123456789[ [2] ])
+echo string([1, 2, 3][ [2] ])
+echo string([1, 2, 3][-4])
+echo string([1, 2, 3][2.5])
+echo string([1, 2, 3][3])
+echo string([][0])
+echo string(d['nope'])
+echo string(d[[1, 2, 3]])
+echo tan('1.0')
+echo tan('cheese')
+echo tan([1.0])
+echo tan({1: 1.0})
+echo tanh('1.0')
+echo tanh('cheese')
+echo tanh([1.0])
+echo tanh({1: 1.0})
+echo tolower([1, 2, 3])
+echo tolower({1: 2, 3: 4})
+echo toupper([1, 2, 3])
+echo toupper({1: 2, 3: 4})
+echo trunc('1.0')
+echo trunc('cheese')
+echo trunc([1.0])
+echo trunc({1: 1.0})
+echo uniq([1, 1, 2], function('Compare'))
+echo uniq([1.2, '1', 2.8], 'f')
+echo v:hlsearch
+echo v:key
+echo v:val
+echo values('string')
+echo values(12)
+echo values(4.3)
+echo values([1,2,3])
+echo xor(1.5, 2.5)
+echo xor([1, 2, 3], [2, 3, 4])
+echo xor({1: 2, 3: 4}, {3: 4, 5: 6})
+echo {'key1':1} != 'abc'
+echo {'key1':1} == 'abc'
+file
+file 3
+foo
+function Foo() | endfunction
+function! Check(idx, val) | return a:idx > 0 && a:val > 5 | endfunction
+function! Check(idx, val) | return indexof(v:val, 'v:val == 2') != -1 | endfunction
+function! Compare(a, b) dict | return (a:a % (self.mod)) == (a:b % (self.mod)) ? 0 : (a:a % (self.mod)) > (a:b % (self.mod)) ? 1 : -1 | endfunction
+function! Compare(a, b) dict | return (a:a == a:b ? 0 : a:a > a:b ? 1 : -1) * (self.direction) | endfunction
+function! Compare(a, b) | throw 'error' | endfunction
+function! CompareAbs(a, b) | return abs(a:a) == abs(a:b) ? 0 : abs(a:a) > abs(a:b) ? 1 : -1 | endfunction
+function! CompareMod(a, b) dict | return (a:a % (self.mod)) == (a:b % (self.mod)) ? 0 : (a:a % (self.mod)) > (a:b % (self.mod)) ? 1 : -1 | endfunction
+function! Double(idx, val) | return a:val * 2 | endfunction
+function! Double(idx, val) | return v:key | endfunction
+function! Double(idx, val) | return v:val * 2 | endfunction
+function! Double(idx, val, other) | return a:val * 2 | endfunction
+function! Double(key, val) | return a:val . a:key | endfunction
+function! Double(val) | return a:val * 2 | endfunction
+function! Error() | throw 'error' | endfunction
+function! FindIt(idx, val) dict | return a:val == self.target | endfunction
+function! Foo() dict | return self.thing | endfunction
+function! Foo() | echo a:firstline . ' ' . a:lastline | endfunction
+function! Foo() | let g:called = 1 | endfunction
+function! Foo() | return 123 | endfunction
+function! Foo() | return a:firstline . ' ' . a:lastline | endfunction
+function! Foo(a, b) | return a:a + a:b | endfunction
+function! Foo(a, b) | throw 'error' | endfunction
+function! GreaterThan(idx, val) dict | return a:val > (self.threshold) | endfunction
+function! GreaterThan(key, val) dict | return a:val > (self.threshold) | endfunction
+function! GreaterThanOne(idx, val) | return a:val > 1 | endfunction
+function! GreaterThanOne(idx, val) | return v:val > 1 | endfunction
+function! GreaterThanOne(idx, val, other) | return a:val > 1 | endfunction
+function! GreaterThanOne(key, val) | return a:val > 1 | endfunction
+function! GreaterThanOne(key, val, other) | return a:val > 1 | endfunction
+function! GreaterThanOne(val) | return a:val > 1 | endfunction
+function! GreaterThanZero(idx, val) | return v:key > 0 | endfunction
+function! IsEven(idx, val) | return a:val % 2 == 0 | endfunction
+function! IsOdd(idx, val) | return a:val % 2 == 1 | endfunction
+function! KeepB(key, val) | return a:val ==# 'b' | endfunction
+function! Multiply(idx, val) dict | return a:val * (self.value) | endfunction
+function! MyCompare(a, b) | return a:a - a:b | endfunction
+function! Process(idx, val) abort | call add(g:result, a:idx . a:val) | throw "error" | endfunction
+function! Process(idx, val) | call add(g:result, a:idx * a:val) | endfunction
+function! Process(idx, val) | call add(g:result, a:idx . a:val) | endfunction
+function! Process(idx, val) | call add(g:result, a:idx . a:val) | throw "error" | endfunction
+function! Process(key, val) | return a:key . a:val | endfunction
+function! Process(key, val) | return a:val . a:key | endfunction
+function! Process(key, val) | return v:key . v:val | endfunction
+function! Process(key, val) | return v:key ==# 'b' | endfunction
+function! Process(key, val) | return v:key > 0 | endfunction
+function! Process(key, val) | return v:val . v:key | endfunction
+function! Process(key, val, other) | return a:key . a:val | endfunction
+function! Process(val) | return a:val * 2 | endfunction
+function! Reverse(a, b) | return a:a == a:b ? 0 : a:a > a:b ? -1 : 1 | endfunction
+function! Reverse(a, b) | throw 'error' | endfunction
+function! ThrowError(idx, val) | throw "error" | endfunction
+goto 10
+history
+history !
+history asdf
+history cmd 3, 6, foo
+history cmd 3, foo
+history cmd foo
+history cmdfoo
+history!
+iabbrev #i include
+iabbrev <buffer> <expr> add 1+1
+iabbrev <buffer> baz local
+iabbrev <buffer> foo bar
+iabbrev <buffer> foo local
+iabbrev <expr> <buffer> add 1+1
+iabbrev <expr> bad 1+
+iabbrev <expr> dt 1+2
+iabbrev <expr> myabbrev bad
+iabbrev <expr> n g:n
+iabbrev bar foo
+iabbrev def# define
+iabbrev f#i value
+iabbrev foo bar
+iabbrev foo foo bar
+iabbrev foo global
+iabbrev foo insertRhs
+iabbrev foo-bar baz
+iabbrev teh the
+iabclear
+iabclear <buffer>
+imap <C-Down> <C-O>gt
+imap <Esc foo
+imap <Plug>xy Hello
+imap <S-Tab> hello
+imap <Tab> hello
+imap <foo> bar
+imap X <Action>
+imap X <Plug>x
+imap a b
+imap a b \| c
+imap a b \| c    |
+imap a b |c " Something else
+imap a x
+imap ab AB
+imap abc ABC
+imap abcd ABCD
+imap abcde ABCDE
+imap b test    
+imap bar <Esc>
+imap bar baz
+imap baz quux
+imap faa baz
+imap foo bar
+imap foo\ bar
+imap insert foo
+imap jj <Esc>
+imap jk <Esc>
+imap pp hello
+imap x <Esc>
+imap x yy
+imapclear
+inoremap <expr> q mode()
+inoremap a b
+inoremap b a
+inoremap jj <Esc>
+inoremap p <p>
+iunabbrev <buffer> foo
+iunabbrev teh
+iunmap j
+iunmap jj
+iunmap jk
+j
+j 3
+jumps
+last
+let &dg=1000
+let &g:scroll+=10
+let &g:test = 12
+let &incsearch = 0
+let &incsearch='0'
+let &incsearch='1'
+let &incsearch='21'
+let &incsearch='foo'
+let &incsearch=1
+let &l:scroll+=10
+let &l:test = 12
+let &scroll+=10
+let &test += '1'
+let &test += 1
+let &test = 12
+let &test+=1
+let &test.=' good'
+let &test.='1'
+let &test='10'
+let &test='whatever'
+let &test=1.23
+let &test=12
+let &test=[1,2,3]
+let &test={'key1' : 1, 'key2' : 2}
+let @" = 'iunnamed register works'
+let @4 = 'inumber register works'
+let @O = '!'
+let @O = 'iuppercase letter register works'
+let @a = 100 + 23
+let @a = 12.34
+let @a = 123
+let @a = [1, 2, 3]
+let @a = {'key': 'value'}
+let @a+=' world'
+let @a-=' world'
+let @a.=' world'
+let @a.=1.23
+let @a.=12
+let @a="hello world"
+let @a="hello z world"
+let @a='aaa'
+let @a='hello'
+let @o = 'ilowercase letter register works'
+let @w="world"
+let @x='a'
+let @x='lll'
+let @x='xxx'
+let A = funcref('Foo')
+let A = function('abs')
+let A = function('abs', [1])
+let A = function('abs', {'key1':1})
+let B = funcref('Foo')
+let B = function('abs')
+let B = function('abs', [1])
+let B = function('abs', {'key1':1})
+let F = function('Double')
+let F = function('Foo')
+let F = function('Foo', d)
+let F = function('GreaterThanOne')
+let F = function('KeepB')
+let F = function('Process')
+let F=function('Foo')
+let F=function('Foo', [1])
+let Foo2 = funcref('Foo', [2])
+let PrintFr = dict.print
+let PrintFr = function('Print')
+let ['a'] = [1]
+let [a, a, a] = [1, '2', 3.0]
+let [a, b, 'hello'] = [1, 2, 3]
+let [a, b, c, d] = [1, 2, 3]
+let [a, b, c; rest] = [1, 2]
+let [a, b, c] += [1, 2]
+let [a, b, c] = [1, '2', 3.0]
+let [a, b; rest] += [1, 2, 3, 4]
+let [a, b; rest] = [1, '2', 3.0, 'four', 5]
+let [a, b; rest] = [1, '2']
+let [a, b] += [1, 2, 3]
+let [a, b] += [1, 2]
+let [a, b] += [[3,4], [8,9]]
+let [a, b] = 42
+let [a, b] = [1, 2, 3]
+let [a, b] = [1, 2]
+let [a[0:1]] = [[1,2]]
+let [a[0], a[1], a[2]] = [1, '2', 3.0]
+let [a[0]] = [1]
+let [a] += ['world']
+let [a] .= [' world']
+let [d.a] = [42]
+let a = "hello"
+let a = 'abc'
+let a = 10
+let a = 42
+let a = ['a', 'b', 'c']
+let a = [1, 1, 2, 2, 3]
+let a = [1, 1, 2]
+let a = [1, 2, 3, 4, 5]
+let a = [1, 2, 3]
+let a = [1, 2]
+let a = [1, [2, 3, 4], 5]
+let a = [1, [2, 3], [4, [5]]]
+let a = [1, [2], 3]
+let a = [10, 20, 30]
+let a = [3, 1, 2]
+let a = [[1, 'a'], [1, 'b'], [1, 'c']]
+let a = [[1, 2], 3, [4, 5]]
+let a = []
+let a = [b, c]
+let a = [z, z, z, [1, 2, 3]]
+let a = function('abs')
+let a = {'a': 1, 'b': 2}
+let a = {'a':1, 'b':2}
+let a = {'foo': [1], 'bar': 2}
+let a = {'foo': z, 'bar': z, 'baz': {'foo': 1}}
+let a = {'key1' : 1, 'key2' : 2}
+let a = {'key1':1, 'key2':2, 'key3':3}
+let a = {'key1':1, 'key2':2}
+let a = {'subkey1':1, 'subkey2':2}
+let a:my_var = 'oh, hi Mark'
+let a='hello'
+let a=10
+let a=[1,2]
+let a['b'] = a
+let a['bar'] = 9
+let a['foo'] = a
+let a['foo'][0] = 9
+let a['key2'] = a
+let a[0] = 9
+let a[1] = a
+let a[1][0] = 9
+let a[1][1] = a
+let a[2] = a
+let args = [1]
+let b = 20
+let b = ['a', 'b', 'c']
+let b = [1, 2, 3]
+let b = [1, [2, 3], [4, [5]]]
+let b = [1, a]
+let b = [3, 4]
+let b = [6, 7, 8, 9, 0]
+let b = []
+let b = [a]
+let b = a
+let b = copy(a)
+let b = deepcopy(a)
+let b = deepcopy(a, 0)
+let b = deepcopy(a, 1)
+let b = myList
+let b = sort(a)
+let b = uniq(a)
+let b = {'a': 3, 'c': 4}
+let b = {'a': 3, 'd': 4}
+let b = {'c': 3, 'd': 4}
+let b = {'key1':1, 'key2':2, 'key3':3}
+let b = {'subkey1':1, 'subkey2':2}
+let b=20
+let b=42
+let b=[6,7]
+let b['key2'] = b
+let b[1] = b
+let c = 20
+let c = [6, [7, 8], [9, [10]]]
+let c=3.14
+let counter = 0
+let d = maparg('jj', 'i', 0, 1)
+let d = maparg('x', 'n', 0, 1)
+let d = {'-1': "minus one", '2': "two"}
+let d = {'1': "one", '2': "two"}
+let d = {'1.5': "one and a half", '2': "two"}
+let d = {'a': 1, 'b': 2, 'c': 3}
+let d = {'a': 10, 'b': 20, 'c': 30}
+let d = {'direction': -1, 'func': function('Compare')}
+let d = {'direction': -1}
+let d = {'foo': 1, 'bar': 2}
+let d = {'key1':1}
+let d = {'mod': 3, 'func': function('CompareMod')}
+let d = {'mod': 3}
+let d = {'thing': 123, 'func': function('Foo')}
+let d = {'thing': 123}
+let d={'target':2, 'func':function('FindIt')}
+let d={'threshold':1, 'func':function('GreaterThan')}
+let d={'value':3, 'func':function('Multiply')}
+let dict = list[3]
+let dict = {'a': 1, 'b': 2}
+let dict = {'a': 42, 'b': 2}
+let dict = {'data': 'something'}
+let dict = {'data': [1, 2, 3], 'print': function('Print')}
+let dict = {'name': 'dict', 'innerDict': {'name': 'innerDict', 'print': function('Print')}}
+let dict = {'name': 'dict', 'print': function('Print')}
+let dict = {'name': 'dict'}
+let dict = {'name': 'dict_name'}
+let dict = {'print': function('Print'), 'data': 'something'}
+let dict = {'print': function('Print', {'data': 'whatever'}), 'data': 'something'}
+let dict = {}
+let dict.l2 += [4]
+let dict.l2 = list
+let dict.print = PrintFr
+let dict.print = function('Print', dict)
+let dict2 = dictionary
+let dict2 = {'name': 'dict2', 'print': dict.print}
+let dict2 = {'name': 'dict2'}
+let dict2.print = dict.print
+let dict['print'] = function('Print', dict)
+let dictionary = {}
+let dictionary.one = 1
+let dictionary['two'] = 2
+let g:WhichKey_ShowVimActions = "true"
+let g:abolish_coercions = {'q': 'kebab'}
+let g:abolish_no_mappings = 1
+let g:camelcasemotion_key = ','
+let g:highlightedyank_highlight_color="rgba(0,255,0,128)"
+let g:highlightedyank_highlight_color="rgba(100,10,20,30)"
+let g:highlightedyank_highlight_duration = "-1"
+let g:highlightedyank_highlight_duration = "1000"
+let g:highlightedyank_highlight_duration = "500.15"
+let g:highlightedyank_highlight_duration = 1000
+let g:highlightedyank_highlight_foreground_color="rgba(100,10,20,30)"
+let g:highlightedyank_highlight_foreground_color="rgba(255,0,0,255)"
+let g:multi_cursor_use_default_mapping = 0
+let g:my_var = 'oh, hi Mark'
+let g:n = 0
+let g:n = 7
+let g:netrw_browsex_viewer = ''
+let g:netrw_browsex_viewer = '-'
+let g:netrw_browsex_viewer = 'firefox'
+let g:netrw_browsex_viewer = 'open -a Safari'
+let g:yankring_max_history = 10
+let g:yankring_max_history = 2
+let is = 12
+let isnot = 12
+let l = [1, 'two', 3]
+let l = [1, 2, 3, 4, 5]
+let l = [1, 2, 3, 4]
+let l = [1, 2, 3]
+let l = [10, 20, 30]
+let l2 = list
+let l:my_var = 'oh, hi Mark'
+let l=[]
+let l[2] = 9
+let list += [4]
+let list = [1, 2, 3, []]
+let list = [1, 2, 3, {'a': 'b'}]
+let list = [1, 2, 3]
+let list[3] += [4]
+let list[3].key = 'value'
+let mapleader = " "
+let mapleader = ","
+let mapleader = "\<C-SPACE>"
+let mapleader = "\<SPACE>"
+let myDict = {'1': 10, '2': 20}
+let myDict = {'1.2': 10, '2.0': 20}
+let myDict = {'a': 1, 'b': 2}
+let myDict = {'key1': 10, 'key2': 20}
+let myDict = {'key1': 10, 'key2': 4.3, 'key3': 'string'}
+let myDict = {}
+let myList = [1, 2, 3]
+let myVar = 42
+let mydict = {'a': 1, 'b': 2}
+let mylist = [1, 2, 3]
+let n = 123456789
+let n2 = number
+let number += 2
+let number = 10
+let rest=100
+let rest=[100,200]
+let result = []
+let result1 = []
+let result2 = []
+let retval = call('Foo', [1, 2, 3])
+let retval = call('Foo', [1, 2])
+let retval = call('Foo', [1])
+let retval = call('Foo', [])
+let retval = call('Foo', [], {'thing': 123})
+let retval = call('len', ['foo'])
+let retval = call(F, [1, 2])
+let retval = call(F, [2])
+let retval = call(F, [], {'thing': 456})
+let retval = call(d.func, [])
+let retval = call(d.func, [], {'thing': 456})
+let retval = call(function('Foo'), [1, 2])
+let retval = call({a, b -> a + b}, [1, 2])
+let s += 5
+let s += [4, 5, 6]
+let s = "bar"
+let s = "foo"
+let s = 'abc'
+let s = 'abcde'
+let s = 'hello'
+let s = 1.23
+let s = 10
+let s = 10 + 20 * 4
+let s = 100
+let s = 12
+let s = 2.23
+let s = 200
+let s = ['1', '1']
+let s = ['1', 1.5]
+let s = ['x']
+let s = [1, '2.5', 3.4]
+let s = [1, '2.5', 3]
+let s = [1, 1.5]
+let s = [1, 1]
+let s = [1, 2, 3, 4]
+let s = [1, 2, 3]
+let s = [1, 2, 3] " my list for storing numbers
+let s = [1.2]
+let s = [4, 5, 6]
+let s = [[1,2,3], [4,5,6], [7,8,9]]
+let s = l[1:3]
+let s = {'key1' : '1'}
+let s = {'key1' : '1.5'}
+let s = {'key1' : 'foo'}
+let s = {'key1' : 1, 'key2' : 2}
+let s = {'key1' : 1}
+let s = {'key1': 1, 'key2': 1.5}
+let s = {'key3' : 3, 'key4' : 4}
+let s+=1
+let s:my_var = 'oh, hi Mark'
+let s="o''clock"
+let s="o'c'l'o'c'k"
+let s="o'clock"
+let s='"12"'
+let s='12'
+let s=-1.0 / 0.0
+let s=0.0 / 0.0
+let s=1.0 / 0.0
+let s=12
+let s=12.34
+let s=12.3456789
+let s=13
+let s=3.2e-5
+let s=[1, 2.34, 'hello']
+let s={'a': 1, 'b': 2}
+let s['-1'] = 9
+let s['0':'1'] = [5, 6]
+let s['2'] = 2
+let s['foo'] = 9
+let s['key1'] += 2
+let s['key1'] .= 2
+let s['key1'] = 2
+let s['key2'] .= '2'
+let s['key2'] = 2
+let s[-10:-2] = [5, 6]
+let s[-10:-8] = [5, 6]
+let s[-1] = 2
+let s[-1] = 9
+let s[-3:2] = [9, 8, 7]
+let s[0:0] .= ['x']
+let s[0:0] .= [1.2]
+let s[0:1] += [[9,9,9], [9,9,9]]
+let s[0:1] = 'hello'
+let s[0:1] = 5
+let s[0:1] = ['hello', 'world']
+let s[0:1] = [5, 4, 3, 2, 1]
+let s[0:1] = [5, 4]
+let s[0:1] = [5]
+let s[0:2] += [5, 6.2, '7']
+let s[0:2] -= [5, 6.2, '7']
+let s[0:2] .= [5, 6, '7']
+let s[0:] = [9, 8, 7]
+let s[1.0:2.5] = [5, 6]
+let s[1.5] = 2
+let s[1.5] = 9
+let s[1:1] = [5]
+let s[1:2] = 'xy'
+let s[1:3] += [7, 6, 5, 4, 3, 2, 1]
+let s[1:3] += [7, 6]
+let s[1:] = [5, 5, 5, 5]
+let s[1] += 2
+let s[1] .= '2'
+let s[1] .= 2
+let s[1] = 'd'
+let s[1] = 2
+let s[2:4] = [9, 8, 7]
+let s[2] = 2
+let s[3:4] = [5, 4]
+let s[:1] = [5, 4]
+let s[[1,2,3]] = 2
+let str2 = string
+let string .= 'd'
+let string = 'abc'
+let t = s
+let t=s
+let used = {}
+let x = a
+let x = extendnew(a, [6, 7, 8, 9, 0])
+let x = extendnew(a, b)
+let x = extendnew(a, {'c': 3, 'd': 4})
+let z = [1, 2, 3]
+let z = {'foo': 1}
+lm foo bar
+lmap F Y
+lmap a ab
+lmap a b
+lmap ab c
+lmap b c
+lmap baz qux
+lmap f x
+lmap foo bar
+lmap foo baz
+lmap lang foo
+lmap x yy
+lmapclear
+ln baz qux
+lnoremap a b
+lnoremap foo bar
+loadkeymap
+lockvar 0 a
+lockvar 0 s
+lockvar 1 a
+lockvar 1 s
+lockvar 2 s
+lockvar a
+lockvar a.a
+lockvar a['a']
+lockvar a[1]
+lockvar a[2]
+lockvar b
+lockvar d
+lockvar d['b']
+lockvar dict.a
+lockvar l
+lockvar l[1]
+lockvar s
+lunmap foo
+m 0
+m+1
+m-2
+map ! dd
+map 0 ~
+map <C-Down> gt
+map <Del> ~
+map <Enter> <Action>(EditorSelectWord)
+map A :echo 42<CR>
+map G dd
+map I 3l
+map ab abcd
+map all foo
+map as x
+map dd G
+map ds h
+map f bar
+map foo bar
+map foo quux
+map food baz
+map fop bop
+map gj :action EditorCloneCaretBelow<CR>
+map j <Action>(EditorDown)
+map k :echo 4<CR> \| :echo 42<CR>
+map k abcx
+map quux bar
+map x dd
+map x yy
+map ys :echo 'hi'<CR>
+map! foo bar
+map! insert+cmdline foo
+map! x yy
+mapc!
+mapclear
+mapclear!
+marks
+marks a
+marks abc
+marks b
+marks bdD
+nmap ,a :action Back<CR>
+nmap ,b :action Back<Cr>
+nmap ,c :action Back<cr>
+nmap ,d :action Back<ENTER>
+nmap ,e :action Back<Enter>
+nmap ,f :action Back<enter>
+nmap ,f <Plug>Foo
+nmap ,f iHello<Esc>
+nmap ,fc iBye<Esc>
+nmap ,foo iHello<Esc>
+nmap ,fooc iBye<Esc>
+nmap ,g :action Back<C-M>
+nmap ,h :action Back<C-m>
+nmap ,i :action Back<c-m>
+nmap 0 w
+nmap 2 w
+nmap <A-n> <Plug>NextWholeOccurrence
+nmap <C-C> a
+nmap <C-a> gg
+nmap <Leader>z izzz<Esc>
+nmap <Plug>Foo iHello<Esc>
+nmap <S-D> w
+nmap <S-Space> w
+nmap <Tab> ihello<Esc>
+nmap <buffer> ,a /a<CR>
+nmap <expr> ,f '/f<CR>'
+nmap <leader>\| dw
+nmap <nowait> ,b /b<CR>
+nmap <script> ,e /e<CR>
+nmap <silent> ,c /c<CR>
+nmap <space> dw
+nmap <special> ,d /d<CR>
+nmap <unique> ,g /g<CR>
+nmap D w
+nmap _v dd
+nmap _vv dd
+nmap _vvv dd
+nmap a b
+nmap a ~
+nmap ab yy
+nmap abc x
+nmap b x
+nmap b ~
+nmap dc k
+nmap f bar
+nmap fee bap
+nmap foo bar
+nmap foo quux
+nmap food baz
+nmap gs <Plug>(abolish-coerce-snake)
+nmap k j
+nmap normal foo
+nmap rr 42
+nmap rrr 55
+nmap rrrr 55d
+nmap rrrr d
+nmap x <C-a>
+nmap x <Esc>
+nmap x b
+nmap x ddyy
+nmap x yy
+nmap xy yy
+nmap zzz ppp
+nnoremap ,a :action Back<CR>
+nnoremap ,b :action Back<Cr>
+nnoremap ,c :action Back<cr>
+nnoremap ,d :action Back<ENTER>
+nnoremap ,e :action Back<Enter>
+nnoremap ,f :action Back<enter>
+nnoremap ,f ?\<fun\><CR>
+nnoremap ,g :action Back<C-M>
+nnoremap ,h :action Back<C-m>
+nnoremap ,i :action Back<c-m>
+nnoremap <Right> <nop>
+nnoremap <buffer> x yy
+nnoremap <expr> x '2j'
+nnoremap <nowait> x yy
+nnoremap <silent> x yy
+nnoremap c "_c
+nnoremap x yy
+nohlsearch
+noremap A Z
+noremap gx :set opfunc=Redact<CR>g@
+noremap gx :set opfunc=funcref('Foo')<CR>g@
+noremap gx :set opfunc=funcref('Redact')<CR>g@
+noremap gx :set opfunc=function('Foo')<CR>g@
+noremap gx :set opfunc=function('Redact')<CR>g@
+noremap gx <Esc>:set opfunc=Redact<CR>gvg@
+norm @q
+norm i<Esc>
+normal G
+normal Vjj
+normal ddp
+normal iTest 
+normal x
+normal! G
+nunmap x
+omap , ?
+omap op-pending foo
+omap w b
+omap x yy
+ounmap foo
+put
+put a
+r! echo hello
+read
+read /nonexistent/file/path/that/does/not/exist.txt
+read! echo "hello"
+read! echo '  indented with spaces'
+read! echo 'special: <>&"'
+read! echo 'text with trailing space '
+read! echo -e 'first\nsecond\nthird'
+read! echo -n ''
+read! echo inserted
+read! nonexistent_command_that_should_fail_12345
+redo
+registers
+registers Z
+registers a
+registers abc
+registers hello world
+s/\d\+/\=submatch(0)+1/g
+s/and/or/
+s/missing//
+s/missing//e
+s/missing//ge
+set TestExtension
+set abolish
+set breakindent
+set breakindent&
+set clipboard&
+set clipboard+=unnamed
+set clipboard+=unnamedplus
+set clipboard=
+set clipboard=autoselect,exclude:cons\|linux
+set clipboard=ideaput
+set clipboard=unnamed
+set clipboard=unnamed,ideaput
+set clipboard=unnamed,unnamedplus
+set clipboard=unnamedplus
+set clipboard=unnamedplus,ideaput
+set clipboard^=unnamed
+set cmdheight=2
+set colorcolumn&
+set colorcolumn=
+set colorcolumn=10, 20
+set colorcolumn=10,+20,-30
+set colorcolumn=10,20,30
+set colorcolumn=10,aa,20
+set colorcolumn=40,50,60
+set colorcolumn=50
+set com=://
+set comments&
+set comments+=b:#
+set comments-=://
+set comments=://
+set comments=://,b:#
+set cursorline
+set cursorline&
+set digraph
+set digraph&
+set guicursor&
+set guicursor+=a:blinkwait200-blinkoff125-blinkon150-Cursor/lCursor
+set guicursor+=a:ver25
+set guicursor+=i:hor75
+set guicursor+=i:ver25
+set guicursor+=n:ver75-OtherCursor
+set guicursor=
+set guicursor=c:ver25
+set guicursor=c:ver50,ci:hor75,cr:block
+set guicursor=foo:block-Cursor
+set guicursor=i:hor22
+set guicursor=n-foo:block-Cursor
+set guicursor=n:MyHighlightGroup
+set guicursor=n:hor20-Cursor
+set guicursor=n:hor20-Cursor,i:hor50,a:ver25,n:ver75
+set guicursor=n:hor22
+set guicursor=n:ver-Cursor
+set guicursor=n:ver0-Cursor
+set guicursor=v:hor10-Cursor/lCursor
+set guicursor=whatever
+set history=0
+set hlsearch
+set hlsearch incsearch
+set hlsearch incsearch nowrapscan
+set ideajoin
+set ideamarks
+set ignorecase
+set ignorecase digraph
+set ignorecase smartcase
+set iminsert=1
+set inccommand=
+set inccommand=nosplit
+set inccommand=split
+set incsearch
+set incsearch hlsearch nowrapscan
+set incsearch hlsearch wrapscan
+set incsearch nowrapscan
+set invrnu
+set iskeyword+=-
+set iskeyword+=^a
+set iskeyword+=^b-c,d
+set iskeyword=!-~,^*,^",192-255
+set iskeyword=!-~,^*,^|,^",192-255
+set iskeyword^=,
+set keymap=
+set keymap=first
+set keymap=mykeymap
+set keymap=nosuchkeymap
+set keymap=russian-jcukenwin
+set keymap=second
+set keymodel=
+set keymodel=continueselect
+set keymodel=continuevisual
+set keymodel=startsel
+set keymodel=startsel,stopsel
+set keymodel=stopsel
+set keymodel=stopselect
+set keymodel=stopvisual
+set langmap+=bB
+set langmap-=bB
+set langmap=
+set langmap=24,31
+set langmap=;ABC
+set langmap=ABC;
+set langmap=a;A
+set langmap=aA
+set langmap=aA,,bB
+set langmap=aA,bB
+set langmap=aA,bB,cC,dD
+set langmap=aAb
+set langmap=aAbB,cCdD
+set langmap=aAbB,cd;CD
+set langmap=aAbBcCdD
+set langmap=aB
+set langmap=aC
+set langmap=ab
+set langmap=ab;AB,cd;CD
+set langmap=abc;A;C
+set langmap=abcd;ABCD
+set langmap=ad,bw
+set langmap=am
+set langmap=ax
+set langmap=a~,~x
+set langmap=b0,~x
+set langmap=ba,Ba,BA
+set langmap=bx
+set langmap=oO,kK
+set langmap=zb
+set langmap=~x
+set langmap=éê
+set langmap=✓✗
+set langremap
+set list
+set list&
+set lmap=aAb
+set maxmapdepth=1
+set maxsearchcount=10
+set maxsearchcount=3
+set messagesopt=history:100
+set messagesopt=history:100,hit-enter
+set messagesopt=history:100,wait:-3
+set messagesopt=history:100,wait:0
+set messagesopt=history:100,wait:10000
+set messagesopt=history:100,wait:10001
+set messagesopt=history:100,wait:foo
+set messagesopt=hit-enter,history:-1
+set messagesopt=hit-enter,history:100
+set messagesopt=hit-enter,history:foo
+set mopt-=history:100
+set mopt-=hit-enter
+set mopt-=wait:10000
+set mouse=
+set mouse=a
+set mouse=n
+set multiple-cursors
+set nf=octal
+set noTestExtension
+set noTestFunctionExtension
+set noabolish
+set nobreakindent
+set nocursorline
+set nodigraph
+set nohlseach
+set nohlsearch
+set noignorecase
+set nolangnoremap
+set nolangremap
+set nolist
+set nomore
+set nomultiple-cursors
+set nonumber
+set nooldundo
+set norelativenumber
+set nornu
+set noshowcmd
+set nosmartcase
+set nostartofline
+set nowrap
+set nowrapscan
+set noyankring
+set nrformats&
+set nrformats=octal
+set number
+set number relativenumber
+set number relativenumber scrolloff nrformats
+set number&
+set number+=10
+set number+=test
+set number-=10
+set number-=test
+set number^=10
+set number^=test
+set oldundo
+set operatorfunc=Foo
+set pumopt+=height:15
+set pumopt+=shadow
+set pumopt+=shadow,margin
+set pumopt+=shadow,width:20
+set pumopt+=width:20
+set pumopt+=width:20,border:single
+set pumopt-=margin,shadow
+set pumopt-=shadow
+set pumopt-=shadow,width:20
+set pumopt-=width:10
+set pumopt-=width:20
+set pumopt-=width:20,border:single
+set pumopt=border
+set pumopt=border:single,shadow,opacity:10
+set pumopt=height:10
+set pumopt=height:10,shadow,width:20
+set pumopt=height:10,width:20
+set pumopt=height:10,width:20,border:single
+set pumopt=invalid
+set pumopt=invalid:10
+set pumopt=margin,border:single
+set pumopt=margin,border:single,shadow
+set pumopt=margin,shadow,border:single
+set pumopt=margin:10
+set pumopt=shadow
+set pumopt^=shadow
+set pumopt^=shadow,margin
+set pumopt^=shadow,width:20
+set pumopt^=width:20
+set pumopt^=width:20,border:single
+set pumopt^=width:25
+set relativenumber
+set relativenumber&
+set rnu
+set rnu!
+set scroll=10
+set scroll=42
+set scrolljump&
+set scrolljump=-10
+set scrolljump=-25
+set scrolljump=-50
+set scrolljump=0
+set scrolljump=1
+set scrolljump=10
+set scrolljump=11
+set scrolljump=15
+set scrolljump=20
+set scrolljump=7
+set scrolloff&
+set scrolloff+=10
+set scrolloff+=test
+set scrolloff-=10
+set scrolloff-=test
+set scrolloff<
+set scrolloff=0
+set scrolloff=1
+set scrolloff=10
+set scrolloff=15
+set scrolloff=16
+set scrolloff=17
+set scrolloff=20
+set scrolloff=22
+set scrolloff=30
+set scrolloff=5
+set scrolloff=999
+set scrolloff^=10
+set scrolloff^=test
+set selection&
+set selection=exclusive
+set selectmode=
+set selectmode=cmd
+set selectmode=ideaselection
+set selectmode=key
+set selectmode=key keymodel=startsel
+set shell+=bar
+set shell+=foo
+set shell-=bar
+set shell-=foo
+set shell=/dummy/path/to/bash
+set shell=foo
+set shell=foo,foo,foo
+set shell=foobar
+set shell=foobarfoo
+set shell=~/bin/bash
+set shell^=bar
+set shell^=foo
+set shellcmdflag=-x
+set shellxescape=@
+set shellxquote={
+set sidescroll&
+set sidescroll=1
+set sidescroll=10
+set sidescroll=2
+set sidescroll=20
+set sidescroll=7
+set sidescrolloff&
+set sidescrolloff<
+set sidescrolloff=10
+set sidescrolloff=20
+set sidescrolloff=30
+set sidescrolloff=5
+set sidescrolloff=999
+set smartcase
+set timeoutlen=100
+set unknownOption
+set virtualedit+=all
+set virtualedit+=all,onemore
+set virtualedit+=onemore
+set virtualedit+=onemore,all
+set virtualedit-=block,onemore
+set virtualedit-=onemore
+set virtualedit-=onemore,block
+set virtualedit<
+set virtualedit=all
+set virtualedit=all,all,all
+set virtualedit=all,onemore
+set virtualedit=all,onemore,block
+set virtualedit=block
+set virtualedit=onemore
+set virtualedit^=onemore
+set virtualedit^=onemore,all
+set virtualedit^=onemore,block
+set whichwrap=<
+set whichwrap=>
+set whichwrap=[
+set whichwrap=]
+set whichwrap=b
+set whichwrap=h
+set whichwrap=l
+set whichwrap=s
+set whichwrap=~
+set wrap
+set wrap&
+set wrapscan
+set yankring
+setglobal breakindent
+setglobal colorcolumn=10,20,30
+setglobal cursorline
+setglobal fileformat=unix
+setglobal invrnu
+setglobal list
+setglobal nocursorline
+setglobal nornu
+setglobal nowrap
+setglobal nrformats&
+setglobal nrformats+=10
+setglobal nrformats+=alpha
+setglobal nrformats+=hex
+setglobal nrformats-=10
+setglobal nrformats-=hex
+setglobal nrformats:alpha
+setglobal nrformats<
+setglobal nrformats=alpha
+setglobal nrformats=octal
+setglobal nrformats=unknown
+setglobal nrformats^=10
+setglobal nrformats^=hex
+setglobal number
+setglobal number relativenumber scrolloff=10 nrformats=alpha,hex,octal sidescrolloff=10
+setglobal number+=10
+setglobal number+=test
+setglobal number-=10
+setglobal number-=test
+setglobal number=0
+setglobal number=test
+setglobal number^=10
+setglobal number^=test
+setglobal relativenumber
+setglobal relativenumber<
+setglobal rnu
+setglobal rnu!
+setglobal rnu&
+setglobal scroll&
+setglobal scroll+=5
+setglobal scroll+=test
+setglobal scroll-=10
+setglobal scroll-=test
+setglobal scroll:10
+setglobal scroll<
+setglobal scroll=10
+setglobal scroll=42
+setglobal scroll=5
+setglobal scroll=test
+setglobal scroll^=2
+setglobal scroll^=test
+setglobal scrolloff&
+setglobal scrolloff<
+setglobal scrolloff=10
+setglobal scrolloff=20
+setglobal shell=/dummy/path/to/bash
+setglobal shellcmdflag=-x
+setglobal shellxescape=@
+setglobal shellxquote={
+setglobal sidescrolloff&
+setglobal sidescrolloff<
+setglobal sidescrolloff=10
+setglobal sidescrolloff=20
+setglobal test
+setglobal test&
+setglobal test<
+setglobal test=15
+setglobal test=20
+setglobal test=globalValue
+setglobal unknownOption
+setlocal breakindent
+setlocal breakindent&
+setlocal colorcolumn&
+setlocal colorcolumn=
+setlocal colorcolumn=10,20,30
+setlocal colorcolumn=50
+setlocal cursorline
+setlocal cursorline&
+setlocal fileformat&
+setlocal iminsert=1
+setlocal invrnu
+setlocal list
+setlocal list&
+setlocal nobreakindent
+setlocal nocursorline
+setlocal nolist
+setlocal nonumber
+setlocal norelativenumber
+setlocal nornu
+setlocal notest
+setlocal nowrap
+setlocal nrformats&
+setlocal nrformats+=10
+setlocal nrformats+=alpha
+setlocal nrformats+=hex
+setlocal nrformats-=10
+setlocal nrformats-=hex
+setlocal nrformats:alpha
+setlocal nrformats<
+setlocal nrformats=alpha
+setlocal nrformats=octal
+setlocal nrformats=unknown
+setlocal nrformats^=10
+setlocal nrformats^=hex
+setlocal number
+setlocal number relativenumber
+setlocal number relativenumber scrolloff=10 nrformats=alpha,hex,octal sidescrolloff=10
+setlocal number&
+setlocal number+=10
+setlocal number+=test
+setlocal number-=10
+setlocal number-=test
+setlocal number=0
+setlocal number=test
+setlocal number^=10
+setlocal number^=test
+setlocal relativenumber
+setlocal relativenumber&
+setlocal relativenumber<
+setlocal rnu
+setlocal rnu!
+setlocal scroll&
+setlocal scroll+=5
+setlocal scroll+=test
+setlocal scroll-=10
+setlocal scroll-=test
+setlocal scroll:10
+setlocal scroll<
+setlocal scroll=10
+setlocal scroll=42
+setlocal scroll=5
+setlocal scroll=test
+setlocal scroll^=2
+setlocal scroll^=test
+setlocal scrolloff&
+setlocal scrolloff<
+setlocal scrolloff=10
+setlocal scrolloff=15
+setlocal scrolloff=20
+setlocal scrolloff=30
+setlocal scrolloff=5
+setlocal scrolloff=7
+setlocal shell=/dummy/path/to/bash
+setlocal shellcmdflag=-x
+setlocal shellxescape=@
+setlocal shellxquote={
+setlocal sidescrolloff&
+setlocal sidescrolloff<
+setlocal sidescrolloff=10
+setlocal sidescrolloff=15
+setlocal sidescrolloff=20
+setlocal sidescrolloff=30
+setlocal sidescrolloff=5
+setlocal sidescrolloff=7
+setlocal test
+setlocal test&
+setlocal test<
+setlocal test=20
+setlocal test=30
+setlocal test=localValue
+setlocal unknownOption
+setlocal virtualedit=onemore
+setlocal wrap
+setlocal wrap&
+smap select foo
+source ~/.ideavim_test_source.vim
+stopi
+stopinsert
+stopinsert foo
+stopinsert!
+sunmap all
+sunmap foo
+t-1
+undo
+unmap jk
+unmap k
+unmap x
+up
+update
+vmap <expr> q '<Esc>A - mode='.mode().'<Esc>'
+vmap <expr> q '<Esc>a - line(v)=='.line('v').'<Esc>'
+vmap foo baz
+vmap visual+select foo
+vmap x gq
+vmap!
+vunmap all
+vunmap! foo
+xmap <A-n> <Plug>NextWholeOccurrence
+xmap gm <Plug>(abolish-coerce-pascal)
+xmap gs <Plug>(abolish-coerce-snake)
+xmap visual foo
+xmap x gq
+y
+y (
+y 3
+y 3,4
+y :
+y A
+y a
+y c 3
