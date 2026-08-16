@@ -629,7 +629,10 @@ for line in sys.stdin:
     while i < len(line):
         if line[i] == "\\" and i + 1 < len(line):
             nxt = line[i+1]
-            out.append({"\\\\": "\\", "\"": "\"", "t": "\t", "n": "\n", "$": "$"}.get(nxt, "\\" + nxt))
+            # NB: keys must be ONE character — `nxt` is a single char. A "\\\\" key here
+            # is a two-char string that can never match, silently leaving doubled
+            # backslashes uncollapsed (this bug hit 24/1865 corpus lines when first run).
+            out.append({"\\": "\\", "\"": "\"", "t": "\t", "n": "\n", "$": "$"}.get(nxt, "\\" + nxt))
             i += 2
         else:
             out.append(line[i]); i += 1
