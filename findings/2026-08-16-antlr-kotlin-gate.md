@@ -43,9 +43,10 @@ Every figure below is traceable to one of the seven per-task reports, preserved 
 
 **Note on the test count.** The plan's report template anticipated "N/397 assertions" for
 `VimRegexParserTest`. The file actually contains 64 `@Test` methods (independently confirmed
-by counting `@Test` annotations during Task 4's review). 397 appears to have been an estimate
-of individual assertions rather than test methods; nothing was lost or skipped. 64/63/1 is the
-real, reproducible number on both targets.
+by counting `@Test` annotations during Task 4's review). 397 is the test file's **line count** —
+the plan states "`VimRegexParserTest` (397 lines)" at `:39` and again at `:473`, and `wc -l`
+returns exactly 397; the report template reused it as an assertion denominator. Nothing was lost
+or skipped. 64/63/1 is the real, reproducible number on both targets.
 
 **Note on `VimTestCase` counts.** The spec's baseline table (§3) records 598 `VimTestCase`
 subclasses; Task 7 measured 594 today, against 653 total test files. The spec itself says to
@@ -83,8 +84,9 @@ compilation gap, not the behavioral one.
 That run surfaced a second, minor finding not in any per-task report: the antlr-kotlin
 generator emits `@Suppress("UNSAFE_CALL")` on four semantic-predicate functions in
 `VimscriptParser.kt` (`commandName_sempred`, `expr_sempred`, and two others; lines 16135,
-16144, 16165, 16175). `UNSAFE_CALL` is a compiler *error*, not a warning, and Kotlin responds
-with:
+16144, 16165, 16175 — that file is regenerated build output under `build/generatedAntlr/`, so
+the line numbers are reproducible from the grammar but not from a committed file).
+`UNSAFE_CALL` is a compiler *error*, not a warning, and Kotlin responds with:
 
 > Suppression of error 'UNSAFE_CALL' might compile and work, but the compiler behavior is
 > UNSPECIFIED and WILL NOT BE PRESERVED.
@@ -150,16 +152,25 @@ the Java build and the Kotlin build.** `Vimscript.g4` can (it needed no edits wh
 ### 2.2 Runtime-API differences in ported engine code (Task 3)
 
 Task 3 copied `vim-engine`'s `regexp/parser/` subpackage into the spike, rewrote
-`org.antlr.v4.runtime` → `org.antlr.v4.kotlinruntime`, and compiled until green. **27 sites
+`org.antlr.v4.runtime` → `org.antlr.v4.kotlinruntime`, and compiled until green. **35 sites
 across 4 distinct root causes** were genuine antlr-kotlin API differences, in 672 lines of
 ported code:
 
 | # | Root cause | Sites | Files |
 |---|---|---|---|
 | 1 | `Recognizer.errorListeners` is a plain `List` with no `.clear()`; use `removeErrorListeners()` | 1 | `VimRegexParser.kt` |
-| 2 | **Java platform-type nullness vs. Kotlin's exact-match override rule** | **20** | `VimRegexParserErrorStrategy.kt`, `CollectionElementVisitor.kt`, `MultiVisitor.kt` |
+| 2 | **Java platform-type nullness vs. Kotlin's exact-match override rule** | **28** | `VimRegexParserErrorStrategy.kt`, `CollectionElementVisitor.kt`, `MultiVisitor.kt` |
 | 3 | `AbstractParseTreeVisitor<T>.defaultResult()` is `abstract` in the Kotlin runtime; it has a body (`return null`) in Java | 2 | `CollectionElementVisitor.kt`, `MultiVisitor.kt` |
 | 4 | `Token?` context-label fields and `Token.text: String?` are nullable in the Kotlin runtime | 4 | `CollectionElementVisitor.kt`, `MultiVisitor.kt` |
+
+**Correction to the appendix.** `appendix/task-3-report.md:176` reports "`CollectionElementVisitor.kt`
+(11 methods)" for root cause 2. The file has **19** nullable-`ctx` overrides
+(`grep -c 'ctx: RegexParser\.[A-Za-z0-9_]*Context?'` returns 19 in `vim-engine`, 0 in the spike
+copy). That moves root cause 2 from 20 to 28 and the total from 27 to 35. The counts above are
+the corrected ones; the appendix is preserved verbatim as the original record and still carries
+the undercount. Root causes 1, 3 and 4 were re-verified exact. The undercount fell entirely on
+root cause 2 — the one this section identifies as the cost driver — so it erred in the direction
+of making the port look cheaper.
 
 **Root cause 2 is the one that matters for costing**, because it is the only one that scales
 with something other than lines of code. `vim-engine` was written against the Java runtime,
@@ -170,7 +181,8 @@ strictly non-null, and Kotlin's override rule permits no contravariant relaxatio
 nullability. Every such signature is rejected.
 
 In this task alone that was 3 sites on `DefaultErrorStrategy` (`recover`, `recoverInline`,
-`sync`) plus 17 `visitXyz` overrides across two visitor classes. **It recurs for every
+`sync`) plus 25 `visitXyz` overrides across two visitor classes (19 in
+`CollectionElementVisitor.kt`, 6 in `MultiVisitor.kt`). **It recurs for every
 `visitXyz` override on every ANTLR visitor in the real port** — `ExecutableVisitor`,
 `ExpressionVisitor`, `ScriptVisitor`, `CommandVisitor`, `PatternVisitor`, and more. Task 3
 estimates plausibly hundreds of signature edits across the full port. Each edit is trivial
@@ -183,9 +195,15 @@ Java plus `?` everywhere" is not a safe shortcut. Each signature needs checking.
 
 ### 2.3 A JVM-only stdlib call, unrelated to ANTLR (Task 3, item 8)
 
-`CollectionElementVisitor.kt:110` calls `Char.isJavaIdentifierPart()`. That is a JVM-only
+`CollectionElementVisitor.kt:107` calls `Char.isJavaIdentifierPart()`. That is a JVM-only
 extension in Kotlin's standard library. `compileKotlinJvm` had already gone green;
 `compileKotlinJs` failed on it alone.
+
+It is not the only site. `vim-engine` has **three** today — `CollectionElementVisitor.kt:107`,
+`PatternVisitor.kt:169`, and `PatternVisitor.kt:181` — but only the first was reachable, because
+`PatternVisitor.kt` was pruned from the spike (§4). So the compiler surfaced one of three, and
+the sweep in caveat 5 starts with two known hits already waiting in the file this gate never
+compiled.
 
 This has nothing to do with ANTLR. It is a **pre-existing JVM-only stdlib call in `vim-engine`**,
 surfaced only because this is the first time any of that source has been compiled for a
@@ -210,7 +228,7 @@ mid-phase for it.
 
 | Bin | Count | Detail |
 |---|---|---|
-| Grammar divergence | **0** | No case where antlr-kotlin's parser accepts or rejects differently from the Java parser. 63 of 63 non-astral regex assertions pass; 1,865 of 1,865 Vimscript parse trees are byte-identical. |
+| Grammar divergence | **0** | No case where antlr-kotlin's parser accepts or rejects differently from the Java parser. 63 of 63 assertions outside the runtime-divergence bin pass; 1,865 of 1,865 Vimscript parse trees are byte-identical. |
 | Error-strategy divergence | **0** | Every explicit `assertFailure` test in `VimRegexParserTest` passes. The Vimscript corpus includes entries that trigger ANTLR's default error-recovery path (producing error nodes rather than throwing) and those trees matched too. This is the sub-risk the spec called out by name in W1 — "the error-strategy subclassing is exactly where a reimplementation is most likely to diverge" — and it did not diverge. |
 | **Runtime/library divergence** | **1** | The astral-plane `CharStream` bug, below. |
 | Spike artifact | **0** | No failure was traced to the spike's own stubbing. |
@@ -245,6 +263,12 @@ Classification reasoning:
   fails a layer earlier, at input decoding.
 - **Not a spike artifact** — Task 3 wrote no CharStream or lexer code. `VimRegexParser.kt:34`
   is a one-line call into antlr-kotlin's own library, exactly what a real port would do.
+
+The source-level trace above is of the **JVM** artifact. The JS runtime's `StringCharStream` was
+never decompiled or inspected; the attribution on that target is inferred from identical
+observable behavior (`appendix/task-5-report.md:88-91` is explicit about this). The two targets
+share a source tree upstream, so a common root cause is the strong reading — but it is inference,
+not a second independent trace.
 
 It was independently reproduced by a second agent compiling its own probe against the runtime
 jar, with matching numbers. It reproduces on Node with the same error code and a *byte-for-byte
@@ -312,8 +336,8 @@ but it is an open problem, not a solved one.
 a dead-code bug (a 2-character dict key that could never match a 1-character lookup), leaving
 `\\` un-unwound and feeding malformed double-backslash input for **24 of 1,865** entries
 (1.3%). Task 6 found it by inspection *before* generating the golden file, so the 0/1,865
-result is clean — but the plan document as written still contains the bug, and anyone re-running
-the pipeline from it will reproduce it. The corpus also came out at 1,865 lines against the
+result is clean. The plan document carried the bug until commit `0caaaab9e`, which fixed the
+dead key and added a comment explaining why it could never match. The corpus also came out at 1,865 lines against the
 plan's expected 1,700–1,815, traced to test-suite growth since the plan's baseline, not to an
 extraction fault.
 
@@ -365,7 +389,14 @@ description precisely — "a bounded, enumerated set of divergences with known w
   as highest risk. On that question the answer is a clean yes: 63/63 grammar and error-strategy
   assertions, 1,865/1,865 parse trees.
 - **Has known workarounds.** Fix upstream in antlr-kotlin, or wrap/replace the `CharStream`
-  locally. Neither requires touching a grammar or abandoning the approach.
+  locally. Neither requires touching a grammar or abandoning the approach. **This is the
+  weakest leg of the argument and should be read as such:** neither workaround was
+  *demonstrated*. Nobody wrote a wrapping `CharStream` and watched the test go green, and the
+  upstream fix is outside IdeaVim's control with no timeline. The rule says "known", not
+  "exercised", so this is literally satisfied — and the root cause is precise enough (a decode
+  failure at end-of-stream, behind a small interface) that a local wrapper is clearly tractable.
+  But caveat 4 lists "accept the limitation and document it" as a real disposition, which
+  concedes this may simply be lived with.
 - **Argues *for* the approach, in one respect.** The failure being byte-for-byte identical on
   JVM and Node is evidence of a single consistent runtime rather than two runtimes that drift
   apart — which is exactly the property the Multiplatform approach depends on.
@@ -407,9 +438,9 @@ and update the ripple at `CollectionElementVisitor.kt:27` (`ctx.start.text` →
 runtime's `ParserRuleContext` and cannot be overridden. Make this a standing check on grammar
 changes, not a one-off: Java hides these fields silently, so nothing warns you today.
 
-**Caveat 3 — Budget the antlr-kotlin API-difference sweep.** 4 distinct root causes, 27 sites,
+**Caveat 3 — Budget the antlr-kotlin API-difference sweep.** 4 distinct root causes, 35 sites,
 in 672 lines. Root cause 2 (Java platform-type nullness vs. Kotlin's exact-match override rule)
-accounts for 20 of the 27 and scales with **every `visitXyz` override on every ANTLR visitor
+accounts for 28 of the 35 (80%) and scales with **every `visitXyz` override on every ANTLR visitor
 in `vim-engine`** — `ExecutableVisitor`, `ExpressionVisitor`, `ScriptVisitor`,
 `CommandVisitor`, `PatternVisitor`, `MultiVisitor`, `CollectionElementVisitor`. Plausibly
 hundreds of mechanical signature edits. Also expect: `defaultResult()` must be implemented on
@@ -439,13 +470,13 @@ matcher engine, and run IdeaVim's regex *matching* tests on both targets" as its
 work item with its own gate — not as a mopping-up detail. It is the largest untested surface
 this gate leaves behind.
 
-**Caveat 7 — Fix the corpus harness before reusing it, and extend it to JS.** Three items:
-(i) the plan's extraction script still contains the dead-key bug that corrupted 24 of 1,865
-entries — fix the source document, not just the local copy; (ii) the golden file's
-tab-delimited `input\ttree` format breaks if any corpus input ever contains a literal tab
-(verified zero today, so this is latent, not live); (iii) the Vimscript differential ran on the
-JVM only — re-run it on Node before phase 4's gate, since the Vimscript grammar currently has
-compilation evidence on JS but no behavioral evidence.
+**Caveat 7 — Fix the corpus harness before reusing it, and extend it to JS.** Two items:
+(i) the golden file's tab-delimited `input\ttree` format breaks if any corpus input ever
+contains a literal tab (verified zero today, so this is latent, not live); (ii) the Vimscript
+differential ran on the JVM only — re-run it on Node before phase 4's gate, since the Vimscript
+grammar currently has compilation evidence on JS but no behavioral evidence.
+(The plan's dead-key extraction bug was a third item here; commit `0caaaab9e` fixed it in the
+plan document, so it is closed.)
 
 **Minor, tracked but not blocking:** the antlr-kotlin generator emits `@Suppress("UNSAFE_CALL")`
 at 4 sites in `VimscriptParser.kt` (§1.2). It compiles on Kotlin 2.3.20; the Kotlin team
@@ -495,7 +526,7 @@ What would still reopen that decision later, and is worth watching:
 - Porting `PatternVisitor` and the NFA/matcher engine (caveat 6) surfacing divergences of a
   kind this gate did not see — this is untested surface, and it is large.
 - The API-difference sweep (caveat 3) turning out to require judgment rather than mechanical
-  edits at scale. Every one of the 27 sites found here was mechanical; that should hold, but it
+  edits at scale. Every one of the 35 sites found here was mechanical; that should hold, but it
   is an extrapolation from 672 lines to ~79k.
 
 Note that the measurements in this phase — the 1,865-command corpus harness and the JUnit5
