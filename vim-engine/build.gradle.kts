@@ -51,7 +51,7 @@ repositories {
 val antlrTool by configurations.registering
 
 val antlrOutputDir = layout.buildDirectory.dir("generated-src/antlr/jvmMain")
-val antlrSrcDir = layout.projectDirectory.dir("src/main/antlr")
+val antlrSrcDir = layout.projectDirectory.dir("antlr")
 
 // RegexParser.g4 declares `options { tokenVocab=RegexLexer; }`, so RegexLexer
 // must be generated first to produce RegexLexer.tokens. Two ordered steps.
@@ -90,7 +90,7 @@ val generateGrammarSource by tasks.registering {
 }
 
 ksp {
-  arg("generated_directory", "$projectDir/src/main/resources/ksp-generated")
+  arg("generated_directory", "$projectDir/src/jvmMain/resources/ksp-generated")
   arg("vimscript_functions_file", "engine_vimscript_functions.json")
   arg("ex_commands_file", "engine_ex_commands.json")
   arg("commands_file", "engine_commands.json")
@@ -106,11 +106,10 @@ kotlin {
 
   sourceSets {
     val jvmMain by getting {
-      kotlin.srcDir("src/main/kotlin")
+      // src/jvmMain/{kotlin,resources} are KMP defaults - no srcDir needed.
       // Kotlin needs the generated ANTLR Java on its source path to RESOLVE it
       // (it does not compile it - compileJvmMainJava does that, below).
       kotlin.srcDir(antlrOutputDir)
-      resources.srcDir("src/main/resources")
       dependencies {
         implementation(project(":api"))
         // Was runtimeOnly under the antlr plugin, which put the runtime on the
@@ -125,7 +124,6 @@ kotlin {
       }
     }
     val jvmTest by getting {
-      kotlin.srcDir("src/test/kotlin")
       dependencies {
         implementation("org.junit.jupiter:junit-jupiter-api:6.0.0")
         runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.0")
@@ -203,3 +201,11 @@ publishing {
 }
 
 artifacts.add(sourcesJarArtifacts.name, tasks.named("jvmSourcesJar"))
+
+// KMP renames the JVM test task from `test` to `jvmTest`. `./gradlew test` matches
+// by task NAME across projects, so without this alias it silently skips all 530 of
+// vim-engine's tests - 0 failures, 530 fewer tests, and a green build. Keeps the
+// command documented in CLAUDE.md and used by CI honest.
+tasks.register("test") {
+  dependsOn("jvmTest")
+}
