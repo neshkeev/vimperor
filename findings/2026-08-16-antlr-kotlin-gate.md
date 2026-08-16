@@ -552,6 +552,14 @@ compiler diagnostics, and Task 2's `javap`-derived reserved-member analysis.
 | `appendix/task-6-report.md` | Vimscript differential over the 1,865-command corpus; the extraction-script bug |
 | `appendix/task-7-report.md` | JUnit5 → `kotlin.test` migration sizing |
 
-The spike build itself is at `spike/antlr-kotlin/` (commits `01d792fdc` … `8ded495a5`). Per the
-plan, it is throwaway and should be deleted now that this finding is recorded; `findings/` is
-what survives.
+The spike build lived at `spike/antlr-kotlin/` and **has been deleted**, per the plan's
+throwaway policy, now that this finding is recorded. It remains fully recoverable from git
+history at commits `01d792fdc` … `8ded495a5` — `git checkout 8ded495a5 -- spike/antlr-kotlin`
+restores a working antlr-kotlin build if phase 1 wants a reference. `findings/` is what survives
+in the working tree.
+
+`appendix/controller-rulings.md` records the seven controller rulings made during the run —
+decisions that overrode or amended the plan, each with its rationale and its cost-if-wrong.
+Rulings 4, 5 and 6 are load-bearing on this report: Ruling 4 is the origin of caveat 2,
+Ruling 5 is why these appendices exist at all, and Ruling 6 created the runtime/library
+divergence bin used in §3.
