@@ -7,23 +7,25 @@
  */
 
 plugins {
-  kotlin("jvm")
+  kotlin("multiplatform")
 }
-
-val kotlinVersion: String by project
 
 repositories {
   maven { url = uri("https://cache-redirector.jetbrains.com/repo.maven.apache.org/maven2") }
 }
 
-dependencies {
-  testImplementation(platform("org.junit:junit-bom:6.1.3"))
-  testImplementation("org.junit.jupiter:junit-jupiter")
-  compileOnly("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
-  compileOnly("org.jetbrains:annotations:26.1.0")
-  compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
-}
+// PHASE 1 TASK 1 PROBE: does a KMP jvm target compile Java sources without the
+// `java` plugin? Sources left in place; only the build wiring changed.
+kotlin {
+  jvm()
 
-tasks.test {
-  useJUnitPlatform()
+  sourceSets {
+    val jvmMain by getting {
+      kotlin.srcDir("src/main/kotlin")
+      dependencies {
+        compileOnly("org.jetbrains:annotations:26.1.0")
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+      }
+    }
+  }
 }
