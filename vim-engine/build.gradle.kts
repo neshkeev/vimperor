@@ -105,6 +105,13 @@ kotlin {
   }
 
   sourceSets {
+    val commonMain by getting {
+      // Phase 1 task 5. Only files with no JVM-API dependency live here; the
+      // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
+      dependencies {
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+      }
+    }
     val jvmMain by getting {
       // src/jvmMain/{kotlin,resources} are KMP defaults - no srcDir needed.
       // Kotlin needs the generated ANTLR Java on its source path to RESOLVE it

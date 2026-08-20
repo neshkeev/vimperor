@@ -1,9 +1,9 @@
 file	destination	classification	blockers	workstreams
-com/maddyhome/idea/vim/KeyHandler.kt	jvmMain	direct	W2-keystroke;W4-java-util	W2,W4
+com/maddyhome/idea/vim/KeyHandler.kt	jvmMain	direct	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/CommandHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/CommandProvider.kt	jvmMain	direct	W4-java-io	W4
 com/maddyhome/idea/vim/action/EngineCommandProvider.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/action/CommandProvider.kt)	W4-java-io	W4
-com/maddyhome/idea/vim/action/ResetModeAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util	W2,W4
+com/maddyhome/idea/vim/action/ResetModeAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/SearchHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/ShowLastOutputAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/BreakUndoSequenceAction.kt	jvmMain	direct	W4-java-util	W4
@@ -53,7 +53,7 @@ com/maddyhome/idea/vim/action/change/insert/InsertAfterCursorAction.kt	jvmMain	t
 com/maddyhome/idea/vim/action/change/insert/InsertAfterLineEndAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertAtPreviousInsertAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertBackspaceAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/action/change/insert/InsertBeforeCursorAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/action/change/insert/InsertBeforeCursorAction.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/action/change/insert/InsertBeforeFirstNonBlankAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertCharacterAroundCursorAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertCompletedDigraphAction.kt	jvmMain	direct	W2-keystroke	W2
@@ -70,7 +70,7 @@ com/maddyhome/idea/vim/action/change/insert/InsertNewLineBelowAction.kt	jvmMain	
 com/maddyhome/idea/vim/action/change/insert/InsertPreviousInsertAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertRegisterAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/InsertSingleCommandAction.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/action/change/insert/InsertXCompletionAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/action/change/insert/InsertXCompletionAction.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/action/change/insert/ReplaceModeBackspace.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/VisualBlockAppendAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/change/insert/VisualInsertAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -87,25 +87,25 @@ com/maddyhome/idea/vim/action/ex/CommandLineActionHandler.kt	jvmMain	transitive(
 com/maddyhome/idea/vim/action/ex/CommandLineCompletionAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/ex/CommandLineParser.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/action/ex/CopyModelessSelectionAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/action/ex/DeleteNextCharAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/DeletePreviousCharAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/DeletePreviousWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/DeleteToCaretAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/action/ex/DeleteNextCharAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/DeletePreviousCharAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/DeletePreviousWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/DeleteToCaretAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/ex/ExEntryAction.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/action/ex/InsertCommandLineTextActions.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/InsertFilenameUnderCaretAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/action/ex/InsertFilenameUnderCaretAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/ex/LeaveCommandLineAction.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/action/ex/MoveCaretLeftAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/MoveCaretRightAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/MoveCaretToLineEnd.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/MoveCaretToLineStart.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/MoveCaretToNextBigWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/MoveCaretToPreviousBigWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/action/ex/MoveCaretLeftAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/MoveCaretRightAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/MoveCaretToLineEnd.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/MoveCaretToLineStart.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/MoveCaretToNextBigWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/MoveCaretToPreviousBigWordAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/ex/ProcessExEntryActions.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/action/ex/SelectNewerHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/SelectNewerHistoryFilteredAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/SelectOlderHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/action/ex/SelectOlderHistoryFilteredAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/action/ex/SelectNewerHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/SelectNewerHistoryFilteredAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/SelectOlderHistoryAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/action/ex/SelectOlderHistoryFilteredAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/action/ex/ToggleInsertModeAction.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/action/file/FileCloseAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/action/file/FileGetAsciiAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -261,30 +261,30 @@ com/maddyhome/idea/vim/api/MessageType.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/NativeAction.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/OptionProperties.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/Options.kt)	W4-java-lang	W4
 com/maddyhome/idea/vim/api/Options.kt	jvmMain	direct	W4-java-lang	W4
-com/maddyhome/idea/vim/api/OptionsPropertiesBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimStringParser.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/api/OptionsPropertiesBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimStringParser.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/SearchWindowGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/SelectionInfo.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/SpellcheckerService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/SystemInfoService.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimAbbreviationGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimAbbreviationGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimActionExecutor.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/api/VimActionExecutor.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimApplication.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimApplicationBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimApplication.kt)	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimCaret.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimCaretBase.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimCaretListener.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/api/VimChangeGroup.kt	jvmMain	direct	W2-keystroke	W2
-com/maddyhome/idea/vim/api/VimChangeGroupBase.kt	jvmMain	direct	W2-awt;W2-keystroke;W4-java-text-time;W4-java-util	W2,W4
+com/maddyhome/idea/vim/api/VimChangeGroup.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/api/VimChangeGroupBase.kt	jvmMain	direct	W2-awt;W2-keystroke;W4-java-text-time;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/VimClipboardManager.kt	jvmMain	direct	W2-awt	W2
-com/maddyhome/idea/vim/api/VimCommandGroup.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimCommandGroupBase.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimCommandLine.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/api/VimCommandGroup.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimCommandGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandGroup.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimCommandLine.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/VimCommandLineCaret.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimCommandLineService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimCommandLineServiceBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimDigraphGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimDigraphGroupBase.kt	jvmMain	direct	W4-java-util	W4
+com/maddyhome/idea/vim/api/VimDigraphGroupBase.kt	jvmMain	direct	W4-java-util;W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimDocument.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimEditor.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimEditorBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -296,24 +296,24 @@ com/maddyhome/idea/vim/api/VimExternalOpener.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimFile.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimFileBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimIndentConfig.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/api/VimInjector.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimInjectorBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/common/VimListenersNotifier.kt)	W4-java-util	W4
-com/maddyhome/idea/vim/api/VimJumpService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/api/VimInjector.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimInjectorBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimInjector.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimJumpService.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimJumpServiceBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimKeyGroup.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/api/VimKeyGroup.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/VimKeyGroupBase.kt	jvmMain	direct	W2-awt;W2-keystroke;W3-reflect;W4-java-util	W2,W3,W4
 com/maddyhome/idea/vim/api/VimKeymapGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimLookupManager.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimMarkService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimMarkServiceBase.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/api/VimMessages.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimMessagesBase.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/api/VimMessages.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimMessagesBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimMessages.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimModalInput.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimModalInputBase.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimModalInputService.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/api/VimMotionGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimMotionGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimOptionGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/api/VimMotionGroupBase.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimOptionGroup.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimOptionGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimOutputPanel.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimOutputPanelService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -328,42 +328,42 @@ com/maddyhome/idea/vim/api/VimRedrawService.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimRegexServiceBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/regexp/VimRegex.kt)	W4-java-util	W4
 com/maddyhome/idea/vim/api/VimRegexpService.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimScriptExecutorBase.kt	jvmMain	direct	W4-java-io	W4
-com/maddyhome/idea/vim/api/VimScriptFunctionServiceBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/functions/VimscriptFunctionProvider.kt)	W4-java-io	W4
+com/maddyhome/idea/vim/api/VimScriptFunctionServiceBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimscriptFunctionService.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimScrollGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimScrollingModel.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimSearchGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimSearchGroupBase.kt	jvmMain	direct	W2-keystroke;W4-java-text-time;W4-java-util	W2,W4
+com/maddyhome/idea/vim/api/VimSearchGroupBase.kt	jvmMain	direct	W2-keystroke;W4-java-text-time;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/VimSearchHelper.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/api/VimSearchHelperBase.kt	jvmMain	direct	W4-java-util	W4
+com/maddyhome/idea/vim/api/VimSearchHelperBase.kt	jvmMain	direct	W4-java-util;W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimStatistics.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimStorageService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimStorageServiceBase.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimStringParser.kt	jvmMain	direct	W2-keystroke	W2
-com/maddyhome/idea/vim/api/VimStringParserBase.kt	jvmMain	direct	W2-awt;W2-keystroke;W4-java-text-time;W4-java-util	W2,W4
+com/maddyhome/idea/vim/api/VimStringParser.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/api/VimStringParserBase.kt	jvmMain	direct	W2-awt;W2-keystroke;W4-java-text-time;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/api/VimTemplateManager.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimVirtualFile.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimVisualMotionGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimVisualMotionGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VimrcFileState.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/api/VimscriptExecutor.kt	jvmMain	direct	W4-java-io	W4
-com/maddyhome/idea/vim/api/VimscriptFunctionService.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/api/VimscriptParser.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/api/VimscriptFunctionService.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/api/VimscriptParser.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/commands/Command.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/api/VimscriptParserBase.kt	jvmMain	direct	W1-antlr	W1
 com/maddyhome/idea/vim/api/VirtualBufferGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/api/VirtualBufferKind.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/autocmd/AutoCmdEvent.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/command/Argument.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt)	W2-keystroke;W3-reflect;W4-java-util	W2,W3,W4
+com/maddyhome/idea/vim/command/Argument.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt)	W2-keystroke;W3-reflect;W4-java-util;W4-jb-annotations	W2,W3,W4
 com/maddyhome/idea/vim/command/Command.kt	jvmMain	direct	W4-java-util	W4
-com/maddyhome/idea/vim/command/CommandBuilder.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/command/CommandBuilder.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/command/CommandFlags.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/command/DuplicableOperatorAction.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/command/MappingMode.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/command/MappingProcessor.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/command/MappingState.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/command/OperatorArguments.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/common/ArgumentCapturer.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt)	W2-keystroke;W3-reflect;W4-java-util	W2,W3,W4
+com/maddyhome/idea/vim/common/ArgumentCapturer.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt)	W2-keystroke;W3-reflect;W4-java-util;W4-jb-annotations	W2,W3,W4
 com/maddyhome/idea/vim/common/ChangesListener.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/common/CommandAlias.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/common/CommandAlias.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/common/CurrentCommandState.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/DigraphResult.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/DigraphSequence.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
@@ -378,10 +378,10 @@ com/maddyhome/idea/vim/common/ListenerOwner.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/LiveRange.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/MacroRecordingListener.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/ModeChangeListener.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/common/TextRange.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/common/TextRange.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/common/VimCopiedText.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/VimEditorReplaceMask.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/common/VimListenersNotifier.kt	jvmMain	direct	W4-java-util	W4
+com/maddyhome/idea/vim/common/VimListenersNotifier.kt	jvmMain	direct	W4-java-util;W4-jb-annotations	W4
 com/maddyhome/idea/vim/common/VimPluginListener.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/common/VimRegisterListener.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/common/VimRing.kt	commonMain	-	-	-
@@ -389,15 +389,15 @@ com/maddyhome/idea/vim/common/VimVisualGroup.kt	jvmMain	transitive(+1 via com/ma
 com/maddyhome/idea/vim/common/VimYankListener.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
 com/maddyhome/idea/vim/diagnostic/VimLogger.kt	jvmMain	direct	W3-reflect	W3
 com/maddyhome/idea/vim/ex/ExException.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/ex/ExExceptions.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/helper/EngineMessageHelper.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/ex/ranges/Address.kt	jvmMain	direct	W4-java-util	W4
+com/maddyhome/idea/vim/ex/ExExceptions.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/ex/ranges/Address.kt	jvmMain	direct	W4-java-util;W4-jb-annotations	W4
 com/maddyhome/idea/vim/ex/ranges/LineRange.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/ex/ranges/Range.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/ex/ranges/Range.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/extension/ExtensionBean.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/extension/ExtensionHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/extension/ExtensionLoader.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/extension/JsonExtensionProvider.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/extension/LazyExtensionFunctionInstance.kt	jvmMain	direct	W3-reflect;W4-java-lang	W3,W4
+com/maddyhome/idea/vim/extension/LazyExtensionFunctionInstance.kt	jvmMain	direct	W3-reflect;W4-java-lang;W6-api-module	W3,W4,W6
 com/maddyhome/idea/vim/extension/LazyVimExtension.kt	jvmMain	direct	W4-java-lang	W4
 com/maddyhome/idea/vim/group/SearchGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/group/StringUtil.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -406,11 +406,11 @@ com/maddyhome/idea/vim/group/VimWindowGroup.kt	jvmMain	transitive(+1 via com/mad
 com/maddyhome/idea/vim/group/WindowGroupBase.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
 com/maddyhome/idea/vim/group/visual/EngineVisualGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/group/visual/EngineVisualModeHelper.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/group/visual/VimSelection.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/group/visual/VimSelection.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/group/visual/VisualChange.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/group/visual/VisualOperation.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/handler/ChangeEditorActionHandler.kt	jvmMain	direct	W4-java-lang	W4
-com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt	jvmMain	direct	W2-keystroke;W3-reflect;W4-java-util	W2,W3,W4
+com/maddyhome/idea/vim/handler/EditorActionHandlerBase.kt	jvmMain	direct	W2-keystroke;W3-reflect;W4-java-util;W4-jb-annotations	W2,W3,W4
 com/maddyhome/idea/vim/handler/ExternalActionHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/handler/Motion.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/handler/MotionActionHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -423,7 +423,7 @@ com/maddyhome/idea/vim/helper/CodeWrapper.kt	jvmMain	transitive(+1 via com/maddy
 com/maddyhome/idea/vim/helper/CommentLeaderParser.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/helper/EngineStringHelper.kt)	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/helper/CommenterToComments.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/helper/EngineStringHelper.kt)	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/helper/EngineHelper.kt	jvmMain	direct	W3-reflect;W4-java-util	W3,W4
-com/maddyhome/idea/vim/helper/EngineMessageHelper.kt	jvmMain	direct	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/helper/EngineMessageHelper.kt	jvmMain	direct	W4-java-text-time;W4-java-util;W4-jb-annotations	W4
 com/maddyhome/idea/vim/helper/EngineModeExtensions.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/helper/EngineStringHelper.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/helper/FiletypePresets.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/helper/EngineStringHelper.kt)	W2-awt;W2-keystroke	W2
@@ -433,16 +433,16 @@ com/maddyhome/idea/vim/helper/StrictMode.kt	jvmMain	transitive(+1 via com/maddyh
 com/maddyhome/idea/vim/helper/StringAndKeys.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/helper/VimLockLabel.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/helper/VimNlsSafe.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/history/HistoryBlock.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/history/HistoryBlock.kt	jvmMain	direct (found by task 5 compile)	W4-injector-toplevel	W4
 com/maddyhome/idea/vim/history/HistoryEntry.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/history/VimHistory.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/history/VimHistory.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/history/VimHistoryBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/diagnostic/VimLogger.kt)	W3-reflect	W3
 com/maddyhome/idea/vim/impl/state/VimStateMachineImpl.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/key/AbbreviationEntry.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/command/MappingMode.kt)	W4-java-util	W4
 com/maddyhome/idea/vim/key/AbbreviationMatching.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/key/AbbreviationSession.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/key/KeyConsumer.kt	jvmMain	direct	W2-keystroke	W2
-com/maddyhome/idea/vim/key/KeyMapping.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/key/KeyMapping.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/key/KeySource.kt	jvmMain	direct	W2-awt	W2
 com/maddyhome/idea/vim/key/KeyStack.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/key/KeyStrokeTrie.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
@@ -450,7 +450,7 @@ com/maddyhome/idea/vim/key/MappingInfo.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/key/Nodes.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/key/OperatorFunction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/key/RequiredShortcut.kt	jvmMain	direct	W2-keystroke	W2
-com/maddyhome/idea/vim/key/ShortcutOwner.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/key/ShortcutOwner.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/key/consumers/CharArgumentConsumer.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/key/consumers/CommandCountConsumer.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
 com/maddyhome/idea/vim/key/consumers/CommandKeyConsumer.kt	jvmMain	direct	W2-keystroke	W2
@@ -467,16 +467,16 @@ com/maddyhome/idea/vim/key/interceptors/VimInputInterceptor.kt	jvmMain	direct	W2
 com/maddyhome/idea/vim/key/interceptors/VimInputInterceptorBase.kt	jvmMain	direct	W2-keystroke	W2
 com/maddyhome/idea/vim/listener/ListenerSuppressor.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/diagnostic/VimLogger.kt)	W3-reflect	W3
 com/maddyhome/idea/vim/macro/VimMacro.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/macro/VimMacroBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util	W2,W4
+com/maddyhome/idea/vim/macro/VimMacroBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/mark/Jump.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/mark/Marks.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/mark/Marks.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/mark/VimMarkConstants.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/options/Option.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/options/OptionAccessScope.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/options/OptionChangeListener.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/options/OptionConstants.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/options/OptionDeclaredScope.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/options/helpers/ClipboardOptionHelper.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/options/helpers/ClipboardOptionHelper.kt	jvmMain	direct (found by task 5 compile)	W4-injector-toplevel	W4
 com/maddyhome/idea/vim/options/helpers/GuiCursorOptionHelper.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/options/helpers/KeywordOptionHelper.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/options/helpers/LangMapOptionHelper.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/Options.kt)	W4-java-lang	W4
@@ -515,11 +515,11 @@ com/maddyhome/idea/vim/regexp/engine/nfa/matcher/StartOfWordMatcher.kt	jvmMain	t
 com/maddyhome/idea/vim/regexp/engine/nfa/matcher/VisualAreaMatcher.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/regexp/engine/strategies/BacktrackingStrategy.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/regexp/engine/strategies/ImplicitDFAStrategy.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/regexp/engine/strategies/SimulationResult.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/regexp/engine/strategies/SimulationResult.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/common/TextRange.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/regexp/engine/strategies/SimulationStrategy.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/regexp/match/VimMatchGroup.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/regexp/match/VimMatchGroupCollection.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/regexp/match/VimMatchResult.kt	commonMain	-	-	-
+com/maddyhome/idea/vim/regexp/match/VimMatchGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/common/TextRange.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/regexp/match/VimMatchGroupCollection.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/common/TextRange.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/regexp/match/VimMatchResult.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/common/TextRange.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/regexp/parser/BracketNormalizer.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/regexp/parser/VimRegexParser.kt	jvmMain	direct	W1-antlr	W1
 com/maddyhome/idea/vim/regexp/parser/VimRegexParserResult.kt	jvmMain	direct	W1-antlr	W1
@@ -529,48 +529,48 @@ com/maddyhome/idea/vim/regexp/parser/error/VimRegexParserException.kt	commonMain
 com/maddyhome/idea/vim/regexp/parser/visitors/CollectionElementVisitor.kt	jvmMain	direct	W1-antlr;W4-java-lang	W1,W4
 com/maddyhome/idea/vim/regexp/parser/visitors/MultiVisitor.kt	jvmMain	direct	W1-antlr	W1
 com/maddyhome/idea/vim/regexp/parser/visitors/PatternVisitor.kt	jvmMain	direct	W1-antlr;W4-java-lang	W1,W4
-com/maddyhome/idea/vim/register/Register.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/register/Register.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/register/RegisterConstants.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/register/VimRegisterGroup.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/register/VimRegisterGroup.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/register/VimRegisterGroupBase.kt	jvmMain	direct	W2-keystroke;W4-java-lang;W4-java-util	W2,W4
-com/maddyhome/idea/vim/state/KeyHandlerState.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/command/CommandBuilder.kt)	W2-keystroke	W2
+com/maddyhome/idea/vim/state/KeyHandlerState.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/command/CommandBuilder.kt)	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/state/VimStateMachine.kt	jvmMain	direct	W4-java-util	W4
 com/maddyhome/idea/vim/state/mode/CtrlXCompletionMode.kt	commonMain	-	-	-
 com/maddyhome/idea/vim/state/mode/Mode.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/state/mode/editorExtensions.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/state/mode/modeExtensions.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/CommandScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/DigraphScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/ListenerScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/MappingScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/ModalInputImpl.kt	jvmMain	direct	W2-awt;W2-keystroke	W2
-com/maddyhome/idea/vim/thinapi/Modes.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/OptionScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/OutputPanelScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/Path.kt	jvmMain	direct	W4-java-io	W4
-com/maddyhome/idea/vim/thinapi/StorageScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/TabScopeImpl.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/TextObjectScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util	W2,W4
-com/maddyhome/idea/vim/thinapi/TextScopeImpl.kt	commonMain	-	-	-
-com/maddyhome/idea/vim/thinapi/ThinApi.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/thinapi/VariableScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/VimApiImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/VimHighlightingService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/thinapi/CommandScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/DigraphScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/ListenerScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/MappingScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/ModalInputImpl.kt	jvmMain	direct	W2-awt;W2-keystroke;W6-api-module	W2,W6
+com/maddyhome/idea/vim/thinapi/Modes.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/OptionScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/OutputPanelScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/Path.kt	jvmMain	direct	W4-java-io;W6-api-module	W4,W6
+com/maddyhome/idea/vim/thinapi/StorageScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/TabScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/TextObjectScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/TextScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/ThinApi.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/VariableScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/VimApiImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/VimHighlightingService.kt	jvmMain	direct	W6-api-module	W6
 com/maddyhome/idea/vim/thinapi/VimPluginService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/commandline/CommandLineReadImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/thinapi/commandline/CommandLineScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/commandline/CommandLineTransactionImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCommandLine.kt)	W2-keystroke	W2
-com/maddyhome/idea/vim/thinapi/editor/EditorAccessorImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/editor/EditorScopeImpl.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/editor/ReadScopeImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/editor/TransactionImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/editor/caret/CaretReadImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/thinapi/editor/caret/CaretTransactionImpl.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/thinapi/commandline/CommandLineReadImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/commandline/CommandLineScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/commandline/CommandLineTransactionImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/EditorAccessorImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/EditorScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/ReadScopeImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/TransactionImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/caret/CaretReadImpl.kt	jvmMain	direct	W6-api-module	W6
+com/maddyhome/idea/vim/thinapi/editor/caret/CaretTransactionImpl.kt	jvmMain	direct	W6-api-module	W6
 com/maddyhome/idea/vim/undo/LineChange.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/undo/VimKeyBasedUndoService.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/undo/VimTimestampBasedUndoService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/VimCaret.kt)	W2-keystroke	W2
 com/maddyhome/idea/vim/undo/VimUndoRedo.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/Executable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/vimscript/model/Executable.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/ExecutionResult.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/LazyInstance.kt	jvmMain	direct	W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/Script.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -584,7 +584,7 @@ com/maddyhome/idea/vim/vimscript/model/commands/CallCommand.kt	jvmMain	transitiv
 com/maddyhome/idea/vim/vimscript/model/commands/ClearJumpsCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/CmdClearCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/CmdCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/commands/Command.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/vimscript/model/commands/Command.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/commands/CopyTextCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/DelCmdCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/DeleteLinesCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -616,7 +616,7 @@ com/maddyhome/idea/vim/vimscript/model/commands/MoveTextCommand.kt	jvmMain	trans
 com/maddyhome/idea/vim/vimscript/model/commands/NextFileCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/NextTabCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/NoHLSearchCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/commands/NormalCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util	W2,W4
+com/maddyhome/idea/vim/vimscript/model/commands/NormalCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/vimscript/model/commands/OnlyCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/PackaddCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/PlugCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -660,23 +660,23 @@ com/maddyhome/idea/vim/vimscript/model/commands/YankLinesCommand.kt	jvmMain	tran
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/AbbrevArguments.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/command/MappingMode.kt)	W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/AbbrevClearCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/AbbrevCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/commands/mapping/CommandInfo.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/command/MappingMode.kt)	W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/commands/mapping/CommandInfo.kt	jvmMain	direct	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/LoadKeymapCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/MapClearCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/commands/mapping/MapCommand.kt	jvmMain	direct	W2-keystroke;W4-java-util	W2,W4
-com/maddyhome/idea/vim/vimscript/model/commands/mapping/ParseMapCommandArguments.kt	jvmMain	direct	W2-keystroke	W2
+com/maddyhome/idea/vim/vimscript/model/commands/mapping/MapCommand.kt	jvmMain	direct	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
+com/maddyhome/idea/vim/vimscript/model/commands/mapping/ParseMapCommandArguments.kt	jvmMain	direct	W2-keystroke;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/ScriptEncodingCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/ToggleLanguageInsertModeAction.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/UnMapCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/commands/mapping/UnabbrevCommand.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/datatypes/VimBlob.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/datatypes/VimDataType.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/datatypes/VimDictionary.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/datatypes/VimDictionary.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt	jvmMain	direct	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/datatypes/VimFuncref.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/datatypes/VimInt.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/datatypes/VimList.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/datatypes/VimString.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/datatypes/VimList.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/model/datatypes/VimString.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/BinExpression.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/CurlyBracesName.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/DictionaryExpression.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
@@ -697,21 +697,21 @@ com/maddyhome/idea/vim/vimscript/model/expressions/SublistExpression.kt	jvmMain	
 com/maddyhome/idea/vim/vimscript/model/expressions/TruthyExpressions.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/UnaryExpression.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/VariableExpression.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/AssignmentOperator.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/BinaryOperator.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/AssignmentOperator.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/BinaryOperator.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/UnaryOperator.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/ArithmeticOperatorHandlers.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/ArithmeticOperatorHandlers.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/BinaryOperatorHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/BitwiseShiftHandlers.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/helper/EngineMessageHelper.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/ComparisonOperatorHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/BitwiseShiftHandlers.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/ComparisonOperatorHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/ConcatenationHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/DoesNotMatchHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/EqualToHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/GreaterThanHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/GreaterThanOrEqualToHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/GreaterThanHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/GreaterThanOrEqualToHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/IsHandler.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/LessThanHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
-com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/LessThanOrEqualToHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/LessThanHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/LessThanOrEqualToHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/ex/ExExceptions.kt)	W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/LogicalOperatorHandlers.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/binary/MatchesHandler.kt	jvmMain	transitive(+2 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
 com/maddyhome/idea/vim/vimscript/model/expressions/operators/handlers/unary/ArithmeticUnaryOperatorHandlers.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/vimscript/model/datatypes/VimFloat.kt)	W4-java-text-time;W4-java-util	W4
@@ -807,7 +807,7 @@ com/maddyhome/idea/vim/vimscript/model/statements/loops/ForLoop.kt	jvmMain	trans
 com/maddyhome/idea/vim/vimscript/model/statements/loops/WhileLoop.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/variables/HighLightVariable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/variables/KeyVariable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/model/variables/RegisterVariable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util	W2,W4
+com/maddyhome/idea/vim/vimscript/model/variables/RegisterVariable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/KeyHandler.kt)	W2-keystroke;W4-java-util;W4-jb-annotations	W2,W4
 com/maddyhome/idea/vim/vimscript/model/variables/ValueVariable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/model/variables/Variable.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/vimscript/parser/DeletionInfo.kt	commonMain	-	-	-
@@ -817,8 +817,8 @@ com/maddyhome/idea/vim/vimscript/parser/visitors/ExecutableVisitor.kt	jvmMain	di
 com/maddyhome/idea/vim/vimscript/parser/visitors/ExpressionVisitor.kt	jvmMain	direct	W1-antlr	W1
 com/maddyhome/idea/vim/vimscript/parser/visitors/ScriptVisitor.kt	jvmMain	direct	W1-antlr	W1
 com/maddyhome/idea/vim/vimscript/parser/visitors/VisitorHelper.kt	jvmMain	direct	W1-antlr	W1
-com/maddyhome/idea/vim/vimscript/services/VariableService.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
-com/maddyhome/idea/vim/vimscript/services/VimRcService.kt	jvmMain	direct	W4-java-io;W4-java-lang	W4
+com/maddyhome/idea/vim/vimscript/services/VariableService.kt	jvmMain	direct	W4-jb-annotations	W4
+com/maddyhome/idea/vim/vimscript/services/VimRcService.kt	jvmMain	direct	W4-java-io;W4-java-lang;W4-jb-annotations	W4
 com/maddyhome/idea/vim/vimscript/services/VimVariableServiceBase.kt	jvmMain	direct	W3-reflect	W3
 com/maddyhome/idea/vim/yank/VimYankGroup.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4
 com/maddyhome/idea/vim/yank/YankGroupBase.kt	jvmMain	transitive(+1 via com/maddyhome/idea/vim/api/EngineEditorHelper.kt)	W4-java-io;W4-java-lang	W4

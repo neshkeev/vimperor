@@ -7,17 +7,22 @@
 
 ---
 
+> **Superseded in part by task 5.** The headline below said 73 files / 8.9 %. Task 5 compiled
+> the list and the verified figure is **64 files / 7.8 %**. Two blockers were missing from this
+> analysis and one classifier gap was found; all three are recorded in §7. The structural
+> findings (§2, §3) are unaffected and were confirmed, not weakened, by the correction.
+
 ## Headline
 
 | | files | share |
 |---|---:|---:|
-| `commonMain` | **73** | **8.9 %** |
-| `jvmMain` | 750 | 91.1 % |
-| — of which *directly* blocked | 195 | 23.7 % |
-| — of which blocked only *transitively* | 555 | 67.4 % |
+| `commonMain` (**compile-verified, task 5**) | **64** | **7.8 %** |
+| `jvmMain` | 759 | 92.2 % |
+| — of which *directly* blocked | 241 | 29.3 % |
+| — of which blocked only *transitively* | 518 | 62.9 % |
 
 **The spec's "~95 % of today's engine moves to `commonMain`" is wrong by an order of
-magnitude.** The achievable figure in phase 1 is ~9 %. Per the plan's own instruction, this is
+magnitude.** The achievable figure in phase 1 is **7.8 %**. Per the plan's own instruction, this is
 reported as a finding about the spec, not as a failure of the task.
 
 The spec's error is not in its blocker inventory — that was close to right (see §4). It is that
@@ -135,3 +140,39 @@ all-or-nothing result an artefact. The core cycle was then confirmed edge-by-edg
 Not verified by compilation. Task 5 is what proves each of the 73 actually compiles in
 `commonMain`; the plan already requires that any file which fails goes back to `jvmMain` with
 its blocker recorded.
+
+---
+
+## 7. Corrections from task 5 (compile-verified)
+
+Task 5 moved the list and compiled it. Three defects in this analysis surfaced:
+
+**Two missing blockers**, both found before the move by inspecting what the candidate set
+actually imported:
+
+1. **`org.jetbrains.annotations`** (`@Contract`, `@NonNls`, `@TestOnly`) — a Java-only library,
+   **43 files** module-wide, 2 of them in the candidate set. Classified W4.
+2. **`com.intellij.vim.api.*`** — the `:api` module has no common variant, so anything
+   referencing it cannot compile in `commonMain`. **27 files**. Tracked as **W6**, a workstream
+   the spec did not have: *give `:api` a `commonMain`*. Only 1 candidate file
+   (`thinapi/TextScopeImpl.kt`) was affected.
+
+Adding both dropped the predicted count from 73 to 66.
+
+**One classifier gap**, found by the compiler rather than by inspection. Two files
+(`history/HistoryBlock.kt`, `options/helpers/ClipboardOptionHelper.kt`) failed to compile on
+`injector` and `globalOptions`, both declared in the jvm-bound `api/VimInjector.kt`. The
+symbol-extraction regex missed both declaration forms:
+
+- `lateinit var injector` — `lateinit` was absent from the modifier alternation, so the
+  declaration was never indexed.
+- `fun VimInjector.globalOptions()` — for an extension function the regex captured the
+  **receiver type**, not the function name.
+
+Both files were returned to `jvmMain` per task 5 step 3. **64** files remain in `commonMain`.
+
+This is the expected direction of error and the reason the plan requires compilation rather
+than trusting the list: the heuristic over-approximates *edges* (never under-counting
+dependencies) but under-approximates the *symbol table*, so it can only ever be optimistic
+about a specific file. The structural conclusion is unaffected — the corrections moved the
+figure from 8.9 % to 7.8 %, further from the spec's 95 %, not closer.
