@@ -23,6 +23,51 @@ reorganisation and a build conversion, nothing else.
 4. `git diff --stat` shows **zero** changes to `.kt` file *contents* outside of package/import
    lines and the build files. Moves, not edits.
 
+---
+
+## AMENDMENTS after task 1 (see `2026-08-16-phase-1-task-1-antlr-kmp-gate.md`)
+
+Three of these change how *every* later task must be verified. They are not optional.
+
+**A1 — `buildPlugin` is part of every gate, not just the final one.**
+Removing the `java` plugin deletes the `sourcesJarArtifacts` configuration the root project
+consumes (root `build.gradle.kts:132`). The failure mode: **`./gradlew test` passes while
+`./gradlew buildPlugin` fails.** A test-only gate would have let this through. Every gate below
+that says "full suite" means **`buildPlugin` + full suite**.
+
+**A2 — Verify mass moves with `--no-build-cache`.**
+After moving 823 files, `compileKotlinJvm` reported `UP-TO-DATE`, then a `clean` build reported
+`BUILD SUCCESSFUL` while pulling a **stale entry from the Gradle build cache** — 184 classes
+instead of 1,689, with `VimInjectorBase` absent. The engine jar was near-empty and the root
+project failed with dozens of `Unresolved reference 'injector'` errors that looked like real
+source damage and were not. `--no-build-cache` produced the correct 1,689 classes from
+identical sources.
+
+> A green build after a mass move is not trustworthy unless the cache was disabled.
+
+This applies to task 5 above all, which moves files in batches.
+
+**A3 — Option (c) is struck; the answer is (a′).**
+Task 1 proved options (a) and (b) impossible (the `antlr` plugin applies `java-library`; KGP
+hard-errors with KMP) but found (a′), which the plan did not contain: drop the ANTLR *plugin*,
+keep the ANTLR *tool* via `JavaExec`, and feed its output to the jvm target's own
+`compileJvmMainJava`. A KMP jvm target compiles Java with no `java` plugin and no `withJava()`.
+**No JVM-only parser subproject is needed.**
+
+**A4 — The publishing question is closed, and it is a non-issue.**
+`vim-engine/gradle.properties` has `engineVersion=` and `uploadUrl=` **both empty**; no CI
+workflow publishes `vim-engine`; nothing in the repo consumes the
+`com.maddyhome.idea.vim:vim-engine` coordinate. The publishing block is vestigial and the
+maven repo is a no-op. KMP's coordinate change (`-jvm` suffix + metadata module) carries no
+risk here. Task 3 step 5's "check and report" is discharged.
+
+**A5 — `api` has no tests at all.** Its JUnit/BOM dependencies were dead weight; removed.
+It is 33 source files, not the spec's "~10 small files".
+
+**A6 — Grammars moved to `vim-engine/antlr/`, not under a source set.** They are a tool input
+and are target-neutral — under W1 they will feed `commonMain`, so parking them in `jvmMain`
+would encode the wrong intent.
+
 ## Two decisions taken before this plan
 
 - **W1 (ANTLR → antlr-kotlin) is deferred out of phase 1.** The parser subpackage and the
