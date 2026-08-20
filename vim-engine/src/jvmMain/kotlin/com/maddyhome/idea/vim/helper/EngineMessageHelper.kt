@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.helper
 
-import org.jetbrains.annotations.PropertyKey
+import com.maddyhome.idea.vim.annotations.PropertyKey
 import java.text.MessageFormat
 import java.util.*
 

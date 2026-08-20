@@ -9,7 +9,7 @@ package com.maddyhome.idea.vim.ex
 
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
-import org.jetbrains.annotations.PropertyKey
+import com.maddyhome.idea.vim.annotations.PropertyKey
 
 class InvalidCommandException(message: String, cmd: String?) : ExException(message + if (cmd != null) " | $cmd" else "")
 

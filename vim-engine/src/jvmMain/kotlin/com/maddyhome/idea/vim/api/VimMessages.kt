@@ -9,7 +9,7 @@
 package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
-import org.jetbrains.annotations.PropertyKey
+import com.maddyhome.idea.vim.annotations.PropertyKey
 
 interface VimMessages {
   /**

@@ -14,7 +14,7 @@ import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.expressions.VariableExpression
-import org.jetbrains.annotations.ApiStatus.Internal
+import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.annotations.TestOnly
 import kotlin.reflect.KType
 

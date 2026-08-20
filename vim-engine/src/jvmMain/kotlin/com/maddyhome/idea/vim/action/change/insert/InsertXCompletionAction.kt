@@ -17,7 +17,7 @@ import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
 import com.maddyhome.idea.vim.state.mode.CtrlXCompletionMode
-import org.jetbrains.annotations.Contract
+import com.maddyhome.idea.vim.annotations.Contract
 
 @CommandOrMotion(keys = ["<C-X>"], modes = [Mode.INSERT])
 class InsertXCompletionAction : ChangeEditorActionHandler.SingleExecution() {

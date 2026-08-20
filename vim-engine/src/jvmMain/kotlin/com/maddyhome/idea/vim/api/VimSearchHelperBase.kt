@@ -23,8 +23,8 @@ import com.maddyhome.idea.vim.regexp.VimRegexOptions
 import com.maddyhome.idea.vim.regexp.match.VimMatchResult
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
-import org.jetbrains.annotations.Contract
-import org.jetbrains.annotations.Range
+import com.maddyhome.idea.vim.annotations.Contract
+import com.maddyhome.idea.vim.annotations.Range
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.abs

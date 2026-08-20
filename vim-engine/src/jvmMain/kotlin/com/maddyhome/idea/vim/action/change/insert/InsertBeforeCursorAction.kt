@@ -16,7 +16,7 @@ import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
-import org.jetbrains.annotations.Contract
+import com.maddyhome.idea.vim.annotations.Contract
 
 @CommandOrMotion(keys = ["i", "<Insert>"], modes = [Mode.NORMAL])
 class InsertBeforeCursorAction : ChangeEditorActionHandler.SingleExecution() {

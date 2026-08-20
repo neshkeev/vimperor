@@ -26,7 +26,7 @@ import com.maddyhome.idea.vim.handler.toMotionOrError
 import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.isEndAllowedIgnoringOnemore
-import org.jetbrains.annotations.Range
+import com.maddyhome.idea.vim.annotations.Range
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.max

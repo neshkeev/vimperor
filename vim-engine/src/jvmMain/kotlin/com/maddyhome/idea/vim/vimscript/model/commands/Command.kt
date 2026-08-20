@@ -27,7 +27,7 @@ import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
 import com.maddyhome.idea.vim.vimscript.model.Executable
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
-import org.jetbrains.annotations.ApiStatus
+import com.maddyhome.idea.vim.annotations.Obsolete
 
 enum class CommandModifier {
   NONE,
@@ -222,7 +222,7 @@ sealed class Command(
      * Obsolete: It used to start a write action automatically, but now all actions are supposed to take care of locks
      * individually.
      */
-    @ApiStatus.Obsolete
+    @Obsolete
     WRITABLE,
 
     /**
@@ -231,7 +231,7 @@ sealed class Command(
      * Obsolete: It used to start a read action automatically, but now all actions are supposed to take care of locks
      * individually.
      */
-    @ApiStatus.Obsolete
+    @Obsolete
     READ_ONLY,
 
     /**

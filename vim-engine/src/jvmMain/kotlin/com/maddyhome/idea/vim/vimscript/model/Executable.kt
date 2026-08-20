@@ -12,7 +12,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.vimscript.parser.DeletionInfo
-import org.jetbrains.annotations.ApiStatus.Internal
+import com.maddyhome.idea.vim.annotations.Internal
 
 interface Executable : VimLContext {
 

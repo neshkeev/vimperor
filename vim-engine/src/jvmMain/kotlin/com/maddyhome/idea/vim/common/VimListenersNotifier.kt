@@ -13,7 +13,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import org.jetbrains.annotations.ApiStatus.Internal
+import com.maddyhome.idea.vim.annotations.Internal
 import java.util.concurrent.ConcurrentLinkedDeque
 
 @Internal // please do not use this class in your plugins, API is not final and will be changed in future releases

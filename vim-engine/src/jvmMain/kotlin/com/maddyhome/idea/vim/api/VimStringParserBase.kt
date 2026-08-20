@@ -9,7 +9,7 @@
 package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import org.jetbrains.annotations.Contract
+import com.maddyhome.idea.vim.annotations.Contract
 import com.maddyhome.idea.vim.annotations.NonNls
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent

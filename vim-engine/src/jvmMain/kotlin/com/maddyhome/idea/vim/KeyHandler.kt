@@ -38,7 +38,8 @@ import com.maddyhome.idea.vim.key.consumers.StartSelectRegisterConsumer
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.state.mode.Mode
-import org.jetbrains.annotations.ApiStatus
+import com.maddyhome.idea.vim.annotations.Internal
+import com.maddyhome.idea.vim.annotations.ScheduledForRemoval
 import java.util.concurrent.ConcurrentLinkedDeque
 import javax.swing.KeyStroke
 
@@ -76,7 +77,7 @@ class KeyHandler {
   /**
    * This is an internal API of IdeaVim. External plugins must not use it.
    */
-  @ApiStatus.Internal
+  @Internal
   fun addCommandListener(listener: () -> Unit) {
     commandListener.add(listener)
   }
@@ -84,7 +85,7 @@ class KeyHandler {
   /**
    * This is an internal API of IdeaVim. External plugins must not use it.
    */
-  @ApiStatus.Internal
+  @Internal
   fun removeAllCommandListeners() {
     commandListener.clear()
   }
@@ -139,7 +140,7 @@ class KeyHandler {
     "Use handleKey(editor, key, keySource, context, keyState)",
     replaceWith = ReplaceWith("handleKey(editor, key, KeySource.TYPED, context, keyState)")
   )
-  @ApiStatus.ScheduledForRemoval
+  @ScheduledForRemoval
   fun handleKey(editor: VimEditor, key: KeyStroke, context: ExecutionContext, keyState: KeyHandlerState) {
     handleKey(editor, key, KeySource.TYPED, context, keyState)
   }
@@ -150,7 +151,7 @@ class KeyHandler {
     "Use `handleKey(editor, key, context, allowKeyMappings, keyState)` instead.",
     replaceWith = ReplaceWith("handleKey(editor, key, context, allowKeyMappings, keyState)")
   )
-  @ApiStatus.ScheduledForRemoval
+  @ScheduledForRemoval
   fun handleKey(
     editor: VimEditor,
     key: KeyStroke,
