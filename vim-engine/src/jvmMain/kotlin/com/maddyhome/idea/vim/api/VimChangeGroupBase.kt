@@ -48,8 +48,8 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimTimestampBasedUndoService
 import com.maddyhome.idea.vim.vimscript.model.commands.SortOption
-import org.jetbrains.annotations.NonNls
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.TestOnly
 import java.awt.event.KeyEvent
 import java.math.BigInteger
 import java.util.*

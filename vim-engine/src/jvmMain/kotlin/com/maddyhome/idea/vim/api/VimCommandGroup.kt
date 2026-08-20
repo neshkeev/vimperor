@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.common.CommandAlias
 import com.maddyhome.idea.vim.common.GoalCommand
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 
 interface VimCommandGroup {
   fun isAlias(command: String): Boolean

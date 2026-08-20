@@ -12,7 +12,7 @@ import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.expressions.Scope
 import com.maddyhome.idea.vim.vimscript.model.functions.FunctionHandler
 import com.maddyhome.idea.vim.vimscript.model.statements.FunctionDeclaration
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 
 interface VimscriptFunctionService {
   fun deleteFunction(name: String, scope: Scope? = null, vimContext: VimLContext)

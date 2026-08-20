@@ -9,7 +9,7 @@
 package com.maddyhome.idea.vim.vimscript.model.commands.mapping
 
 import com.maddyhome.idea.vim.command.MappingMode
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 
 internal class CommandInfo(
   @NonNls val prefix: String,

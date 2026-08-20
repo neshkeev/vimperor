@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.history
 
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 
 interface VimHistory {
   /**

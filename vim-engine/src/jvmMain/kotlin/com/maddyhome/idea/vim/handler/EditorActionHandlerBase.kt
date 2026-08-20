@@ -21,7 +21,7 @@ import com.maddyhome.idea.vim.helper.noneOfEnum
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 import java.util.*
 import javax.swing.KeyStroke
 

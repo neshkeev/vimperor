@@ -12,7 +12,7 @@ import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 import javax.swing.KeyStroke
 
 interface VimRegisterGroup {

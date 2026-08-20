@@ -11,7 +11,7 @@ package com.maddyhome.idea.vim.mark
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.mark.Mark.KeySorter.ORDER
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 
 interface Mark {
   val key: Char

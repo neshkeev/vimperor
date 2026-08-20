@@ -13,8 +13,8 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.debug
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.vimscript.model.commands.IdeaPlug
-import org.jetbrains.annotations.NonNls
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.TestOnly
 import java.io.IOException
 import java.nio.file.Path
 import kotlin.io.path.Path

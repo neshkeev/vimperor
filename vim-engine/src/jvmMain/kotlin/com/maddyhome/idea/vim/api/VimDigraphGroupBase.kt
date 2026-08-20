@@ -13,7 +13,7 @@ package com.maddyhome.idea.vim.api
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.EngineStringHelper
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 import java.util.*
 import kotlin.math.ceil
 

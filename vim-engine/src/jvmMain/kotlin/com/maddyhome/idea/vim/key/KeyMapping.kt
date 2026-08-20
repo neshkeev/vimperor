@@ -13,7 +13,7 @@ import com.maddyhome.idea.vim.extension.ExtensionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.key.KeyStrokeTrie.TrieNode
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 import javax.swing.KeyStroke
 
 data class KeyMappingEntry(private val node: TrieNode<MappingInfo>) {

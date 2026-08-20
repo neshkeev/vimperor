@@ -9,7 +9,7 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 
 interface VimActionExecutor {
 

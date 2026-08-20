@@ -14,7 +14,7 @@ import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.key.AbbreviationContext
 import com.maddyhome.idea.vim.key.findAndResolveAbbreviation
 import com.maddyhome.idea.vim.options.helpers.KeywordOptionHelper.isKeyword
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.TestOnly
 import javax.swing.KeyStroke
 
 interface VimCommandLine {

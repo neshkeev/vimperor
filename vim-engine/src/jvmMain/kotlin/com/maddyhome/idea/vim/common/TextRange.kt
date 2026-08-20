@@ -8,7 +8,7 @@
 package com.maddyhome.idea.vim.common
 
 import org.jetbrains.annotations.Contract
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 import kotlin.math.max
 import kotlin.math.min
 

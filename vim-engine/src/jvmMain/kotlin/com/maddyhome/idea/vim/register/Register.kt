@@ -11,7 +11,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.VimCopiedText
 import com.maddyhome.idea.vim.helper.EngineStringHelper
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import org.jetbrains.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.NonNls
 import javax.swing.KeyStroke
 
 // TODO should we prefer keys over text, as they are more informative?

@@ -11,8 +11,8 @@ import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.ex.exExceptionMessage
-import org.jetbrains.annotations.NonNls
-import org.jetbrains.annotations.TestOnly
+import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.annotations.TestOnly
 
 /**
  * Handles the set of range values entered as part of an Ex command.
