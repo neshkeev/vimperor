@@ -219,3 +219,48 @@ would be a guess. `SmileCommand` reads an ASCII-art resource off the classpath a
 
 No file has more than 10 errors left; the largest are `VimDigraphGroupBase` (10),
 `VimJumpServiceBase` (8) and `KeyHandler` (8).
+
+
+---
+
+# Update 3: 45 errors in ~20 files
+
+| | errors |
+|---|---:|
+| first run | 2153 |
+| after `:vim-annotations` | 308 |
+| after `DigraphUnicodeBlock` | 220 |
+| after the codepoint helpers | 171 |
+| after `javaClass` | 133 |
+| after imports and `serialization-core` | 104 |
+| after the JVM-API tail | **45** |
+
+**98 % of the original error count is gone.** What is left is no longer a tail:
+
+- **`runBlocking` (11) and 6 suspend-call errors**, all in `thinapi/*ScopeImpl`. The extension API
+  exposes suspend functions and the scopes call them from non-suspend context by blocking. JS
+  cannot block. This is a design question about the extension API, not a substitution.
+- **`Runnable` (6)** - engine API taking `java.lang.Runnable`; `() -> Unit` would do, but it
+  changes signatures the plugin calls.
+- **`Cloneable` (4)** - Kotlin/JS has no `Cloneable`. The four classes keep their `clone()`; only
+  the marker interface has to go.
+- **2 `synchronized` blocks in `KeyHandler`** - unsupported on Kotlin/JS. Needs the same treatment
+  as `ConcurrentCollections`: an expect/actual that is a real lock on the JVM and a pass-through
+  where there are no threads.
+- 2 type-inference failures in `LangMapOptionHelper`.
+
+## A near-miss worth recording
+
+The sweep was done with regular expressions over 24 files, and two of them were wrong in ways the
+JVM compiler caught only by luck:
+
+- `assert(` was replaced blindly. That renamed two *declarations* - `NFA.assert(...)`, a regex-engine
+  method, and `StrictMode.assert(...)`, IdeaVim's own helper - along with all their call sites. It
+  compiled locally and broke a file in `jvmMain` that had never been touched, which is the only
+  reason it was noticed.
+- `String(x)` lacked a word boundary and rewrote the inside of `getSingleQuotedString(editor)` into
+  `getSingleQuoted` + `editor.concatToString()`.
+
+Both were reverted precisely rather than patched over. The lesson is narrow and practical: a
+textual rewrite cannot tell a call from a declaration, and `assert`, `String`, `format` and `stream`
+are all words a codebase uses for its own things.

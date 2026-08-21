@@ -17,7 +17,9 @@ import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.helper.StringTokenizer
 import com.maddyhome.idea.vim.helper.charCategoryOf
 import com.maddyhome.idea.vim.helper.codePointAt
+import com.maddyhome.idea.vim.helper.hexString
 import com.maddyhome.idea.vim.helper.isRightToLeft
+import com.maddyhome.idea.vim.helper.octString
 import kotlin.math.ceil
 
 private val logger = vimLogger<VimDigraphGroup>()
@@ -27,11 +29,11 @@ open class VimDigraphGroupBase : VimDigraphGroup {
   override fun getCharacterForDigraph(ch1: Char, ch2: Char): Int {
     fun getCodepoint(ch1: Char, ch2: Char, digraphs: Map<String, Int>): Int? {
       val chars = charArrayOf(ch1, ch2)
-      var digraph = String(chars)
+      var digraph = chars.concatToString()
       return digraphs.getOrElse(digraph) {
         chars[0] = ch2
         chars[1] = ch1
-        digraph = String(chars)
+        digraph = chars.concatToString()
         digraphs[digraph]  // Possibly null
       }
     }
@@ -68,26 +70,14 @@ open class VimDigraphGroupBase : VimDigraphGroup {
     if (codepoint < 0x100) {
       injector.messages.showMessage(
         editor,
-        String.format(
-          "<%s>  %d,  Hex %02x,  Oct %03o%s",
-          EngineStringHelper.toPrintableCharacter(codepoint),
-          codepoint,
-          codepoint,
-          codepoint,
-          digraphText,
-        ),
+        "<" + EngineStringHelper.toPrintableCharacter(codepoint) + ">  " + codepoint +
+          ",  Hex " + hexString(codepoint, 2) + ",  Oct " + octString(codepoint, 3) + digraphText,
       )
     } else {
       injector.messages.showMessage(
         editor,
-        String.format(
-          "<%s> %d, Hex %04x, Oct %o%s",
-          EngineStringHelper.toPrintableCharacter(codepoint),
-          codepoint,
-          codepoint,
-          codepoint,
-          digraphText,
-        ),
+        "<" + EngineStringHelper.toPrintableCharacter(codepoint) + "> " + codepoint +
+          ", Hex " + hexString(codepoint, 4) + ", Oct " + codepoint.toUInt().toString(8) + digraphText,
       )
     }
   }
@@ -97,7 +87,7 @@ open class VimDigraphGroupBase : VimDigraphGroup {
     while (i < defaultDigraphs.size) {
       if (defaultDigraphs[i] != '\u0000' && defaultDigraphs[i + 1] != '\u0000') {
         val codepoint = defaultDigraphs[i + 2].code
-        val digraph = String(defaultDigraphs, i, 2)
+        val digraph = defaultDigraphs.concatToString(i, i + 2)
         digraphToCodepoint[digraph] = codepoint
         if (!codepointToDigraph.contains(codepoint)) {
           codepointToDigraph[codepoint] = digraph
@@ -259,13 +249,6 @@ open class VimDigraphGroupBase : VimDigraphGroup {
     return length - start - invisibleCharAdjustment
   }
 
-  private fun isRightToLeft(codepoint: Int): Boolean {
-    val directionality = Character.getDirectionality(codepoint)
-    return directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT
-      || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
-      || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_EMBEDDING
-      || directionality == Character.DIRECTIONALITY_RIGHT_TO_LEFT_OVERRIDE
-  }
 
   private fun isCombiningCharacter(codepoint: Int): Boolean {
     val type = charCategoryOf(codepoint)

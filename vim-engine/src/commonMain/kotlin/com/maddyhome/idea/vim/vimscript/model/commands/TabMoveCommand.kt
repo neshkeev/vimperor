@@ -48,13 +48,13 @@ data class TabMoveCommand(val range: Range, val modifier: CommandModifier, val a
         argument += "1"
       }
       index = if (argument.startsWith("+")) {
-        val number = Integer.parseInt(argument.substring(1))
+        val number = (argument.substring(1)).toInt()
         if (number == 0) {
           throw exExceptionMessage("E474")
         }
         currentIndex + number
       } else if (argument.startsWith("-")) {
-        val number = Integer.parseInt(argument.substring(1))
+        val number = (argument.substring(1)).toInt()
         if (number == 0) {
           throw exExceptionMessage("E474")
         }
@@ -62,7 +62,7 @@ data class TabMoveCommand(val range: Range, val modifier: CommandModifier, val a
       } else if (argument == "$" || argument.isBlank()) {
         tabCount - 1
       } else {
-        var number = Integer.parseInt(argument)
+        var number = (argument).toInt()
 
         // it's strange, but it is the way Vim works
         if (number > currentIndex) number -= 1

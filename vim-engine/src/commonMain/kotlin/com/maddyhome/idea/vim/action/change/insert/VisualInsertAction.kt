@@ -42,7 +42,7 @@ class VisualInsertAction : VisualOperatorActionHandler.SingleExecution() {
     operatorArguments: OperatorArguments,
   ): Boolean {
     if (editor.isOneLineMode()) return false
-    val vimSelection = caretsAndSelections.values.stream().findFirst().orElse(null) ?: return false
+    val vimSelection = caretsAndSelections.values.firstOrNull() ?: return false
     return if (vimSelection.type == SelectionType.BLOCK_WISE) {
       injector.changeGroup.initBlockInsert(editor, context, vimSelection.toVimTextRange(false), false)
     } else {

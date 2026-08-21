@@ -137,7 +137,7 @@ class ModalInputImpl(
       // todo: see if this makes sense
       if (key.keyCode == VimKeyCodes.VK_BACK_SPACE) {
         if (textBuffer.isNotEmpty()) {
-          textBuffer.deleteCharAt(textBuffer.length - 1)
+          textBuffer.deleteAt(textBuffer.length - 1)
         }
         return null
       }

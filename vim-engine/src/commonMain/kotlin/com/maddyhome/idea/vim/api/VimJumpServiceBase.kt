@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.maddyhome.idea.vim.helper.currentTimeMillis
 import com.maddyhome.idea.vim.mark.Jump
 
 abstract class VimJumpServiceBase : VimJumpService {
@@ -18,9 +19,9 @@ abstract class VimJumpServiceBase : VimJumpService {
     // Update timestamp to suppress Platform's recentPlaceAdded events caused by
     // Ctrl-O/Ctrl-I cursor movements (see lastJumpTimeStamp doc).
     // Small margin accounts for PlaceInfo being created slightly after this call.
-    lastJumpTimeStamp = System.currentTimeMillis() + JUMP_NAVIGATION_SUPPRESS_MS
+    lastJumpTimeStamp = currentTimeMillis() + JUMP_NAVIGATION_SUPPRESS_MS
     val jumps = projectToJumps[projectId] ?: mutableListOf()
-    projectToJumpSpot.putIfAbsent(projectId, -1)
+    if (projectId !in projectToJumpSpot) projectToJumpSpot[projectId] = -1
     val index = jumps.size - 1 - (projectToJumpSpot[projectId]!! - count)
     return jumps.getOrNull(index)?.also {
       projectToJumpSpot[projectId] = projectToJumpSpot[projectId]!! - count
@@ -36,9 +37,9 @@ abstract class VimJumpServiceBase : VimJumpService {
   }
 
   override fun addJump(projectId: String, jump: Jump, reset: Boolean) {
-    lastJumpTimeStamp = System.currentTimeMillis() + JUMP_NAVIGATION_SUPPRESS_MS
+    lastJumpTimeStamp = currentTimeMillis() + JUMP_NAVIGATION_SUPPRESS_MS
     val jumps = projectToJumps.getOrPut(projectId) { mutableListOf() }
-    jumps.removeIf { it.filepath == jump.filepath && it.line == jump.line }
+    jumps.removeAll { it.filepath == jump.filepath && it.line == jump.line }
     jumps.add(jump)
 
     projectToJumpSpot[projectId] = if (reset) -1 else (projectToJumpSpot[projectId] ?: -1) + 1
@@ -55,7 +56,7 @@ abstract class VimJumpServiceBase : VimJumpService {
   }
 
   override fun removeJump(projectId: String, jump: Jump) {
-    projectToJumps[projectId]?.removeIf { it == jump }
+    projectToJumps[projectId]?.removeAll { it == jump }
   }
 
   override fun dropLastJump(projectId: String) {

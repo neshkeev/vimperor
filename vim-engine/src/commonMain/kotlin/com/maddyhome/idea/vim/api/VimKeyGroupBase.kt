@@ -172,7 +172,7 @@ abstract class VimKeyGroupBase : VimKeyGroup {
 
   private fun unregisterKeyMapping(owner: MappingOwner) {
     val oldSize = requiredShortcutKeys.size
-    requiredShortcutKeys.removeIf { it.owner == owner }
+    requiredShortcutKeys.removeAll { it.owner == owner }
     if (requiredShortcutKeys.size != oldSize) {
       updateShortcutKeysRegistration()
     }

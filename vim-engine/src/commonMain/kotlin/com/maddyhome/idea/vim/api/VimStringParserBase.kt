@@ -97,7 +97,7 @@ abstract class VimStringParserBase : VimStringParser {
         return escape
       }
       try {
-        name = String(toChars(keyCode))
+        name = toChars(keyCode).concatToString()
       } catch (_: IllegalArgumentException) {
       }
     }

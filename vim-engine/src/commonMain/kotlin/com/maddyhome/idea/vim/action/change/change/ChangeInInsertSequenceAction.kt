@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
+import com.maddyhome.idea.vim.helper.nanoTime
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimTimestampBasedUndoService
 
@@ -31,7 +32,7 @@ abstract class ChangeInInsertSequenceAction : ChangeEditorActionHandler.ForEachC
     when (undo) {
       is VimKeyBasedUndoService -> undo.setInsertNonMergeUndoKey()
       is VimTimestampBasedUndoService -> {
-        undo.startInsertSequence(caret, caret.offset, System.nanoTime())
+        undo.startInsertSequence(caret, caret.offset, nanoTime())
       }
     }
     val result = executeInInsertSequence(editor, caret, context, argument, operatorArguments)

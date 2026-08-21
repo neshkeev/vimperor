@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.helper.EngineStringHelper.toPrintableCharacters
 import com.maddyhome.idea.vim.helper.MAX_CODE_POINT
+import com.maddyhome.idea.vim.helper.hexString
 import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
@@ -75,11 +76,11 @@ object EngineStringHelper {
 //      return "~" + (char)(c - (('A' - 1) * 3));
     } else if (CharacterHelper.isInvisibleControlCharacter(codepoint) || CharacterHelper.isZeroWidthCharacter(codepoint)) {
       if (codepoint > 0xff) {
-        return String.format("<%04x>", codepoint)
+        return "<" + hexString(codepoint, 4) + ">"
       }
-      return String.format("<%02x>", codepoint)
+      return "<" + hexString(codepoint, 2) + ">"
     }
-    return String(toChars(codepoint))
+    return toChars(codepoint).concatToString()
   }
 
   fun isPrintableCharacter(c: Char) = c.code >= 32 && c.code != 127
@@ -103,7 +104,7 @@ object EngineStringHelper {
     val builder = StringBuilder()
     scanPrintable(
       string,
-      onToken = { _, codepoint -> builder.appendCodePoint(codepoint) },
+      onToken = { _, codepoint -> builder.append(toChars(codepoint)) },
       onLiteral = { _, char -> builder.append(char) },
     )
     return builder.toString()

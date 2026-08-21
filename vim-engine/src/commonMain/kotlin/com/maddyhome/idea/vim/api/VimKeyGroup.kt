@@ -216,14 +216,14 @@ fun VimKeyGroup.getAllMappingInfoWithMode(prefix: List<VimKeyStroke>, modes: Set
         // Remember that `fromKeysPool` is mutable and shouldn't be stored as a key!
         entry.collectPath(fromKeysPool)
         if (multiModeMappings[fromKeysPool]?.contains(originalModes) != true) {
-          multiModeMappings.computeIfAbsent(fromKeysPool.toList()) { mutableSetOf() }.add(originalModes)
+          multiModeMappings.getOrPut(fromKeysPool.toList()) { mutableSetOf() }.add(originalModes)
           val currentModes = getCurrentModes(fromKeysPool, originalModes)
           results.add(MappingInfoWithMode(mappingInfo, currentModes))
         }
       }
     }
   }
-  results.sortWith(Comparator.comparing { it.mappingInfo })
+  results.sortWith(compareBy { it.mappingInfo })
   return results
 }
 

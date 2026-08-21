@@ -172,7 +172,7 @@ class DigraphSequence : Cloneable {
           codeChars[codeCnt++] = key.keyChar
           return if (codeCnt == codeMax) {
             digraphState = DigraphState.DIG_STATE_PENDING
-            val digits = String(codeChars, 0, codeCnt)
+            val digits = codeChars.concatToString(0, codeCnt)
             val codepoint = digits.toInt(codeType)
             done(codepoint)
           } else {
@@ -181,7 +181,7 @@ class DigraphSequence : Cloneable {
         } else if (codeCnt > 0) {
           logger.debug("invalid")
           digraphState = DigraphState.DIG_STATE_PENDING
-          val digits = String(codeChars, 0, codeCnt)
+          val digits = codeChars.concatToString(0, codeCnt)
           val codepoint = digits.toInt(codeType)
           if (!injector.application.isUnitTest()) {
             // The key we received isn't part of the literal, so post it to be handled after we've handled the literal.

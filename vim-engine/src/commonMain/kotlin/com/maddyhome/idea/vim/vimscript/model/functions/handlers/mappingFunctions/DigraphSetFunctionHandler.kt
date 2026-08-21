@@ -34,11 +34,11 @@ internal class DigraphSetFunctionHandler : BinaryFunctionHandler<VimInt>() {
       throw exExceptionMessage("E1214", chars)
     }
 
-    if (digraph.codePointCount(0, digraph.length) != 1) {
+    if (codePointCount(digraph, 0, digraph.length) != 1) {
       throw exExceptionMessage("E1215", digraph)
     }
 
-    injector.digraphGroup.setDigraph(chars, digraph.codePointAt(0))
+    injector.digraphGroup.setDigraph(chars, codePointAt(digraph, 0))
     return VimInt.ONE
   }
 }

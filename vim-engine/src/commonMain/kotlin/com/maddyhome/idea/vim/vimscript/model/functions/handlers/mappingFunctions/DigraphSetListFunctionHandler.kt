@@ -40,11 +40,11 @@ internal class DigraphSetListFunctionHandler : UnaryFunctionHandler<VimInt>() {
       }
 
       val digraph = it.values[1].toVimString().value
-      if (digraph.codePointCount(0, digraph.length) != 1) {
+      if (codePointCount(digraph, 0, digraph.length) != 1) {
         throw exExceptionMessage("E1215", digraph)
       }
 
-      injector.digraphGroup.setDigraph(chars, digraph.codePointAt(0))
+      injector.digraphGroup.setDigraph(chars, codePointAt(digraph, 0))
     }
 
     return VimInt.ONE

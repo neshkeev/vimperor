@@ -28,6 +28,7 @@ import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.LineRange
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.ex.ranges.toTextRange
+import com.maddyhome.idea.vim.helper.vimAssert
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMark
 import com.maddyhome.idea.vim.put.PutData
@@ -121,7 +122,7 @@ data class MoveTextCommand(val range: Range, val modifier: CommandModifier, val 
     injector.put.putTextForCaret(editor, caret, context, putData)
 
     if (dropNewLineInEnd) {
-      assert(editor.text().last() == '\n')
+      vimAssert(editor.text().last() == '\n')
       injector.application.runWriteAction {
         editor.deleteString(TextRange(editor.text().length - 1, editor.text().length))
       }

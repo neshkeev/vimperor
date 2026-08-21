@@ -11,6 +11,8 @@ package com.maddyhome.idea.vim.options
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.indexOfSubList
+import com.maddyhome.idea.vim.helper.putFirst
+import com.maddyhome.idea.vim.helper.putLast
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimInt
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString

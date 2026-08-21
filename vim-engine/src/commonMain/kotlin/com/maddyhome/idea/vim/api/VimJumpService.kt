@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.mark.Jump
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.helper.currentTimeMillis
 
 // todo should it be multicaret?
 // todo docs
@@ -19,7 +20,7 @@ import com.maddyhome.idea.vim.annotations.TestOnly
  */
 interface VimJumpService {
   /**
-   * Timestamp (`System.currentTimeMillis()`) of the last Jump command <C-o>, <C-i>
+   * Timestamp (`currentTimeMillis()`) of the last Jump command <C-o>, <C-i>
    * it's a temporary sticky tape to avoid difficulties with Platform, which counts <C-o>, <C-i> as new jump locations
    * and messes up our jump list
    */

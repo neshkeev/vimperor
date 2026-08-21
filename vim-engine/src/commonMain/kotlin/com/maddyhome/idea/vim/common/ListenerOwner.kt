@@ -17,7 +17,7 @@ sealed class ListenerOwner {
   @ConsistentCopyVisibility
   data class Plugin private constructor(val name: String) : ListenerOwner() {
     companion object {
-      fun get(name: String): Plugin = allOwners.computeIfAbsent(name) { Plugin(it) }
+      fun get(name: String): Plugin = allOwners.getOrPut(name) { Plugin(name) }
 
       fun remove(name: String): Plugin? = allOwners.remove(name)
 

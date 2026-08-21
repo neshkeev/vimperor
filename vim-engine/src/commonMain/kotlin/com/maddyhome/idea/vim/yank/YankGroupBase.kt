@@ -22,6 +22,7 @@ import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.handler.MotionActionHandler
+import com.maddyhome.idea.vim.helper.vimAssert
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import kotlin.math.min
 
@@ -74,7 +75,7 @@ open class YankGroupBase : VimYankGroup {
       val motionRange = injector.motion.getMotionRange(editor, caret, context, argument, operatorArguments)
         ?: continue
 
-      assert(motionRange.size() == 1)
+      vimAssert(motionRange.size() == 1)
       startOffsets?.put(caret, motionRange.normalize().startOffset)
 
       // Yank motion commands that are not linewise become linewise if all the following are true:

@@ -480,7 +480,7 @@ class KeyHandler {
   }
 
   companion object {
-    val lock: Any = Object()
+    val lock: Any = Any()
     private val logger: VimLogger = vimLogger<KeyHandler>()
 
     internal fun <T> isPrefix(list1: List<T>, list2: List<T>): Boolean {

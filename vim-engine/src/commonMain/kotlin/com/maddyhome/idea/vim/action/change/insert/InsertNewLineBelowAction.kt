@@ -77,7 +77,7 @@ private fun insertNewLineAbove(editor: VimEditor, context: ExecutionContext) {
 
   // Check if the "last character on previous line" has a guard
   // This is actively used in pycharm notebooks https://youtrack.jetbrains.com/issue/VIM-2495
-  val hasGuards = moves.stream().anyMatch { (_, second): Pair<VimCaret?, Int?> ->
+  val hasGuards = moves.any { (_, second): Pair<VimCaret?, Int?> ->
     editor.document.getOffsetGuard(second!!) != null
   }
   if (!hasGuards) {

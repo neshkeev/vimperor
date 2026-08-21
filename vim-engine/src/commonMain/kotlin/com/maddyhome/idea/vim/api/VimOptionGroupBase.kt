@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.helper.StrictMode
+import com.maddyhome.idea.vim.helper.vimAssert
 import com.maddyhome.idea.vim.options.EffectiveOptionValueChangeListener
 import com.maddyhome.idea.vim.options.GlobalOptionChangeListener
 import com.maddyhome.idea.vim.options.NumberOption
@@ -709,7 +710,7 @@ abstract class GlobalLocalOptionToGlobalLocalExternalSettingMapper<T : VimDataTy
   override fun getGlobalValue(storedValue: OptionValue<T>, editor: VimEditor?): OptionValue<T> {
     // If we assume that the user cannot change the local value, it makes it a lot easier to know if the current
     // effective value is global or global-local (set by IdeaVim)
-    assert(!canUserModifyExternalLocalValue)
+    vimAssert(!canUserModifyExternalLocalValue)
 
     if (editor != null && storedValue is OptionValue.Default) {
       // IdeaVim thinks the global value is default, so return the global external value
@@ -752,7 +753,7 @@ abstract class GlobalLocalOptionToGlobalLocalExternalSettingMapper<T : VimDataTy
   override fun getLocalValue(storedValue: OptionValue<T>?, editor: VimEditor): OptionValue<T> {
     // If we assume that the user cannot change the local value, it makes it a lot easier to know if the current
     // effective value is global or global-local (set by IdeaVim)
-    assert(!canUserModifyExternalLocalValue)
+    vimAssert(!canUserModifyExternalLocalValue)
 
     if (storedValue == null) {
       // The local IdeaVim value hasn't been initialised yet. All we can do is use the local/effective external value

@@ -93,7 +93,7 @@ class VimListenersNotifier {
    * Removes listeners with a given listener owner.
    */
   private fun <T : Listener> unloadListeners(listenerOwner: ListenerOwner, listenerCollection: MutableCollection<T>) {
-    listenerCollection.removeIf { it.owner == listenerOwner }
+    listenerCollection.removeAll { it.owner == listenerOwner }
   }
 
   fun unloadListeners(listenerOwner: ListenerOwner) {

@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
+import com.maddyhome.idea.vim.helper.nanoTime
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimTimestampBasedUndoService
 
@@ -36,7 +37,7 @@ class BreakUndoSequenceAction : VimActionHandler.SingleExecution() {
     when (undo) {
       is VimKeyBasedUndoService -> undo.setInsertNonMergeUndoKey(refresh = true)
       is VimTimestampBasedUndoService -> {
-        val nanoTime = System.nanoTime()
+        val nanoTime = nanoTime()
         editor.forEachCaret { undo.endInsertSequence(it, it.offset, nanoTime) }
       }
     }
