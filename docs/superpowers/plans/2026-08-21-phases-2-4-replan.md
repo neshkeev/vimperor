@@ -267,6 +267,46 @@ overstated the work remaining:
 Both mistakes share a shape: a rule that was true when written, kept being applied after the thing
 it described had changed. Worth expecting more of that as the port continues.
 
+## The move is done, 2026-08-21
+
+Stage 3a unlocked the core; this actually moves the files. `commonMain` is no longer a projection.
+
+| | before | after |
+|---|---:|---:|
+| `vim-engine/src/commonMain` | 78 | **783** |
+| `vim-engine/src/jvmMain` | 770 | **65** |
+
+**92.3 % of the engine now compiles as common Kotlin.** The starting figure in this document was
+8 %, and the spec it superseded predicted ~95 % without a way to get there.
+
+### What the compiler found that the classifier did not
+
+The move was driven by the dependency classifier, which is an approximation, so the compiler was
+the real check. It rejected 32 of the 718 files across two rounds. Three distinct causes, all
+worth recording:
+
+1. **`*.jvm.kt` actuals were in the movable list.** The fix that stopped them being counted as
+   *blockers* also stopped them being counted as *blocked*, so they looked movable. They are the
+   one category of file that can never move. Excluded explicitly now.
+
+2. **`@NonNls` on an `enum class` did not compile in common.** The `expect` declaration's
+   `@Target` list was narrower than the JVM `actual`, which is a Java `TYPE_USE` annotation
+   accepting far more positions. In `jvmMain` the name resolves through the typealias to the Java
+   annotation and its broad targets, so the mismatch was invisible until the file compiled as
+   common. **An `expect` narrower than its `actual` is a latent error that only the common compile
+   finds** - worth checking the other shims against real usage rather than against intent.
+
+3. **`thinapi/ThinApi.kt` mixes `java.nio.file` code with extension helpers** (`caretId`,
+   `toApiMark`, `toRange`, `toTextSelectionType`) that most of the package uses. One file being
+   JVM-bound holds 14 others back. Splitting it is the single highest-value item left in the
+   engine, and is leaf work.
+
+### What stays in jvmMain, and why
+
+65 files: 8 `*.jvm.kt` actuals that belong there permanently, 15 `thinapi` bridge files behind
+`ThinApi.kt`, the ANTLR-generated parser visitors (W1), the deprecated regex classes, and a
+handful of genuinely host-bound services.
+
 ## Estimate honesty
 
 Phase 1's spec estimate was wrong by 12×. The numbers here are measured from the current tree,

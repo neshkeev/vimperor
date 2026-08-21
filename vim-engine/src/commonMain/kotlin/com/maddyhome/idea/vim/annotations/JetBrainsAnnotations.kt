@@ -27,6 +27,11 @@ package com.maddyhome.idea.vim.annotations
   AnnotationTarget.LOCAL_VARIABLE,
   AnnotationTarget.ANNOTATION_CLASS,
   AnnotationTarget.TYPE,
+  // The JVM actual is a Java TYPE_USE annotation and so accepts far more positions than these.
+  // The engine annotates enum classes, which only failed once those files compiled as common: in
+  // jvmMain `NonNls` resolves through the typealias to the Java annotation and its broader targets.
+  // An `expect` narrower than its `actual` is a latent error that only the common compile finds.
+  AnnotationTarget.CLASS,
 )
 expect annotation class NonNls()
 
