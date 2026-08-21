@@ -8,21 +8,13 @@
 
 package com.maddyhome.idea.vim.vimscript.model
 
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.MethodType
-
 /**
- * Abstract class representing a lazily loaded instance of a specified class. The class is dynamically
- * loaded and instantiated at runtime, using the provided class name and class loader. This approach is
- * useful for deferring the loading and instantiation of a class until it is actually needed, reducing
- * initial memory footprint and startup time.
+ * A value built on first use, deferring the cost until something actually needs it.
+ *
+ * [factory] is supplied by whoever knows how to make one. On the JVM that is a reflective
+ * constructor call built by the providers; the point of taking a lambda is that this class no
+ * longer has to know that.
  */
-abstract class LazyInstance<T>(private val className: String, private val classLoader: ClassLoader) {
-  open val instance: T by lazy {
-    val aClass = classLoader.loadClass(className)
-    val lookup = MethodHandles.privateLookupIn(aClass, MethodHandles.lookup())
-    val instance = lookup.findConstructor(aClass, MethodType.methodType(Void.TYPE)).invoke()
-    @Suppress("UNCHECKED_CAST")
-    instance as T
-  }
+abstract class LazyInstance<T>(private val factory: () -> T) {
+  open val instance: T by lazy { factory() }
 }

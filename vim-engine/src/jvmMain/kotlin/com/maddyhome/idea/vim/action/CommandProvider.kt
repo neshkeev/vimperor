@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.action
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.MappingMode
+import com.maddyhome.idea.vim.vimscript.model.reflectiveFactory
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -35,7 +36,7 @@ interface CommandProvider {
       .map {
         val keys = it.value.map { bean -> injector.parser.parseKeys(bean.keys) }.toSet()
         val modes = it.value.first().modes.map { mode -> MappingMode.parseModeChar(mode) }.toSet()
-        LazyVimCommand(keys, modes, it.key, classLoader)
+        LazyVimCommand(keys, modes, it.key, reflectiveFactory(it.key, classLoader))
       }
   }
 

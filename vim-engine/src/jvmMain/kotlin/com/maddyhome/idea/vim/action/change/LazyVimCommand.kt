@@ -17,15 +17,13 @@ open class LazyVimCommand(
   val keys: Set<List<VimKeyStroke>>,
   val modes: Set<MappingMode>,
   className: String,
-  classLoader: ClassLoader,
-) : LazyInstance<EditorActionHandlerBase>(className, classLoader) {
+  factory: () -> EditorActionHandlerBase,
+) : LazyInstance<EditorActionHandlerBase>(factory) {
   val actionId: String = EditorActionHandlerBase.getActionId(className)
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (javaClass != other?.javaClass) return false
-
-    other as LazyVimCommand
+    if (other !is LazyVimCommand) return false
 
     if (keys != other.keys) return false
     if (modes != other.modes) return false

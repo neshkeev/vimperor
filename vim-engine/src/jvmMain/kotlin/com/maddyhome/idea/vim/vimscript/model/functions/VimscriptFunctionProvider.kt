@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.vimscript.model.functions
 
+import com.maddyhome.idea.vim.vimscript.model.reflectiveFactory
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
@@ -20,7 +21,7 @@ interface VimscriptFunctionProvider {
   fun getFunctions(): Collection<LazyVimscriptFunction> {
     val classLoader = this.javaClass.classLoader
     val functionDict: Map<String, String> = Json.decodeFromStream(getFile())
-    return functionDict.map { LazyVimscriptFunction(it.key, it.value, classLoader) }
+    return functionDict.map { LazyVimscriptFunction(it.key, reflectiveFactory(it.value, classLoader)) }
   }
 
   private fun getFile(): InputStream {
