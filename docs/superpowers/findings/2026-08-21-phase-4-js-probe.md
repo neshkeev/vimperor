@@ -373,3 +373,67 @@ predict.
 and `TextObjectScopeImpl` says "bridged via runBlocking for now". The port did not create this
 problem; it removed every other reason not to deal with it, and made the JVM's tolerance of
 `runBlocking` the only thing still hiding it.
+
+
+---
+
+# Option 1 measured, and a reason to reconsider it
+
+Option 1 - make the engine's own interfaces `suspend` - was attempted end to end and then reverted.
+The code is gone; the measurement is the point.
+
+## What it costs
+
+| | |
+|---|---:|
+| files touched | **447** |
+| `suspend` markers added | **672** |
+| files still needing individual judgement when it stalled | 17 |
+| **new `runBlocking` calls on the JVM host** | **11 and rising** |
+
+Most of it is mechanical and was applied by script: the compiler names every override that needs
+`suspend`, and three small scripts (add to override, add to base declaration, add to enclosing
+function) took it from 224 errors to 26 in a few rounds. That part works.
+
+It stalls on lambdas passed to non-inline higher-order functions - `MappingProcessor`,
+`EditorActionHandlerBase.process`, the key consumers, `ReduceFunctionHandler`. Each needs a
+decision about whether that particular callback should be suspend, and several are on the
+key-handling hot path.
+
+## The finding that matters
+
+**Option 1 does not remove blocking. It moves it into the host and multiplies it.**
+
+The chain terminates wherever the engine meets an IntelliJ callback API, because those take Java
+functional interfaces that a suspend lambda cannot cross. The clearest case is caret iteration:
+
+```kotlin
+override suspend fun forEachCaret(action: suspend (VimCaret) -> Unit) {
+  editor.caretModel.runForEachCaret({ runBlocking { action(IjVimCaret(it)) } }, false)
+}
+```
+
+`runForEachCaret` is IntelliJ's, takes a `CaretAction`, and has no suspend form. So the JVM host
+ends up calling `runBlocking` **inside the caret loop, on the EDT, once per caret**, for every
+multi-caret action. Before this change the JVM had seven `runBlocking` calls, all in `thinapi`.
+After it, the engine has none and the host has eleven, with more to come from the sites that had
+not been reached yet.
+
+That is not obviously wrong - blocking genuinely is a host concern, and a JVM host is allowed to
+block - but it is a different trade than "largest change, no behavioural difference between hosts".
+There is a plausible performance and deadlock-risk regression on the JVM that was not part of the
+decision as it was put.
+
+It works today only because nothing in the engine actually suspends: the markers are structural, so
+every coroutine completes without yielding. The first engine path that really suspends would
+deadlock on the EDT.
+
+## What this suggests
+
+Option 2 - dropping `suspend` from the extension API - now looks better than it did, because option
+1's benefit is narrower than advertised: it makes the *engine* neutral while making the *JVM host*
+block more often and in worse places. Option 2 removes the blocking from both.
+
+The counter-argument stands: option 2 removes the ability for an extension callback to suspend at
+all, and it is a published API. But that is a smaller and more honest cost than seven `runBlocking`
+calls becoming eleven-plus, several of them per-caret on the EDT.
