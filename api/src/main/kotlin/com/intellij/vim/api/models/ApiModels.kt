@@ -8,6 +8,8 @@
 
 package com.intellij.vim.api.models
 
+import kotlin.jvm.JvmInline
+
 /**
  * Represents the type of text selection in Vim.
  */

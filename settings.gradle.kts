@@ -32,6 +32,7 @@ rootProject.name = "IdeaVIM"
 include("vim-engine")
 include("scripts")
 include("annotation-processors")
+include("vim-annotations")
 include("tests:java-tests")
 include("tests:property-tests")
 include("tests:long-running-tests")

@@ -28,4 +28,5 @@ dependencies {
     exclude("org.jetbrains.kotlin", "kotlin-stdlib-common")
   }
   api(project(":api"))
+  api(project(":vim-annotations"))
 }

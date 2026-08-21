@@ -99,6 +99,9 @@ ksp {
 
 kotlin {
   jvm()
+  // No `js` target yet - deliberately. The probe recorded in
+  // docs/superpowers/findings/2026-08-21-phase-4-js-probe.md compiles 729 of commonMain's 798
+  // files; enabling it here would leave `./gradlew build` red until the remaining 69 are done.
 
   compilerOptions {
     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)
@@ -112,6 +115,7 @@ kotlin {
         // :api is multiplatform as of W6, so common code can depend on it. `implementation`
         // rather than `api`, matching the visibility this had when it sat in jvmMain.
         implementation(project(":api"))
+        implementation(project(":vim-annotations"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
       }
     }

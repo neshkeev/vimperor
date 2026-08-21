@@ -24,7 +24,7 @@ data class Color(
    * @param b Blue component (0-255).
    * @param a Alpha component (0-255), defaults to 255 (fully opaque).
    */
-  constructor(r: Int, g: Int, b: Int, a: Int = 255) : this(String.format("#%02x%02x%02x%02x", r, g, b, a))
+  constructor(r: Int, g: Int, b: Int, a: Int = 255) : this("#" + hex2(r) + hex2(g) + hex2(b) + hex2(a))
 
   /**
    * The red component of the color (0-255).
@@ -53,3 +53,13 @@ data class Color(
     }
   }
 }
+
+/**
+ * One component as two lowercase hex digits, matching `String.format("%02x", value)`.
+ *
+ * `toUInt()` rather than `toString(16)` directly because Java formats `%x` as an unsigned 32-bit
+ * value: `String.format("%02x", -1)` is `ffffffff`, where `(-1).toString(16)` would be `-1`.
+ * Components are documented as 0-255, but nothing enforces that, so the out-of-range behaviour is
+ * reproduced rather than quietly changed.
+ */
+private fun hex2(value: Int): String = value.toUInt().toString(16).padStart(2, '0')
