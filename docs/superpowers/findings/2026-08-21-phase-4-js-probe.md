@@ -156,3 +156,66 @@ Grouped:
   rather than a substitution. The call sites assume they can block; JS has no way to.
 - **the tail (~50)** - `System`, `Runnable`, `Cloneable`, `String.format`, `removeIf`,
   `computeIfAbsent`, `assert`, and two `synchronized` blocks that Kotlin/JS does not support at all.
+
+
+---
+
+# Update 2: 104 errors in 48 files
+
+| | errors |
+|---|---:|
+| first run | 2153 |
+| after extracting `:vim-annotations` | 308 |
+| after `DigraphUnicodeBlock` | 220 |
+| after the codepoint helpers | 171 |
+| after the `javaClass` rewrite | 133 |
+| after `kotlin.jvm` imports and `serialization-core` | **104** |
+
+**95 % of the original error count is gone.**
+
+Two of these were not code problems at all, which is worth separating from the real work:
+
+- **`kotlin.jvm.*` is in the JVM default imports and not the common ones.** `@JvmStatic` and
+  `@JvmField` had always been written without an import, which is correct in `jvmMain` and does not
+  resolve in `commonMain`. 23 errors, fixed by adding the import to 24 files. Note the trap on the
+  way: `@Throws` is `kotlin.Throws`, a default import, and `kotlin.jvm.Throws` is deprecated - so
+  adding the "matching" import for it *created* 9 errors before removing it fixed them.
+- **`kotlinx-serialization` was only declared for `jvmMain`**, as the `-jvm` artifact.
+  `serialization-core` is multiplatform and now sits in `commonMain`.
+
+`javaClass` went to zero. Most sites were `javaClass != other.javaClass` in `equals`, which becomes
+`this::class != other::class` because `KClass` is multiplatform - only `kotlin.reflect.full` is not.
+Three sites needed more care because their output is user-visible: `platformCanonicalName` (`:map`
+prints it) and `platformClassToString` (a command alias prints it) are expect/actual, because
+canonical, binary and `toString` forms differ from each other and reconstructing one from another
+would be a guess. `SmileCommand` reads an ASCII-art resource off the classpath and moved to
+`jvmMain`.
+
+## What is actually left
+
+| unresolved reference | count |
+|---|---:|
+| `runBlocking` | 11 |
+| `it` | 8 |
+| `Runnable` | 6 |
+| `System` | 6 |
+| `Character` | 5 |
+| `format` | 4 |
+| `removeIf` | 4 |
+| `assert` | 4 |
+| `Cloneable` | 4 |
+| `stream` | 3 |
+| `computeIfAbsent` | 3 |
+| `Integer` | 3 |
+| `codePointCount` | 2 |
+| `codePointAt` | 2 |
+
+- **`runBlocking` (11) and 8 suspend-call errors** - still the one item that needs a decision
+  rather than a substitution.
+- **2 `synchronized` blocks** - Kotlin/JS does not support them at all.
+- **the rest** - `System`, `Runnable`, `Cloneable`, `String.format`, `removeIf`, `computeIfAbsent`,
+  `Integer`, `stream`, `assert`, and 9 deprecated `String(CharArray, ...)` constructors that want
+  `concatToString`.
+
+No file has more than 10 errors left; the largest are `VimDigraphGroupBase` (10),
+`VimJumpServiceBase` (8) and `KeyHandler` (8).

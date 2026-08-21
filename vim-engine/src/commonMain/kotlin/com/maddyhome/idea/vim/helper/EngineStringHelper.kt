@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.helper.MAX_CODE_POINT
 import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import kotlin.jvm.JvmStatic
 
 object EngineStringHelper {
   fun toPrintableCharacters(keys: List<VimKeyStroke>): String {

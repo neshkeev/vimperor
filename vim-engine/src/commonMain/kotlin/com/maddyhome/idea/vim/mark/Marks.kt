@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.mark.Mark.KeySorter.ORDER
 import com.maddyhome.idea.vim.annotations.NonNls
+import kotlin.jvm.JvmStatic
 
 interface Mark {
   val key: Char

@@ -10,6 +10,8 @@ package com.maddyhome.idea.vim.key
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.annotations.NonNls
+import kotlin.jvm.JvmField
+import kotlin.jvm.JvmStatic
 
 sealed class ShortcutOwnerInfo {
   data class AllModes(val owner: ShortcutOwner) : ShortcutOwnerInfo()

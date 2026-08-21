@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.annotations.PropertyKey
+import kotlin.jvm.JvmStatic
 
 object EngineMessageHelper {
   internal const val BUNDLE = "messages.IdeaVimEngineBundle"

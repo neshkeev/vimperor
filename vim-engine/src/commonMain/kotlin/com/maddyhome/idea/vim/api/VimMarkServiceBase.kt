@@ -34,6 +34,7 @@ import com.maddyhome.idea.vim.mark.VimMark
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.SelectionType.CHARACTER_WISE
+import kotlin.jvm.JvmField
 
 abstract class VimMarkServiceBase : VimMarkService {
   companion object {

@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.ex.ranges
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.getLineEndOffset
 import com.maddyhome.idea.vim.common.TextRange
+import kotlin.jvm.JvmField
 import kotlin.math.min
 
 /**

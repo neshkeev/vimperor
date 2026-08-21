@@ -117,6 +117,9 @@ kotlin {
         implementation(project(":api"))
         implementation(project(":vim-annotations"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+        // Multiplatform, unlike the -jvm artifact jvmMain uses. compileOnly to match the rest of
+        // the project: the IDE provides it at runtime and it must not be bundled.
+        compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationVersion")
       }
     }
     val jvmMain by getting {

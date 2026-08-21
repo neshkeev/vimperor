@@ -247,7 +247,7 @@ object KeywordOptionHelper {
 
     override fun equals(other: Any?): Boolean {
       if (this === other) return true
-      if (other == null || javaClass != other.javaClass) return false
+      if (other == null || this::class != other::class) return false
       val that = other as KeywordSpec
       return part == that.part
     }

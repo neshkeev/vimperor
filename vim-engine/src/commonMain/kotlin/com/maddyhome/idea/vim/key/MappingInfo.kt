@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.argumentCaptured
+import com.maddyhome.idea.vim.diagnostic.platformCanonicalName
 import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.extension.ExtensionHandler
@@ -172,7 +173,7 @@ class ToHandlerMappingInfo(
   owner: MappingOwner,
   originalModes: Set<MappingMode>,
 ) : MappingInfo(fromKeys, isRecursive, owner, originalModes) {
-  override fun getPresentableString(): String = "call ${extensionHandler.javaClass.canonicalName}"
+  override fun getPresentableString(): String = "call ${platformCanonicalName(extensionHandler)}"
 
   override fun execute(editor: VimEditor, context: ExecutionContext, keyState: KeyHandlerState) {
     LOG.debug("Executing 'ToHandler' mapping info...")
@@ -215,7 +216,7 @@ class ToHandlerMappingInfo(
     injector.actionExecutor.executeCommand(
       editor,
       { extensionHandler.execute(editor, context, operatorArguments) },
-      "Vim " + extensionHandler.javaClass.simpleName,
+      "Vim " + extensionHandler::class.simpleName,
       null,
     )
 

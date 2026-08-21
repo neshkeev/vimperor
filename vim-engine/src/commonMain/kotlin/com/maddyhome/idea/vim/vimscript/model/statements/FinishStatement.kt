@@ -26,10 +26,10 @@ class FinishStatement : Executable {
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    return javaClass == other?.javaClass
+    return other != null && this::class == other::class
   }
 
   override fun hashCode(): Int {
-    return javaClass.hashCode()
+    return this::class.hashCode()
   }
 }

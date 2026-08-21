@@ -24,6 +24,7 @@ import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.annotations.NonNls
 import com.maddyhome.idea.vim.diagnostic.platformClassName
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import kotlin.jvm.JvmStatic
 
 /**
  * All the commands in IdeaVim should implement one of the following handlers and be registered in VimActions.xml

@@ -16,6 +16,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.diagnostic.platformClassName
 
 /**
  * Base handler for commands that performs change actions.
@@ -127,7 +128,7 @@ sealed class ChangeEditorActionHandler(runForEachCaret: Boolean) : EditorActionH
         }
       }
     } catch (e: Exception) {
-      if (injector.application.isUnitTest() || e.javaClass.name != "ReadOnlyFragmentModificationException") {
+      if (injector.application.isUnitTest() || platformClassName(e) != "ReadOnlyFragmentModificationException") {
         throw e
       } else {
         injector.engineEditorHelper.handleWithReadonlyFragmentModificationHandler(editor, e)

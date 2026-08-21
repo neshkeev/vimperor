@@ -78,7 +78,7 @@ sealed interface Mode {
       // OP_PENDING will normally return to NORMAL, but can return to INSERT or REPLACE if i_CTRL-O is followed by an
       // operator such as `d`. I.e. "Insert Normal mode" and "Replace Normal mode"
       require(returnTo is NORMAL || returnTo is INSERT || returnTo is REPLACE) {
-        "OP_PENDING mode can be active only in NORMAL, INSERT or REPLACE modes, not ${returnTo.javaClass.simpleName}"
+        "OP_PENDING mode can be active only in NORMAL, INSERT or REPLACE modes, not ${returnTo::class.simpleName}"
       }
     }
   }
@@ -89,7 +89,7 @@ sealed interface Mode {
       // I.e. "Insert Visual mode" and "Replace Visual mode"
       // VISUAL can return to SELECT after `<C-O>`
       require(returnTo is NORMAL || returnTo is INSERT || returnTo is REPLACE || returnTo is SELECT) {
-        "VISUAL mode can be active only in NORMAL, INSERT, REPLACE or SELECT modes, not ${returnTo.javaClass.simpleName}"
+        "VISUAL mode can be active only in NORMAL, INSERT, REPLACE or SELECT modes, not ${returnTo::class.simpleName}"
       }
     }
 
@@ -122,7 +122,7 @@ sealed interface Mode {
       // that deletes the selection, e.g. `d`, or if "Insert Select mode" removes selection (`i`, `<C-O>`, `ve`, `x`)
       // SELECT can also be changed to VISUAL with v_CTRL-O
       require(returnTo is NORMAL || returnTo is INSERT || returnTo is REPLACE) {
-        "SELECT mode can be active only in NORMAL, INSERT or REPLACE modes, not ${returnTo.javaClass.simpleName}"
+        "SELECT mode can be active only in NORMAL, INSERT or REPLACE modes, not ${returnTo::class.simpleName}"
       }
     }
 
@@ -153,7 +153,7 @@ sealed interface Mode {
   data class CMD_LINE(override val returnTo: Mode) : Mode {
     init {
       require(returnTo is NORMAL || returnTo is OP_PENDING || returnTo is VISUAL || returnTo is INSERT) {
-        "CMD_LINE mode can be active only in NORMAL, OP_PENDING, VISUAL or INSERT modes, not ${returnTo.javaClass.simpleName}"
+        "CMD_LINE mode can be active only in NORMAL, OP_PENDING, VISUAL or INSERT modes, not ${returnTo::class.simpleName}"
       }
     }
 

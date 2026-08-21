@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.helper
 import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.vimLogger
+import kotlin.jvm.JvmName
 
 object StrictMode {
   private val LOG = vimLogger<StrictMode>()

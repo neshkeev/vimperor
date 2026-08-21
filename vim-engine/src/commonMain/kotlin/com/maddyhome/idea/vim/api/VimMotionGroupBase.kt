@@ -407,7 +407,7 @@ abstract class VimMotionGroupBase : VimMotionGroup {
         if (argument.isLinewiseMotion()) end--
       }
 
-      else -> throw RuntimeException("Commands doesn't take " + action.javaClass.simpleName + " as an operator")
+      else -> throw RuntimeException("Commands doesn't take " + action::class.simpleName + " as an operator")
     }
 
     // Normalize the range

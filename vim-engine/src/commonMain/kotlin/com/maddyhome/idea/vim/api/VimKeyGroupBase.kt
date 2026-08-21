@@ -21,6 +21,7 @@ import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
+import kotlin.jvm.JvmField
 import kotlin.math.min
 
 abstract class VimKeyGroupBase : VimKeyGroup {

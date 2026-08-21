@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.handler.ExternalActionHandler
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.TextObjectActionHandler
 import com.maddyhome.idea.vim.state.mode.SelectionType
+import kotlin.jvm.JvmField
 
 /**
  * Represents an argument to a command's action

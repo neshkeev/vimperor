@@ -8,6 +8,8 @@
 
 package com.maddyhome.idea.vim.key
 
+import kotlin.jvm.JvmStatic
+
 /**
  * A single keystroke: either a typed character or a pressed key, with modifiers.
  *

@@ -21,3 +21,21 @@ package com.maddyhome.idea.vim.diagnostic
  * produce stable action ids this way, and will need them declared explicitly rather than derived.
  */
 expect fun platformClassName(instance: Any): String
+
+/**
+ * The canonical (source-form) name of [instance]'s class, as `Class.getCanonicalName()`, or null
+ * where the platform has none.
+ *
+ * Distinct from [platformClassName]: canonical spells a nested class `Outer.Inner`, binary spells
+ * it `Outer$Inner`. This one reaches `:map` output, so the difference is visible to users.
+ */
+expect fun platformCanonicalName(instance: Any): String?
+
+/**
+ * The platform's own rendering of [instance]'s class, as `Class.toString()` - `class com.foo.Bar`
+ * on the JVM.
+ *
+ * Reaches the value printed for a command alias, so it is reproduced rather than reconstructed
+ * from a name and a prefix.
+ */
+expect fun platformClassToString(instance: Any): String

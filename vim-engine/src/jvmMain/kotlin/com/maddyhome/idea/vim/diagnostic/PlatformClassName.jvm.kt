@@ -9,3 +9,7 @@
 package com.maddyhome.idea.vim.diagnostic
 
 actual fun platformClassName(instance: Any): String = instance.javaClass.name
+
+actual fun platformCanonicalName(instance: Any): String? = instance.javaClass.canonicalName
+
+actual fun platformClassToString(instance: Any): String = instance.javaClass.toString()

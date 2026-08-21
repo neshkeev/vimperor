@@ -21,6 +21,7 @@ import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.diagnostic.VimLogger
+import com.maddyhome.idea.vim.diagnostic.platformClassName
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.helper.StrictMode
 import com.maddyhome.idea.vim.helper.isEndAllowed
@@ -276,7 +277,7 @@ sealed class MotionActionHandler : EditorActionHandlerBase(false) {
   ): Int {
     var resultOffset = offset.offset
     if (resultOffset < 0) {
-      logger.error("Offset is less than 0. $resultOffset. ${this.javaClass.name}")
+      logger.error("Offset is less than 0. $resultOffset. ${platformClassName(this)}")
     }
     if (CommandFlags.FLAG_SAVE_JUMP in cmd.flags) {
       injector.jumpService.saveJumpLocation(editor)

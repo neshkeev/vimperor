@@ -67,7 +67,7 @@ open class CommandPartNode<T> internal constructor(private val trieNode: KeyStro
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (javaClass != other?.javaClass) return false
+    if (other == null || this::class != other::class) return false
     if (!super.equals(other)) return false
     return true
   }

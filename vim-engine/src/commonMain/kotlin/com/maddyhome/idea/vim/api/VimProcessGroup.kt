@@ -7,6 +7,7 @@
  */
 package com.maddyhome.idea.vim.api
 
+
 interface VimProcessGroup {
   /**
    * Exit code from the last [executeCommand] call.

@@ -31,6 +31,7 @@ import com.maddyhome.idea.vim.options.helpers.LangMapOptionHelper
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimInt
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
+import kotlin.jvm.JvmField
 
 @Suppress("unused", "SpellCheckingInspection")
 object Options {

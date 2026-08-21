@@ -181,5 +181,5 @@ abstract class VimDataType(val typeName: String) {
    */
   @Suppress("POTENTIALLY_NON_REPORTED_ANNOTATION")
   @Deprecated("Use toOutputString instead", ReplaceWith("toOutputString()"))
-  final override fun toString() = "${this.javaClass.simpleName}(${toOutputString()})"
+  final override fun toString() = "${this::class.simpleName}(${toOutputString()})"
 }

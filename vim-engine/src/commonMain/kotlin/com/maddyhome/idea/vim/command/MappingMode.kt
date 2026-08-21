@@ -9,6 +9,7 @@ package com.maddyhome.idea.vim.command
 
 import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.helper.enumSetOf
+import kotlin.jvm.JvmField
 
 /**
  * @author vlan

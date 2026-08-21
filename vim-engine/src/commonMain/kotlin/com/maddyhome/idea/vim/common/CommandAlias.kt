@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.diagnostic.platformClassToString
 
 /**
  * @author Elliot Courant
@@ -73,7 +74,7 @@ sealed class CommandAlias(
       return GoalCommand.Call(handler)
     }
 
-    override fun printValue(): String = handler.javaClass.toString()
+    override fun printValue(): String = platformClassToString(handler)
   }
 
   val numberOfArguments: String =

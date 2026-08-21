@@ -42,6 +42,7 @@ import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.annotations.ScheduledForRemoval
 import com.maddyhome.idea.vim.common.concurrentCollectionOf
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import kotlin.jvm.JvmStatic
 
 /**
  * This handles every keystroke that the user can argType except those that are still valid hotkeys for various Idea
