@@ -7,9 +7,8 @@
  */
 package com.maddyhome.idea.vim.helper
 
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -46,31 +45,31 @@ class EngineStringHelperTest {
     assertEquals("a", EngineStringHelper.toPrintableCharacter('a'))
   }
 
-  // --- toPrintableCharacter(KeyStroke) ---------------------------------------------------------
+  // --- toPrintableCharacter(VimKeyStroke) ---------------------------------------------------------
 
   @Test
-  fun `test toPrintableCharacter KeyStroke`() {
+  fun `test toPrintableCharacter VimKeyStroke`() {
     // Pressed Enter (no keyChar) is <CR> -> ^M
-    assertEquals("^M", EngineStringHelper.toPrintableCharacter(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0)))
+    assertEquals("^M", EngineStringHelper.toPrintableCharacter(VimKeyStroke.getKeyStroke(VimKeyCodes.VK_ENTER, 0)))
     // Pressed Escape -> ^[
-    assertEquals("^[", EngineStringHelper.toPrintableCharacter(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)))
+    assertEquals("^[", EngineStringHelper.toPrintableCharacter(VimKeyStroke.getKeyStroke(VimKeyCodes.VK_ESCAPE, 0)))
     // A typed character is shown as itself
-    assertEquals("a", EngineStringHelper.toPrintableCharacter(KeyStroke.getKeyStroke('a')))
+    assertEquals("a", EngineStringHelper.toPrintableCharacter(VimKeyStroke.getKeyStroke('a')))
     // Ctrl-A is an ASCII control character -> ^A
-    assertEquals("^A", EngineStringHelper.toPrintableCharacter(KeyStroke.getKeyStroke('A'.code, InputEvent.CTRL_DOWN_MASK)))
+    assertEquals("^A", EngineStringHelper.toPrintableCharacter(VimKeyStroke.getKeyStroke('A'.code, VimKeyCodes.CTRL_DOWN_MASK)))
     // Ctrl + a non-control key code falls back to ^<keyChar>
-    assertEquals("^1", EngineStringHelper.toPrintableCharacter(KeyStroke.getKeyStroke('1'.code, InputEvent.CTRL_DOWN_MASK)))
+    assertEquals("^1", EngineStringHelper.toPrintableCharacter(VimKeyStroke.getKeyStroke('1'.code, VimKeyCodes.CTRL_DOWN_MASK)))
   }
 
-  // --- toPrintableCharacters(List<KeyStroke>) --------------------------------------------------
+  // --- toPrintableCharacters(List<VimKeyStroke>) --------------------------------------------------
 
   @Test
   fun `test toPrintableCharacters from key strokes`() {
-    assertEquals("", EngineStringHelper.toPrintableCharacters(emptyList<KeyStroke>()))
+    assertEquals("", EngineStringHelper.toPrintableCharacters(emptyList<VimKeyStroke>()))
     assertEquals(
       "a^M",
       EngineStringHelper.toPrintableCharacters(
-        listOf(KeyStroke.getKeyStroke('a'), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0)),
+        listOf(VimKeyStroke.getKeyStroke('a'), VimKeyStroke.getKeyStroke(VimKeyCodes.VK_ENTER, 0)),
       ),
     )
   }

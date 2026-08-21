@@ -17,8 +17,8 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
  * Key consumer to handle [Argument.Type.CHARACTER] arguments
@@ -37,7 +37,7 @@ internal class CharArgumentConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -48,19 +48,19 @@ internal class CharArgumentConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ): Boolean {
     logger.trace { "Entered CharArgumentConsumer" }
-    val chKey: Char = if (key.keyChar == KeyEvent.CHAR_UNDEFINED) 0.toChar() else key.keyChar
+    val chKey: Char = if (key.keyChar == VimKeyCodes.CHAR_UNDEFINED) 0.toChar() else key.keyChar
     handleCharArgument(key, chKey, keyProcessResultBuilder)
     return true
   }
 
   private fun handleCharArgument(
-    key: KeyStroke,
+    key: VimKeyStroke,
     chKey: Char,
     processBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ) {
@@ -70,8 +70,8 @@ internal class CharArgumentConsumer : KeyConsumer {
     // Some special keys can be handled as character arguments - let's check for them here.
     if (mutableChKey.code == 0) {
       when (key.keyCode) {
-        KeyEvent.VK_TAB -> mutableChKey = '\t'
-        KeyEvent.VK_ENTER -> mutableChKey = '\n'
+        VimKeyCodes.VK_TAB -> mutableChKey = '\t'
+        VimKeyCodes.VK_ENTER -> mutableChKey = '\n'
       }
     }
     val commandBuilder = processBuilder.state.commandBuilder

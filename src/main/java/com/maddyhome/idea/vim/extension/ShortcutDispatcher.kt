@@ -17,19 +17,22 @@ import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.ui.KeyStrokeAdapter
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.key.KeyStrokeTrie
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toAwtKeyStroke
+import com.maddyhome.idea.vim.key.toVimKeyStroke
+import com.maddyhome.idea.vim.key.vimKeyStrokeForEvent
 import java.awt.event.KeyEvent
 import javax.swing.JComponent
-import javax.swing.KeyStroke
 
 open class ShortcutDispatcher<T>(
   name: String,
-  data: Map<List<KeyStroke>, T>,
+  data: Map<List<VimKeyStroke>, T>,
   private val listener: Listener<T>,
 ) : DumbAwareAction() {
   interface Listener<T> {
-    fun onMatch(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, data: T) {}
-    fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>) {}
-    fun onKey(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, entries: Sequence<KeyStrokeTrie.TrieNode<T>>) {}
+    fun onMatch(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, data: T) {}
+    fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>) {}
+    fun onKey(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, entries: Sequence<KeyStrokeTrie.TrieNode<T>>) {}
   }
 
   constructor(
@@ -39,11 +42,11 @@ open class ShortcutDispatcher<T>(
     onInvalid: () -> Unit,
     onKey: (Sequence<KeyStrokeTrie.TrieNode<T>>) -> Unit,
   ) : this(name, data.mapKeys { injector.parser.parseKeys(it.key) }.toMap(), object : Listener<T> {
-    override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, data: T) = onMatch(data)
-    override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>) = onInvalid()
+    override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, data: T) = onMatch(data)
+    override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>) = onInvalid()
     override fun onKey(
       e: AnActionEvent,
-      keyStrokes: MutableList<KeyStroke>,
+      keyStrokes: MutableList<VimKeyStroke>,
       entries: Sequence<KeyStrokeTrie.TrieNode<T>>,
     ) = onKey(entries)
   })
@@ -52,23 +55,23 @@ open class ShortcutDispatcher<T>(
   private val shortcutSet: ShortcutSet
 
   init {
-    val keys: MutableList<KeyStroke> = mutableListOf()
+    val keys: MutableList<VimKeyStroke> = mutableListOf()
     for ((k, v) in data) {
       keys.addAll(k)
       trie.add(k, v)
     }
-    val shortcuts = keys.map { KeyboardShortcut(it, null) }
+    val shortcuts = keys.map { KeyboardShortcut(it.toAwtKeyStroke(), null) }
     shortcutSet = CustomShortcutSet(*shortcuts.toTypedArray())
   }
 
-  protected val keyStrokes: MutableList<KeyStroke> = mutableListOf()
+  protected val keyStrokes: MutableList<VimKeyStroke> = mutableListOf()
 
   final override fun actionPerformed(e: AnActionEvent) {
     var keyStroke = getKeyStroke(e) ?: return
     // Omit the modifier (shift) from keyStroke
     keyStroke.keyChar.let {
       if (it != KeyEvent.CHAR_UNDEFINED) {
-        keyStroke = KeyStroke.getKeyStroke(it)
+        keyStroke = VimKeyStroke.getKeyStroke(it)
       }
     }
     keyStrokes.add(keyStroke)
@@ -94,15 +97,15 @@ open class ShortcutDispatcher<T>(
    *
    * @author Alex Plate
    */
-  private var keyStrokeCache: Pair<KeyEvent?, KeyStroke?> = null to null
+  private var keyStrokeCache: Pair<KeyEvent?, VimKeyStroke?> = null to null
 
   /**
    * @author Alex Plate
    */
-  private fun getKeyStroke(e: AnActionEvent): KeyStroke? {
+  private fun getKeyStroke(e: AnActionEvent): VimKeyStroke? {
     val inputEvent = e.inputEvent
     if (inputEvent is KeyEvent) {
-      val defaultKeyStroke = KeyStrokeAdapter.getDefaultKeyStroke(inputEvent)
+      val defaultKeyStroke = KeyStrokeAdapter.getDefaultKeyStroke(inputEvent)?.toVimKeyStroke()
       val strokeCache = keyStrokeCache
       if (defaultKeyStroke != null) {
         keyStrokeCache = inputEvent to defaultKeyStroke
@@ -111,7 +114,7 @@ open class ShortcutDispatcher<T>(
         keyStrokeCache = null to null
         return strokeCache.second
       }
-      return KeyStroke.getKeyStrokeForEvent(inputEvent)
+      return vimKeyStrokeForEvent(inputEvent)
     }
     return null
   }

@@ -15,11 +15,11 @@ import com.intellij.util.ExceptionUtil
 import com.maddyhome.idea.vim.api.VimApplicationBase
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.diagnostic.vimLogger
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.awt.Component
 import java.awt.Toolkit
 import java.awt.Window
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 
 
@@ -49,7 +49,7 @@ internal class IjVimApplication : VimApplicationBase() {
     return ApplicationManager.getApplication().isInternal
   }
 
-  override fun postKey(stroke: KeyStroke, editor: VimEditor) {
+  override fun postKey(stroke: VimKeyStroke, editor: VimEditor) {
     val component: Component = SwingUtilities.getAncestorOfClass(Window::class.java, editor.ij.component)
     val event = createKeyEvent(stroke, component)
     ApplicationManager.getApplication().invokeLater {
@@ -76,7 +76,7 @@ internal class IjVimApplication : VimApplicationBase() {
     com.maddyhome.idea.vim.helper.runAfterGotFocus(runnable)
   }
 
-  private fun createKeyEvent(stroke: KeyStroke, component: Component): KeyEvent {
+  private fun createKeyEvent(stroke: VimKeyStroke, component: Component): KeyEvent {
     return KeyEvent(
       component,
       if (stroke.keyChar == KeyEvent.CHAR_UNDEFINED) KeyEvent.KEY_PRESSED else KeyEvent.KEY_TYPED,

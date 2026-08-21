@@ -8,15 +8,15 @@
 
 package com.maddyhome.idea.vim.helper
 
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
-fun KeyStroke.isCloseKeyStroke(): Boolean {
-  return keyCode == KeyEvent.VK_ESCAPE ||
-    keyChar.code == KeyEvent.VK_ESCAPE ||
-    keyCode == KeyEvent.VK_C && modifiers and InputEvent.CTRL_DOWN_MASK != 0 ||
-    keyCode == '['.code && modifiers and InputEvent.CTRL_DOWN_MASK != 0
+
+fun VimKeyStroke.isCloseKeyStroke(): Boolean {
+  return keyCode == VimKeyCodes.VK_ESCAPE ||
+    keyChar.code == VimKeyCodes.VK_ESCAPE ||
+    keyCode == VimKeyCodes.VK_C && modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0 ||
+    keyCode == '['.code && modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0
 }
 
 /**

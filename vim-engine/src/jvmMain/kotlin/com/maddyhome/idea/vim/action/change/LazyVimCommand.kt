@@ -10,11 +10,11 @@ package com.maddyhome.idea.vim.action.change
 
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.vimscript.model.LazyInstance
-import javax.swing.KeyStroke
 
 open class LazyVimCommand(
-  val keys: Set<List<KeyStroke>>,
+  val keys: Set<List<VimKeyStroke>>,
   val modes: Set<MappingMode>,
   className: String,
   classLoader: ClassLoader,

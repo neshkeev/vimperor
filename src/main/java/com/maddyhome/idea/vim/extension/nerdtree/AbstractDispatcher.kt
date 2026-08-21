@@ -15,17 +15,17 @@ import com.intellij.ui.treeStructure.Tree
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.extension.ShortcutDispatcher
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Handles keyboard shortcuts and delegates them to appropriate actions.
  */
-abstract class AbstractDispatcher(name: String, mappings: Map<List<KeyStroke>, NerdTreeAction>) :
+abstract class AbstractDispatcher(name: String, mappings: Map<List<VimKeyStroke>, NerdTreeAction>) :
   ShortcutDispatcher<NerdTreeAction>(name, mappings, NerdTreeListener) {
 
   private object NerdTreeListener : Listener<NerdTreeAction> {
-    override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, data: NerdTreeAction) {
+    override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, data: NerdTreeAction) {
       val component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT)
       if (component is Tree) {
         data.action(e, component)
@@ -36,7 +36,7 @@ abstract class AbstractDispatcher(name: String, mappings: Map<List<KeyStroke>, N
       keyStrokes.clear()
     }
 
-    override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>) {
+    override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>) {
       keyStrokes.clear()
       injector.messages.indicateError()
     }

@@ -25,6 +25,12 @@ object VimKeyCodes {
   /** The value of [VimKeyStroke.keyChar] when the stroke identifies a key rather than a character. */
   const val CHAR_UNDEFINED: Char = '\uFFFF'
 
+  // --- key event types, as reported by [VimKeyStroke.keyEventType] ----------------------------
+
+  const val KEY_TYPED: Int = 400
+  const val KEY_PRESSED: Int = 401
+  const val KEY_RELEASED: Int = 402
+
   // --- modifier masks -------------------------------------------------------------------------
 
   const val SHIFT_DOWN_MASK: Int = 64

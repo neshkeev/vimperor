@@ -40,8 +40,8 @@ import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.annotations.ScheduledForRemoval
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.util.concurrent.ConcurrentLinkedDeque
-import javax.swing.KeyStroke
 
 /**
  * This handles every keystroke that the user can argType except those that are still valid hotkeys for various Idea
@@ -101,7 +101,7 @@ class KeyHandler {
     }
 
   val keyStack: KeyStack = KeyStack()
-  val modalEntryKeys: MutableList<KeyStroke> = ArrayList()
+  val modalEntryKeys: MutableList<VimKeyStroke> = ArrayList()
 
   var lastUsedEditorInfo: LastUsedEditorInfo = LastUsedEditorInfo(-1, false)
 
@@ -121,7 +121,7 @@ class KeyHandler {
    */
   fun handleKey(
     editor: VimEditor,
-    key: KeyStroke,
+    key: VimKeyStroke,
     keySource: KeySource,
     context: ExecutionContext,
     keyState: KeyHandlerState,
@@ -141,7 +141,7 @@ class KeyHandler {
     replaceWith = ReplaceWith("handleKey(editor, key, KeySource.TYPED, context, keyState)")
   )
   @ScheduledForRemoval
-  fun handleKey(editor: VimEditor, key: KeyStroke, context: ExecutionContext, keyState: KeyHandlerState) {
+  fun handleKey(editor: VimEditor, key: VimKeyStroke, context: ExecutionContext, keyState: KeyHandlerState) {
     handleKey(editor, key, KeySource.TYPED, context, keyState)
   }
 
@@ -154,7 +154,7 @@ class KeyHandler {
   @ScheduledForRemoval
   fun handleKey(
     editor: VimEditor,
-    key: KeyStroke,
+    key: VimKeyStroke,
     context: ExecutionContext,
     allowKeyMappings: Boolean,
     mappingCompleted: Boolean,
@@ -172,7 +172,7 @@ class KeyHandler {
    * could execute the key if needed.
    */
   private fun processKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -239,7 +239,7 @@ class KeyHandler {
   }
 
   private fun processConsumer(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -268,7 +268,7 @@ class KeyHandler {
   internal fun finishedCommandPreparation(
     editor: VimEditor,
     context: ExecutionContext,
-    key: KeyStroke?,
+    key: VimKeyStroke?,
     shouldRecord: Boolean,
     keyState: KeyHandlerState,
   ) {

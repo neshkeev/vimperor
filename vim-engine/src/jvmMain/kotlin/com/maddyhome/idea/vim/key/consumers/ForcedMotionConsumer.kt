@@ -12,11 +12,10 @@ import com.maddyhome.idea.vim.KeyProcessResult
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Handles the `v`, `V` and `CTRL-V` modifiers entered between an operator and its motion (`:help o_v`), e.g. `dvw`.
@@ -29,7 +28,7 @@ import javax.swing.KeyStroke
 class ForcedMotionConsumer : KeyConsumer {
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -39,7 +38,7 @@ class ForcedMotionConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -52,10 +51,10 @@ class ForcedMotionConsumer : KeyConsumer {
    * Maps a keystroke to the motion type it forces: `v` -> characterwise, `V` -> linewise, `CTRL-V`/`CTRL-Q` ->
    * blockwise. Returns `null` for any other key.
    */
-  private fun forcedTypeFor(key: KeyStroke): SelectionType? {
-    if (key.modifiers and InputEvent.CTRL_DOWN_MASK != 0) {
+  private fun forcedTypeFor(key: VimKeyStroke): SelectionType? {
+    if (key.modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0) {
       // CTRL-V and its alias CTRL-Q force blockwise
-      return if (key.keyCode == KeyEvent.VK_V || key.keyCode == KeyEvent.VK_Q) SelectionType.BLOCK_WISE else null
+      return if (key.keyCode == VimKeyCodes.VK_V || key.keyCode == VimKeyCodes.VK_Q) SelectionType.BLOCK_WISE else null
     }
     return when (key.keyChar) {
       'v' -> SelectionType.CHARACTER_WISE

@@ -8,13 +8,12 @@
 
 package com.maddyhome.idea.vim.key
 
-import java.awt.event.KeyEvent
 
 enum class KeySource(val allowsKeyMapping: Boolean) {
   /**
    * The key was typed by a user
    *
-   * Not to be confused with [KeyEvent.KEY_TYPED] and [KeyEvent.KEY_PRESSED]! Whether the key even is typed or pressed,
+   * Not to be confused with [VimKeyCodes.KEY_TYPED] and [VimKeyCodes.KEY_PRESSED]! Whether the key even is typed or pressed,
    * the source is the user typing. The key can be mapped, both by `'langmap'` and user maps.
    */
   TYPED(true),

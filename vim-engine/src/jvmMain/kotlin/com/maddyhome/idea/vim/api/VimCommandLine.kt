@@ -15,7 +15,7 @@ import com.maddyhome.idea.vim.key.AbbreviationContext
 import com.maddyhome.idea.vim.key.findAndResolveAbbreviation
 import com.maddyhome.idea.vim.options.helpers.KeywordOptionHelper.isKeyword
 import com.maddyhome.idea.vim.annotations.TestOnly
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 interface VimCommandLine {
   val inputProcessing: ((String) -> Unit)?
@@ -111,7 +111,7 @@ interface VimCommandLine {
    * `<C-U>`, etc.). Typed characters are usually not mapped and passed back to the command line component, where they
    * are added to the text content.
    */
-  fun handleKey(key: KeyStroke)
+  fun handleKey(key: VimKeyStroke)
 
   /**
    * Text to show while composing a digraph or inserting a literal or register

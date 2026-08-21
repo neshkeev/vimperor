@@ -33,6 +33,7 @@ import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.key.MappingInfo
 import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.key.ToKeysMappingInfo
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 import com.maddyhome.idea.vim.options.OptionAccessScope
@@ -43,7 +44,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
-import javax.swing.KeyStroke
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -297,7 +297,7 @@ class PlugMissingKeysTest : VimTestCase() {
     assertEquals(injector.parser.parseKeys("L"), insertMaps.first())
   }
 
-  private fun getMapFromRhs(mode: MappingMode, rhs: String): List<List<KeyStroke>> {
+  private fun getMapFromRhs(mode: MappingMode, rhs: String): List<List<VimKeyStroke>> {
     val toKeys = injector.parser.parseKeys(rhs)
     val mapping = injector.keyGroup.getKeyMapping(mode)
     return mapping.filter { strokes ->

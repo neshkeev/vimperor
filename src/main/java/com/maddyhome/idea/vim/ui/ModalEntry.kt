@@ -15,11 +15,12 @@ import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.helper.isCloseKeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.vimKeyStrokeForEvent
 import java.awt.KeyEventDispatcher
 import java.awt.KeyboardFocusManager
 import java.awt.Toolkit
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * @author dhleong
@@ -28,7 +29,7 @@ object ModalEntry {
 
   val LOG: Logger = logger<ModalEntry>()
 
-  inline fun activate(editor: VimEditor, crossinline processor: (KeyStroke) -> Boolean) {
+  inline fun activate(editor: VimEditor, crossinline processor: (VimKeyStroke) -> Boolean) {
     // Firstly we pull the unfinished keys of the current mapping
     val mappingStack = KeyHandler.getInstance().keyStack
     LOG.trace("Dumping key stack:")
@@ -49,14 +50,14 @@ object ModalEntry {
 
     KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(object : KeyEventDispatcher {
       override fun dispatchKeyEvent(e: KeyEvent): Boolean {
-        val stroke: KeyStroke
+        val stroke: VimKeyStroke
         if (e.id == KeyEvent.KEY_RELEASED) {
-          stroke = KeyStroke.getKeyStrokeForEvent(e)
+          stroke = vimKeyStrokeForEvent(e)
           if (!stroke.isCloseKeyStroke() && stroke.keyCode != KeyEvent.VK_ENTER) {
             return true
           }
         } else if (e.id == KeyEvent.KEY_TYPED) {
-          stroke = KeyStroke.getKeyStrokeForEvent(e)
+          stroke = vimKeyStrokeForEvent(e)
         } else {
           return true
         }

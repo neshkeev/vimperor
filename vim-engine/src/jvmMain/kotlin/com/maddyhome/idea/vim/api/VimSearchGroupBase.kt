@@ -30,9 +30,9 @@ import com.maddyhome.idea.vim.state.mode.inVisualMode
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.functions.handlers.stringFunctions.SubmatchFunctionHandler
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.text.NumberFormat
 import java.text.ParsePosition
-import javax.swing.KeyStroke
 import kotlin.math.max
 import kotlin.math.min
 
@@ -1034,7 +1034,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     private var gotQuit = false
     private var doReplace = true
 
-    override fun buildInput(key: KeyStroke): ReplaceConfirmationChoice? {
+    override fun buildInput(key: VimKeyStroke): ReplaceConfirmationChoice? {
       if (key.isCloseKeyStroke()) return ReplaceConfirmationChoice.QUIT
       return when (key.keyChar) {
         'q' -> ReplaceConfirmationChoice.QUIT

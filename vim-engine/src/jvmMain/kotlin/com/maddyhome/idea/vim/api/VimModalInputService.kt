@@ -8,8 +8,8 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
-import javax.swing.KeyStroke
 
 interface VimModalInputService {
   fun getCurrentModalInput(): VimModalInput?
@@ -25,5 +25,5 @@ interface VimModalInputService {
    * The processor returns `true` to continue accepting input, or `false` to stop.
    * Used by extensions to get single-character input from the user (e.g., `getchar()`).
    */
-  fun activate(editor: VimEditor, processor: (KeyStroke) -> Boolean) {}
+  fun activate(editor: VimEditor, processor: (VimKeyStroke) -> Boolean) {}
 }

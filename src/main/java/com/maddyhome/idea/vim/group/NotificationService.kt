@@ -37,6 +37,8 @@ import com.maddyhome.idea.vim.helper.MessageHelper
 import com.maddyhome.idea.vim.icons.VimIcons
 import com.maddyhome.idea.vim.key.ShortcutOwner
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toAwtKeyStroke
 import com.maddyhome.idea.vim.newapi.globalIjOptions
 import com.maddyhome.idea.vim.newapi.ijOptions
 import com.maddyhome.idea.vim.options.OptionConstants
@@ -44,7 +46,6 @@ import com.maddyhome.idea.vim.statistic.ActionTracker
 import com.maddyhome.idea.vim.ui.VimEmulationConfigurable
 import com.maddyhome.idea.vim.vimscript.services.VimRcService
 import java.awt.datatransfer.StringSelection
-import javax.swing.KeyStroke
 import kotlin.io.path.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.exists
@@ -153,11 +154,11 @@ internal class NotificationService(private val project: Project?) : VimNotificat
     notification.notify(project)
   }
 
-  override fun notifyAboutShortcutConflict(keyStroke: KeyStroke) {
+  override fun notifyAboutShortcutConflict(keyStroke: VimKeyStroke) {
     val conflicts = VimPlugin.getKey().savedShortcutConflicts
     val allValuesAreUndefined =
       conflicts.values.all { it is ShortcutOwnerInfo.PerMode || (it is ShortcutOwnerInfo.AllModes && it.owner == ShortcutOwner.UNDEFINED) }
-    val shortcutText = KeymapUtil.getShortcutText(KeyboardShortcut(keyStroke, null))
+    val shortcutText = KeymapUtil.getShortcutText(KeyboardShortcut(keyStroke.toAwtKeyStroke(), null))
     val message = if (allValuesAreUndefined) {
       "<b>$shortcutText</b> is defined as a shortcut for both Vim and IntelliJ IDEA. It is now used by Vim, but you can change this."
     } else {

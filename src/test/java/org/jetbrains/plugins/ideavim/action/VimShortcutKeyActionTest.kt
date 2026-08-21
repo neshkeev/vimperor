@@ -9,13 +9,13 @@
 package org.jetbrains.plugins.ideavim.action
 
 import com.maddyhome.idea.vim.action.VimShortcutKeyAction
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import org.jetbrains.plugins.ideavim.SkipNeovimReason
 import org.jetbrains.plugins.ideavim.TestWithoutNeovim
 import org.jetbrains.plugins.ideavim.VimTestCase
 import org.junit.jupiter.api.Test
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 import kotlin.test.assertFalse
 
 class VimShortcutKeyActionTest : VimTestCase() {
@@ -23,7 +23,7 @@ class VimShortcutKeyActionTest : VimTestCase() {
   @TestWithoutNeovim(SkipNeovimReason.NOT_VIM_TESTING)
   @Test
   fun `S-Tab is not a Vim-only editor key so sethandler can release it to the IDE`() {
-    val shiftTab = KeyStroke.getKeyStroke(KeyEvent.VK_TAB, InputEvent.SHIFT_DOWN_MASK)
+    val shiftTab = VimKeyStroke.getKeyStroke(KeyEvent.VK_TAB, InputEvent.SHIFT_DOWN_MASK)
     assertFalse(VimShortcutKeyAction.VIM_ONLY_EDITOR_KEYS.contains(shiftTab))
   }
 }

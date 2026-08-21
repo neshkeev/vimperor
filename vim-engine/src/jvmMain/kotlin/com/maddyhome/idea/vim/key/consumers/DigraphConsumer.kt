@@ -19,9 +19,8 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
  * Key consumer to process digraph sequences and convert them into character keystrokes
@@ -43,7 +42,7 @@ internal class DigraphConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -52,7 +51,7 @@ internal class DigraphConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -108,14 +107,14 @@ internal class DigraphConsumer : KeyConsumer {
             val highSurrogate = charArray[0]
             val lowSurrogate = charArray[1]
 
-            val keyStrokeHigh = KeyStroke.getKeyStroke(highSurrogate)
+            val keyStrokeHigh = VimKeyStroke.getKeyStroke(highSurrogate)
             keyHandler.handleKey(lambdaEditorState, keyStrokeHigh, KeySource.DIGRAPH, lambdaContext, lambdaKeyState)
 
-            val keyStrokeLow = KeyStroke.getKeyStroke(lowSurrogate)
+            val keyStrokeLow = VimKeyStroke.getKeyStroke(lowSurrogate)
             keyHandler.handleKey(lambdaEditorState, keyStrokeLow, KeySource.DIGRAPH, lambdaContext, lambdaKeyState)
           }
           else {
-            val stroke = KeyStroke.getKeyStroke(codepoint.toChar())
+            val stroke = VimKeyStroke.getKeyStroke(codepoint.toChar())
             keyHandler.handleKey(lambdaEditorState, stroke, KeySource.DIGRAPH, lambdaContext, lambdaKeyState)
           }
         }
@@ -125,7 +124,7 @@ internal class DigraphConsumer : KeyConsumer {
       is DigraphResult.Bad -> {
         val commandLine = injector.commandLine.getActiveCommandLine()
         if (commandLine != null) {
-          if (key.keyCode == KeyEvent.VK_C && key.modifiers and InputEvent.CTRL_DOWN_MASK != 0) {
+          if (key.keyCode == VimKeyCodes.VK_C && key.modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0) {
             return false
           } else {
             keyProcessResultBuilder.addExecutionStep { _, _, _ ->

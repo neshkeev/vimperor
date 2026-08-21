@@ -16,9 +16,9 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
-import javax.swing.KeyStroke
 
 /**
  * Key consumer to look for the `"` keystroke to start waiting for a register name
@@ -32,7 +32,7 @@ internal class StartSelectRegisterConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -41,7 +41,7 @@ internal class StartSelectRegisterConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -53,7 +53,7 @@ internal class StartSelectRegisterConsumer : KeyConsumer {
     return true
   }
 
-  private fun isSelectRegister(key: KeyStroke, keyState: KeyHandlerState): Boolean {
+  private fun isSelectRegister(key: VimKeyStroke, keyState: KeyHandlerState): Boolean {
     val vimState = injector.vimState
     if (vimState.mode !is Mode.NORMAL && vimState.mode !is Mode.VISUAL) {
       return false

@@ -58,6 +58,7 @@ import com.maddyhome.idea.vim.group.visual.VisualGroupKt;
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase;
 import com.maddyhome.idea.vim.helper.*;
 import com.maddyhome.idea.vim.key.*;
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.listener.SelectionVimListenerSuppressor;
 import com.maddyhome.idea.vim.listener.VimListenerSuppressor;
 import com.maddyhome.idea.vim.option.OptionsManager;
@@ -201,7 +202,7 @@ public class KeyHandler {
    * @param key     The keystroke typed by the user
    * @param context The data context
    */
-  public void handleKey(@NotNull Editor editor, @NotNull KeyStroke key, @NotNull DataContext context) {
+  public void handleKey(@NotNull Editor editor, @NotNull VimKeyStroke key, @NotNull DataContext context) {
     handleKey(editor, key, context, true);
   }
 
@@ -216,7 +217,7 @@ public class KeyHandler {
    * @param plan    The current action plan
    */
   public void beforeHandleKey(@NotNull Editor editor,
-                              @NotNull KeyStroke key,
+                              @NotNull VimKeyStroke key,
                               @NotNull DataContext context,
                               @NotNull ActionPlan plan) {
 
@@ -228,7 +229,7 @@ public class KeyHandler {
   }
 
   public void handleKey(@NotNull Editor editor,
-                        @NotNull KeyStroke key,
+                        @NotNull VimKeyStroke key,
                         @NotNull DataContext context,
                         boolean allowKeyMappings) {
     VimPlugin.clearError();
@@ -328,9 +329,9 @@ public class KeyHandler {
   /**
    * See the description for {@link com.maddyhome.idea.vim.command.DuplicableOperatorAction}
    */
-  private Node mapOpCommand(KeyStroke key, Node node, @NotNull CommandState editorState) {
+  private Node mapOpCommand(VimKeyStroke key, Node node, @NotNull CommandState editorState) {
     if (editorState.isDuplicateOperatorKeyStroke(key)) {
-      return editorState.getCommandBuilder().getChildNode(KeyStroke.getKeyStroke('_'));
+      return editorState.getCommandBuilder().getChildNode(VimKeyStroke.getKeyStroke('_'));
     }
     return node;
   }
@@ -347,7 +348,7 @@ public class KeyHandler {
     return true;
   }
 
-  private void handleEditorReset(@NotNull Editor editor, @NotNull KeyStroke key, final @NotNull DataContext context, @NotNull CommandState editorState) {
+  private void handleEditorReset(@NotNull Editor editor, @NotNull VimKeyStroke key, final @NotNull DataContext context, @NotNull CommandState editorState) {
     if (editorState.getCommandBuilder().isAtDefaultState()) {
       RegisterGroup register = VimPlugin.getRegister();
       if (register.getCurrentRegister() == register.getDefaultRegister()) {
@@ -363,7 +364,7 @@ public class KeyHandler {
   }
 
   private boolean handleKeyMapping(final @NotNull Editor editor,
-                                   final @NotNull KeyStroke key,
+                                   final @NotNull VimKeyStroke key,
                                    final @NotNull DataContext context) {
 
     final CommandState commandState = CommandState.getInstance(editor);
@@ -390,7 +391,7 @@ public class KeyHandler {
       || handleAbandonedMappingSequence(editor, mappingState, context);
   }
 
-  private boolean isMappingDisabledForKey(@NotNull KeyStroke key, @NotNull CommandState commandState) {
+  private boolean isMappingDisabledForKey(@NotNull VimKeyStroke key, @NotNull CommandState commandState) {
     // "0" can be mapped, but the mapping isn't applied when entering a count. Other digits are always mapped, even when
     // entering a count.
     // See `:help :map-modes`
@@ -417,7 +418,7 @@ public class KeyHandler {
     if (!application.isUnitTestMode() && OptionsManager.INSTANCE.getTimeout().isSet()) {
       mappingState.startMappingTimer(actionEvent -> application.invokeLater(() -> {
 
-        final List<KeyStroke> unhandledKeys = mappingState.detachKeys();
+        final List<VimKeyStroke> unhandledKeys = mappingState.detachKeys();
 
         // TODO: I'm not sure why we abandon plugin commands here
         // Would be useful to have a comment or a helpfully named helper method here
@@ -425,7 +426,7 @@ public class KeyHandler {
           return;
         }
 
-        for (KeyStroke keyStroke : unhandledKeys) {
+        for (VimKeyStroke keyStroke : unhandledKeys) {
           handleKey(editor, keyStroke, new EditorDataContext(editor), false);
         }
       }, ModalityState.stateForComponent(editor.getComponent())));
@@ -439,7 +440,7 @@ public class KeyHandler {
                                                 @NotNull CommandState commandState,
                                                 @NotNull MappingState mappingState,
                                                 @NotNull KeyMapping mapping,
-                                                KeyStroke key) {
+                                                VimKeyStroke key) {
 
     // The current sequence isn't a prefix, check to see if it's a completed sequence.
     final MappingInfo currentMappingInfo = mapping.get(mappingState.getKeys());
@@ -455,7 +456,7 @@ public class KeyHandler {
       // mappingState.detachKeys and look for the longest complete sequence in the returned list, evaluate it, and then
       // replay any keys not yet handled. NB: The actual implementation should be compared to Vim behaviour to see what
       // should actually happen.
-      final ArrayList<KeyStroke> previouslyUnhandledKeySequence = new ArrayList<>();
+      final ArrayList<VimKeyStroke> previouslyUnhandledKeySequence = new ArrayList<>();
       mappingState.getKeys().forEach(previouslyUnhandledKeySequence::add);
       if (previouslyUnhandledKeySequence.size() > 1) {
         previouslyUnhandledKeySequence.remove(previouslyUnhandledKeySequence.size() - 1);
@@ -472,10 +473,10 @@ public class KeyHandler {
     final EditorDataContext currentContext = new EditorDataContext(editor);
 
     if (mappingInfo instanceof ToKeysMappingInfo) {
-      final List<KeyStroke> toKeys = ((ToKeysMappingInfo)mappingInfo).getToKeys();
+      final List<VimKeyStroke> toKeys = ((ToKeysMappingInfo)mappingInfo).getToKeys();
       final boolean fromIsPrefix = isPrefix(mappingInfo.getFromKeys(), toKeys);
       boolean first = true;
-      for (KeyStroke keyStroke : toKeys) {
+      for (VimKeyStroke keyStroke : toKeys) {
         final boolean recursive = mappingInfo.isRecursive() && !(first && fromIsPrefix);
         handleKey(editor, keyStroke, currentContext, recursive);
         first = false;
@@ -560,7 +561,7 @@ public class KeyHandler {
     // E.g. if there is a mapping for "hello" and user enters command "help" the processing of "h", "e" and "l" will be
     //   prevented by this handler. Make sure the currently unhandled keys are processed as normal.
 
-    final List<KeyStroke> unhandledKeyStrokes = mappingState.detachKeys();
+    final List<VimKeyStroke> unhandledKeyStrokes = mappingState.detachKeys();
 
     // If there is only the current key to handle, do nothing
     if (unhandledKeyStrokes.size() == 1) {
@@ -587,7 +588,7 @@ public class KeyHandler {
     } else {
       handleKey(editor, unhandledKeyStrokes.get(0), context, false);
 
-      for (KeyStroke keyStroke : unhandledKeyStrokes.subList(1, unhandledKeyStrokes.size())) {
+      for (VimKeyStroke keyStroke : unhandledKeyStrokes.subList(1, unhandledKeyStrokes.size())) {
         handleKey(editor, keyStroke, context, true);
       }
     }
@@ -604,18 +605,18 @@ public class KeyHandler {
       && commandBuilder.isExpectingCount() && Character.isDigit(chKey) && (commandBuilder.getCount() > 0 || chKey != '0');
   }
 
-  private boolean isDeleteCommandCountKey(@NotNull KeyStroke key, @NotNull CommandState editorState) {
+  private boolean isDeleteCommandCountKey(@NotNull VimKeyStroke key, @NotNull CommandState editorState) {
     // See `:help N<Del>`
     final CommandBuilder commandBuilder = editorState.getCommandBuilder();
     return (editorState.getMode() == CommandState.Mode.COMMAND || editorState.getMode() == CommandState.Mode.VISUAL)
       && commandBuilder.isExpectingCount() && commandBuilder.getCount() > 0 && key.getKeyCode() == KeyEvent.VK_DELETE;
   }
 
-  private boolean isEditorReset(@NotNull KeyStroke key, @NotNull CommandState editorState) {
+  private boolean isEditorReset(@NotNull VimKeyStroke key, @NotNull CommandState editorState) {
     return editorState.getMode() == CommandState.Mode.COMMAND && StringHelper.isCloseKeyStroke(key);
   }
 
-  private boolean isSelectRegister(@NotNull KeyStroke key, @NotNull CommandState editorState) {
+  private boolean isSelectRegister(@NotNull VimKeyStroke key, @NotNull CommandState editorState) {
     if (editorState.getMode() != CommandState.Mode.COMMAND && editorState.getMode() != CommandState.Mode.VISUAL) {
       return false;
     }
@@ -641,7 +642,7 @@ public class KeyHandler {
     return commandBuilder.getExpectedArgumentType() == Argument.Type.CHARACTER;
   }
 
-  private void handleCharArgument(@NotNull KeyStroke key, char chKey, @NotNull CommandState commandState) {
+  private void handleCharArgument(@NotNull VimKeyStroke key, char chKey, @NotNull CommandState commandState) {
     // We are expecting a character argument - is this a regular character the user typed?
     // Some special keys can be handled as character arguments - let's check for them here.
     if (chKey == 0) {
@@ -667,7 +668,7 @@ public class KeyHandler {
   }
 
   private boolean handleDigraph(@NotNull Editor editor,
-                                @NotNull KeyStroke key,
+                                @NotNull VimKeyStroke key,
                                 @NotNull DataContext context,
                                 @NotNull CommandState editorState) {
 
@@ -699,7 +700,7 @@ public class KeyHandler {
         if (commandBuilder.getExpectedArgumentType() == Argument.Type.DIGRAPH) {
           commandBuilder.fallbackToCharacterArgument();
         }
-        final KeyStroke stroke = res.getStroke();
+        final VimKeyStroke stroke = res.getStroke();
         if (stroke == null) {
           return false;
         }
@@ -769,7 +770,7 @@ public class KeyHandler {
 
   private void handleCommandNode(Editor editor,
                                  DataContext context,
-                                 KeyStroke key,
+                                 VimKeyStroke key,
                                  @NotNull CommandNode node,
                                  CommandState editorState) {
     // The user entered a valid command. Create the command and add it to the stack.

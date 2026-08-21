@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.group
 
 import com.intellij.openapi.project.Project
 import com.maddyhome.idea.vim.api.VimEditor
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
  * Interface for notification service methods accessible from the common module.
@@ -28,7 +28,7 @@ interface VimNotifications {
   fun notifyControlCharactersPasted()
   fun enableRepeatingMode(): Int
   fun noVimrcAsDefault()
-  fun notifyAboutShortcutConflict(keyStroke: KeyStroke)
+  fun notifyAboutShortcutConflict(keyStroke: VimKeyStroke)
   fun notifySubscribedToEap()
   fun notifyEapFinished()
   fun showReenableNotification(project: Project)

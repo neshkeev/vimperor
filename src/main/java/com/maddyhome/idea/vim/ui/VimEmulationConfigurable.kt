@@ -43,6 +43,8 @@ import com.maddyhome.idea.vim.key.ShortcutOwner
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo.AllModes
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo.PerMode
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toAwtKeyStroke
 import org.jetbrains.annotations.Nls
 import java.awt.BorderLayout
 import java.awt.Dimension
@@ -50,7 +52,6 @@ import java.util.*
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JTable
-import javax.swing.KeyStroke
 import javax.swing.SwingConstants
 import javax.swing.border.LineBorder
 import javax.swing.table.AbstractTableModel
@@ -197,7 +198,7 @@ internal class VimEmulationConfigurable : Configurable {
         helpLine.text = MessageHelper.message(
           "configurable.non.editable.handler.hint.text",
           (firstPerMode.owner as PerMode).toNotation(),
-          KeymapUtil.getShortcutText(KeyboardShortcut(firstPerMode.keyStroke, null)),
+          KeymapUtil.getShortcutText(KeyboardShortcut(firstPerMode.keyStroke.toAwtKeyStroke(), null)),
         )
         helpLine.foreground = UIUtil.getInactiveTextColor()
         add(helpLine, BorderLayout.SOUTH)
@@ -284,10 +285,10 @@ internal class VimEmulationConfigurable : Configurable {
       }
     }
 
-    class Row(val keyStroke: KeyStroke, val action: AnAction, var owner: ShortcutOwnerInfo) : Comparable<Row> {
+    class Row(val keyStroke: VimKeyStroke, val action: AnAction, var owner: ShortcutOwnerInfo) : Comparable<Row> {
 
       override fun compareTo(other: Row): Int {
-        val otherKeyStroke: KeyStroke = other.keyStroke
+        val otherKeyStroke: VimKeyStroke = other.keyStroke
         val keyCodeDiff: Int = keyStroke.keyCode - otherKeyStroke.keyCode
         return if (keyCodeDiff != 0) keyCodeDiff else keyStroke.modifiers - otherKeyStroke.modifiers
       }
@@ -313,7 +314,7 @@ internal class VimEmulationConfigurable : Configurable {
         if (column != null && rowIndex >= 0 && rowIndex < rows.size) {
           val row = rows[rowIndex]
           when (column) {
-            Column.KEYSTROKE -> return KeymapUtil.getShortcutText(KeyboardShortcut(row.keyStroke, null))
+            Column.KEYSTROKE -> return KeymapUtil.getShortcutText(KeyboardShortcut(row.keyStroke.toAwtKeyStroke(), null))
             Column.IDE_ACTION -> return row.action.templatePresentation.text
             Column.OWNER -> {
               val owner: ShortcutOwnerInfo = row.owner
@@ -362,9 +363,9 @@ internal class VimEmulationConfigurable : Configurable {
         rows.sort()
       }
 
-      private val currentData: Map<KeyStroke, ShortcutOwnerInfo>
+      private val currentData: Map<VimKeyStroke, ShortcutOwnerInfo>
         get() {
-          val result: MutableMap<KeyStroke, ShortcutOwnerInfo> = HashMap()
+          val result: MutableMap<VimKeyStroke, ShortcutOwnerInfo> = HashMap()
           for (row in rows) {
             result[row.keyStroke] = row.owner
           }

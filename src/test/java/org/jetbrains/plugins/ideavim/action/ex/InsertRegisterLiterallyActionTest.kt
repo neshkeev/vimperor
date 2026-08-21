@@ -11,11 +11,11 @@ package org.jetbrains.plugins.ideavim.action.ex
 import com.intellij.openapi.application.ApplicationManager
 import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.Mode
 import org.jetbrains.plugins.ideavim.VimBehaviorDiffers
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import javax.swing.KeyStroke
 
 @Suppress("SpellCheckingInspection")
 class InsertRegisterLiterallyActionTest : VimExTestCase() {
@@ -50,7 +50,7 @@ class InsertRegisterLiterallyActionTest : VimExTestCase() {
   @Test
   fun `test insert register literally with multi-line register text`() {
     // parseKeys parses <CR> in a way that Register#getText doesn't like
-    val keys = mutableListOf<KeyStroke>()
+    val keys = mutableListOf<VimKeyStroke>()
     keys.addAll(injector.parser.parseKeys("hello<CR>world"))
     VimPlugin.getRegister().setKeys('c', keys)
 

@@ -18,7 +18,7 @@ import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.annotations.TestOnly
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 interface VimKeyGroup {
   /**
@@ -26,8 +26,8 @@ interface VimKeyGroup {
    * of the keystroke
    */
   fun getBuiltinCommandsTrie(mappingMode: MappingMode): KeyStrokeTrie<LazyVimCommand>
-  fun getActions(editor: VimEditor, keyStroke: KeyStroke): List<NativeAction>
-  fun getKeymapConflicts(keyStroke: KeyStroke): List<NativeAction>
+  fun getActions(editor: VimEditor, keyStroke: VimKeyStroke): List<NativeAction>
+  fun getKeymapConflicts(keyStroke: VimKeyStroke): List<NativeAction>
 
   /**
    * Get an accessor class to maintain and manage maps for a specific mode
@@ -44,7 +44,7 @@ interface VimKeyGroup {
   /** Adds or updates a new map from a key sequence to an IdeaVim extension for a given set of modes */
   fun putKeyMapping(
     modes: Set<MappingMode>,
-    fromKeys: List<KeyStroke>,
+    fromKeys: List<VimKeyStroke>,
     owner: MappingOwner,
     extensionHandler: ExtensionHandler,
     recursive: Boolean,
@@ -53,16 +53,16 @@ interface VimKeyGroup {
   /** Adds or updates a traditional Vim map from one key sequence to another for a give set of nodes */
   fun putKeyMapping(
     modes: Set<MappingMode>,
-    fromKeys: List<KeyStroke>,
+    fromKeys: List<VimKeyStroke>,
     owner: MappingOwner,
-    toKeys: List<KeyStroke>,
+    toKeys: List<VimKeyStroke>,
     recursive: Boolean,
   )
 
   /** Adds or updates a traditional Vim expression map from a key sequence to an expression for a given set of modes */
   fun putKeyMapping(
     modes: Set<MappingMode>,
-    fromKeys: List<KeyStroke>,
+    fromKeys: List<VimKeyStroke>,
     owner: MappingOwner,
     toExpr: Expression,
     originalString: String,
@@ -84,7 +84,7 @@ interface VimKeyGroup {
    *
    * Typically used by the `:unmap` family of commands.
    */
-  fun removeKeyMapping(modes: Set<MappingMode>, keys: List<KeyStroke>)
+  fun removeKeyMapping(modes: Set<MappingMode>, keys: List<VimKeyStroke>)
 
   @TestOnly
   fun resetKeyMappings()
@@ -101,9 +101,9 @@ interface VimKeyGroup {
   fun unregisterCommandActions()
 
   /** Registers a shortcut that is handled directly by KeyHandler, rather than by an action. */
-  fun registerShortcutWithoutAction(keyStroke: KeyStroke, owner: MappingOwner) {}
-  val shortcutConflicts: MutableMap<KeyStroke, ShortcutOwnerInfo>
-  val savedShortcutConflicts: MutableMap<KeyStroke, ShortcutOwnerInfo>
+  fun registerShortcutWithoutAction(keyStroke: VimKeyStroke, owner: MappingOwner) {}
+  val shortcutConflicts: MutableMap<VimKeyStroke, ShortcutOwnerInfo>
+  val savedShortcutConflicts: MutableMap<VimKeyStroke, ShortcutOwnerInfo>
 
   /**
    * Deprecated function to get the builtin commands for the given mode in a form that can be iterated over
@@ -113,7 +113,7 @@ interface VimKeyGroup {
   fun getKeyRoot(mappingMode: MappingMode): com.maddyhome.idea.vim.key.CommandPartNode<LazyVimCommand>
 }
 
-fun VimKeyGroup.getMappingInfo(keys: List<KeyStroke>, mode: MappingMode) = getKeyMapping(mode)[keys]
+fun VimKeyGroup.getMappingInfo(keys: List<VimKeyStroke>, mode: MappingMode) = getKeyMapping(mode)[keys]
 
 /**
  * Returns true if a mapping exists that contains the given key sequence somewhere in the right-hand-side of the mapping
@@ -122,7 +122,7 @@ fun VimKeyGroup.getMappingInfo(keys: List<KeyStroke>, mode: MappingMode) = getKe
  * mapping contains the given key sequence in any of the specified modes, and not just matches. A value `yy` will match
  * `ddyy`.
  */
-fun VimKeyGroup.hasMapTo(what: List<KeyStroke>, modes: Set<MappingMode>): Boolean {
+fun VimKeyGroup.hasMapTo(what: List<VimKeyStroke>, modes: Set<MappingMode>): Boolean {
   // We convert back to a string representation of the mapping to get the canonical representation of any special keys
   val canonicalWhat = injector.parser.toKeyNotation(what)
   return modes.any { mode ->
@@ -135,7 +135,7 @@ fun VimKeyGroup.hasMapTo(what: List<KeyStroke>, modes: Set<MappingMode>): Boolea
  *
  * This function is essentially equivalent to Vim's `hasmapto()` function.
  *
- * Note that the string value is converted to a `List<KeyStroke>` to produce a canonical representation of any special
+ * Note that the string value is converted to a `List<VimKeyStroke>` to produce a canonical representation of any special
  * keys. If you already have this list, call the overload of [hasMapTo] that takes them, to avoid multiple conversions.
  */
 fun VimKeyGroup.hasMapTo(what: String, modes: Set<MappingMode>) =
@@ -151,7 +151,7 @@ fun VimKeyGroup.hasMapTo(what: String, modes: Set<MappingMode>) =
  * all modes, or a different mapping in any one of the modes. This function, like `maparg()`, will return an arbitrary
  * (undocumented) mapping in this scenario.
  */
-fun VimKeyGroup.getFirstMappingInfoMatch(name: List<KeyStroke>, mode: Set<MappingMode>) =
+fun VimKeyGroup.getFirstMappingInfoMatch(name: List<VimKeyStroke>, mode: Set<MappingMode>) =
   mode.mapNotNull { getMappingInfo(name, it) }
     .map { MappingInfoWithMode(it, getCurrentModes(name, it.originalModes)) }
     .firstOrNull()
@@ -165,12 +165,12 @@ fun VimKeyGroup.getFirstMappingInfoMatch(name: List<KeyStroke>, mode: Set<Mappin
  * There can be multiple mappings that match, but like `mapcheck()`, this function will return an arbitrary
  * (undocumented) mapping.
  */
-fun VimKeyGroup.getFirstMappingInfoPrefix(name: List<KeyStroke>, mode: Set<MappingMode>) =
+fun VimKeyGroup.getFirstMappingInfoPrefix(name: List<VimKeyStroke>, mode: Set<MappingMode>) =
   getAllMappingInfoWithMode(name, mode).firstOrNull()
 
 data class MappingInfoWithMode(val mappingInfo: MappingInfo, val modes: Set<MappingMode>)
 
-private typealias KeyStrokes = List<KeyStroke>
+private typealias KeyStrokes = List<VimKeyStroke>
 private typealias MappingModes = Set<MappingMode>
 
 /**
@@ -189,10 +189,10 @@ private typealias MappingModes = Set<MappingMode>
  * If [prefix] is empty, all mappings are returned, otherwise mappings that are a prefix of the given keystroke sequence
  * or use the keystroke sequence as a prefix are returned.
  */
-fun VimKeyGroup.getAllMappingInfoWithMode(prefix: List<KeyStroke>, modes: Set<MappingMode>): List<MappingInfoWithMode> {
+fun VimKeyGroup.getAllMappingInfoWithMode(prefix: List<VimKeyStroke>, modes: Set<MappingMode>): List<MappingInfoWithMode> {
 
   val results = mutableListOf<MappingInfoWithMode>()
-  val fromKeysPool = mutableListOf<KeyStroke>()
+  val fromKeysPool = mutableListOf<VimKeyStroke>()
   val multiModeMappings = mutableMapOf<KeyStrokes, MutableSet<MappingModes>>()
 
   modes.forEach { mode ->

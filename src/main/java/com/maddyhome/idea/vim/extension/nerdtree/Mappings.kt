@@ -12,11 +12,11 @@ import com.intellij.openapi.options.advanced.AdvancedSettings
 import com.intellij.util.ui.tree.TreeUtil
 import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import javax.swing.KeyStroke
 import javax.swing.tree.TreeNode
 
-fun MutableMap<List<KeyStroke>, NerdTreeAction>.register(
+fun MutableMap<List<VimKeyStroke>, NerdTreeAction>.register(
   variable: String,
   defaultMapping: String,
   action: NerdTreeAction,
@@ -30,7 +30,7 @@ fun MutableMap<List<KeyStroke>, NerdTreeAction>.register(
   register(mapping, action)
 }
 
-fun MutableMap<List<KeyStroke>, NerdTreeAction>.register(mapping: String, action: NerdTreeAction) {
+fun MutableMap<List<VimKeyStroke>, NerdTreeAction>.register(mapping: String, action: NerdTreeAction) {
   this[injector.parser.parseKeys(mapping)] = action
 }
 
@@ -52,7 +52,7 @@ fun MutableMap<List<KeyStroke>, NerdTreeAction>.register(mapping: String, action
  * <C-K>....Jump up to previous sibling of the current directory.....*NERDTreeMapJumpPrevSibling*
  * </code></pre>
  */
-val navigationMappings: Map<List<KeyStroke>, NerdTreeAction> = mutableMapOf<List<KeyStroke>, NerdTreeAction>().apply {
+val navigationMappings: Map<List<VimKeyStroke>, NerdTreeAction> = mutableMapOf<List<VimKeyStroke>, NerdTreeAction>().apply {
   // TODO support going [count] lines upward/downward or to line [count]
   // Delegate to JTree's Swing ActionMap (same path as native arrow keys via TreeAction/DefaultTreeUI).
   // This avoids ActionManager.tryToExecute which can RPC to backend in split mode,

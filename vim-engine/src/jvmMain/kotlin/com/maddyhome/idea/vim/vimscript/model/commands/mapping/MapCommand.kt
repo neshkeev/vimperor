@@ -29,8 +29,8 @@ import com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand.Specia
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.annotations.NonNls
-import javax.swing.KeyStroke
 import com.maddyhome.idea.vim.helper.enumSetOf
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
  * @author vlan
@@ -109,7 +109,7 @@ data class MapCommand(val range: Range, val cmd: String, val modifier: CommandMo
     return true
   }
 
-  private fun showKeyMappings(modes: Set<MappingMode>, prefix: List<KeyStroke>, editor: VimEditor): Boolean {
+  private fun showKeyMappings(modes: Set<MappingMode>, prefix: List<VimKeyStroke>, editor: VimEditor): Boolean {
     val mappings = injector.keyGroup.getAllMappingInfoWithMode(prefix, modes)
     val output = buildString {
       mappings.forEach {
@@ -186,7 +186,7 @@ data class MapCommand(val range: Range, val cmd: String, val modifier: CommandMo
 
   private class CommandArguments(
     val specialArguments: Set<SpecialArgument>,
-    val fromKeys: List<KeyStroke>,
+    val fromKeys: List<VimKeyStroke>,
     val toExpr: Expression,
     val secondArgument: String,
   )
@@ -194,7 +194,7 @@ data class MapCommand(val range: Range, val cmd: String, val modifier: CommandMo
   private fun parseCommandArguments(input: String): CommandArguments? {
     val specialArguments = HashSet<SpecialArgument>()
     val toKeysBuilder = StringBuilder()
-    var fromKeys: List<KeyStroke>? = null
+    var fromKeys: List<VimKeyStroke>? = null
 
     val preprocessedInput = processBars(input)
     preprocessedInput.split(" ").dropLastWhile { it.isEmpty() }.forEach { part ->

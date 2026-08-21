@@ -19,10 +19,10 @@ import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.helper.isCloseKeyStroke
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Key consumer to handle escape and cancel keys in Normal mode
@@ -44,7 +44,7 @@ internal class EditorResetConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -55,7 +55,7 @@ internal class EditorResetConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -74,7 +74,7 @@ internal class EditorResetConsumer : KeyConsumer {
 
   private fun handleEditorReset(
     editor: VimEditor,
-    key: KeyStroke,
+    key: VimKeyStroke,
     keyState: KeyHandlerState,
     context: ExecutionContext,
   ) {
@@ -95,7 +95,7 @@ internal class EditorResetConsumer : KeyConsumer {
           injector.outputPanel.getCurrentOutputPanel()?.close()
         } else {
           var indicateError = true
-          if (key.keyCode == KeyEvent.VK_ESCAPE) {
+          if (key.keyCode == VimKeyCodes.VK_ESCAPE) {
             val executed = arrayOf<Boolean?>(null)
             injector.actionExecutor.executeCommand(
               editor,

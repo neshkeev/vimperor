@@ -14,10 +14,10 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputBase
 import com.maddyhome.idea.vim.api.VimModalInputService
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.ui.ModalEntry
-import javax.swing.KeyStroke
 
 class ExEntryModalInputService : VimModalInputService {
   override fun getCurrentModalInput(): VimModalInput? {
@@ -38,7 +38,7 @@ class ExEntryModalInputService : VimModalInputService {
     return WrappedAsModalInputExEntryPanel(panel)
   }
 
-  override fun activate(editor: VimEditor, processor: (KeyStroke) -> Boolean) {
+  override fun activate(editor: VimEditor, processor: (VimKeyStroke) -> Boolean) {
     ModalEntry.activate(editor, processor)
   }
 }

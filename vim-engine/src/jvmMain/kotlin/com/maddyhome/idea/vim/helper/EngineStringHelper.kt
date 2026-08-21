@@ -9,12 +9,11 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.helper.EngineStringHelper.toPrintableCharacters
-import java.awt.event.InputEvent
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 object EngineStringHelper {
-  fun toPrintableCharacters(keys: List<KeyStroke>): String {
+  fun toPrintableCharacters(keys: List<VimKeyStroke>): String {
     if (keys.isEmpty()) {
       return ""
     }
@@ -26,24 +25,24 @@ object EngineStringHelper {
   }
 
   /**
-   * Convert a KeyStroke into the character it represents and return a printable version of the character.
+   * Convert a VimKeyStroke into the character it represents and return a printable version of the character.
    *
    *
    * See :help 'isprint'
    *
-   * @param key The KeyStroke to represent
-   * @return A printable String of the character represented by the KeyStroke
+   * @param key The VimKeyStroke to represent
+   * @return A printable String of the character represented by the VimKeyStroke
    */
   @JvmStatic
-  fun toPrintableCharacter(key: KeyStroke): String {
+  fun toPrintableCharacter(key: VimKeyStroke): String {
     // TODO: Look at 'isprint', 'display' and 'encoding' settings
     var c = key.keyChar
-    if (c == KeyEvent.CHAR_UNDEFINED && key.keyCode == KeyEvent.VK_ENTER && key.modifiers == 0) {
+    if (c == VimKeyCodes.CHAR_UNDEFINED && key.keyCode == VimKeyCodes.VK_ENTER && key.modifiers == 0) {
       return toPrintableCharacter('\r')
     }
-    if (c == KeyEvent.CHAR_UNDEFINED && key.modifiers == 0) {
+    if (c == VimKeyCodes.CHAR_UNDEFINED && key.modifiers == 0) {
       c = key.keyCode.toChar()
-    } else if (c == KeyEvent.CHAR_UNDEFINED && key.modifiers and InputEvent.CTRL_DOWN_MASK != 0) {
+    } else if (c == VimKeyCodes.CHAR_UNDEFINED && key.modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0) {
       val code = key.keyCode
       if (code >= 'A'.code && code <= '_'.code) {
         // Ctrl-(A..Z [\]^_) are ASCII control characters

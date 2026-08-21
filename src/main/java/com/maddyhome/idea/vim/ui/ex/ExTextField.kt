@@ -18,6 +18,8 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.helper.EngineStringHelper.isPrintableCharacter
 import com.maddyhome.idea.vim.helper.selectEditorFont
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.vimKeyStrokeForEvent
 import com.maddyhome.idea.vim.listener.ModelessSelection
 import com.maddyhome.idea.vim.newapi.IjEditorExecutionContext
 import com.maddyhome.idea.vim.options.helpers.GuiCursorAttributes
@@ -39,7 +41,6 @@ import java.awt.geom.Area
 import java.awt.geom.Rectangle2D
 import java.util.*
 import javax.swing.JTextField
-import javax.swing.KeyStroke
 import javax.swing.event.CaretEvent
 import javax.swing.text.BadLocationException
 import javax.swing.text.DefaultCaret
@@ -188,7 +189,7 @@ class ExTextField internal constructor(private val myParentPanel: ExEntryPanel) 
    *
    * @param stroke  The potentially mapped keystroke
    */
-  fun handleKey(stroke: KeyStroke) {
+  fun handleKey(stroke: VimKeyStroke) {
     logger.debug { "stroke=$stroke" }
 
     // Typically, we would let the super class handle the keystroke. It would use any registered keybindings to convert
@@ -234,7 +235,7 @@ class ExTextField internal constructor(private val myParentPanel: ExEntryPanel) 
       // the owning editor has to be dropped. Without it, `:d` after a mouse drag would act on the dragged range
       myParentPanel.ijEditor?.let { ModelessSelection.clearIfOwned(it) }
       val keyHandler = KeyHandler.getInstance()
-      val keyStroke = KeyStroke.getKeyStrokeForEvent(e)
+      val keyStroke = vimKeyStrokeForEvent(e)
       keyHandler.handleKey(
         editor,
         keyStroke,

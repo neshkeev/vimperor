@@ -8,7 +8,8 @@
 
 package com.maddyhome.idea.vim.api
 
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
+
 
 interface VimApplication {
   fun isMainThread(): Boolean
@@ -17,7 +18,7 @@ interface VimApplication {
   fun invokeAndWait(action: () -> Unit)
   fun isUnitTest(): Boolean
   fun isInternal(): Boolean
-  fun postKey(stroke: KeyStroke, editor: VimEditor)
+  fun postKey(stroke: VimKeyStroke, editor: VimEditor)
 
   fun <T> runWriteAction(action: () -> T): T
   fun <T> runReadAction(action: () -> T): T

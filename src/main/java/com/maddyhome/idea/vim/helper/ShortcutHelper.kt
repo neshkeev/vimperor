@@ -13,13 +13,14 @@ import com.intellij.openapi.actionSystem.KeyboardShortcut
 import com.intellij.openapi.actionSystem.Shortcut
 import com.intellij.openapi.actionSystem.ShortcutSet
 import com.maddyhome.idea.vim.key.RequiredShortcut
+import com.maddyhome.idea.vim.key.toAwtKeyStroke
 
 object ShortcutHelper {
   @JvmStatic
   fun toShortcutSet(requiredShortcuts: Collection<RequiredShortcut>): ShortcutSet {
     val shortcuts = mutableListOf<Shortcut>()
     for (key in requiredShortcuts) {
-      shortcuts.add(KeyboardShortcut(key.keyStroke, null))
+      shortcuts.add(KeyboardShortcut(key.keyStroke.toAwtKeyStroke(), null))
     }
     return CustomShortcutSet(*shortcuts.toTypedArray())
   }

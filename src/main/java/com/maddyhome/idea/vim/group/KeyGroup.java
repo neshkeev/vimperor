@@ -60,9 +60,9 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
     return ShortcutHelper.toShortcutSet(requiredShortcuts);
   }
 
-  private static @NotNull List<AnAction> getLocalActions(@NotNull Component component, @NotNull KeyStroke keyStroke) {
+  private static @NotNull List<AnAction> getLocalActions(@NotNull Component component, @NotNull VimKeyStroke keyStroke) {
     final List<AnAction> results = new ArrayList<>();
-    final KeyboardShortcut keyStrokeShortcut = new KeyboardShortcut(keyStroke, null);
+    final KeyboardShortcut keyStrokeShortcut = new KeyboardShortcut(AwtKeyStrokesKt.toAwtKeyStroke(keyStroke), null);
     for (Component c = component; c != null; c = c.getParent()) {
       if (c instanceof JComponent) {
         final List<AnAction> actions = ActionUtil.getActions((JComponent)c);
@@ -82,10 +82,10 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
     return results;
   }
 
-  private static @NotNull List<AnAction> getKeymapActions(@NotNull KeyStroke keyStroke) {
+  private static @NotNull List<AnAction> getKeymapActions(@NotNull VimKeyStroke keyStroke) {
     final List<AnAction> results = new ArrayList<>();
     final Keymap keymap = KeymapManager.getInstance().getActiveKeymap();
-    for (String id : keymap.getActionIds(keyStroke)) {
+    for (String id : keymap.getActionIds(AwtKeyStrokesKt.toAwtKeyStroke(keyStroke))) {
       final AnAction action = ActionManager.getInstance().getAction(id);
 
       // EmptyAction is used to reserve a shortcut, but can't be executed. Code can ask for an action by ID and
@@ -129,7 +129,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
    * deliberately NOT reserved here so Vim receives them and VimShortcutKeyAction can redirect them to the console's
    * own actions (execute / history navigation).
    */
-  private static boolean isPythonConsoleReservedKey(@NotNull KeyStroke keyStroke) {
+  private static boolean isPythonConsoleReservedKey(@NotNull VimKeyStroke keyStroke) {
     if (keyStroke.getModifiers() != 0) return false;
     final int code = keyStroke.getKeyCode();
     return code == KeyEvent.VK_LEFT
@@ -154,7 +154,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
 
   public void saveData(@NotNull Element element) {
     final Element conflictsElement = new Element(SHORTCUT_CONFLICTS_ELEMENT);
-    for (Map.Entry<KeyStroke, ShortcutOwnerInfo> entry : myShortcutConflicts.entrySet()) {
+    for (Map.Entry<VimKeyStroke, ShortcutOwnerInfo> entry : myShortcutConflicts.entrySet()) {
       final ShortcutOwner owner;
       ShortcutOwnerInfo myValue = entry.getValue();
       if (myValue instanceof ShortcutOwnerInfo.AllModes) {
@@ -170,7 +170,8 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
         final Element conflictElement = new Element(SHORTCUT_CONFLICT_ELEMENT);
         conflictElement.setAttribute(OWNER_ATTRIBUTE, owner.getOwnerName());
         final Element textElement = new Element(TEXT_ELEMENT);
-        XMLGroup.getInstance().setSafeXmlText(textElement, entry.getKey().toString());
+        XMLGroup.getInstance().setSafeXmlText(textElement,
+                                              AwtKeyStrokesKt.toAwtKeyStroke(entry.getKey()).toString());
         conflictElement.addContent(textElement);
         conflictsElement.addContent(conflictElement);
       }
@@ -194,9 +195,10 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
         if (textElement != null) {
           final String text = XMLGroup.getInstance().getSafeXmlText(textElement);
           if (text != null) {
-            final KeyStroke keyStroke = KeyStroke.getKeyStroke(text);
-            if (keyStroke != null) {
-              myShortcutConflicts.put(keyStroke, new ShortcutOwnerInfo.AllModes(owner));
+            final KeyStroke awtKeyStroke = KeyStroke.getKeyStroke(text);
+            if (awtKeyStroke != null) {
+              myShortcutConflicts.put(AwtKeyStrokesKt.toVimKeyStroke(awtKeyStroke),
+                                      new ShortcutOwnerInfo.AllModes(owner));
             }
           }
         }
@@ -211,10 +213,10 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
   }
 
   @Override
-  public @NotNull List<NativeAction> getKeymapConflicts(@NotNull KeyStroke keyStroke) {
+  public @NotNull List<NativeAction> getKeymapConflicts(@NotNull VimKeyStroke keyStroke) {
     final KeymapManagerEx keymapManager = KeymapManagerEx.getInstanceEx();
     final Keymap keymap = keymapManager.getActiveKeymap();
-    final KeyboardShortcut shortcut = new KeyboardShortcut(keyStroke, null);
+    final KeyboardShortcut shortcut = new KeyboardShortcut(AwtKeyStrokesKt.toAwtKeyStroke(keyStroke), null);
     final Map<String, ? extends List<KeyboardShortcut>> conflicts = keymap.getConflicts("", shortcut);
     final List<AnAction> actions = new ArrayList<>();
     for (String actionId : conflicts.keySet()) {
@@ -226,12 +228,12 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
     return actions.stream().map(IjNativeAction::new).collect(toList());
   }
 
-  public @NotNull Map<KeyStroke, ShortcutOwnerInfo> getShortcutConflicts() {
+  public @NotNull Map<VimKeyStroke, ShortcutOwnerInfo> getShortcutConflicts() {
     final Set<RequiredShortcut> requiredShortcutKeys = this.getRequiredShortcutKeys();
-    final Map<KeyStroke, ShortcutOwnerInfo> savedConflicts = getSavedShortcutConflicts();
-    final Map<KeyStroke, ShortcutOwnerInfo> results = new HashMap<>();
+    final Map<VimKeyStroke, ShortcutOwnerInfo> savedConflicts = getSavedShortcutConflicts();
+    final Map<VimKeyStroke, ShortcutOwnerInfo> results = new HashMap<>();
     for (RequiredShortcut requiredShortcut : requiredShortcutKeys) {
-      KeyStroke keyStroke = requiredShortcut.getKeyStroke();
+      VimKeyStroke keyStroke = requiredShortcut.getKeyStroke();
       if (!VimShortcutKeyAction.VIM_ONLY_EDITOR_KEYS.contains(keyStroke)) {
         final List<NativeAction> conflicts = getKeymapConflicts(keyStroke);
         if (!conflicts.isEmpty()) {
@@ -262,12 +264,12 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
    * @param keyStroke The shortcut to register
    */
   @Override
-  public void registerShortcutWithoutAction(@NotNull KeyStroke keyStroke, @NotNull MappingOwner owner) {
+  public void registerShortcutWithoutAction(@NotNull VimKeyStroke keyStroke, @NotNull MappingOwner owner) {
     registerRequiredShortcut(Collections.singletonList(keyStroke), owner);
   }
 
-  private void registerRequiredShortcut(@NotNull List<KeyStroke> keys, MappingOwner owner) {
-    for (KeyStroke key : keys) {
+  private void registerRequiredShortcut(@NotNull List<VimKeyStroke> keys, MappingOwner owner) {
+    for (VimKeyStroke key : keys) {
       if (key.getKeyChar() == KeyEvent.CHAR_UNDEFINED) {
         getRequiredShortcutKeys().add(new RequiredShortcut(key, owner));
       }
@@ -278,12 +280,12 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
   public void registerCommandAction(@NotNull LazyVimCommand command) {
     if (ApplicationManager.getApplication().isUnitTestMode()) {
       initIdentityChecker();
-      for (List<KeyStroke> keys : command.getKeys()) {
+      for (List<VimKeyStroke> keys : command.getKeys()) {
         checkCommand(command.getModes(), command, keys);
       }
     }
 
-    for (List<KeyStroke> keyStrokes : command.getKeys()) {
+    for (List<VimKeyStroke> keyStrokes : command.getKeys()) {
       registerRequiredShortcut(keyStrokes, MappingOwner.IdeaVim.System.INSTANCE);
 
       for (MappingMode mappingMode : command.getModes()) {
@@ -292,7 +294,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
     }
   }
 
-  private @NotNull List<AnAction> getActions(@NotNull Component component, @NotNull KeyStroke keyStroke) {
+  private @NotNull List<AnAction> getActions(@NotNull Component component, @NotNull VimKeyStroke keyStroke) {
     final List<AnAction> results = new ArrayList<>();
     results.addAll(getLocalActions(component, keyStroke));
     results.addAll(getKeymapActions(keyStroke));
@@ -300,7 +302,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
   }
 
   @Override
-  public @NotNull List<NativeAction> getActions(@NotNull VimEditor editor, @NotNull KeyStroke keyStroke) {
+  public @NotNull List<NativeAction> getActions(@NotNull VimEditor editor, @NotNull VimKeyStroke keyStroke) {
     return getActions(((IjVimEditor)editor).getEditor().getComponent(), keyStroke).stream().map(IjNativeAction::new)
       .collect(toList());
   }
@@ -321,7 +323,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
   @Override
   public @Nullable Character getChar(@NotNull VimEditor editor) {
     Editor ijEditor = ((IjVimEditor)editor).getEditor();
-    KeyStroke stroke = VimExtensionFacade.inputKeyStroke(ijEditor);
+    VimKeyStroke stroke = VimExtensionFacade.inputKeyStroke(ijEditor);
     char keyChar = stroke.getKeyChar();
     if (keyChar == KeyEvent.CHAR_UNDEFINED) {
       return null;

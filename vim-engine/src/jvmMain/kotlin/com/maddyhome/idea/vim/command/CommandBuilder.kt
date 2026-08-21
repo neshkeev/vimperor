@@ -23,13 +23,13 @@ import com.maddyhome.idea.vim.helper.noneOfEnum
 import com.maddyhome.idea.vim.key.KeyStrokeTrie
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.annotations.TestOnly
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 class CommandBuilder private constructor(
   private var keyStrokeTrie: KeyStrokeTrie<LazyVimCommand>,
   private val counts: MutableList<Int>,
-  private val typedKeyStrokes: MutableList<KeyStroke>,
-  private val commandKeyStrokes: MutableList<KeyStroke>,
+  private val typedKeyStrokes: MutableList<VimKeyStroke>,
+  private val commandKeyStrokes: MutableList<VimKeyStroke>,
 ) : Cloneable {
 
   constructor(keyStrokeTrie: KeyStrokeTrie<LazyVimCommand>, initialUncommittedRawCount: Int = 0)
@@ -59,7 +59,7 @@ class CommandBuilder private constructor(
     }
 
   /** Provide the typed keys for `'showcmd'` */
-  val keys: Iterable<KeyStroke> get() = typedKeyStrokes
+  val keys: Iterable<VimKeyStroke> get() = typedKeyStrokes
 
   /** Returns true if the command builder is clean and ready to start building */
   val isEmpty
@@ -157,7 +157,7 @@ class CommandBuilder private constructor(
    */
   fun hasCountCharacters() = currentCount > 0
 
-  fun addCountCharacter(key: KeyStroke) {
+  fun addCountCharacter(key: VimKeyStroke) {
     currentCount = (currentCount * 10) + (key.keyChar - '0')
     // If count overflows and flips negative, reset to 999999999L. In Vim, count is a long, which is *usually* 32 bits,
     // so will flip at 2147483648. We store count as an Int, which is also 32 bit.
@@ -183,7 +183,7 @@ class CommandBuilder private constructor(
    * `<C-R>{register}` which is a command that accepts a register name as an argument, and then inserts the contents of
    * the register.
    */
-  fun startWaitingForRegister(key: KeyStroke) {
+  fun startWaitingForRegister(key: VimKeyStroke) {
     isRegisterPending = true
     addTypedKeyStroke(key)
   }
@@ -208,7 +208,7 @@ class CommandBuilder private constructor(
    * Only public use is when entering a digraph/literal, where each key isn't handled by [CommandBuilder], but should
    * be added to the `'showcmd'` output.
    */
-  fun addTypedKeyStroke(key: KeyStroke) {
+  fun addTypedKeyStroke(key: VimKeyStroke) {
     logger.trace { "added key to command builder: $key" }
     typedKeyStrokes.add(key)
   }
@@ -284,7 +284,7 @@ class CommandBuilder private constructor(
    * If the given keystroke does not yet match an action, the internal state is updated to track the current command
    * part node.
    */
-  fun processKey(key: KeyStroke, processor: (EditorActionHandlerBase) -> Unit): Boolean {
+  fun processKey(key: VimKeyStroke, processor: (EditorActionHandlerBase) -> Unit): Boolean {
     commandKeyStrokes.add(key)
     val node = keyStrokeTrie.getTrieNode(commandKeyStrokes)
     if (node == null) {
@@ -329,7 +329,7 @@ class CommandBuilder private constructor(
    *
    * @see DuplicableOperatorAction
    */
-  fun convertDuplicateOperatorKeyStrokeToMotion(key: KeyStroke): KeyStroke {
+  fun convertDuplicateOperatorKeyStrokeToMotion(key: VimKeyStroke): VimKeyStroke {
     logger.trace { "convertDuplicateOperatorKeyStrokeToMotion is executed. key = $key" }
 
     // Simple check to ensure that we're in OP_PENDING. If we don't have an action, we don't have an operator. If we
@@ -338,7 +338,7 @@ class CommandBuilder private constructor(
       (action as? DuplicableOperatorAction)?.let {
         logger.trace { "action = $action" }
         if (it.duplicateWith == key.keyChar) {
-          return KeyStroke.getKeyStroke('_')
+          return VimKeyStroke.getKeyStroke('_')
         }
       }
     }
@@ -399,7 +399,7 @@ class CommandBuilder private constructor(
   fun getCurrentTrie(): KeyStrokeTrie<LazyVimCommand> = keyStrokeTrie
 
   @TestOnly
-  fun getCurrentCommandKeys(): List<KeyStroke> = commandKeyStrokes
+  fun getCurrentCommandKeys(): List<VimKeyStroke> = commandKeyStrokes
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true

@@ -17,13 +17,13 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.helper.VimLockLabel
 import com.maddyhome.idea.vim.helper.StrictMode
 import com.maddyhome.idea.vim.helper.exitVisualMode
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.register.Register
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.inBlockSelection
 import com.maddyhome.idea.vim.state.mode.inCommandLineModeWithVisual
 import com.maddyhome.idea.vim.state.mode.inSelectMode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
-import javax.swing.KeyStroke
 
 /**
  * Immutable interface of the caret. Immutable caret is an important concept of Fleet.
@@ -165,6 +165,6 @@ interface CaretRegisterStorage {
   ): Boolean
 
   fun getRegister(editor: VimEditor, context: ExecutionContext, r: Char): Register?
-  fun setKeys(editor: VimEditor, context: ExecutionContext, register: Char, keys: List<KeyStroke>)
+  fun setKeys(editor: VimEditor, context: ExecutionContext, register: Char, keys: List<VimKeyStroke>)
   fun saveRegister(editor: VimEditor, context: ExecutionContext, r: Char, register: Register)
 }

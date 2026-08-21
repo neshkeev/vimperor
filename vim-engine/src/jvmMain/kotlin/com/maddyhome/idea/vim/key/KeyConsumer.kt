@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.key
 
 import com.maddyhome.idea.vim.KeyProcessResult
 import com.maddyhome.idea.vim.api.VimEditor
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 internal interface KeyConsumer {
   /**
@@ -22,7 +22,7 @@ internal interface KeyConsumer {
    * This function will always be called before [consumeKey].
    */
   fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -36,7 +36,7 @@ internal interface KeyConsumer {
    * @return `true` if the key was consumed and no further [KeyConsumer] instances should be called
    */
   fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,

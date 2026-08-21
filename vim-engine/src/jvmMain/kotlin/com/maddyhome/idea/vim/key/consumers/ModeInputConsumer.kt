@@ -16,9 +16,9 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Key consumer to handle keystrokes as text input. It should be the last key consumer
@@ -37,7 +37,7 @@ internal class ModeInputConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -46,7 +46,7 @@ internal class ModeInputConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -70,7 +70,7 @@ internal class ModeInputConsumer : KeyConsumer {
         if (commandLine != null) {
           keyProcessResultBuilder.addExecutionStep { _, _, _ ->
             commandLine.focus()
-            if (key.keyChar != KeyEvent.CHAR_UNDEFINED) {
+            if (key.keyChar != VimKeyCodes.CHAR_UNDEFINED) {
               commandLine.tryExpandAbbreviation(key.keyChar)
             }
             commandLine.handleKey(key)

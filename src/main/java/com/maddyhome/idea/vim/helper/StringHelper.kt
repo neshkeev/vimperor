@@ -8,16 +8,16 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import org.jetbrains.annotations.ApiStatus
 import java.util.*
 import java.util.stream.Collectors
-import javax.swing.KeyStroke
 
 object StringHelper {
   @JvmStatic
   @Deprecated("Use injector.parser.parseKeys(string)")
   @ApiStatus.ScheduledForRemoval
-  fun parseKeys(vararg string: String): List<KeyStroke> {
+  fun parseKeys(vararg string: String): List<VimKeyStroke> {
     return Arrays.stream(string).flatMap { o: String -> injector.parser.parseKeys(o).stream() }
       .collect(Collectors.toList())
   }

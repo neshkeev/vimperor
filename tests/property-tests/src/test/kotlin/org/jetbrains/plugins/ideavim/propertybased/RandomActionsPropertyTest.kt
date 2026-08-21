@@ -15,6 +15,7 @@ import com.intellij.testFramework.PlatformTestUtil
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.key
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.vim
 import org.jetbrains.jetCheck.Generator
 import org.jetbrains.jetCheck.ImperativeCommand
@@ -24,7 +25,6 @@ import org.jetbrains.plugins.ideavim.propertybased.samples.javaText
 import org.jetbrains.plugins.ideavim.propertybased.samples.loremText
 import org.junit.jupiter.api.Test
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Property based tests based of JetCheck framework
@@ -108,7 +108,7 @@ private class AvailableActions(private val editor: Editor) : ImperativeCommand {
     val currentKeys = KeyHandler.getInstance().keyHandlerState.commandBuilder.getCurrentCommandKeys()
 
     // Note: esc is always an option
-    val possibleKeys: List<KeyStroke> = buildList {
+    val possibleKeys: List<VimKeyStroke> = buildList {
       add(esc)
       trie.getTrieNode(currentKeys)?.visit { stroke, _ -> add(stroke) }
     }.sortedBy { injector.parser.toKeyNotation(it) }
@@ -134,7 +134,7 @@ private class AvailableActions(private val editor: Editor) : ImperativeCommand {
 
 private val stinkyKeysList = arrayListOf(
   "K", "u", "H", "<C-Y>",
-  injector.parser.toKeyNotation(KeyStroke.getKeyStroke(KeyEvent.VK_UNDO, 0)), "L", "!", "<C-D>", "z", "<C-W>",
+  injector.parser.toKeyNotation(VimKeyStroke.getKeyStroke(KeyEvent.VK_UNDO, 0)), "L", "!", "<C-D>", "z", "<C-W>",
   "g", "<C-U>",
 
   // Temporally disabled due to issues in the platform

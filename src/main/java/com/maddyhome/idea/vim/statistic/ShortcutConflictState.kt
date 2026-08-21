@@ -15,11 +15,11 @@ import com.intellij.internal.statistic.service.fus.collectors.ApplicationUsagesC
 import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.key.ShortcutOwner
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.awt.event.InputEvent
 import java.awt.event.InputEvent.CTRL_DOWN_MASK
 import java.awt.event.InputEvent.SHIFT_DOWN_MASK
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 internal class ShortcutConflictState : ApplicationUsagesCollector() {
 
@@ -43,7 +43,7 @@ internal class ShortcutConflictState : ApplicationUsagesCollector() {
     return metrics
   }
 
-  private fun getHandlersForShortcut(shortcut: KeyStroke): List<HandledModes> {
+  private fun getHandlersForShortcut(shortcut: VimKeyStroke): List<HandledModes> {
     val modes = VimPlugin.getKey().shortcutConflicts[shortcut] ?: return listOf(
       HandledModes.NORMAL_UNDEFINED,
       HandledModes.INSERT_UNDEFINED,
@@ -96,7 +96,7 @@ internal class ShortcutConflictState : ApplicationUsagesCollector() {
   }
 }
 
-private fun KeyStroke.toReadableString(): String {
+private fun VimKeyStroke.toReadableString(): String {
   val result = StringBuilder()
   val modifiers = this.modifiers
   if (modifiers > 0) {
@@ -126,85 +126,85 @@ private enum class HandledModes {
 private val GROUP =
   EventLogGroup("vim.handlers", 1, "FUS", "Group: Information about Vim handlers for different shortcuts")
 private val keyStrokes = listOf(
-  KeyStroke.getKeyStroke('1'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('2'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('3'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('4'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('5'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('6'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('7'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('8'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('9'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('0'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('1'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('2'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('3'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('4'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('5'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('6'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('7'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('8'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('9'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('0'.code, CTRL_DOWN_MASK),
 
-  KeyStroke.getKeyStroke('1'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('2'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('3'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('4'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('5'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('6'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('7'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('8'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('9'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('0'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('1'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('2'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('3'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('4'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('5'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('6'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('7'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('8'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('9'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('0'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
 
-  KeyStroke.getKeyStroke('A'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('B'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('C'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('D'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('E'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('F'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('G'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('H'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('I'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('J'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('K'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('L'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('M'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('N'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('O'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('P'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('Q'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('R'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('S'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('T'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('U'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('V'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('W'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('X'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('Y'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('Z'.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke('['.code, CTRL_DOWN_MASK),
-  KeyStroke.getKeyStroke(']'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('A'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('B'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('C'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('D'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('E'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('F'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('G'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('H'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('I'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('J'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('K'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('L'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('M'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('N'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('O'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('P'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Q'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('R'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('S'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('T'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('U'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('V'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('W'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('X'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Y'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Z'.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('['.code, CTRL_DOWN_MASK),
+  VimKeyStroke.getKeyStroke(']'.code, CTRL_DOWN_MASK),
 
-  KeyStroke.getKeyStroke('A'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('B'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('C'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('D'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('E'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('F'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('G'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('H'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('I'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('J'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('K'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('L'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('M'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('N'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('O'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('P'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('Q'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('R'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('S'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('T'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('U'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('V'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('W'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('X'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('Y'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('Z'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke('['.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
-  KeyStroke.getKeyStroke(']'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('A'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('B'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('C'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('D'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('E'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('F'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('G'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('H'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('I'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('J'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('K'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('L'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('M'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('N'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('O'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('P'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Q'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('R'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('S'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('T'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('U'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('V'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('W'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('X'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Y'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('Z'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke('['.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
+  VimKeyStroke.getKeyStroke(']'.code, CTRL_DOWN_MASK + SHIFT_DOWN_MASK),
 )
 private val KEY_STROKE = EventFields.String("key_stroke", keyStrokes.map { it.toReadableString() })
 private val HANDLER_MODE = EventFields.Enum("handler", HandledModes::class.java)

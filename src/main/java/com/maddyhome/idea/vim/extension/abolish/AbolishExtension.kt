@@ -26,11 +26,11 @@ import com.maddyhome.idea.vim.extension.VimExtensionFacade.putKeyMapping
 import com.maddyhome.idea.vim.extension.VimExtensionFacade.putKeyMappingIfMissing
 import com.maddyhome.idea.vim.extension.exportOperatorFunction
 import com.maddyhome.idea.vim.key.OperatorFunction
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDictionary
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import javax.swing.KeyStroke
 
 /**
  * Emulation of [vim-abolish](https://github.com/tpope/vim-abolish): `cr<x>`
@@ -89,10 +89,10 @@ internal class AbolishExtension : VimExtension {
     coercion.aliases.forEach { alias -> bindAlias(alias, plugWord) }
   }
 
-  private fun plugWordKeysFor(style: CaseStyle): List<KeyStroke> =
+  private fun plugWordKeysFor(style: CaseStyle): List<VimKeyStroke> =
     injector.parser.parseKeys("<Plug>(abolish-coerce-word-${style.name.lowercase()})")
 
-  private fun plugOperatorKeysFor(style: CaseStyle): List<KeyStroke> =
+  private fun plugOperatorKeysFor(style: CaseStyle): List<VimKeyStroke> =
     injector.parser.parseKeys("<Plug>(abolish-coerce-${style.name.lowercase()})")
 
   private fun resolveStyleByName(name: String?): CaseStyle? =
@@ -107,7 +107,7 @@ internal class AbolishExtension : VimExtension {
    */
   private fun bindPrimaryKeyUnlessUserOverrode(
     key: String,
-    plugWord: List<KeyStroke>,
+    plugWord: List<VimKeyStroke>,
   ) {
     val parsed = injector.parser.parseKeys(key)
     putKeyMappingIfMissing(MappingMode.N, parsed, owner, plugWord, true)
@@ -115,7 +115,7 @@ internal class AbolishExtension : VimExtension {
 
   private fun bindAlias(
     key: String,
-    plugWord: List<KeyStroke>,
+    plugWord: List<VimKeyStroke>,
   ) {
     val parsed = injector.parser.parseKeys(key)
     putKeyMapping(MappingMode.N, parsed, owner, plugWord, true)

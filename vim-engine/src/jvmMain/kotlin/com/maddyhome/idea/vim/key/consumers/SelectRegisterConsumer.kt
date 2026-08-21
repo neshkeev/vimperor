@@ -15,8 +15,8 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
  * Key consumer to capture the register specified after the `"` key in an in-progress command
@@ -30,7 +30,7 @@ internal class SelectRegisterConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -39,7 +39,7 @@ internal class SelectRegisterConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -49,7 +49,7 @@ internal class SelectRegisterConsumer : KeyConsumer {
     val commandBuilder = keyProcessResultBuilder.state.commandBuilder
     commandBuilder.addTypedKeyStroke(key)
 
-    val chKey = if (key.keyChar == KeyEvent.CHAR_UNDEFINED) 0.toChar() else key.keyChar
+    val chKey = if (key.keyChar == VimKeyCodes.CHAR_UNDEFINED) 0.toChar() else key.keyChar
     handleSelectRegister(chKey, keyProcessResultBuilder)
     return true
   }

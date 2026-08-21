@@ -17,12 +17,12 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.helper.TestInputModel
 import com.maddyhome.idea.vim.helper.inRepeatMode
 import com.maddyhome.idea.vim.helper.isCloseKeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.ui.ModalEntry
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 class ExEntryPanelService : VimCommandLineServiceBase() {
   override fun getActiveCommandLine(): VimCommandLine? {
@@ -41,7 +41,7 @@ class ExEntryPanelService : VimCommandLineServiceBase() {
     if (ApplicationManager.getApplication().isUnitTestMode) {
       val builder = StringBuilder()
       val inputModel = TestInputModel.getInstance(editor)
-      var key: KeyStroke? = inputModel.nextKeyStroke()
+      var key: VimKeyStroke? = inputModel.nextKeyStroke()
       while (key != null &&
         !key.isCloseKeyStroke() && key.keyCode != KeyEvent.VK_ENTER &&
         (finishOn == null || key.keyChar != finishOn)
@@ -61,7 +61,7 @@ class ExEntryPanelService : VimCommandLineServiceBase() {
       var text: String? = null
       // XXX: The Ex entry panel is used only for UI here, its logic might be inappropriate for input()
       val commandLine = injector.commandLine.createSearchPrompt(vimEditor, context, prompt.ifEmpty { " " }, "")
-      ModalEntry.activate(editor.vim) { key: KeyStroke ->
+      ModalEntry.activate(editor.vim) { key: VimKeyStroke ->
         return@activate when {
           key.isCloseKeyStroke() -> {
             commandLine.deactivate(refocusOwningEditor = true, resetCaret = true)

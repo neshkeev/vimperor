@@ -13,7 +13,7 @@ import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.annotations.NonNls
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 class ParseMapCommandArguments {
 
@@ -47,7 +47,7 @@ class ParseMapCommandArguments {
 
   class CommandArguments(
     val specialArguments: Set<SpecialArgument>,
-    val fromKeys: List<KeyStroke>,
+    val fromKeys: List<VimKeyStroke>,
     val toExpr: Expression,
     val secondArgument: String,
   )
@@ -67,7 +67,7 @@ class ParseMapCommandArguments {
       }
       val specialArguments = HashSet<SpecialArgument>()
       val toKeysBuilder = StringBuilder()
-      var fromKeys: List<KeyStroke>? = null
+      var fromKeys: List<VimKeyStroke>? = null
 
       parts.forEach { part ->
         if (fromKeys != null) {

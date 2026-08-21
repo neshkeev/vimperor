@@ -18,7 +18,7 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.vimscript.model.commands.SortOption
 import com.maddyhome.idea.vim.annotations.TestOnly
-import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.key.VimKeyStroke
 
 interface VimChangeGroup {
   fun setInsertRepeat(lines: Int, column: Int, append: Boolean)
@@ -95,13 +95,13 @@ interface VimChangeGroup {
 
   fun processKey(
     editor: VimEditor,
-    key: KeyStroke,
+    key: VimKeyStroke,
     processResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ): Boolean
 
   fun processKeyInSelectMode(
     editor: VimEditor,
-    key: KeyStroke,
+    key: VimKeyStroke,
     processResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ): Boolean
   fun deleteLine(

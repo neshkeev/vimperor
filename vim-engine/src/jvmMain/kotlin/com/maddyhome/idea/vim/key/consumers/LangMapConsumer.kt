@@ -17,26 +17,26 @@ import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.CommandBuilder
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.options.helpers.LangMapOptionHelper
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 class LangMapConsumer : KeyConsumer {
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder
   ): Boolean {
     val commandBuilder = keyProcessResultBuilder.state.commandBuilder
-    return key.keyChar != KeyEvent.CHAR_UNDEFINED
+    return key.keyChar != VimKeyCodes.CHAR_UNDEFINED
       && keySource.allowsKeyMapping
       && allowLangMap(keySource, editor, commandBuilder)
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -45,7 +45,7 @@ class LangMapConsumer : KeyConsumer {
     val newChar = LangMapOptionHelper.mapChar(char)
     if (newChar != char) {
       keyProcessResultBuilder.addExecutionStep { s, e, c ->
-        val newKeyStroke = KeyStroke.getKeyStroke(newChar)
+        val newKeyStroke = VimKeyStroke.getKeyStroke(newChar)
         KeyHandler.getInstance().handleKey(e, newKeyStroke, KeySource.LANG_MAP, c, s)
       }
       return true

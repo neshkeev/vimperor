@@ -18,9 +18,9 @@ import com.maddyhome.idea.vim.api.getText
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 open class InsertCommandLineTextActionBase(private val insertLiterally: Boolean) : CommandLineActionHandler() {
 
@@ -51,7 +51,7 @@ open class InsertCommandLineTextActionBase(private val insertLiterally: Boolean)
 
   protected open fun getText(commandLine: VimCommandLine): String? = null
 
-  protected fun replayKeys(editor: VimEditor, context: ExecutionContext, keys: List<KeyStroke>) {
+  protected fun replayKeys(editor: VimEditor, context: ExecutionContext, keys: List<VimKeyStroke>) {
     keys.forEach { key ->
       val keyHandler = KeyHandler.getInstance()
       if (shouldInsertLiterally(key)) {
@@ -68,28 +68,28 @@ open class InsertCommandLineTextActionBase(private val insertLiterally: Boolean)
     commandLine.insertText(offset, text)
   }
 
-  protected open fun shouldInsertLiterally(key: KeyStroke): Boolean {
+  protected open fun shouldInsertLiterally(key: VimKeyStroke): Boolean {
     if (insertLiterally) {
       // Don't escape <C-V>
-      if (key.keyCode == KeyEvent.VK_V && key.modifiers and KeyEvent.CTRL_DOWN_MASK != 0) {
+      if (key.keyCode == VimKeyCodes.VK_V && key.modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0) {
         return false
       }
 
       // Insert Tab and any non-character keystroke literal characters
-      if (key.keyCode == KeyEvent.VK_TAB || key.keyChar == KeyEvent.CHAR_UNDEFINED) {
+      if (key.keyCode == VimKeyCodes.VK_TAB || key.keyChar == VimKeyCodes.CHAR_UNDEFINED) {
         return true
       }
     }
 
     // <C-C>, <Esc> and <CR> are inserted literally. This includes their synonyms
-    if (key.keyCode == KeyEvent.VK_ENTER || key.keyCode == KeyEvent.VK_ESCAPE) {
+    if (key.keyCode == VimKeyCodes.VK_ENTER || key.keyCode == VimKeyCodes.VK_ESCAPE) {
       return true
     }
-    if (key.keyChar == KeyEvent.CHAR_UNDEFINED && key.modifiers and KeyEvent.CTRL_DOWN_MASK != 0) {
-      return key.keyCode == KeyEvent.VK_C
-        || key.keyCode == KeyEvent.VK_J
-        || key.keyCode == KeyEvent.VK_M
-        || key.keyCode == KeyEvent.VK_OPEN_BRACKET
+    if (key.keyChar == VimKeyCodes.CHAR_UNDEFINED && key.modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0) {
+      return key.keyCode == VimKeyCodes.VK_C
+        || key.keyCode == VimKeyCodes.VK_J
+        || key.keyCode == VimKeyCodes.VK_M
+        || key.keyCode == VimKeyCodes.VK_OPEN_BRACKET
     }
     return false
   }
@@ -115,7 +115,7 @@ open class InsertRegisterActionBase(insertLiterally: Boolean) : InsertCommandLin
 
     // If we have any non-text characters, replay them through the key handler. If it's all just plain text, insert it
     // as text. Since we're not allowed to do mapping, replaying text keystrokes should be the same as inserting text.
-    if (register.keys.any { it.keyChar == KeyEvent.CHAR_UNDEFINED }) {
+    if (register.keys.any { it.keyChar == VimKeyCodes.CHAR_UNDEFINED }) {
       replayKeys(editor, context, register.keys)
     }
     else {

@@ -36,6 +36,7 @@ import com.maddyhome.idea.vim.extension.exportOperatorFunction
 import com.maddyhome.idea.vim.helper.moveToInlayAwareLogicalPosition
 import com.maddyhome.idea.vim.helper.moveToInlayAwareOffset
 import com.maddyhome.idea.vim.key.OperatorFunction
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMarkConstants
 import com.maddyhome.idea.vim.newapi.IjVimEditor
@@ -344,7 +345,7 @@ class VimExchangeExtension : VimExtension {
     }
 
     private fun getExchange(editor: Editor, isVisual: Boolean, selectionType: SelectionType): Exchange {
-      // TODO: improve KeyStroke list to sting conversion
+      // TODO: improve VimKeyStroke list to sting conversion
       fun getRegisterText(reg: Char): String = getRegister(editor.vim, reg)?.map { it.keyChar }?.joinToString("") ?: ""
       fun getMarks(isVisual: Boolean): Pair<Mark, Mark> {
         val (startMark, endMark) =

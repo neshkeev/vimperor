@@ -50,6 +50,9 @@ import com.maddyhome.idea.vim.impl.state.toMappingMode
 import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.ShortcutOwner
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toVimKeyStroke
+import com.maddyhome.idea.vim.key.vimKeyStrokeForEvent
 import com.maddyhome.idea.vim.listener.AceJumpService
 import com.maddyhome.idea.vim.listener.ModelessSelection
 import com.maddyhome.idea.vim.newapi.globalIjOptions
@@ -60,7 +63,6 @@ import com.maddyhome.idea.vim.ui.ex.ExTextField
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Handles Vim keys that are treated as action shortcuts by the IDE.
@@ -128,7 +130,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
    *
    * @return true if the console handled the keystroke (and Vim should not process it further).
    */
-  private fun handlePythonConsoleKey(editor: Editor, keyStroke: KeyStroke, e: AnActionEvent): Boolean {
+  private fun handlePythonConsoleKey(editor: Editor, keyStroke: VimKeyStroke, e: AnActionEvent): Boolean {
     if (keyStroke.modifiers != 0) return false
     if (!EditorHelper.isPythonConsole(editor)) return false
     val consoleView = LangDataKeys.CONSOLE_VIEW.getData(e.dataContext) as? LanguageConsoleView ?: return false
@@ -178,7 +180,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
     }
   }
 
-  private fun isEnabled(e: AnActionEvent, keyStroke: KeyStroke?): ActionEnableStatus {
+  private fun isEnabled(e: AnActionEvent, keyStroke: VimKeyStroke?): ActionEnableStatus {
     if (keyStroke == null) return ActionEnableStatus.no("Keystroke is null", LogLevel.DEBUG)
     if (VimPlugin.isNotEnabled()) return ActionEnableStatus.no("IdeaVim is disabled", LogLevel.DEBUG)
     val editor = getEditor(e) ?: return ActionEnableStatus.no("Can't get Editor", LogLevel.DEBUG)
@@ -278,7 +280,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
   /**
    * Returns true if there is a mapping for the given keys in the current editor mode
    */
-  private fun hasMapping(keys: List<KeyStroke>, editor: Editor): Boolean {
+  private fun hasMapping(keys: List<VimKeyStroke>, editor: Editor): Boolean {
     val mode = enumSetOf(editor.vim.mode.toMappingMode())
     return injector.keyGroup.getFirstMappingInfoMatch(keys, mode) != null
   }
@@ -293,7 +295,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
       ideaVimSupportDialog && !editor.vim.mode.inNormalMode
   }
 
-  private fun isShortcutConflict(keyStroke: KeyStroke): Boolean {
+  private fun isShortcutConflict(keyStroke: VimKeyStroke): Boolean {
     return VimPlugin.getKey().getKeymapConflicts(keyStroke).isNotEmpty()
   }
 
@@ -302,12 +304,12 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
    * but we should cache the value because on the second call (isEnabled -> actionPerformed)
    * the event is already consumed and getDefaultKeyStroke returns null
    */
-  private var keyStrokeCache: Pair<Long?, KeyStroke?> = null to null
+  private var keyStrokeCache: Pair<Long?, VimKeyStroke?> = null to null
 
-  private fun getKeyStroke(e: AnActionEvent): KeyStroke? {
+  private fun getKeyStroke(e: AnActionEvent): VimKeyStroke? {
     val inputEvent = e.inputEvent
     if (inputEvent is KeyEvent) {
-      val defaultKeyStroke = KeyStrokeAdapter.getDefaultKeyStroke(inputEvent)
+      val defaultKeyStroke = KeyStrokeAdapter.getDefaultKeyStroke(inputEvent)?.toVimKeyStroke()
       val strokeCache = keyStrokeCache
       if (defaultKeyStroke != null) {
         keyStrokeCache = inputEvent.`when` to defaultKeyStroke
@@ -316,7 +318,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
         keyStrokeCache = null to null
         return strokeCache.second
       }
-      return KeyStroke.getKeyStrokeForEvent(inputEvent)
+      return vimKeyStrokeForEvent(inputEvent)
     }
     return null
   }
@@ -339,7 +341,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
    *   if the pressed key is presented in this list. The caches are used to speed up the process.
    */
   private object LookupKeys {
-    fun isEnabledForLookup(keyStroke: KeyStroke): Boolean {
+    fun isEnabledForLookup(keyStroke: VimKeyStroke): Boolean {
       val parsedLookupKeys =
         injector.optionGroup.getParsedEffectiveOptionValue(IjOptions.lookupkeys, null, ::parseLookupKeys)
       return keyStroke !in parsedLookupKeys
@@ -358,8 +360,8 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
     private const val CONSOLE_EXECUTE_ACTION_ID = "Console.Execute"
 
     @JvmField
-    val VIM_ONLY_EDITOR_KEYS: Set<KeyStroke> =
-      ImmutableSet.builder<KeyStroke>().addAll(getKeyStrokes(KeyEvent.VK_ENTER, 0))
+    val VIM_ONLY_EDITOR_KEYS: Set<VimKeyStroke> =
+      ImmutableSet.builder<VimKeyStroke>().addAll(getKeyStrokes(KeyEvent.VK_ENTER, 0))
         .addAll(getKeyStrokes(KeyEvent.VK_ESCAPE, 0))
         .addAll(getKeyStrokes(KeyEvent.VK_BACK_SPACE, 0, InputEvent.CTRL_DOWN_MASK))
         .addAll(getKeyStrokes(KeyEvent.VK_INSERT, 0))
@@ -413,7 +415,7 @@ class VimShortcutKeyAction : AnAction(), DumbAware/*, LightEditCompatible*/ {
     }
 
     private fun getKeyStrokes(keyCode: Int, vararg modifiers: Int) =
-      modifiers.map { KeyStroke.getKeyStroke(keyCode, it) }
+      modifiers.map { VimKeyStroke.getKeyStroke(keyCode, it) }
   }
 }
 
@@ -422,7 +424,7 @@ private class ActionEnableStatus(
   val message: String,
   val logLevel: LogLevel,
 ) {
-  fun printLog(keyStroke: KeyStroke?) {
+  fun printLog(keyStroke: VimKeyStroke?) {
     val message = "IdeaVim keys are enabled = $isEnabled for key '$keyStroke': $message"
     when (logLevel) {
       LogLevel.INFO -> LOG.info(message)

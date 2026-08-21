@@ -29,17 +29,40 @@ class VimKeyStroke private constructor(
   val keyChar: Char,
   val keyCode: Int,
   val modifiers: Int,
+  /**
+   * True if this stroke describes a key being released rather than pressed or typed.
+   *
+   * Nothing in the engine sets or reads this, but AWT compares on it and modal input builds
+   * strokes from key-release events, which then reach macro registers. Keeping the field means a
+   * released `<Enter>` never silently compares equal to a pressed one.
+   */
+  val onKeyRelease: Boolean,
 ) {
+  /**
+   * Which kind of key event this stroke describes, mirroring `KeyStroke.getKeyEventType()`.
+   *
+   * Derived, not stored: a stroke with no key code is a typed character, and otherwise the
+   * release flag decides.
+   */
+  val keyEventType: Int
+    get() = when {
+      keyCode == VimKeyCodes.VK_UNDEFINED -> VimKeyCodes.KEY_TYPED
+      onKeyRelease -> VimKeyCodes.KEY_RELEASED
+      else -> VimKeyCodes.KEY_PRESSED
+    }
+
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other !is VimKeyStroke) return false
-    return keyChar == other.keyChar && keyCode == other.keyCode && modifiers == other.modifiers
+    return keyChar == other.keyChar && keyCode == other.keyCode &&
+      modifiers == other.modifiers && onKeyRelease == other.onKeyRelease
   }
 
   override fun hashCode(): Int {
     var result = keyChar.hashCode()
     result = 31 * result + keyCode
     result = 31 * result + modifiers
+    result = 31 * result + if (onKeyRelease) 1 else 0
     return result
   }
 
@@ -48,6 +71,7 @@ class VimKeyStroke private constructor(
     if (keyChar == VimKeyCodes.CHAR_UNDEFINED) append("keyCode=").append(keyCode)
     else append("keyChar=").append(keyChar).append(" (").append(keyChar.code).append(")")
     if (modifiers != 0) append(", modifiers=").append(modifiers)
+    if (onKeyRelease) append(", onKeyRelease")
     append(")")
   }
 
@@ -77,6 +101,7 @@ class VimKeyStroke private constructor(
      * built from `130` would be unequal here while being the same stroke to AWT, and a mapping
      * added under one would not be found under the other.
      */
+    @JvmStatic
     fun normalizeModifiers(modifiers: Int): Int {
       var result = modifiers and BUTTON_MASKS
       var i = 0
@@ -90,15 +115,31 @@ class VimKeyStroke private constructor(
     }
 
     /** A typed character, with no modifiers. Mirrors `KeyStroke.getKeyStroke(char)`. */
+    @JvmStatic
     fun getKeyStroke(keyChar: Char): VimKeyStroke =
-      VimKeyStroke(keyChar, VimKeyCodes.VK_UNDEFINED, 0)
+      VimKeyStroke(keyChar, VimKeyCodes.VK_UNDEFINED, 0, false)
 
     /** A typed character with modifiers. Mirrors `KeyStroke.getKeyStroke(Character, int)`. */
+    @JvmStatic
     fun getKeyStroke(keyChar: Char, modifiers: Int): VimKeyStroke =
-      VimKeyStroke(keyChar, VimKeyCodes.VK_UNDEFINED, normalizeModifiers(modifiers))
+      VimKeyStroke(keyChar, VimKeyCodes.VK_UNDEFINED, normalizeModifiers(modifiers), false)
 
     /** A pressed key. Mirrors `KeyStroke.getKeyStroke(int, int)`. */
+    @JvmStatic
     fun getKeyStroke(keyCode: Int, modifiers: Int): VimKeyStroke =
-      VimKeyStroke(VimKeyCodes.CHAR_UNDEFINED, keyCode, normalizeModifiers(modifiers))
+      VimKeyStroke(VimKeyCodes.CHAR_UNDEFINED, keyCode, normalizeModifiers(modifiers), false)
+
+    /** Mirrors `KeyStroke.getKeyStroke(int, int, boolean)`. */
+    @JvmStatic
+    fun getKeyStroke(keyCode: Int, modifiers: Int, onKeyRelease: Boolean): VimKeyStroke =
+      VimKeyStroke(VimKeyCodes.CHAR_UNDEFINED, keyCode, normalizeModifiers(modifiers), onKeyRelease)
+
+    /**
+     * The general form, used by the host when translating a real key event.
+     * Mirrors `KeyStroke.getKeyStroke(char, int, int, boolean)`'s stored shape.
+     */
+    @JvmStatic
+    fun getKeyStroke(keyChar: Char, keyCode: Int, modifiers: Int, onKeyRelease: Boolean): VimKeyStroke =
+      VimKeyStroke(keyChar, keyCode, normalizeModifiers(modifiers), onKeyRelease)
   }
 }

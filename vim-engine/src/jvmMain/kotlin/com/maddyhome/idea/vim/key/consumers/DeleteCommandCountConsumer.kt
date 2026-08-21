@@ -14,10 +14,10 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * Key consumer to handle removing digits from a command currently being built
@@ -30,7 +30,7 @@ internal class DeleteCommandCountConsumer : KeyConsumer {
   }
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -39,7 +39,7 @@ internal class DeleteCommandCountConsumer : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -49,9 +49,9 @@ internal class DeleteCommandCountConsumer : KeyConsumer {
     return true
   }
 
-  private fun isDeleteCommandCountKey(key: KeyStroke, keyState: KeyHandlerState, mode: Mode): Boolean {
+  private fun isDeleteCommandCountKey(key: VimKeyStroke, keyState: KeyHandlerState, mode: Mode): Boolean {
     // See `:help N<Del>`
-    if (key.keyCode != KeyEvent.VK_DELETE) {
+    if (key.keyCode != VimKeyCodes.VK_DELETE) {
       logger.debug("Not a delete key")
       return false
     }

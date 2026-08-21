@@ -8,6 +8,8 @@
 package org.jetbrains.plugins.ideavim.helper
 
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toVimKeyStroke
 import org.jetbrains.plugins.ideavim.VimTestCase
 import org.junit.jupiter.api.Test
 import java.awt.event.InputEvent
@@ -92,8 +94,8 @@ class StringHelperTest : VimTestCase() {
 
   @Test
   fun testControlBoundCharacters() {
-    assertKeyStroke(KeyStroke.getKeyStroke('@'.code, InputEvent.CTRL_DOWN_MASK), "\u0000")
-    assertKeyStroke(KeyStroke.getKeyStroke('_'.code, InputEvent.CTRL_DOWN_MASK), "\u001F")
+    assertKeyStroke(VimKeyStroke.getKeyStroke('@'.code, InputEvent.CTRL_DOWN_MASK), "\u0000")
+    assertKeyStroke(VimKeyStroke.getKeyStroke('_'.code, InputEvent.CTRL_DOWN_MASK), "\u001F")
   }
 
   @Test
@@ -102,19 +104,26 @@ class StringHelperTest : VimTestCase() {
     assertPressedKeyStroke("ENTER", "\n") // U+000A
   }
 
+  /**
+   * [expected] is AWT's textual keystroke syntax, e.g. `control C`.
+   *
+   * The engine's own strokes are neutral, but this is a JVM-side test and AWT is the reference for
+   * what that notation means, so it is parsed with AWT and converted rather than transcribed into
+   * key codes here.
+   */
   private fun assertPressedKeyStroke(expected: String, actual: String) {
-    assertEquals(KeyStroke.getKeyStroke(expected), parseKeyStroke(actual))
+    assertEquals(KeyStroke.getKeyStroke(expected).toVimKeyStroke(), parseKeyStroke(actual))
   }
 
-  private fun assertKeyStroke(expected: KeyStroke, actual: String) {
+  private fun assertKeyStroke(expected: VimKeyStroke, actual: String) {
     assertEquals(expected, parseKeyStroke(actual))
   }
 
   private fun assertTypedKeyStroke(expected: Char, actual: String) {
-    assertEquals(KeyStroke.getKeyStroke(expected), parseKeyStroke(actual))
+    assertEquals(VimKeyStroke.getKeyStroke(expected), parseKeyStroke(actual))
   }
 
-  private fun parseKeyStroke(s: String): KeyStroke {
+  private fun parseKeyStroke(s: String): VimKeyStroke {
     val actualStrokes = injector.parser.parseKeys(s)
     assertEquals<Any>(1, actualStrokes.size, injector.parser.toKeyNotation(actualStrokes))
     return actualStrokes[0]

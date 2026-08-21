@@ -57,6 +57,7 @@ import com.maddyhome.idea.vim.helper.isIdeaVimDisabledHere
 import com.maddyhome.idea.vim.helper.vimInitialised
 import com.maddyhome.idea.vim.ide.isClionNova
 import com.maddyhome.idea.vim.ide.isRider
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.globalIjOptions
 import com.maddyhome.idea.vim.newapi.initInjector
 import com.maddyhome.idea.vim.newapi.vim
@@ -69,7 +70,6 @@ import com.maddyhome.idea.vim.vimscript.model.options.helpers.isIdeaRefactorMode
 import org.jetbrains.annotations.NonNls
 import java.awt.AWTEvent
 import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 /**
  * @author Alex Plate
@@ -158,7 +158,7 @@ internal object IdeaSpecifics {
           val register = VimPlugin.getRegister()
 
           if (charsToRemove > 0) {
-            val backSpaceKey = KeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0)
+            val backSpaceKey = VimKeyStroke.getKeyStroke(KeyEvent.VK_BACK_SPACE, 0)
             repeat(charsToRemove) {
               register.recordKeyStroke(backSpaceKey)
             }
@@ -287,7 +287,7 @@ internal object IdeaSpecifics {
 
         val caretShift = completedCharCount - (caretOffset - completionStartOffset)
         if (caretShift > 0) {
-          val leftArrowKey = KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0)
+          val leftArrowKey = VimKeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0)
           repeat(caretShift) {
             register.recordKeyStroke(leftArrowKey)
           }

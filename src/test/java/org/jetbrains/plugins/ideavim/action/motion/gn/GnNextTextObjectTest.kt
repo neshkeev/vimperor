@@ -14,12 +14,12 @@ import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.api.VimSearchGroupBase
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.Direction
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.Mode
 import org.jetbrains.plugins.ideavim.SkipNeovimReason
 import org.jetbrains.plugins.ideavim.TestWithoutNeovim
 import org.jetbrains.plugins.ideavim.VimTestCase
 import org.junit.jupiter.api.Test
-import javax.swing.KeyStroke
 
 class GnNextTextObjectTest : VimTestCase() {
   @TestWithoutNeovim(SkipNeovimReason.DIFFERENT)
@@ -84,7 +84,7 @@ class GnNextTextObjectTest : VimTestCase() {
     )
   }
 
-  private fun doTestWithSearch(keys: List<KeyStroke>, before: String, after: String) {
+  private fun doTestWithSearch(keys: List<VimKeyStroke>, before: String, after: String) {
     configureByText(before)
     (VimPlugin.getSearch() as VimSearchGroupBase).setLastSearchState("test", "", Direction.FORWARDS)
     typeText(keys)

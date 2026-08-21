@@ -23,10 +23,10 @@ import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeyMapping
 import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.MappingInfo
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.options.OptionAccessScope
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
-import javax.swing.KeyStroke
 
 /**
  * Key consumer to apply mappings to the incoming keystroke(s) in all modes
@@ -53,7 +53,7 @@ internal object MappingProcessor : KeyConsumer {
   private val log = vimLogger<MappingProcessor>()
 
   override fun isApplicable(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -70,7 +70,7 @@ internal object MappingProcessor : KeyConsumer {
   }
 
   override fun consumeKey(
-    key: KeyStroke,
+    key: VimKeyStroke,
     editor: VimEditor,
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
@@ -115,7 +115,7 @@ internal object MappingProcessor : KeyConsumer {
     Options.iminsert, OptionAccessScope.LOCAL(editor)
   ).value == 1
 
-  private fun isMappingApplicable(commandBuilder: CommandBuilder, key: KeyStroke, keyState: KeyHandlerState): Boolean {
+  private fun isMappingApplicable(commandBuilder: CommandBuilder, key: VimKeyStroke, keyState: KeyHandlerState): Boolean {
     // Mapping is not applied to character/digraph arguments (e.g. `f{char}` or register names).
     // It's also not applied partway through an existing command - e.g. `<C-W>s` does not apply any maps for `s`.
     return !commandBuilder.isAwaitingCharacterBasedArgument() && !commandBuilder.isBuildingMultiKeyCommand() && !commandBuilder.isRegisterPending && !isTypingZeroInCommandCount(
@@ -124,7 +124,7 @@ internal object MappingProcessor : KeyConsumer {
     )
   }
 
-  private fun isTypingZeroInCommandCount(key: KeyStroke, keyState: KeyHandlerState): Boolean {
+  private fun isTypingZeroInCommandCount(key: VimKeyStroke, keyState: KeyHandlerState): Boolean {
     // "0" can be mapped, but the mapping isn't applied when entering a count. Other digits are always mapped, even when
     // entering a count. Note that the docs state that this is for Normal, but it also applies in Visual and Op-pending.
     // (E.g. `:imap 0 3` -> `d20w` will still delete 20 words, not 23, but `d0w` will delete 3, `2d0w` will delete 6).
@@ -151,7 +151,7 @@ internal object MappingProcessor : KeyConsumer {
     // completed sequence is not a prefix to itself - this function will return false unless it's also a prefix for
     // other mappings.
     if (!mapping.isPrefix(
-        keyProcessResultBuilder.state.mappingState.keys as? List<KeyStroke>
+        keyProcessResultBuilder.state.mappingState.keys as? List<VimKeyStroke>
           ?: keyProcessResultBuilder.state.mappingState.keys.toList()
       )
     ) {
@@ -212,7 +212,7 @@ internal object MappingProcessor : KeyConsumer {
     log.trace("Try processing complete mapping sequence...")
 
     val mappingState = keyProcessResultBuilder.state.mappingState
-    val mappingInfo = mapping[mappingState.keys as? List<KeyStroke> ?: mappingState.keys.toList()]
+    val mappingInfo = mapping[mappingState.keys as? List<VimKeyStroke> ?: mappingState.keys.toList()]
     if (mappingInfo == null) {
       log.trace("Cannot find any mapping info for the sequence. Mapping processor will not handle further.")
       return false
@@ -308,7 +308,7 @@ internal object MappingProcessor : KeyConsumer {
    * were typed.
    */
   private fun replayUnhandledKeys(
-    unhandledKeys: List<KeyStroke>,
+    unhandledKeys: List<VimKeyStroke>,
     editor: VimEditor,
     context: ExecutionContext,
     keyState: KeyHandlerState,

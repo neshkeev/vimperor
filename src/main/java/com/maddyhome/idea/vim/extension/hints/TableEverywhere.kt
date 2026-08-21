@@ -17,12 +17,12 @@ import com.intellij.ui.SwingActionDelegate
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.ShortcutDispatcher
 import com.maddyhome.idea.vim.extension.VimExtension
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
 import java.beans.PropertyChangeListener
 import javax.swing.JTable
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 
 /**
@@ -101,7 +101,7 @@ internal class TableEverywhere : VimExtension {
 }
 
 private object TableNavListener : ShortcutDispatcher.Listener<(JTable) -> Unit> {
-  override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, data: (JTable) -> Unit) {
+  override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, data: (JTable) -> Unit) {
     val component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT)
     if (component is JTable) {
       data(component)
@@ -109,7 +109,7 @@ private object TableNavListener : ShortcutDispatcher.Listener<(JTable) -> Unit> 
     keyStrokes.clear()
   }
 
-  override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>) {
+  override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>) {
     keyStrokes.clear()
     injector.messages.indicateError()
   }
@@ -146,8 +146,8 @@ private fun restoreTypeToEdit(table: JTable) {
 /**
  * Maps Vim motions to the standard action names registered in a [JTable]'s `ActionMap` by `BasicTableUI`.
  */
-private fun createMappings(): Map<List<KeyStroke>, (JTable) -> Unit> {
-  val mappings = mutableMapOf<List<KeyStroke>, (JTable) -> Unit>()
+private fun createMappings(): Map<List<VimKeyStroke>, (JTable) -> Unit> {
+  val mappings = mutableMapOf<List<VimKeyStroke>, (JTable) -> Unit>()
 
   fun swing(swingActionId: String): (JTable) -> Unit =
     { table -> SwingActionDelegate.performAction(swingActionId, table) }

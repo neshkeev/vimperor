@@ -41,6 +41,8 @@ import com.maddyhome.idea.vim.helper.EditorHelper
 import com.maddyhome.idea.vim.helper.requestFocus
 import com.maddyhome.idea.vim.helper.selectEditorFont
 import com.maddyhome.idea.vim.helper.vimMorePanel
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.vimKeyStrokeForEvent
 import com.maddyhome.idea.vim.listener.ModelessSelection
 import com.maddyhome.idea.vim.newapi.IjVimEditor
 import com.maddyhome.idea.vim.newapi.vim
@@ -63,7 +65,6 @@ import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
 import javax.swing.JTextPane
-import javax.swing.KeyStroke
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import javax.swing.text.AbstractDocument
@@ -398,7 +399,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
     }
   }
 
-  private fun close(key: KeyStroke?) {
+  private fun close(key: VimKeyStroke?) {
     animator.stop()
     autoCloseJob?.cancel()
     autoCloseJob = null
@@ -410,7 +411,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
       // For single-line messages, pass any key back to the editor (including Enter)
       // For multi-line messages, don't pass Enter back (it was used to dismiss)
       if (project != null && key != null && (passKeyBack || key.keyChar != '\n')) {
-        val keys: MutableList<KeyStroke> = ArrayList(1)
+        val keys: MutableList<VimKeyStroke> = ArrayList(1)
         keys.add(key)
         getInstance().keyStack.addKeys(keys)
         val context: ExecutionContext =
@@ -658,7 +659,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
    * However, remember that `KEY_PRESSED` events can be followed by `KEY_TYPED`, so do not handle (at all!) typed
    * versions of control characters and Enter, etc.
    */
-  internal fun handleKey(key: KeyStroke) {
+  internal fun handleKey(key: VimKeyStroke) {
     // Like the command line, this bypasses VimTypedActionHandler and VimShortcutKeyAction, so a modeless selection in
     // the owning editor has to be dropped here too
     ModelessSelection.clearIfOwned(editor)
@@ -679,7 +680,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
     }
   }
 
-  private fun handleHitEnterPrompt(key: KeyStroke) {
+  private fun handleHitEnterPrompt(key: VimKeyStroke) {
     // When the output is smaller than a page, scrolling up/back does nothing. Scrolling down/forward will close.
     // When it's longer than a page, scrolling up/back will scroll. Scrolling down/forward does nothing (although Space
     // and Enter will still close).
@@ -726,7 +727,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
     }
   }
 
-  private fun handleMorePrompt(key: KeyStroke) = when (key.keyChar) {
+  private fun handleMorePrompt(key: VimKeyStroke) = when (key.keyChar) {
     'g' -> scrollToStart()
     'G' -> scrollToEnd()
     ' ' -> scrollPage()
@@ -829,9 +830,9 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
       // The exception is Space. There is no shifted key associated with Space so Shift+Space is treated as a separate
       // keystroke
       if (e.modifiersEx and KeyEvent.SHIFT_DOWN_MASK == KeyEvent.SHIFT_DOWN_MASK && e.keyChar == ' ') {
-        handleKey(KeyStroke.getKeyStrokeForEvent(e))
+        handleKey(vimKeyStrokeForEvent(e))
       } else {
-        handleKey(KeyStroke.getKeyStroke(e.keyChar))
+        handleKey(VimKeyStroke.getKeyStroke(e.keyChar))
       }
     }
 
@@ -846,7 +847,7 @@ internal class OutputPanel private constructor(private val editor: Editor) : JBP
         || e.keyCode == KeyEvent.VK_BACK_SPACE
         || (e.keyCode >= KeyEvent.VK_A && e.keyCode <= KeyEvent.VK_Z && e.modifiersEx and KeyEvent.CTRL_DOWN_MASK != 0)
       ) {
-        handleKey(KeyStroke.getKeyStrokeForEvent(e))
+        handleKey(vimKeyStrokeForEvent(e))
       }
     }
   }

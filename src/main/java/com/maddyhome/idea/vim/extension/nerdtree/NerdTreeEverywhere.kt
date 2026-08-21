@@ -15,12 +15,13 @@ import com.intellij.openapi.components.service
 import com.intellij.ui.treeStructure.Tree
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.VimExtension
+import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.key.toAwtKeyStroke
 import com.maddyhome.idea.vim.newapi.vim
 import java.awt.KeyboardFocusManager
 import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import java.beans.PropertyChangeListener
-import javax.swing.KeyStroke
 
 /**
  * This plugin extends NERDTree support to components other than the Project Tool Window.
@@ -116,7 +117,7 @@ private fun openFileOrSimulateEnter(event: AnActionEvent, tree: Tree, focusEdito
     injector.file.openFile(file.path, event.dataContext.vim, focusEditor)
     closeEditorTree()
   } else {
-    val listener = tree.getActionForKeyStroke(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0))
+    val listener = tree.getActionForKeyStroke(VimKeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0).toAwtKeyStroke())
     listener?.actionPerformed(ActionEvent(tree, ActionEvent.ACTION_PERFORMED, null))
   }
 }

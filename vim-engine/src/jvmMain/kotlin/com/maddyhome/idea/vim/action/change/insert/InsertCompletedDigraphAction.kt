@@ -22,8 +22,8 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.isCommandLineActionChar
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
-import javax.swing.KeyStroke
 
 /**
  * Insert mode: insert a digraph character via `<C-K>`
@@ -48,7 +48,7 @@ class InsertCompletedDigraphAction : VimActionHandler.SingleExecution() {
     operatorArguments: OperatorArguments,
   ): Boolean {
     val argument = cmd.argument as? Argument.Character ?: return false
-    val keyStroke = KeyStroke.getKeyStroke(argument.character)
+    val keyStroke = VimKeyStroke.getKeyStroke(argument.character)
     val keyHandler = KeyHandler.getInstance()
     keyHandler.handleKey(editor, keyStroke, KeySource.DIGRAPH, context, keyHandler.keyHandlerState)
     return true
@@ -84,7 +84,7 @@ class CmdLineCompletedDigraphAction : VimActionHandler.SingleExecution() {
     if (ch.isCommandLineActionChar()) {
       commandLine.insertText(commandLine.caret.offset, ch.toString())
     } else {
-      commandLine.handleKey(KeyStroke.getKeyStroke(ch))
+      commandLine.handleKey(VimKeyStroke.getKeyStroke(ch))
     }
     return true
   }

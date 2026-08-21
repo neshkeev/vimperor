@@ -37,6 +37,7 @@ import com.maddyhome.idea.vim.extension.exportOperatorFunction
 import com.maddyhome.idea.vim.group.findBlockRange
 import com.maddyhome.idea.vim.helper.exitVisualMode
 import com.maddyhome.idea.vim.key.OperatorFunction
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 import com.maddyhome.idea.vim.options.helpers.ClipboardOptionHelper
@@ -45,7 +46,6 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.selectionType
 import org.jetbrains.annotations.NonNls
-import javax.swing.KeyStroke
 
 /**
  * Port of vim-surround.
@@ -223,7 +223,7 @@ internal class VimSurroundExtension : VimExtension {
         // Save old register values for carets
         val surroundings = editor.sortedCarets()
           .map {
-            val oldValue: List<KeyStroke>? = getRegisterForCaret(editor, context, REGISTER, it)
+            val oldValue: List<VimKeyStroke>? = getRegisterForCaret(editor, context, REGISTER, it)
             setRegisterForCaret(editor, context, REGISTER, it, null)
             SurroundingInfo(editor, context, it, null, oldValue, false)
           }
@@ -321,8 +321,8 @@ internal class VimSurroundExtension : VimExtension {
     val editor: VimEditor,
     val context: ExecutionContext,
     val caret: VimCaret,
-    var innerText: List<KeyStroke>?,
-    val oldRegisterContent: List<KeyStroke>?,
+    var innerText: List<VimKeyStroke>?,
+    val oldRegisterContent: List<VimKeyStroke>?,
     var isValidSurrounding: Boolean,
   ) {
     fun restoreRegister() {

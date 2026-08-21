@@ -16,9 +16,9 @@ import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.key.MappingOwner
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptorBase
-import java.awt.event.KeyEvent
-import javax.swing.KeyStroke
 
 class ModalInputImpl(
   private val listenerOwner: ListenerOwner,
@@ -126,16 +126,16 @@ class ModalInputImpl(
 
     private val textBuffer = StringBuilder()
 
-    override fun buildInput(key: KeyStroke): String? {
+    override fun buildInput(key: VimKeyStroke): String? {
       if (key.isCloseKeyStroke()) return ""
 
       // If Enter is pressed, return the current text
-      if (key.keyCode == KeyEvent.VK_ENTER) {
+      if (key.keyCode == VimKeyCodes.VK_ENTER) {
         return textBuffer.toString()
       }
 
       // todo: see if this makes sense
-      if (key.keyCode == KeyEvent.VK_BACK_SPACE) {
+      if (key.keyCode == VimKeyCodes.VK_BACK_SPACE) {
         if (textBuffer.isNotEmpty()) {
           textBuffer.deleteCharAt(textBuffer.length - 1)
         }
@@ -143,7 +143,7 @@ class ModalInputImpl(
       }
 
       // Append the character to the text
-      if (key.keyChar != KeyEvent.CHAR_UNDEFINED) {
+      if (key.keyChar != VimKeyCodes.CHAR_UNDEFINED) {
         textBuffer.append(key.keyChar)
       }
 
@@ -160,11 +160,11 @@ class ModalInputImpl(
   ) : InputInterceptorBase<Char>(projectId, repeatCount, repeatCondition, updateLabelFn, handler) {
     private var currentChar: Char? = null
 
-    override fun buildInput(key: KeyStroke): Char? {
+    override fun buildInput(key: VimKeyStroke): Char? {
       if (key.isCloseKeyStroke()) return '\u0000'
 
       val keyChar = key.keyChar
-      if (keyChar != KeyEvent.CHAR_UNDEFINED) {
+      if (keyChar != VimKeyCodes.CHAR_UNDEFINED) {
         currentChar = keyChar
         return keyChar
       }
@@ -174,6 +174,6 @@ class ModalInputImpl(
   }
 }
 
-private fun KeyStroke.isCloseKeyStroke(): Boolean {
-  return keyCode == KeyEvent.VK_ESCAPE
+private fun VimKeyStroke.isCloseKeyStroke(): Boolean {
+  return keyCode == VimKeyCodes.VK_ESCAPE
 }

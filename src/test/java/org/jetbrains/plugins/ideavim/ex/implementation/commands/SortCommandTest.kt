@@ -9,13 +9,14 @@ package org.jetbrains.plugins.ideavim.ex.implementation.commands
 
 import com.google.common.collect.Lists
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.VimKeyCodes
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import org.jetbrains.plugins.ideavim.SkipNeovimReason
 import org.jetbrains.plugins.ideavim.TestWithoutNeovim
 import org.jetbrains.plugins.ideavim.VimTestCase
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import javax.swing.KeyStroke
 
 @Suppress("SpellCheckingInspection")
 class SortCommandTest : VimTestCase() {
@@ -23,7 +24,7 @@ class SortCommandTest : VimTestCase() {
     val (content, visualSelect, sortCommand, expected) = testCase
     configureByText(content)
     if (visualSelect.isNotBlank()) {
-      val keys: MutableList<KeyStroke?> = Lists.newArrayList(KeyStroke.getKeyStroke("control V"))
+      val keys: MutableList<VimKeyStroke?> = Lists.newArrayList(VimKeyStroke.getKeyStroke(VimKeyCodes.VK_V, VimKeyCodes.CTRL_DOWN_MASK))
       keys.addAll(injector.parser.stringToKeys(visualSelect))
       typeText(keys)
     }

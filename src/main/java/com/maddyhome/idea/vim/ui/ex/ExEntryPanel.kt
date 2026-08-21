@@ -40,6 +40,7 @@ import com.maddyhome.idea.vim.helper.requestFocus
 import com.maddyhome.idea.vim.helper.selectEditorFont
 import com.maddyhome.idea.vim.helper.shouldIgnoreCase
 import com.maddyhome.idea.vim.helper.updateIncsearchHighlights
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.newapi.IjVimCaret
 import com.maddyhome.idea.vim.newapi.IjVimEditor
@@ -59,7 +60,6 @@ import javax.swing.JComponent
 import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
@@ -607,7 +607,7 @@ class ExEntryPanel private constructor() : JPanel(), VimCommandLine {
    *
    * @param key The potentially mapped keystroke
    */
-  override fun handleKey(key: KeyStroke) {
+  override fun handleKey(key: VimKeyStroke) {
     entry.handleKey(key)
     val myInputProcessor = inputProcessing
     if (finishOn != null && key.keyChar == finishOn && myInputProcessor != null) {

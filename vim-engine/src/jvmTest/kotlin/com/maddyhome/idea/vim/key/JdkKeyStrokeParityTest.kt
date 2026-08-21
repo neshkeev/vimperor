@@ -158,4 +158,72 @@ class JdkKeyStrokeParityTest {
     assertEquals("ctrl-a", vimMap[VimKeyStroke.getKeyStroke(KeyEvent.VK_A, 2)])
     assertEquals(awtMap[KeyStroke.getKeyStroke('a')], vimMap[VimKeyStroke.getKeyStroke('a')])
   }
+
+  @Test
+  fun `test onKeyRelease is preserved and distinguishes strokes, as in AWT`() {
+    // Modal input builds strokes from KEY_RELEASED events, and those reach macro registers, so a
+    // released key must not compare equal to a pressed one.
+    for (code in listOf(KeyEvent.VK_ENTER, KeyEvent.VK_ESCAPE, KeyEvent.VK_A)) {
+      for (m in listOf(0, 128)) {
+        val pressed = KeyStroke.getKeyStroke(code, m, false)
+        val released = KeyStroke.getKeyStroke(code, m, true)
+        val vimPressed = VimKeyStroke.getKeyStroke(code, m, false)
+        val vimReleased = VimKeyStroke.getKeyStroke(code, m, true)
+        assertEquals(pressed.isOnKeyRelease, vimPressed.onKeyRelease)
+        assertEquals(released.isOnKeyRelease, vimReleased.onKeyRelease)
+        assertEquals(released.modifiers, vimReleased.modifiers)
+        assertEquals(pressed == released, vimPressed == vimReleased, "release-flag equality for " + code)
+        assertTrue(vimPressed != vimReleased)
+      }
+    }
+  }
+
+  @Test
+  fun `test converting to AWT and back returns an equal stroke`() {
+    val strokes = mutableListOf<VimKeyStroke>()
+    for (c in listOf('a', 'A', '0', ' ', '@')) strokes.add(VimKeyStroke.getKeyStroke(c))
+    for (code in listOf(KeyEvent.VK_ENTER, KeyEvent.VK_ESCAPE, KeyEvent.VK_A, KeyEvent.VK_F5)) {
+      for (m in listOf(0, 64, 128, 130, 512)) {
+        strokes.add(VimKeyStroke.getKeyStroke(code, m, false))
+        strokes.add(VimKeyStroke.getKeyStroke(code, m, true))
+      }
+    }
+    for (stroke in strokes) {
+      assertEquals(stroke, stroke.toAwtKeyStroke().toVimKeyStroke(), "round trip of " + stroke)
+    }
+  }
+
+  @Test
+  fun `test converting an AWT stroke to neutral and back returns an equal stroke`() {
+    val strokes = mutableListOf<KeyStroke>()
+    for (c in listOf('a', 'A', '0', ' ')) strokes.add(KeyStroke.getKeyStroke(c))
+    for (code in listOf(KeyEvent.VK_ENTER, KeyEvent.VK_ESCAPE, KeyEvent.VK_A)) {
+      for (m in listOf(0, 64, 128, 512)) {
+        strokes.add(KeyStroke.getKeyStroke(code, m, false))
+        strokes.add(KeyStroke.getKeyStroke(code, m, true))
+      }
+    }
+    for (stroke in strokes) {
+      assertEquals(stroke, stroke.toVimKeyStroke().toAwtKeyStroke(), "round trip of " + stroke)
+    }
+  }
+
+  @Test
+  fun `test keyEventType matches AWT`() {
+    assertEquals(KeyEvent.KEY_TYPED, VimKeyCodes.KEY_TYPED)
+    assertEquals(KeyEvent.KEY_PRESSED, VimKeyCodes.KEY_PRESSED)
+    assertEquals(KeyEvent.KEY_RELEASED, VimKeyCodes.KEY_RELEASED)
+    for (c in listOf('a', 'A', ' ')) {
+      assertEquals(KeyStroke.getKeyStroke(c).keyEventType, VimKeyStroke.getKeyStroke(c).keyEventType)
+    }
+    for (code in listOf(KeyEvent.VK_A, KeyEvent.VK_ENTER, KeyEvent.VK_F1)) {
+      for (release in listOf(false, true)) {
+        assertEquals(
+          KeyStroke.getKeyStroke(code, 0, release).keyEventType,
+          VimKeyStroke.getKeyStroke(code, 0, release).keyEventType,
+          "code " + code + " release " + release,
+        )
+      }
+    }
+  }
 }

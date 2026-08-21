@@ -18,12 +18,12 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerEx
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.ShortcutDispatcher
 import com.maddyhome.idea.vim.group.WindowGroup
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import java.awt.Point
 import java.awt.Rectangle
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import javax.swing.JComponent
-import javax.swing.KeyStroke
 import javax.swing.SwingUtilities
 
 internal enum class NavDirection {
@@ -80,7 +80,7 @@ internal class ToolWindowNavDispatcher : ShortcutDispatcher<NavDirection>(
 }
 
 private object ToolWindowNavListener : ShortcutDispatcher.Listener<NavDirection> {
-  override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>, data: NavDirection) {
+  override fun onMatch(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>, data: NavDirection) {
     try {
       val project = e.project ?: return
       val component = e.getData(PlatformDataKeys.CONTEXT_COMPONENT) ?: return
@@ -100,7 +100,7 @@ private object ToolWindowNavListener : ShortcutDispatcher.Listener<NavDirection>
     }
   }
 
-  override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<KeyStroke>) {
+  override fun onInvalid(e: AnActionEvent, keyStrokes: MutableList<VimKeyStroke>) {
     keyStrokes.clear()
     injector.messages.indicateError()
   }
@@ -128,8 +128,8 @@ private fun isCtrlW(keyEvent: KeyEvent): Boolean {
     (keyEvent.modifiersEx and InputEvent.CTRL_DOWN_MASK) != 0
 }
 
-private fun createMappings(): Map<List<KeyStroke>, NavDirection> {
-  val mappings = mutableMapOf<List<KeyStroke>, NavDirection>()
+private fun createMappings(): Map<List<VimKeyStroke>, NavDirection> {
+  val mappings = mutableMapOf<List<VimKeyStroke>, NavDirection>()
 
   fun register(keys: String, direction: NavDirection) {
     mappings[injector.parser.parseKeys(keys)] = direction

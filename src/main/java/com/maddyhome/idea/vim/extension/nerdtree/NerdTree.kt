@@ -27,10 +27,10 @@ import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.extension.VimExtension
 import com.maddyhome.idea.vim.extension.VimExtensionFacade
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import javax.swing.KeyStroke
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
@@ -176,7 +176,7 @@ internal class NerdTree : VimExtension {
   }
 }
 
-private fun createMappings(): Map<List<KeyStroke>, NerdTreeAction> = navigationMappings.toMutableMap().apply {
+private fun createMappings(): Map<List<VimKeyStroke>, NerdTreeAction> = navigationMappings.toMutableMap().apply {
   // File opening actions use injector.file.openFile() which routes through RPC in split mode:
   //   monolith:    injector.file → IjFileGroup.openFile() → rpc() → FileRemoteApiImpl (local)
   //   split mode:  injector.file → IjFileGroup.openFile() → rpc() → FileRemoteApiImpl (backend)
