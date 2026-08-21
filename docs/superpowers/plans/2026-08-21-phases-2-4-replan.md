@@ -141,6 +141,46 @@ not core unlock. Stage 3a's remaining value is concentrated in W2. That makes th
 host - which this re-plan already put ahead of phase 3 - cheaper to do now than later, because it
 is independent of the key type and the alternative is starting W2 without it.
 
+## Re-measurement, 2026-08-21 (W2 complete)
+
+W2 is done: the engine no longer knows what `javax.swing.KeyStroke` is. The section above named
+W2 the critical path; that is now spent, and the picture inverted again.
+
+| | at re-plan | after W4 collections | **now** |
+|---|---:|---:|---:|
+| direct seeds | 241 | 126 | **78** |
+| seeds in the SCC dependency closure | 84 | 54 | **19** |
+| projected `commonMain` once the closure is clear | 612 (74 %) | 712 (86 %) | **726 (87 %)** |
+| `commonMain` today | 68 | 76 | **81** |
+
+**19 files now stand between the engine and 87 % of it compiling as common code.** That is the
+whole of stage 3a's remaining cost. By workstream: W4 14, W2 2, W3 2, W6 1 - and one of the 14 is
+a false positive (`annotations/JetBrainsAnnotations.jvm.kt` is a JVM `actual` and belongs in
+`jvmMain` permanently), so the real figure is 18.
+
+### The 19, and what each is waiting on
+
+| blocker | files | shape of the work |
+|---|---|---|
+| `ConcurrentLinkedDeque` | `KeyHandler`, `VimListenersNotifier` | concurrency - the spec warns that replacing it could mask a real JVM race; needs single-threaded access proven, not assumed |
+| `java.text.DecimalFormat` | `VimFloat` | number formatting, output is user-visible |
+| `ResourceBundle` + `MessageFormat` | `EngineMessageHelper` | i18n; needs a host-provided message source |
+| `Transferable` | `VimClipboardManager` | clipboard, genuinely per-host |
+| `Timer` + `ActionListener` | `MappingState` | timers, genuinely per-host |
+| `java.nio.file.Path` | `VimscriptExecutor` | filesystem, genuinely per-host |
+| `System.getenv` | `Options` | environment access, genuinely per-host |
+| `Pattern` | `KeywordOptionHelper` | `kotlin.text.Regex`, but the semantics differ |
+| `CharBuffer` | `EngineEditorHelper` | mechanical |
+| `Character.UnicodeBlock` | `CharacterHelper` | needs a Unicode-block table |
+| `MethodHandles` / `KClass` / `javaClass` | `LazyInstance`, `LazyExCommandInstance`, `VimLogger`, `EditorActionHandlerBase`, `LazyVimCommand` | W3, the de-reflection workstream |
+| `com.intellij.vim.api` | `VimHighlightingService` | W6 |
+| `@Throws(java.lang.Exception::class)` | `VimProcessGroup` | trivial |
+
+The shape of the remaining work has changed character. Up to here stage 3a was bulk substitution;
+what is left is mostly **host services** - clipboard, timers, filesystem, environment, messages -
+which want a host interface, not a shim. That is the same interface phase 2's headless host needs,
+which is a second reason to stop deferring it.
+
 ## Estimate honesty
 
 Phase 1's spec estimate was wrong by 12×. The numbers here are measured from the current tree,
