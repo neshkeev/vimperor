@@ -28,7 +28,7 @@ interface StorageScope {
    * @param key The key to retrieve data for
    * @return The data associated with the key, or null if no data is found
    */
-  suspend fun <T> getWindowData(key: String): T?
+  fun <T> getWindowData(key: String): T?
 
   /**
    * Stores keyed user data in a Vim window.
@@ -36,7 +36,7 @@ interface StorageScope {
    * @param key The key to store data for
    * @param data The data to store
    */
-  suspend fun <T> putWindowData(key: String, data: T)
+  fun <T> putWindowData(key: String, data: T)
 
   /**
    * Gets data from buffer.
@@ -44,7 +44,7 @@ interface StorageScope {
    * @param key The key to retrieve data for
    * @return The data associated with the key, or null if no data is found
    */
-  suspend fun <T> getBufferData(key: String): T?
+  fun <T> getBufferData(key: String): T?
 
   /**
    * Puts data to buffer.
@@ -52,7 +52,7 @@ interface StorageScope {
    * @param key The key to store data for
    * @param data The data to store
    */
-  suspend fun <T> putBufferData(key: String, data: T)
+  fun <T> putBufferData(key: String, data: T)
 
   /**
    * Gets data from tab (group of windows).
@@ -60,7 +60,7 @@ interface StorageScope {
    * @param key The key to retrieve data for
    * @return The data associated with the key, or null if no data is found
    */
-  suspend fun <T> getTabData(key: String): T?
+  fun <T> getTabData(key: String): T?
 
   /**
    * Puts data to tab (group of windows).
@@ -68,7 +68,7 @@ interface StorageScope {
    * @param key The key to store data for
    * @param data The data to store
    */
-  suspend fun <T> putTabData(key: String, data: T)
+  fun <T> putTabData(key: String, data: T)
 
   /**
    * Gets data from window or puts it if it doesn't exist.
@@ -77,7 +77,7 @@ interface StorageScope {
    * @param provider A function that provides the data if it doesn't exist
    * @return The existing data or the newly created data
    */
-  suspend fun <T> getOrPutWindowData(key: String, provider: () -> T): T =
+  fun <T> getOrPutWindowData(key: String, provider: () -> T): T =
     getWindowData(key) ?: provider().also { putWindowData(key, it) }
 
   /**
@@ -87,7 +87,7 @@ interface StorageScope {
    * @param provider A function that provides the data if it doesn't exist
    * @return The existing data or the newly created data
    */
-  suspend fun <T> getOrPutBufferData(key: String, provider: () -> T): T =
+  fun <T> getOrPutBufferData(key: String, provider: () -> T): T =
     getBufferData(key) ?: provider().also { putBufferData(key, it) }
 
   /**
@@ -97,6 +97,6 @@ interface StorageScope {
    * @param provider A function that provides the data if it doesn't exist
    * @return The existing data or the newly created data
    */
-  suspend fun <T> getOrPutTabData(key: String, provider: () -> T): T =
+  fun <T> getOrPutTabData(key: String, provider: () -> T): T =
     getTabData(key) ?: provider().also { putTabData(key, it) }
 }

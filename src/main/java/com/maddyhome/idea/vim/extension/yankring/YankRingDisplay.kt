@@ -16,7 +16,7 @@ import com.maddyhome.idea.vim.helper.EngineStringHelper.toPrintableCharacters
  * `:YRShow` - renders the ring the way `s:YRShow` does when `g:yankring_window_use_separate` is
  * off: a banner, a column header, then one line per entry. The separate window comes later.
  */
-internal suspend fun VimApi.showYankRing() {
+internal fun VimApi.showYankRing() {
   val elements = YankRing.entries().mapIndexed { index, entry -> formatElement(index + 1, entry) }
 
   outputPanel {

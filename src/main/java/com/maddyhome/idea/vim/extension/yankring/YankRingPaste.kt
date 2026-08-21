@@ -35,7 +35,7 @@ internal data class Paste(
 /**
  * Runs a real paste and records where it put its text, so that it can be replaced afterwards.
  */
-internal suspend fun VimApi.pasteAndRemember(pasteCommand: String, fromVisual: Boolean = false) {
+internal fun VimApi.pasteAndRemember(pasteCommand: String, fromVisual: Boolean = false) {
   val paste = Paste(pasteCommand, typedCount(), fromVisual, caretPosition())
   normal(keystrokesFor(paste))
 
@@ -78,7 +78,7 @@ private fun VimApi.requestedRegisterPrefix(): String {
 /** The count typed in front of the mapping, which the mapping has to apply itself. */
 internal fun VimApi.typedCount(): Int = getVariable<Int>("v:count1") ?: 1
 
-private suspend fun VimApi.caretPosition(): CaretPosition =
+private fun VimApi.caretPosition(): CaretPosition =
   editor {
     read {
       withPrimaryCaret { CaretPosition(line.number, offset - line.start) }

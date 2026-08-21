@@ -437,3 +437,63 @@ block more often and in worse places. Option 2 removes the blocking from both.
 The counter-argument stands: option 2 removes the ability for an extension callback to suspend at
 all, and it is a published API. But that is a smaller and more honest cost than seven `runBlocking`
 calls becoming eleven-plus, several of them per-caret on the EDT.
+
+
+---
+
+# Done: the engine compiles for JavaScript
+
+Option 2 - dropping `suspend` from the extension API - took **zero** JS errors, from 20.
+
+| | |
+|---|---:|
+| `suspend` markers removed from `:api` | 109 |
+| `suspend` markers removed from `thinapi` implementations | 90 |
+| plugin extension helpers de-suspended | 17 across 10 files |
+| `runBlocking` calls left **in the engine** | **0** |
+| `runBlocking` calls added to the host | **0** |
+| JS compile errors | **0** |
+
+Compare with option 1, measured a day earlier: 447 files, 672 `suspend` markers, 11 new
+`runBlocking` calls on the JVM host and rising, and it did not finish. Option 2 is smaller than
+option 1 by more than an order of magnitude and removes the blocking rather than relocating it.
+
+`./gradlew :vim-engine:jsNodeProductionLibraryDistribution` now produces a JavaScript library.
+
+## What the JS actuals do, and what they refuse to do
+
+Thirteen `expect` declarations needed a JS side. Nine are real implementations:
+
+- **`concurrentCollectionOf`** is copy-on-write. JS has no threads, but the *second* requirement in
+  the `expect` still applies - a listener may remove itself while being notified - so iteration
+  walks a snapshot, which is the property `ConcurrentLinkedDeque` provided.
+- **`enumSetFrom`** iterates in **ordinal order**, not insertion order, because that is what
+  `EnumSet` does on the JVM and mapping listings are rendered to the user in iteration order.
+- **`withLock`** runs the block directly. **`vimAssert`** is a no-op, matching a JVM without `-ea`.
+- **`nanoTime`** is `performance.now()` scaled to nanoseconds; **`currentTimeMillis`** is `Date.now()`.
+- The eight annotations are inert.
+
+**Four are `TODO()` on purpose**, and that is the honest state rather than a gap I missed:
+
+| stub | why not guessed |
+|---|---|
+| `charCategoryOf` beyond the basic plane | no Kotlin/JS way to get a supplementary codepoint's category; a plausible default would make `:digraphs`, grapheme iteration and word motions silently wrong |
+| `isRightToLeft` | JS has no bidi table |
+| `lookupEngineMessage` | the bundle is MessageFormat, including `{0,number,#0}` and twelve lines whose quotes are escapes; a naive substitution corrupts them rather than failing |
+| `formatVimFloat` | `FloatFormatTest` holds 46 rows this has to reproduce exactly; JS `toFixed` rounds half-away-from-zero on the decimal string and does not satisfy them |
+
+Each of those has a known solution - an embedded Unicode table or `RegExp` property escapes, an
+embedded bundle plus a MessageFormat-compatible formatter, and a decimal formatter that satisfies
+the golden table. None of them is guesswork, and a wrong answer in any of them would be invisible
+until a user noticed the wrong output.
+
+## `platformClassName` is the one behavioural difference
+
+Kotlin/JS can only offer `simpleName`, so action ids derived from a **nested** class will differ
+from the JVM's - `VimMatchitAction` where the JVM gives `VimMatchit$MatchitAction`. The `expect`
+already warned about this. A JS host that needs ids matching a JVM one has to declare them rather
+than derive them.
+
+## The JVM is untouched
+
+12687 tests, 0 failures. The plugin zip builds.

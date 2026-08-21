@@ -23,7 +23,7 @@ abstract class CommandLineScope {
    * @param finishOn The character that, when entered, will finish the input process. If null, only Enter will finish.
    * @param callback A function that will be called with the entered text when input is complete.
    */
-  abstract fun input(prompt: String, finishOn: Char? = null, callback: suspend VimApi.(String) -> Unit)
+  abstract fun input(prompt: String, finishOn: Char? = null, callback: VimApi.(String) -> Unit)
 
   /**
    * Executes operations on the command line that require a read lock.
@@ -41,7 +41,7 @@ abstract class CommandLineScope {
    *              The block is non-suspend because it runs inside a read lock.
    * @return The result of the block execution.
    */
-  suspend fun <T> read(block: CommandLineRead.() -> T): T {
+  fun <T> read(block: CommandLineRead.() -> T): T {
     return this.ideRead(block)
   }
 
@@ -61,7 +61,7 @@ abstract class CommandLineScope {
    * @param block A function with CommandLineTransaction receiver that contains the write operations to perform.
    *              The block is non-suspend because it runs inside a write lock.
    */
-  suspend fun change(block: CommandLineTransaction.() -> Unit) {
+  fun change(block: CommandLineTransaction.() -> Unit) {
     ideChange(block)
   }
 

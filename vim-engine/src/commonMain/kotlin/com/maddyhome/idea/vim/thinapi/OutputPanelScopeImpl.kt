@@ -26,18 +26,18 @@ class OutputPanelScopeImpl(
   private val outputPanel: VimOutputPanel
     get() = injector.outputPanel.getOrCreate(vimEditor, vimContext)
 
-  override suspend fun setText(text: String) {
+  override fun setText(text: String) {
     outputPanel.clearText()
     appendText(text, false)
     outputPanel.show() // has to be called to update the text
   }
 
-  override suspend fun appendText(text: String, startNewLine: Boolean) {
+  override fun appendText(text: String, startNewLine: Boolean) {
     outputPanel.addText(text, startNewLine)
     outputPanel.show() // has to be called to update the text
   }
 
-  override suspend fun clearText() {
+  override fun clearText() {
     outputPanel.clearText()
     outputPanel.show() // has to be called to update the text
   }

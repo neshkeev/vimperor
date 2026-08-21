@@ -45,7 +45,7 @@ interface CommandScope {
    *              entered by the user, and the 0-based start and end line numbers of the
    *              ex-command range (e.g., from `:1,3MyCommand` or `:g/pattern/MyCommand`).
    */
-  fun register(command: String, block: suspend VimApi.(commandText: String, startLine: Int, endLine: Int) -> Unit)
+  fun register(command: String, block: VimApi.(commandText: String, startLine: Int, endLine: Int) -> Unit)
 
   /**
    * Exports a function that can be used as an operator function in Vim.
@@ -55,7 +55,7 @@ interface CommandScope {
    * @param name The name to register the function under
    * @param function The function to execute when the operator is invoked
    */
-  fun exportOperatorFunction(name: String, function: suspend VimApi.() -> Boolean)
+  fun exportOperatorFunction(name: String, function: VimApi.() -> Boolean)
 
   /**
    * Sets the current operator function to use with the `g@` operator.
@@ -64,5 +64,5 @@ interface CommandScope {
    *
    * @param name The name of the previously exported operator function
    */
-  suspend fun setOperatorFunction(name: String)
+  fun setOperatorFunction(name: String)
 }

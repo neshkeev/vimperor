@@ -20,7 +20,7 @@ internal data class RegisterContents(val text: String, val type: TextType)
  * A paste reads the unnamed register, so re-pasting a ring entry means loading it in there first -
  * and the register the user was working with has to survive that untouched.
  */
-internal suspend fun VimApi.withUnnamedRegister(contents: RegisterContents, block: suspend () -> Unit) {
+internal fun VimApi.withUnnamedRegister(contents: RegisterContents, block: () -> Unit) {
   val saved = readUnnamedRegister()
   writeUnnamedRegister(contents)
 
@@ -29,7 +29,7 @@ internal suspend fun VimApi.withUnnamedRegister(contents: RegisterContents, bloc
   saved?.let { writeUnnamedRegister(it) }
 }
 
-private suspend fun VimApi.readUnnamedRegister(): RegisterContents? =
+private fun VimApi.readUnnamedRegister(): RegisterContents? =
   editor {
     read {
       withPrimaryCaret {
@@ -39,7 +39,7 @@ private suspend fun VimApi.readUnnamedRegister(): RegisterContents? =
     }
   }
 
-private suspend fun VimApi.writeUnnamedRegister(contents: RegisterContents) {
+private fun VimApi.writeUnnamedRegister(contents: RegisterContents) {
   editor { read { withPrimaryCaret { setReg(UNNAMED_REGISTER, contents.text, contents.type) } } }
 }
 

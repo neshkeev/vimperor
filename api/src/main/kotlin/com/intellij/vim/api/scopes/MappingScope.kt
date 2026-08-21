@@ -25,7 +25,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in normal, visual, select, and operator-pending modes.
    */
-  fun map(from: String, action: suspend VimApi.() -> Unit)
+  fun map(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in normal, visual, select, and operator-pending modes non-recursively.
@@ -35,7 +35,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in normal, visual, select, and operator-pending modes non-recursively.
    */
-  fun noremap(from: String, action: suspend VimApi.() -> Unit)
+  fun noremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in normal, visual, select, and operator-pending modes.
@@ -75,7 +75,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in normal mode.
    */
-  fun nmap(from: String, action: suspend VimApi.() -> Unit)
+  fun nmap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in normal mode non-recursively.
@@ -85,7 +85,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in normal mode non-recursively.
    */
-  fun nnoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun nnoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in normal mode.
@@ -125,7 +125,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in visual and select modes.
    */
-  fun vmap(from: String, action: suspend VimApi.() -> Unit)
+  fun vmap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in visual and select modes non-recursively.
@@ -135,7 +135,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in visual and select modes non-recursively.
    */
-  fun vnoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun vnoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in visual and select modes.
@@ -175,7 +175,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in visual mode.
    */
-  fun xmap(from: String, action: suspend VimApi.() -> Unit)
+  fun xmap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in visual mode non-recursively.
@@ -185,7 +185,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in visual mode non-recursively.
    */
-  fun xnoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun xnoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in visual mode.
@@ -225,7 +225,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in select mode.
    */
-  fun smap(from: String, action: suspend VimApi.() -> Unit)
+  fun smap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in select mode non-recursively.
@@ -235,7 +235,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in select mode non-recursively.
    */
-  fun snoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun snoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in select mode.
@@ -275,7 +275,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in operator pending mode.
    */
-  fun omap(from: String, action: suspend VimApi.() -> Unit)
+  fun omap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in operator pending mode non-recursively.
@@ -285,7 +285,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in operator pending mode non-recursively.
    */
-  fun onoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun onoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in operator pending mode.
@@ -325,7 +325,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in insert mode.
    */
-  fun imap(from: String, action: suspend VimApi.() -> Unit)
+  fun imap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in insert mode non-recursively.
@@ -335,7 +335,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in insert mode non-recursively.
    */
-  fun inoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun inoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in insert mode.
@@ -375,7 +375,7 @@ interface MappingScope {
   /**
    * Maps a [from] key sequence to an [action] in command line mode.
    */
-  fun cmap(from: String, action: suspend VimApi.() -> Unit)
+  fun cmap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Maps a [from] key sequence to [to] in command line mode non-recursively.
@@ -388,7 +388,7 @@ interface MappingScope {
    * @param from The key sequence to map from
    * @param action The action to execute when the key sequence is pressed
    */
-  fun cnoremap(from: String, action: suspend VimApi.() -> Unit)
+  fun cnoremap(from: String, action: VimApi.() -> Unit)
 
   /**
    * Removes a [keys] mapping in command line mode.

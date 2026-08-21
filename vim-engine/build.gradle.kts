@@ -99,9 +99,10 @@ ksp {
 
 kotlin {
   jvm()
-  // No `js` target yet. Every remaining error is the same one - the thinapi scopes block on the
-  // extension API's suspend functions with runBlocking, which Kotlin/JS has no equivalent for.
-  // See docs/superpowers/findings/2026-08-21-phase-4-js-probe.md.
+  js(IR) {
+    nodejs()
+    binaries.library()
+  }
 
   compilerOptions {
     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)

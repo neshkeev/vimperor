@@ -21,15 +21,15 @@ class TabScopeImpl(
   override val currentIndex: Int?
     get() = injector.tabService.getCurrentTabIndex(vimContext)
 
-  override suspend fun removeAt(indexToDelete: Int, indexToSelect: Int) {
+  override fun removeAt(indexToDelete: Int, indexToSelect: Int) {
     injector.tabService.removeTabAt(indexToDelete, indexToSelect, vimContext)
   }
 
-  override suspend fun moveCurrentToIndex(index: Int) {
+  override fun moveCurrentToIndex(index: Int) {
     injector.tabService.moveCurrentTabToIndex(index, vimContext)
   }
 
-  override suspend fun closeAllExceptCurrent() {
+  override fun closeAllExceptCurrent() {
     injector.tabService.closeAllExceptCurrentTab(vimContext)
   }
 }

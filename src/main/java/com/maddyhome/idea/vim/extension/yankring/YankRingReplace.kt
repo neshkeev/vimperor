@@ -33,7 +33,7 @@ internal enum class Direction(val step: Int) {
  * caret has left the pasted line - and moving the caret in those cases looks like the plugin
  * silently did the wrong thing. `s:YRReplace` refuses the same way, with the same message.
  */
-internal suspend fun VimApi.replaceLastPaste(direction: Direction) {
+internal fun VimApi.replaceLastPaste(direction: Direction) {
   cycleLastPaste(direction.step * typedCount())
 }
 
@@ -51,7 +51,7 @@ internal suspend fun VimApi.replaceLastPaste(direction: Direction) {
  * mappings the plugin never anticipated. The argument stays in the signature so that the
  * documented mappings keep working.
  */
-internal suspend fun VimApi.yankRingReplace(commandText: String) {
+internal fun VimApi.yankRingReplace(commandText: String) {
   val offset = offsetArgumentOf(commandText)
   if (offset == null) {
     reportError(MESSAGE_MISSING_OFFSET)
@@ -72,7 +72,7 @@ internal suspend fun VimApi.yankRingReplace(commandText: String) {
 private fun offsetArgumentOf(commandText: String): Int? =
   OFFSET.find(commandText.removePrefix(YR_REPLACE))?.value?.toIntOrNull()
 
-private suspend fun VimApi.cycleLastPaste(steps: Int) {
+private fun VimApi.cycleLastPaste(steps: Int) {
   val entries = YankRing.entries()
   val pending = pendingPaste()
 
@@ -94,7 +94,7 @@ private suspend fun VimApi.cycleLastPaste(steps: Int) {
  * first keeps the undo stack holding a single paste however long the user keeps cycling, so one
  * `u` still returns to the state before the paste.
  */
-private suspend fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste) {
+private fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste) {
   withUnnamedRegister(RegisterContents(entry.text, entry.type)) {
     // The count that selected the entry is still pending in the key handler, and `normal` feeds keys
     // back through that same state - leaving it would apply the count to the undo and re-enter this
@@ -112,7 +112,7 @@ private suspend fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste) {
  * undo does not reliably restore it - without this a replacement can land inside a neighbouring
  * word.
  */
-private suspend fun VimApi.restoreCaretFor(paste: Paste) {
+private fun VimApi.restoreCaretFor(paste: Paste) {
   if (paste.fromVisual) {
     // The selection the paste consumed is gone, but its marks survive, so `gv` brings it back -
     // the same trick `s:YRReplace` uses for a paste made from visual mode.

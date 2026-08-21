@@ -52,13 +52,13 @@ internal object LastPaste {
   }
 }
 
-internal suspend fun VimApi.rememberPaste(paste: Paste, ringIndex: Int) {
+internal fun VimApi.rememberPaste(paste: Paste, ringIndex: Int) {
   LastPaste.remember(paste, ringIndex, bufferState())
 }
 
-internal suspend fun VimApi.pendingPaste(): LastPaste.Pending? = LastPaste.pendingIn(bufferState())
+internal fun VimApi.pendingPaste(): LastPaste.Pending? = LastPaste.pendingIn(bufferState())
 
-private suspend fun VimApi.bufferState(): BufferState =
+private fun VimApi.bufferState(): BufferState =
   editor {
     read {
       BufferState(filePath.identity, textLength, withPrimaryCaret { line.number })

@@ -124,7 +124,7 @@ interface VimApi {
    *
    * @param command The normal mode command string to execute
    */
-  suspend fun normal(command: String)
+  fun normal(command: String)
 
   /**
    * Executes a block of code in the context of the currently focused editor.
@@ -141,7 +141,7 @@ interface VimApi {
    * @param block The code block to execute within editor scope
    * @return The result of the block execution
    */
-  suspend fun <T> editor(block: suspend EditorScope.() -> T): T
+  fun <T> editor(block: EditorScope.() -> T): T
 
   /**
    * Executes a block of code for each editor.
@@ -158,7 +158,7 @@ interface VimApi {
    * @param block The code block to execute for each editor
    * @return A list containing the results of executing the block on each editor
    */
-  suspend fun <T> forEachEditor(block: suspend EditorScope.() -> T): List<T>
+  fun <T> forEachEditor(block: EditorScope.() -> T): List<T>
 
   /**
    * Provides access to key mapping functionality.
@@ -242,8 +242,8 @@ interface VimApi {
    * @param block The code block to execute within the output panel scope
    * @return The OutputPanelScope for chaining
    */
-  suspend fun <T> outputPanel(block: suspend OutputPanelScope.() -> T): T
-  suspend fun outputPanel(): OutputPanelScope
+  fun <T> outputPanel(block: OutputPanelScope.() -> T): T
+  fun outputPanel(): OutputPanelScope
 
   /**
    * Provides access to modal input functionality.
@@ -258,7 +258,7 @@ interface VimApi {
    *
    * @return A ModalInput instance that can be used to request user input
    */
-  suspend fun modalInput(): ModalInput
+  fun modalInput(): ModalInput
 
   /**
    * Provides access to Vim's command line functionality.
@@ -281,8 +281,8 @@ interface VimApi {
    * @param block The code block to execute with command line scope
    * @return The CommandLineScope for chaining
    */
-  suspend fun <T> commandLine(block: suspend CommandLineScope.() -> T): T
-  suspend fun commandLine(): CommandLineScope
+  fun <T> commandLine(block: CommandLineScope.() -> T): T
+  fun commandLine(): CommandLineScope
 
   /**
    * Provides access to Vim's options functionality.
@@ -308,7 +308,7 @@ interface VimApi {
    * @param block The code block to execute within the option scope
    * @return The result of the block execution
    */
-  suspend fun <T> option(block: suspend OptionScope.() -> T): T
+  fun <T> option(block: OptionScope.() -> T): T
 
   /**
    * Provides access to Vim's digraph functionality.
@@ -328,8 +328,8 @@ interface VimApi {
    * @param block The code block to execute within the digraph scope
    * @return The DigraphScope for chaining
    */
-  suspend fun <T> digraph(block: suspend DigraphScope.() -> T): T
-  suspend fun digraph(): DigraphScope
+  fun <T> digraph(block: DigraphScope.() -> T): T
+  fun digraph(): DigraphScope
 
   /**
    * Provides access to tab management.
@@ -346,14 +346,14 @@ interface VimApi {
    * @param block The code block to execute within the tab scope
    * @return The result of the block execution
    */
-  suspend fun <T> tabs(block: suspend TabScope.() -> T): T
+  fun <T> tabs(block: TabScope.() -> T): T
 
   /**
    * Provides direct access to tab scope.
    *
    * @return The TabScope for chaining
    */
-  suspend fun tabs(): TabScope
+  fun tabs(): TabScope
 
   /**
    * Provides access to text pattern matching and word-boundary utilities.
@@ -370,14 +370,14 @@ interface VimApi {
    * @param block The code block to execute within the text scope
    * @return The result of the block execution
    */
-  suspend fun <T> text(block: suspend TextScope.() -> T): T
+  fun <T> text(block: TextScope.() -> T): T
 
   /**
    * Provides direct access to text scope.
    *
    * @return The TextScope for chaining
    */
-  suspend fun text(): TextScope
+  fun text(): TextScope
 
   // Window management APIs commented out — see IJPL-235369.
   // After switching windows, FileEditorManager.getSelectedTextEditor() does not
@@ -437,7 +437,7 @@ interface VimApi {
    * @param script The Vimscript string to execute
    * @return The result of the execution, which can be Success or Error
    */
-  suspend fun execute(script: String): Boolean
+  fun execute(script: String): Boolean
 
 
   /**
@@ -455,24 +455,24 @@ interface VimApi {
    * @param block The code block to execute within the storage scope
    * @return The result of the block execution
    */
-  suspend fun <T> storage(block: suspend StorageScope.() -> T): T
+  fun <T> storage(block: StorageScope.() -> T): T
 
   /**
    * Provides direct access to storage scope.
    *
    * @return The StorageScope for chaining
    */
-  suspend fun storage(): StorageScope
+  fun storage(): StorageScope
 
   /**
    * Saves the current file.
    */
-  suspend fun saveFile()
+  fun saveFile()
 
   /**
    * Closes the current file.
    */
-  suspend fun closeFile()
+  fun closeFile()
 
 }
 

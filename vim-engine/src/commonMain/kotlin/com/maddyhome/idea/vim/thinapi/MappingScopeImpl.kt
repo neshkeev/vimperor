@@ -19,7 +19,6 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionHandler
 import com.maddyhome.idea.vim.key.MappingOwner
-import kotlinx.coroutines.runBlocking
 
 class MappingScopeImpl(
   private val listenerOwner: ListenerOwner,
@@ -32,7 +31,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, *MappingMode.NVO.toTypedArray())
   }
 
-  override fun map(from: String, action: suspend VimApi.() -> Unit) {
+  override fun map(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, *MappingMode.NVO.toTypedArray())
   }
 
@@ -40,7 +39,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, *MappingMode.NVO.toTypedArray())
   }
 
-  override fun noremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun noremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, *MappingMode.NVO.toTypedArray())
   }
 
@@ -58,7 +57,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.NORMAL)
   }
 
-  override fun nmap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun nmap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.NORMAL)
   }
 
@@ -66,7 +65,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.NORMAL)
   }
 
-  override fun nnoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun nnoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.NORMAL)
   }
 
@@ -86,7 +85,7 @@ class MappingScopeImpl(
 
   override fun vmap(
     from: String,
-    action: suspend VimApi.() -> Unit,
+    action: VimApi.() -> Unit,
   ) {
     addMapping(from, isRecursive = true, action, MappingMode.VISUAL, MappingMode.SELECT)
   }
@@ -95,7 +94,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.VISUAL, MappingMode.SELECT)
   }
 
-  override fun vnoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun vnoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.VISUAL, MappingMode.SELECT)
   }
 
@@ -113,7 +112,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.VISUAL)
   }
 
-  override fun xmap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun xmap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.VISUAL)
   }
 
@@ -121,7 +120,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.VISUAL)
   }
 
-  override fun xnoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun xnoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.VISUAL)
   }
 
@@ -139,7 +138,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.SELECT)
   }
 
-  override fun smap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun smap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.SELECT)
   }
 
@@ -147,7 +146,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.SELECT)
   }
 
-  override fun snoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun snoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.SELECT)
   }
 
@@ -165,7 +164,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.OP_PENDING)
   }
 
-  override fun omap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun omap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.OP_PENDING)
   }
 
@@ -173,7 +172,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.OP_PENDING)
   }
 
-  override fun onoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun onoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.OP_PENDING)
   }
 
@@ -191,7 +190,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.INSERT)
   }
 
-  override fun imap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun imap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.INSERT)
   }
 
@@ -199,7 +198,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.INSERT)
   }
 
-  override fun inoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun inoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.INSERT)
   }
 
@@ -217,7 +216,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = true, MappingMode.CMD_LINE)
   }
 
-  override fun cmap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun cmap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = true, action, MappingMode.CMD_LINE)
   }
 
@@ -225,7 +224,7 @@ class MappingScopeImpl(
     addMapping(from, to, isRecursive = false, MappingMode.CMD_LINE)
   }
 
-  override fun cnoremap(from: String, action: suspend VimApi.() -> Unit) {
+  override fun cnoremap(from: String, action: VimApi.() -> Unit) {
     addMapping(from, isRecursive = false, action, MappingMode.CMD_LINE)
   }
 
@@ -264,7 +263,7 @@ class MappingScopeImpl(
   private fun addMapping(
     from: String,
     isRecursive: Boolean,
-    action: suspend VimApi.() -> Unit,
+    action: VimApi.() -> Unit,
     vararg mode: MappingMode,
   ) {
     val extensionHandler: ExtensionHandler = object : ExtensionHandler {
@@ -276,8 +275,7 @@ class MappingScopeImpl(
         context: ExecutionContext,
         operatorArguments: OperatorArguments,
       ) {
-        // XXX: It's not OK to call runBlocking, but let's keep it to have an API.
-        runBlocking { VimApiImpl(listenerOwner, mappingOwner, editor.projectId).action() }
+        VimApiImpl(listenerOwner, mappingOwner, editor.projectId).action()
       }
     }
 

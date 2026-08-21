@@ -20,7 +20,7 @@ interface OutputPanelScope {
    *
    * @param text The new text to display in the output panel.
    */
-  suspend fun setText(text: String)
+  fun setText(text: String)
 
   /**
    * Appends text to the existing content of the output panel.
@@ -31,10 +31,10 @@ interface OutputPanelScope {
    *                     will be inserted before the appended text.
    *                     Defaults to false.
    */
-  suspend fun appendText(text: String, startNewLine: Boolean = false)
+  fun appendText(text: String, startNewLine: Boolean = false)
 
   /**
    * Clears all text from the output panel.
    */
-  suspend fun clearText()
+  fun clearText()
 }

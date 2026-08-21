@@ -42,7 +42,7 @@ fun VimInitApi.init() {
   }
 }
 
-internal suspend fun VimApi.operatorFunction(): Boolean {
+internal fun VimApi.operatorFunction(): Boolean {
   fun CaretTransaction.getSelection(): Range? {
     return when {
       this@operatorFunction.mode == Mode.NORMAL -> changeMarks
@@ -63,12 +63,12 @@ internal suspend fun VimApi.operatorFunction(): Boolean {
   return true
 }
 
-internal suspend fun VimApi.rewriteMotion() {
+internal fun VimApi.rewriteMotion() {
   commands().setOperatorFunction(OPERATOR_FUNC_NAME)
   normal("g@")
 }
 
-internal suspend fun VimApi.rewriteLine() {
+internal fun VimApi.rewriteLine() {
   val count1 = getVariable<Int>("v:count1") ?: 1
   editor {
     change {
@@ -83,7 +83,7 @@ internal suspend fun VimApi.rewriteLine() {
   }
 }
 
-internal suspend fun VimApi.rewriteVisual() {
+internal fun VimApi.rewriteVisual() {
   editor {
     change {
       forEachCaret {

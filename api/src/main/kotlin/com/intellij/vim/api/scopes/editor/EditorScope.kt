@@ -34,7 +34,7 @@ abstract class EditorScope {
    *              The block is non-suspend because it runs inside a read lock.
    * @return The result of the block execution
    */
-  suspend fun <T> read(block: ReadScope.() -> T): T {
+  fun <T> read(block: ReadScope.() -> T): T {
     return this.ideRead(block)
   }
 
@@ -60,7 +60,7 @@ abstract class EditorScope {
    * @param block A lambda with [Transaction] receiver that contains the write operations to perform.
    *              The block is non-suspend because it runs inside a write lock.
    */
-  suspend fun change(block: Transaction.() -> Unit) {
+  fun change(block: Transaction.() -> Unit) {
     return ideChange(block)
   }
 

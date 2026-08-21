@@ -30,7 +30,7 @@ interface TextScope {
    * @param ignoreCase Whether to ignore case when matching
    * @return True if the pattern matches the text, false otherwise
    */
-  suspend fun matches(pattern: String, text: String, ignoreCase: Boolean = false): Boolean
+  fun matches(pattern: String, text: String, ignoreCase: Boolean = false): Boolean
 
   /**
    * Finds all matches of a pattern in a text.
@@ -39,7 +39,7 @@ interface TextScope {
    * @param pattern The regular expression pattern to search for
    * @return A list of pairs representing the start and end offsets of each match
    */
-  suspend fun getAllMatches(text: String, pattern: String): List<Pair<Int, Int>>
+  fun getAllMatches(text: String, pattern: String): List<Pair<Int, Int>>
 
   /**
    * Finds the start offset of the next word in camel case or snake case text.
@@ -49,7 +49,7 @@ interface TextScope {
    * @param count Find the [count]-th occurrence. Must be greater than 0.
    * @return The offset of the next word start, or null if not found
    */
-  suspend fun getNextCamelStartOffset(chars: CharSequence, startIndex: Int, count: Int = 1): Int?
+  fun getNextCamelStartOffset(chars: CharSequence, startIndex: Int, count: Int = 1): Int?
 
   /**
    * Finds the start offset of the previous word in camel case or snake case text.
@@ -59,7 +59,7 @@ interface TextScope {
    * @param count Find the [count]-th occurrence. Must be greater than 0.
    * @return The offset of the previous word start, or null if not found
    */
-  suspend fun getPreviousCamelStartOffset(chars: CharSequence, endIndex: Int, count: Int = 1): Int?
+  fun getPreviousCamelStartOffset(chars: CharSequence, endIndex: Int, count: Int = 1): Int?
 
   /**
    * Finds the end offset of the next word in camel case or snake case text.
@@ -69,7 +69,7 @@ interface TextScope {
    * @param count Find the [count]-th occurrence. Must be greater than 0.
    * @return The offset of the next word end, or null if not found
    */
-  suspend fun getNextCamelEndOffset(chars: CharSequence, startIndex: Int, count: Int = 1): Int?
+  fun getNextCamelEndOffset(chars: CharSequence, startIndex: Int, count: Int = 1): Int?
 
   /**
    * Finds the end offset of the previous word in camel case or snake case text.
@@ -79,5 +79,5 @@ interface TextScope {
    * @param count Find the [count]-th occurrence. Must be greater than 0.
    * @return The offset of the previous word end, or null if not found
    */
-  suspend fun getPreviousCamelEndOffset(chars: CharSequence, endIndex: Int, count: Int = 1): Int?
+  fun getPreviousCamelEndOffset(chars: CharSequence, endIndex: Int, count: Int = 1): Int?
 }

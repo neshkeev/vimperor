@@ -68,15 +68,15 @@ class VimApiImpl(
     return CommandScopeImpl(listenerOwner, mappingOwner)
   }
 
-  override suspend fun normal(command: String) {
+  override fun normal(command: String) {
     injector.pluginService.executeNormalWithoutMapping(command, vimEditor)
   }
 
-  override suspend fun <T> editor(block: suspend EditorScope.() -> T): T {
+  override fun <T> editor(block: EditorScope.() -> T): T {
     return EditorScopeImpl(projectId).block()
   }
 
-  override suspend fun <T> forEachEditor(block: suspend EditorScope.() -> T): List<T> {
+  override fun <T> forEachEditor(block: EditorScope.() -> T): List<T> {
     return injector.editorGroup.getEditors().map { editor ->
       val editorScope = EditorScopeImpl(projectId)
       editorScope.block()
@@ -108,56 +108,56 @@ class VimApiImpl(
 //    listenersScope.block()
 //  }
 
-  override suspend fun <T> outputPanel(block: suspend OutputPanelScope.() -> T): T {
+  override fun <T> outputPanel(block: OutputPanelScope.() -> T): T {
     val outputPanelScope = OutputPanelScopeImpl(projectId)
     return outputPanelScope.block()
   }
 
-  override suspend fun outputPanel(): OutputPanelScope {
+  override fun outputPanel(): OutputPanelScope {
     return OutputPanelScopeImpl(projectId)
   }
 
-  override suspend fun modalInput(): ModalInput {
+  override fun modalInput(): ModalInput {
     return ModalInputImpl(listenerOwner, mappingOwner, projectId)
   }
 
-  override suspend fun <T> commandLine(block: suspend CommandLineScope.() -> T): T {
+  override fun <T> commandLine(block: CommandLineScope.() -> T): T {
     val commandLineScope = CommandLineScopeImpl(listenerOwner, mappingOwner, projectId)
     return commandLineScope.block()
   }
 
-  override suspend fun commandLine(): CommandLineScope {
+  override fun commandLine(): CommandLineScope {
     return CommandLineScopeImpl(listenerOwner, mappingOwner, projectId)
   }
 
-  override suspend fun <T> option(block: suspend OptionScope.() -> T): T {
+  override fun <T> option(block: OptionScope.() -> T): T {
     return OptionScopeImpl(projectId).block()
   }
 
-  override suspend fun <T> digraph(block: suspend DigraphScope.() -> T): T {
+  override fun <T> digraph(block: DigraphScope.() -> T): T {
     val digraphScope = DigraphScopeImpl(projectId)
     return digraphScope.block()
   }
 
-  override suspend fun digraph(): DigraphScope {
+  override fun digraph(): DigraphScope {
     return DigraphScopeImpl(projectId)
   }
 
-  override suspend fun <T> tabs(block: suspend TabScope.() -> T): T {
+  override fun <T> tabs(block: TabScope.() -> T): T {
     val tabScope = TabScopeImpl(vimContext)
     return tabScope.block()
   }
 
-  override suspend fun tabs(): TabScope {
+  override fun tabs(): TabScope {
     return TabScopeImpl(vimContext)
   }
 
-  override suspend fun <T> text(block: suspend TextScope.() -> T): T {
+  override fun <T> text(block: TextScope.() -> T): T {
     val textScope = TextScopeImpl()
     return textScope.block()
   }
 
-  override suspend fun text(): TextScope {
+  override fun text(): TextScope {
     return TextScopeImpl()
   }
 
@@ -198,7 +198,7 @@ class VimApiImpl(
   //   injector.window.closeAll(vimContext)
   // }
 
-  override suspend fun execute(script: String): Boolean {
+  override fun execute(script: String): Boolean {
     val result = injector.vimscriptExecutor.execute(
       script, vimEditor, vimContext,
       skipHistory = true,
@@ -208,20 +208,20 @@ class VimApiImpl(
   }
 
 
-  override suspend fun <T> storage(block: suspend StorageScope.() -> T): T {
+  override fun <T> storage(block: StorageScope.() -> T): T {
     val storageScope = StorageScopeImpl(vimEditor)
     return storageScope.block()
   }
 
-  override suspend fun storage(): StorageScope {
+  override fun storage(): StorageScope {
     return StorageScopeImpl(vimEditor)
   }
 
-  override suspend fun saveFile() {
+  override fun saveFile() {
     injector.file.saveFile(vimEditor, vimContext)
   }
 
-  override suspend fun closeFile() {
+  override fun closeFile() {
     injector.file.closeFile(vimEditor, vimContext)
   }
 

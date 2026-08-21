@@ -19,7 +19,6 @@ import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.key.OperatorFunction
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import kotlinx.coroutines.runBlocking
 
 class CommandScopeImpl(
   private val listenerOwner: ListenerOwner,
@@ -27,7 +26,7 @@ class CommandScopeImpl(
 ) : CommandScope {
   override fun register(
     command: String,
-    block: suspend VimApi.(String, Int, Int) -> Unit,
+    block: VimApi.(String, Int, Int) -> Unit,
   ) {
     val commandHandler = object : CommandAliasHandler {
       override fun execute(
@@ -38,13 +37,13 @@ class CommandScopeImpl(
       ) {
         val vimApi = VimApiImpl(listenerOwner, mappingOwner, editor.projectId)
         val lineRange = range.getLineRange(editor, editor.primaryCaret())
-        runBlocking { vimApi.block(command, lineRange.startLine, lineRange.endLine) }
+        vimApi.block(command, lineRange.startLine, lineRange.endLine)
       }
     }
     injector.pluginService.addCommand(command, commandHandler)
   }
 
-  override fun exportOperatorFunction(name: String, function: suspend VimApi.() -> Boolean) {
+  override fun exportOperatorFunction(name: String, function: VimApi.() -> Boolean) {
     val operatorFunction: OperatorFunction = object : OperatorFunction {
       override fun apply(
         editor: VimEditor,
@@ -53,9 +52,7 @@ class CommandScopeImpl(
       ): Boolean {
         var returnValue = false
         injector.actionExecutor.executeCommand(editor, {
-          runBlocking {
-            returnValue = VimApiImpl(listenerOwner, mappingOwner, editor.projectId).function()
-          }
+          returnValue = VimApiImpl(listenerOwner, mappingOwner, editor.projectId).function()
         }, "Insert Text", null)
         return returnValue
       }
@@ -63,7 +60,7 @@ class CommandScopeImpl(
     injector.pluginService.exportOperatorFunction(name, operatorFunction)
   }
 
-  override suspend fun setOperatorFunction(name: String) {
+  override fun setOperatorFunction(name: String) {
     injector.globalOptions().operatorfunc = name
   }
 }

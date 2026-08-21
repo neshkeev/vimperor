@@ -38,7 +38,7 @@ interface TabScope {
    * @param indexToDelete The index of the tab to delete
    * @param indexToSelect The index of the tab to select after deletion
    */
-  suspend fun removeAt(indexToDelete: Int, indexToSelect: Int)
+  fun removeAt(indexToDelete: Int, indexToSelect: Int)
 
   /**
    * Moves the current tab to the specified index.
@@ -46,12 +46,12 @@ interface TabScope {
    * @param index The index to move the current tab to
    * @throws IllegalStateException if there is no tab selected or no tabs are open
    */
-  suspend fun moveCurrentToIndex(index: Int)
+  fun moveCurrentToIndex(index: Int)
 
   /**
    * Closes all tabs except the current one.
    *
    * @throws IllegalStateException if there is no tab selected
    */
-  suspend fun closeAllExceptCurrent()
+  fun closeAllExceptCurrent()
 }

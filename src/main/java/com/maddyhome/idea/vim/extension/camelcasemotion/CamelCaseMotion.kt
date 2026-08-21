@@ -152,7 +152,7 @@ private fun TextObjectScope.registerInnerObject(key: String?, motion: String) {
 /**
  * Compute the inner-"word" range under the primary caret for the given [motion] and [count].
  */
-private suspend fun VimApi.innerCamelRange(motion: String, count: Int): TextObjectRange? {
+private fun VimApi.innerCamelRange(motion: String, count: Int): TextObjectRange? {
   val focused = injector.editorGroup.getFocusedEditor()
   val isKeyword: KeywordTest = if (focused != null) keywordTestFor(focused) else { _ -> false }
   return editor {
