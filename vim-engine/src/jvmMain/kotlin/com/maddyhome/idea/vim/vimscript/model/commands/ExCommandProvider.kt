@@ -20,7 +20,7 @@ interface ExCommandProvider {
   fun getCommands(): Map<String, LazyExCommandInstance> {
     val classLoader = this.javaClass.classLoader
     val commandToClass: Map<String, String> = Json.decodeFromStream(getFile())
-    return commandToClass.entries.associate { it.key to LazyExCommandInstance(it.value, classLoader) }
+    return commandToClass.entries.associate { it.key to lazyExCommand(it.value, classLoader) }
   }
 
   private fun getFile(): InputStream {

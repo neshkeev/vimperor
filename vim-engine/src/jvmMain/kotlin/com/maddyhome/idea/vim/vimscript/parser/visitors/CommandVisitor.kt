@@ -31,6 +31,7 @@ import com.maddyhome.idea.vim.vimscript.model.commands.EchoCommand
 import com.maddyhome.idea.vim.vimscript.model.commands.ExecuteCommand
 import com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand
 import com.maddyhome.idea.vim.vimscript.model.commands.GoToLineCommand
+import com.maddyhome.idea.vim.vimscript.model.commands.LazyExCommandInstance
 import com.maddyhome.idea.vim.vimscript.model.commands.LetCommand
 import com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand
 import com.maddyhome.idea.vim.vimscript.model.commands.ShiftLeftCommand
@@ -54,9 +55,6 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.operators.AssignmentOp
 import org.antlr.v4.runtime.ParserRuleContext
 import java.util.stream.Collectors
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
-import kotlin.reflect.full.createType
-import kotlin.reflect.full.primaryConstructor
 
 object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
@@ -273,7 +271,8 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
       }
 
       SubstituteCommand::class -> SubstituteCommand(range, argument, commandName)
-      else -> getCommandByName(commandName).primaryConstructor!!.call(range, modifier, argument)
+      else -> injector.vimscriptParser.exCommands.getCommand(commandName)?.create(range, modifier, argument)
+        ?: error("No ex-command with a standard constructor is registered for '$commandName'")
     }
     command.rangeInScript = ctx.getTextRange()
     return command
@@ -350,29 +349,30 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
     // `@ExCommand` would never see one. Retry the lookup without the bang, so that e.g. `:stopinsert!` resolves.
     // Retrying only on failure keeps the alias path untouched. There is no ambiguity: aliases must start with an
     // uppercase letter, and ex-command names are lowercase.
-    var commandConstructor = findCommandConstructor(name)
+    var exCommand = findExCommand(name)
     var commandModifier = modifier
-    if (commandConstructor == null && name.endsWith("!")) {
-      commandConstructor = findCommandConstructor(name.dropLast(1))
+    if (exCommand == null && name.endsWith("!")) {
+      exCommand = findExCommand(name.dropLast(1))
       commandModifier = CommandModifier.BANG
     }
 
     // Note that the fallback keeps the original name and modifier, so alias resolution still sees the bang
-    val command = commandConstructor?.call(range, commandModifier, argument)
+    val command = exCommand?.create(range, commandModifier, argument)
       ?: UnknownCommand(range, name, modifier, argument)
     command.rangeInScript = ctx.getTextRange()
     return command
   }
 
-  private fun findCommandConstructor(commandName: String): KFunction<Command>? {
-    return getCommandByName(commandName).constructors
-      .filter { it.parameters.size == 3 }
-      .firstOrNull {
-        it.parameters[0].type == Range::class.createType()
-          && it.parameters[1].type == CommandModifier::class.createType()
-          && it.parameters[2].type == String::class.createType()
-      }
-  }
+  /**
+   * The registered ex-command for [commandName], if it can be built from the standard
+   * `(Range, CommandModifier, String)` constructor.
+   *
+   * Returns null for an unregistered name, matching the old behaviour: that fell back to
+   * `UnknownCommand::class`, which has no such constructor. `ExCommandConstructorInvariantsTest`
+   * pins that.
+   */
+  private fun findExCommand(commandName: String): LazyExCommandInstance? =
+    injector.vimscriptParser.exCommands.getCommand(commandName)?.takeIf { it.hasStandardConstructor }
 
   private fun getCommandByName(commandName: String): KClass<out Command> {
     return injector.vimscriptParser.exCommands.getCommand(commandName)?.getKClass() ?: UnknownCommand::class
