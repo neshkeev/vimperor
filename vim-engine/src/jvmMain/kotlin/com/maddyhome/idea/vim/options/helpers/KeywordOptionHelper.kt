@@ -13,13 +13,12 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.options.OptionAccessScope
 import com.maddyhome.idea.vim.options.StringListOption
-import java.util.regex.Pattern
 
 object KeywordOptionHelper {
 
   private const val allLettersRegex = "\\p{L}"
   private val validationPattern =
-    Pattern.compile("(\\^?(([^0-9^]|[0-9]{1,3})-([^0-9]|[0-9]{1,3})|([^0-9^]|[0-9]{1,3})),)*\\^?(([^0-9^]|[0-9]{1,3})-([^0-9]|[0-9]{1,3})|([^0-9]|[0-9]{1,3})),?$")
+    Regex("(\\^?(([^0-9^]|[0-9]{1,3})-([^0-9]|[0-9]{1,3})|([^0-9^]|[0-9]{1,3})),)*\\^?(([^0-9^]|[0-9]{1,3})-([^0-9]|[0-9]{1,3})|([^0-9]|[0-9]{1,3})),?$")
 
   fun isFilename(editor: VimEditor, c: Char): Boolean {
     // Vim's vim_isfilec treats every multibyte character as a filename character
@@ -141,7 +140,7 @@ object KeywordOptionHelper {
   }
 
   fun parseValues(content: String): List<String>? {
-    if (!validationPattern.matcher(content).matches()) {
+    if (!validationPattern.matches(content)) {
       return null
     }
     var index = 0

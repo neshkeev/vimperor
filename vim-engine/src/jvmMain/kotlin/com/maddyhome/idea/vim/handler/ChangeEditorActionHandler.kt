@@ -126,7 +126,7 @@ sealed class ChangeEditorActionHandler(runForEachCaret: Boolean) : EditorActionH
           }
         }
       }
-    } catch (e: java.lang.Exception) {
+    } catch (e: Exception) {
       if (injector.application.isUnitTest() || e.javaClass.name != "ReadOnlyFragmentModificationException") {
         throw e
       } else {

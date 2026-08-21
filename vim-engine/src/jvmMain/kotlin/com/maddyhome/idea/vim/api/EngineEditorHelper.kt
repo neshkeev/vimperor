@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.common.Graphemes
 import com.maddyhome.idea.vim.common.TextRange
-import java.nio.CharBuffer
+import com.maddyhome.idea.vim.helper.isVimWhitespace
 
 // TODO: [visual] try to remove all uses of visual line/position. This is an IntelliJ concept
 interface EngineEditorHelper {
@@ -35,7 +35,7 @@ interface EngineEditorHelper {
    * used for the output panel will leave a gap on the right-hand side of the panel.
    */
   fun getApproximateOutputPanelWidth(editor: VimEditor): Int
-  fun handleWithReadonlyFragmentModificationHandler(editor: VimEditor, exception: java.lang.Exception)
+  fun handleWithReadonlyFragmentModificationHandler(editor: VimEditor, exception: Exception)
   fun pad(editor: VimEditor, line: Int, to: Int): String
   fun inlayAwareOffsetToVisualPosition(editor: VimEditor, offset: Int): VimVisualPosition
   fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker
@@ -59,7 +59,7 @@ fun VimEditor.getLeadingCharacterOffset(line: Int, col: Int = 0): Int {
     if (offset >= chars.length) {
       break
     }
-    if (!Character.isWhitespace(chars[offset])) {
+    if (!isVimWhitespace(chars[offset])) {
       pos = offset
       break
     }
@@ -251,11 +251,6 @@ fun VimEditor.getOffset(line: Int, column: Int): Int {
   return bufferPositionToOffset(BufferPosition(line, column))
 }
 
-fun VimEditor.getLineBuffer(line: Int): CharBuffer {
-  val start: Int = getLineStartOffset(line)
-  return CharBuffer.wrap(text(), start, start + getLineEndOffset(line, true) - getLineStartOffset(line))
-}
-
 fun VimEditor.anyNonWhitespace(offset: Int, dir: Int): Boolean {
   val start: Int
   val end: Int
@@ -271,7 +266,7 @@ fun VimEditor.anyNonWhitespace(offset: Int, dir: Int): Boolean {
   }
   val chars: CharSequence = text()
   for (i in start..end) {
-    if (!Character.isWhitespace(chars[i])) {
+    if (!isVimWhitespace(chars[i])) {
       return true
     }
   }
@@ -288,7 +283,7 @@ fun VimEditor.isLineEmpty(line: Int, allowBlanks: Boolean): Boolean {
     while (offset < chars.length) {
       if (chars[offset] == '\n') {
         return true
-      } else if (!Character.isWhitespace(chars[offset])) {
+      } else if (!isVimWhitespace(chars[offset])) {
         return false
       }
       offset++

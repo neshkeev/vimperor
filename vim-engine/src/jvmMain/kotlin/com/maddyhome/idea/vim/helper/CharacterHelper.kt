@@ -9,7 +9,6 @@ package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.options.helpers.KeywordOptionHelper
-import java.lang.Character.UnicodeBlock
 
 /**
  * This helper class is used when working with various character level operations
@@ -28,20 +27,19 @@ object CharacterHelper {
    */
   @JvmStatic
   fun charType(editor: VimEditor, ch: Char, punctuationAsLetters: Boolean): CharacterType {
-    if (Character.isWhitespace(ch)) return CharacterType.WHITESPACE
+    if (isVimWhitespace(ch)) return CharacterType.WHITESPACE
 
     // A WORD is a sequence of non-blank characters, separated with white space (:help WORD). Vim's cls() returns the
     // same class for every non-blank character when cls_bigword is set, so script boundaries must not split a WORD.
     if (punctuationAsLetters) return CharacterType.KEYWORD
 
-    val block = UnicodeBlock.of(ch)
-    return if (block === UnicodeBlock.HIRAGANA) {
+    return if (ch in HIRAGANA) {
       CharacterType.HIRAGANA
-    } else if (block === UnicodeBlock.KATAKANA) {
+    } else if (ch in KATAKANA) {
       CharacterType.KATAKANA
     } else if (isHalfWidthKatakanaLetter(ch)) {
       CharacterType.HALF_WIDTH_KATAKANA
-    } else if (block == UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS) {
+    } else if (ch in CJK_UNIFIED_IDEOGRAPHS) {
       CharacterType.CJK_UNIFIED_IDEOGRAPHS
     } else if (KeywordOptionHelper.isKeyword(editor, ch)) {
       CharacterType.KEYWORD
@@ -54,15 +52,22 @@ object CharacterHelper {
     charType(editor, ch, isBig) == CharacterType.WHITESPACE
 
   fun isInvisibleControlCharacter(codepoint: Int): Boolean {
-    val type = Character.getType(codepoint).toByte()
-    return type == Character.CONTROL || type == Character.FORMAT || type == Character.PRIVATE_USE ||
-      type == Character.SURROGATE || type == Character.UNASSIGNED
+    val category = charCategoryOf(codepoint)
+    return category == CharCategory.CONTROL || category == CharCategory.FORMAT ||
+      category == CharCategory.PRIVATE_USE || category == CharCategory.SURROGATE ||
+      category == CharCategory.UNASSIGNED
   }
 
   fun isZeroWidthCharacter(codepoint: Int): Boolean =
     codepoint == 0xfeff || codepoint == 0x200b || codepoint == 0x200c || codepoint == 0x200d
 
   private fun isHalfWidthKatakanaLetter(ch: Char): Boolean = ch in '\uFF66'..'\uFF9F'
+
+  // Unicode block ranges, taken from java.lang.Character.UnicodeBlock and pinned by
+  // CharacterHelperTest so they cannot drift from it silently.
+  private val HIRAGANA = '\u3040'..'\u309F'
+  private val KATAKANA = '\u30A0'..'\u30FF'
+  private val CJK_UNIFIED_IDEOGRAPHS = '\u4E00'..'\u9FFF'
 
   enum class CharacterType {
     KEYWORD, HIRAGANA, KATAKANA, HALF_WIDTH_KATAKANA, CJK_UNIFIED_IDEOGRAPHS, PUNCTUATION, WHITESPACE

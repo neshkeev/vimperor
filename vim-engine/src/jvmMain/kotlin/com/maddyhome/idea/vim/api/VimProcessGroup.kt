@@ -24,7 +24,7 @@ interface VimProcessGroup {
    * @param options global Vim options containing shell configuration; callers should pass
    *   `injector.globalOptions()` which reads from the frontend's option storage
    */
-  @kotlin.jvm.Throws(java.lang.Exception::class)
+  @Throws(Exception::class)
   fun executeCommand(
     editor: VimEditor,
     command: String,
