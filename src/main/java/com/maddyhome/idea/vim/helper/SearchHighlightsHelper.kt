@@ -32,7 +32,6 @@ import com.maddyhome.idea.vim.state.mode.inCommandLineModeWithVisual
 import com.maddyhome.idea.vim.state.mode.inVisualMode
 import org.jetbrains.annotations.Contract
 import java.awt.Font
-import java.util.*
 
 fun updateSearchHighlights(
   pattern: String?,
@@ -239,7 +238,7 @@ private fun addIncsearchMatchHighlight(
   forwards: Boolean,
   shouldIgnoreSmartCase: Boolean,
 ): Int {
-  val searchOptions = EnumSet.of(SearchOptions.WHOLE_FILE)
+  val searchOptions = enumSetOf(SearchOptions.WHOLE_FILE)
   if (injector.globalOptions().wrapscan) searchOptions.add(SearchOptions.WRAP)
   if (shouldIgnoreSmartCase) searchOptions.add(SearchOptions.IGNORE_SMARTCASE)
   if (!forwards) searchOptions.add(SearchOptions.BACKWARDS)

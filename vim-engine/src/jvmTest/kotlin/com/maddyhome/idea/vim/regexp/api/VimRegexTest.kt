@@ -139,7 +139,7 @@ class VimRegexTest {
       text: CharSequence,
       pattern: String,
       startIndex: Int = 0,
-      options: EnumSet<VimRegexOptions> = noneOfEnum(),
+      options: MutableSet<VimRegexOptions> = noneOfEnum(),
     ) {
       val editor = mockEditorFromText(text)
       val regex = VimRegex(pattern)
@@ -154,7 +154,7 @@ class VimRegexTest {
       text: CharSequence,
       pattern: String,
       startIndex: Int = 0,
-      options: EnumSet<VimRegexOptions> = noneOfEnum(),
+      options: MutableSet<VimRegexOptions> = noneOfEnum(),
     ) {
       val editor = mockEditorFromText(text)
       val regex = VimRegex(pattern)
@@ -217,7 +217,7 @@ class VimRegexTest {
       text: CharSequence,
       pattern: String,
       startIndex: Int = 0,
-      options: EnumSet<VimRegexOptions> = noneOfEnum(),
+      options: MutableSet<VimRegexOptions> = noneOfEnum(),
     ) {
       val editor = mockEditorFromText(text)
       val regex = VimRegex(pattern)
@@ -232,7 +232,7 @@ class VimRegexTest {
       text: CharSequence,
       pattern: String,
       startIndex: Int = 0,
-      options: EnumSet<VimRegexOptions> = noneOfEnum(),
+      options: MutableSet<VimRegexOptions> = noneOfEnum(),
     ) {
       val editor = mockEditorFromText(text)
       val regex = VimRegex(pattern)
@@ -325,7 +325,7 @@ class VimRegexTest {
       text: CharSequence,
       pattern: String,
       startIndex: Int = 0,
-      options: EnumSet<VimRegexOptions> = enumSetOf(),
+      options: MutableSet<VimRegexOptions> = enumSetOf(),
     ) {
       val editor = mockEditorFromText(text)
       val regex = VimRegex(pattern)

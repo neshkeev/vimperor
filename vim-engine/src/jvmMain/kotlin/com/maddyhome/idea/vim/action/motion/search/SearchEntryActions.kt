@@ -17,12 +17,11 @@ import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = ["/"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class SearchEntryFwdAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.MODE_CHANGE
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)
 
   override fun execute(
     editor: VimEditor,
@@ -38,7 +37,7 @@ class SearchEntryFwdAction : VimActionHandler.SingleExecution() {
 @CommandOrMotion(keys = ["?"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class SearchEntryRevAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.MODE_CHANGE
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)
 
   override fun execute(
     editor: VimEditor,

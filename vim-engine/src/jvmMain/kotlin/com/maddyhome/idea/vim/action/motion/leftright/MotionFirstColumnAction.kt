@@ -22,7 +22,6 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.toMotion
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = ["0"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class MotionFirstColumnAction : MotionActionHandler.ForEachCaret() {
@@ -44,7 +43,7 @@ class MotionFirstColumnAction : MotionActionHandler.ForEachCaret() {
 class MotionFirstColumnInsertModeAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
 
   override fun getOffset(
     editor: VimEditor,

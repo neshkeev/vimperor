@@ -8,7 +8,7 @@
 package com.maddyhome.idea.vim.command
 
 import com.maddyhome.idea.vim.ex.ExException
-import java.util.*
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 /**
  * @author vlan
@@ -54,19 +54,19 @@ enum class MappingMode {
   ;
 
   companion object {
-    val N: EnumSet<MappingMode> = EnumSet.of(NORMAL)
-    val X: EnumSet<MappingMode> = EnumSet.of(VISUAL)
-    val O: EnumSet<MappingMode> = EnumSet.of(OP_PENDING)
-    val I: EnumSet<MappingMode> = EnumSet.of(INSERT)
-    val C: EnumSet<MappingMode> = EnumSet.of(CMD_LINE)
-    val L: EnumSet<MappingMode> = EnumSet.of(LANG)
-    val S: EnumSet<MappingMode> = EnumSet.of(SELECT)
-    val V: EnumSet<MappingMode> = EnumSet.of(VISUAL, SELECT)
-    val IC: EnumSet<MappingMode> = EnumSet.of(INSERT, CMD_LINE)
+    val N: MutableSet<MappingMode> = enumSetOf(NORMAL)
+    val X: MutableSet<MappingMode> = enumSetOf(VISUAL)
+    val O: MutableSet<MappingMode> = enumSetOf(OP_PENDING)
+    val I: MutableSet<MappingMode> = enumSetOf(INSERT)
+    val C: MutableSet<MappingMode> = enumSetOf(CMD_LINE)
+    val L: MutableSet<MappingMode> = enumSetOf(LANG)
+    val S: MutableSet<MappingMode> = enumSetOf(SELECT)
+    val V: MutableSet<MappingMode> = enumSetOf(VISUAL, SELECT)
+    val IC: MutableSet<MappingMode> = enumSetOf(INSERT, CMD_LINE)
 
     // This requires the JvmField annotation as it is used (in Java) by an external plugin
     @JvmField
-    val NVO: EnumSet<MappingMode> = EnumSet.of(NORMAL, VISUAL, OP_PENDING, SELECT)
+    val NVO: MutableSet<MappingMode> = enumSetOf(NORMAL, VISUAL, OP_PENDING, SELECT)
 
     // TODO: Consider removing/depracting XO, NV and NXO. They're not typical Vim modes that have a map command
     // E.g. `xmap` is for Visual, `vmap` is for Visual and Select. `map` is NVO and `map!` is IC
@@ -77,15 +77,15 @@ enum class MappingMode {
 
     // Used externally, by Java
     @JvmField
-    val XO: EnumSet<MappingMode> = EnumSet.of(VISUAL, OP_PENDING)
+    val XO: MutableSet<MappingMode> = enumSetOf(VISUAL, OP_PENDING)
 
     // Used externally
     @Suppress("unused")
-    val NV: EnumSet<MappingMode> = EnumSet.of(NORMAL, VISUAL, SELECT)
+    val NV: MutableSet<MappingMode> = enumSetOf(NORMAL, VISUAL, SELECT)
 
     // Used externally. Requires @JvmField even though used by Kotlin!
     @JvmField
-    val NXO: EnumSet<MappingMode> = EnumSet.of(NORMAL, VISUAL, OP_PENDING)
+    val NXO: MutableSet<MappingMode> = enumSetOf(NORMAL, VISUAL, OP_PENDING)
 
     // This method is used only for single modes, not groups of them (V is not supported)
     fun parseModeChar(char: Char): MappingMode {

@@ -20,7 +20,6 @@ import com.maddyhome.idea.vim.command.CommandFlags.FLAG_IGNORE_SCROLL_JUMP
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 // The <S-Enter> mapping is interesting. Vim has multiple mappings to move the caret down: <Down>, obviously, but also
 // <Enter>, <C-N>, `+` and `j`. While there are some differences (<Enter> and `+` have a flag that moves the caret to
@@ -44,7 +43,7 @@ class MotionScrollPageDownAction : VimActionHandler.SingleExecution() {
 
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP)
 
   override fun execute(
     editor: VimEditor,
@@ -61,7 +60,7 @@ class MotionScrollPageDownInsertModeAction : VimActionHandler.SingleExecution() 
 
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP, FLAG_CLEAR_STROKES)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP, FLAG_CLEAR_STROKES)
 
   override fun execute(
     editor: VimEditor,

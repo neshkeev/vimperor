@@ -22,7 +22,6 @@ import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.annotations.NonNls
-import java.util.*
 import javax.swing.KeyStroke
 
 /**
@@ -102,7 +101,7 @@ abstract class EditorActionHandlerBase(private val myRunForEachCaret: Boolean) {
    *
    * @see com.maddyhome.idea.vim.command.Command
    */
-  open val flags: EnumSet<CommandFlags> = noneOfEnum()
+  open val flags: MutableSet<CommandFlags> = noneOfEnum()
 
   protected abstract fun baseExecute(
     editor: VimEditor,

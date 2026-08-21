@@ -28,6 +28,7 @@ import com.maddyhome.idea.vim.annotations.Range
 import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.abs
+import com.maddyhome.idea.vim.helper.toEnumSet
 
 // todo all this methods should return Long since editor.fileSize is long
 // todo same for TextRange and motions
@@ -270,7 +271,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     pattern: String?,
     startOffset: Int,
     count: Int,
-    searchOptions: EnumSet<SearchOptions>?,
+    searchOptions: MutableSet<SearchOptions>?,
   ): TextRange? {
     if (pattern.isNullOrEmpty()) return null
 
@@ -354,7 +355,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     editor: VimEditor,
     regex: VimRegex,
     startIndex: Int,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
     wrapscan: Boolean,
     showMessages: Boolean,
   ): VimMatchResult {
@@ -365,7 +366,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
         injector.messages.showMessage(editor, injector.messages.message("message.search.hit.bottom"))
       }
       // Start searching from the start of the file, but accept a match at the start offset
-      val newOptions = options.clone().also { it.add(VimRegexOptions.CAN_MATCH_START_LOCATION) }
+      val newOptions = options.toEnumSet().also { it.add(VimRegexOptions.CAN_MATCH_START_LOCATION) }
       return regex.findNext(editor, 0, newOptions)
     }
     return result
@@ -375,7 +376,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     editor: VimEditor,
     regex: VimRegex,
     startIndex: Int,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
     wrapscan: Boolean,
     showMessages: Boolean,
   ): VimMatchResult {

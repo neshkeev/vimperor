@@ -20,14 +20,13 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.SelectionType.CHARACTER_WISE
 import com.maddyhome.idea.vim.state.mode.inBlockSelection
 import com.maddyhome.idea.vim.state.mode.selectionType
-import java.util.*
 import kotlin.math.min
 
 object VisualOperation {
   /**
    * Get [VisualChange] of current visual operation
    */
-  fun getRange(editor: VimEditor, caret: ImmutableVimCaret, cmdFlags: EnumSet<CommandFlags>): VisualChange {
+  fun getRange(editor: VimEditor, caret: ImmutableVimCaret, cmdFlags: MutableSet<CommandFlags>): VisualChange {
     var (start, end) = caret.run {
       if (editor.inBlockSelection) sort(vimSelectionStart, offset) else sort(selectionStart, selectionEnd)
     }

@@ -20,12 +20,11 @@ import com.maddyhome.idea.vim.command.CommandFlags.FLAG_NO_REPEAT_INSERT
 import com.maddyhome.idea.vim.command.DuplicableOperatorAction
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.EnumSet
 
 @CommandOrMotion(keys = ["c"], modes = [Mode.NORMAL])
 class ChangeMotionAction : ChangeInInsertSequenceAction(), DuplicableOperatorAction {
   override val type: Command.Type = Command.Type.CHANGE
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_NO_REPEAT_INSERT)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_NO_REPEAT_INSERT)
   override val argumentType: Argument.Type = Argument.Type.MOTION
   override val duplicateWith: Char = 'c'
 

@@ -23,7 +23,7 @@ import java.util.*
 internal abstract class MapFunctionHandlerBase<T : VimDataType>(minArity: Int = 0, maxArity: Int? = null) :
   BuiltinFunctionHandler<T>(minArity, maxArity) {
 
-  protected fun getMappingModes(mode: VimString?): EnumSet<MappingMode> {
+  protected fun getMappingModes(mode: VimString?): MutableSet<MappingMode> {
     return when (mode?.value?.firstOrNull()) {
       'n' -> MappingMode.N
       'v' -> MappingMode.V

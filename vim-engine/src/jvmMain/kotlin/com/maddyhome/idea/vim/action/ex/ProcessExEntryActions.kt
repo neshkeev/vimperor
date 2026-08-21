@@ -25,11 +25,11 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.toMotionOrError
 import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
-import java.util.*
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 @CommandOrMotion(keys = ["<CR>", "<C-M>", "<C-J>"], modes = [Mode.CMD_LINE])
 class ProcessExEntryAction : MotionActionHandler.AmbiguousExecution() {
-  override val flags: EnumSet<CommandFlags> = EnumSet.of(CommandFlags.FLAG_SAVE_JUMP, CommandFlags.FLAG_END_EX)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP, CommandFlags.FLAG_END_EX)
   override var motionType: MotionType = MotionType.EXCLUSIVE
 
   override fun getMotionActionHandler(argument: Argument?): MotionActionHandler {

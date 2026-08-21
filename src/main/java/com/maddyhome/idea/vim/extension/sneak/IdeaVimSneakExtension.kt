@@ -296,7 +296,7 @@ class IdeaVimSneakExtension : VimExtension {
  *  and create mapping to <Plug>(prefix)[keys]
  */
 private fun VimExtension.mapToFunctionAndProvideKeys(
-  keys: String, handler: ExtensionHandler, mappingModes: EnumSet<MappingMode>,
+  keys: String, handler: ExtensionHandler, mappingModes: MutableSet<MappingMode>,
 ) {
   VimExtensionFacade.putExtensionHandlerMapping(
     mappingModes,

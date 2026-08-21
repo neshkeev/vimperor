@@ -108,6 +108,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import com.maddyhome.idea.vim.helper.allOfEnum
 
 /**
  * JUnit 5 tests
@@ -697,7 +698,7 @@ abstract class VimTestCase(private val defaultEditorText: String? = null) {
 
   fun assertNoMapping(from: String) {
     val keys = injector.parser.parseKeys(from)
-    for (mode in EnumSet.allOf(MappingMode::class.java)) {
+    for (mode in allOfEnum<MappingMode>()) {
       assertNull(VimPlugin.getKey().getMappingInfo(keys, mode))
     }
   }

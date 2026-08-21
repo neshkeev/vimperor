@@ -23,7 +23,6 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.toMotionOrError
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = ["[]"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class MotionSectionBackwardEndAction : MotionSectionAction('}', Direction.BACKWARDS)
@@ -39,7 +38,7 @@ class MotionSectionForwardStartAction : MotionSectionAction('{', Direction.FORWA
 
 sealed class MotionSectionAction(private val charType: Char, val direction: Direction) :
   MotionActionHandler.ForEachCaret() {
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 
   override fun getOffset(
     editor: VimEditor,

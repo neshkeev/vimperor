@@ -37,7 +37,6 @@ import com.maddyhome.idea.vim.regexp.parser.VimRegexParserResult
 import com.maddyhome.idea.vim.regexp.parser.visitors.PatternVisitor
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import java.util.*
 
 /**
  * Represents a compiled Vim pattern. Provides methods to
@@ -100,7 +99,7 @@ class VimRegex(pattern: String) {
    */
   fun containsMatchIn(
     editor: VimEditor,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     for (line in 0 until editor.lineCount()) {
       val result = simulateNonExactNFA(editor, editor.getLineStartOffset(line), options)
@@ -115,7 +114,7 @@ class VimRegex(pattern: String) {
 
   internal fun containsMatchIn(
     text: String,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     return containsMatchIn(VimEditorWrapper(text), options)
   }
@@ -133,7 +132,7 @@ class VimRegex(pattern: String) {
   fun findNext(
     editor: VimEditor,
     startIndex: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     /*
     if the startIndex is at the end of a line, start searching at the next position,
@@ -176,7 +175,7 @@ class VimRegex(pattern: String) {
   internal fun findNext(
     text: String,
     startIndex: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return findNext(VimEditorWrapper(text), startIndex, options)
   }
@@ -194,7 +193,7 @@ class VimRegex(pattern: String) {
   fun findPrevious(
     editor: VimEditor,
     startIndex: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     val startLine = editor.offsetToBufferPosition(startIndex).line
     val result = findLastMatchInLine(editor, startLine, startIndex - 1, options)
@@ -215,7 +214,7 @@ class VimRegex(pattern: String) {
   internal fun findPrevious(
     text: String,
     startIndex: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return findPrevious(VimEditorWrapper(text), startIndex, options)
   }
@@ -233,7 +232,7 @@ class VimRegex(pattern: String) {
     editor: VimEditor,
     line: Int,
     maxIndex: Int = editor.getLineEndOffset(line),
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
   ): VimMatchResult {
     var index = editor.getLineStartOffset(line)
     var prevResult: VimMatchResult = VimMatchResult.Failure(VimRegexErrors.E486)
@@ -271,7 +270,7 @@ class VimRegex(pattern: String) {
     editor: VimEditor,
     startIndex: Int = 0,
     maxIndex: Int = editor.text().length,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
     maxMatches: Int = Int.MAX_VALUE,
   ): List<VimMatchResult.Success> {
     var index = startIndex
@@ -306,7 +305,7 @@ class VimRegex(pattern: String) {
     text: String,
     startIndex: Int = 0,
     maxIndex: Int = text.length,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): List<VimMatchResult.Success> {
     return findAll(VimEditorWrapper(text), startIndex, maxIndex, options)
   }
@@ -322,7 +321,7 @@ class VimRegex(pattern: String) {
     editor: VimEditor,
     line: Int,
     column: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return simulateNonExactNFA(editor, editor.getLineStartOffset(line) + column, options)
   }
@@ -331,7 +330,7 @@ class VimRegex(pattern: String) {
     text: String,
     line: Int,
     column: Int = 0,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return findInLine(VimEditorWrapper(text), line, column, options)
   }
@@ -356,7 +355,7 @@ class VimRegex(pattern: String) {
     line: Int,
     column: Int = 0,
     takeLiterally: Boolean = false,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Pair<VimMatchResult.Success, String>? {
     val match = findInLine(editor, line, column, options)
     return when (match) {
@@ -451,7 +450,7 @@ class VimRegex(pattern: String) {
   fun matchAt(
     editor: VimEditor,
     index: Int,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return simulateNFA(editor, index, options)
   }
@@ -459,7 +458,7 @@ class VimRegex(pattern: String) {
   internal fun matchAt(
     text: String,
     index: Int,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return matchAt(VimEditorWrapper(text), index, options)
   }
@@ -473,7 +472,7 @@ class VimRegex(pattern: String) {
    */
   fun matchEntire(
     editor: VimEditor,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     val result = simulateNFA(editor, options = options)
     return when (result) {
@@ -487,7 +486,7 @@ class VimRegex(pattern: String) {
 
   internal fun matchEntire(
     text: String,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): VimMatchResult {
     return matchEntire(VimEditorWrapper(text), options)
   }
@@ -501,7 +500,7 @@ class VimRegex(pattern: String) {
    */
   fun matches(
     editor: VimEditor,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     val result = simulateNFA(editor, options = options)
     return when (result) {
@@ -512,7 +511,7 @@ class VimRegex(pattern: String) {
 
   fun matches(
     text: String,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     return matches(VimEditorWrapper(text), options)
   }
@@ -528,7 +527,7 @@ class VimRegex(pattern: String) {
   fun matchesAt(
     editor: VimEditor,
     index: Int,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     return when (simulateNFA(editor, index, options)) {
       is VimMatchResult.Success -> true
@@ -539,7 +538,7 @@ class VimRegex(pattern: String) {
   internal fun matchesAt(
     text: String,
     index: Int,
-    options: EnumSet<VimRegexOptions> = noneOfEnum(),
+    options: MutableSet<VimRegexOptions> = noneOfEnum(),
   ): Boolean {
     return matchesAt(VimEditorWrapper(text), index, options)
   }
@@ -553,7 +552,7 @@ class VimRegex(pattern: String) {
    *
    * @return The resulting match result
    */
-  private fun simulateNFA(editor: VimEditor, index: Int = 0, options: EnumSet<VimRegexOptions>): VimMatchResult {
+  private fun simulateNFA(editor: VimEditor, index: Int = 0, options: MutableSet<VimRegexOptions>): VimMatchResult {
     return VimRegexEngine.simulate(nfa, editor, index, shouldIgnoreCase(options))
   }
 
@@ -569,7 +568,7 @@ class VimRegex(pattern: String) {
   private fun simulateNonExactNFA(
     editor: VimEditor,
     index: Int = 0,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
   ): VimMatchResult {
     return VimRegexEngine.simulate(nonExactNFA, editor, index, shouldIgnoreCase(options))
   }
@@ -578,7 +577,7 @@ class VimRegex(pattern: String) {
    * Determines, based on information that comes from the parser and other
    * options that may be set, whether to ignore case.
    */
-  private fun shouldIgnoreCase(options: EnumSet<VimRegexOptions>): Boolean {
+  private fun shouldIgnoreCase(options: MutableSet<VimRegexOptions>): Boolean {
     return when (caseSensitivitySettings) {
       CaseSensitivitySettings.NO_IGNORE_CASE -> false
       CaseSensitivitySettings.IGNORE_CASE -> true

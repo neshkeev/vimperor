@@ -20,14 +20,13 @@ import com.maddyhome.idea.vim.command.CommandFlags.FLAG_IGNORE_SCROLL_JUMP
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = ["<C-B>", "<PageUp>"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class MotionScrollPageUpAction : VimActionHandler.SingleExecution() {
 
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP)
 
   override fun execute(
     editor: VimEditor,
@@ -43,7 +42,7 @@ class MotionScrollPageUpAction : VimActionHandler.SingleExecution() {
 class MotionScrollPageUpInsertModeAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP, FLAG_CLEAR_STROKES)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_IGNORE_SCROLL_JUMP, FLAG_CLEAR_STROKES)
 
   override fun execute(
     editor: VimEditor,

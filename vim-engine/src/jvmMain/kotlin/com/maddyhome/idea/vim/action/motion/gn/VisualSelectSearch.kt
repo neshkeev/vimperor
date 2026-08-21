@@ -22,12 +22,11 @@ import com.maddyhome.idea.vim.handler.toMotionOrError
 import com.maddyhome.idea.vim.helper.noneOfEnum
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.inVisualMode
-import java.util.*
 import kotlin.math.max
 
 @CommandOrMotion(keys = ["gn"], modes = [Mode.NORMAL, Mode.VISUAL])
 class VisualSelectNextSearch : MotionActionHandler.SingleExecution() {
-  override val flags: EnumSet<CommandFlags> = noneOfEnum()
+  override val flags: MutableSet<CommandFlags> = noneOfEnum()
 
   override fun getOffset(
     editor: VimEditor,
@@ -43,7 +42,7 @@ class VisualSelectNextSearch : MotionActionHandler.SingleExecution() {
 
 @CommandOrMotion(keys = ["gN"], modes = [Mode.NORMAL, Mode.VISUAL])
 class VisualSelectPreviousSearch : MotionActionHandler.SingleExecution() {
-  override val flags: EnumSet<CommandFlags> = noneOfEnum()
+  override val flags: MutableSet<CommandFlags> = noneOfEnum()
 
   override fun getOffset(
     editor: VimEditor,

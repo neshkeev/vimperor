@@ -12,7 +12,6 @@ import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.state.mode.CtrlXCompletionMode
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.util.*
 
 /**
  * Used to maintain state before and while entering a Vim command (operator, motion, text object, etc.)
@@ -39,7 +38,7 @@ interface VimStateMachine {
    * This field is reset after the command has been executed.
    */
   var executingCommand: Command?
-  val executingCommandFlags: EnumSet<CommandFlags>
+  val executingCommandFlags: MutableSet<CommandFlags>
 
   fun reset()
 }

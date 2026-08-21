@@ -24,7 +24,6 @@ import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimTimestampBasedUndoService
-import java.util.*
 
 @CommandOrMotion(keys = ["<Del>"], modes = [Mode.INSERT])
 internal class VimEditorDelete : IdeActionHandler(IdeActions.ACTION_EDITOR_DELETE) {
@@ -34,7 +33,7 @@ internal class VimEditorDelete : IdeActionHandler(IdeActions.ACTION_EDITOR_DELET
 @CommandOrMotion(keys = ["<Down>", "<kDown>"], modes = [Mode.INSERT])
 internal class VimEditorDown : IdeActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN) {
   override val type: Command.Type = Command.Type.MOTION
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
 
   override fun execute(
     editor: VimEditor,
@@ -78,13 +77,13 @@ internal class VimEditorDown : IdeActionHandler(IdeActions.ACTION_EDITOR_MOVE_CA
 @CommandOrMotion(keys = ["<Tab>", "<C-I>"], modes = [Mode.INSERT])
 internal class VimEditorTab : IdeActionHandler(IdeActions.ACTION_EDITOR_TAB) {
   override val type: Command.Type = Command.Type.INSERT
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
 }
 
 @CommandOrMotion(keys = ["<Up>", "<kUp>"], modes = [Mode.INSERT])
 internal class VimEditorUp : IdeActionHandler(IdeActions.ACTION_EDITOR_MOVE_CARET_UP) {
   override val type: Command.Type = Command.Type.MOTION
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
 
   override fun execute(
     editor: VimEditor,

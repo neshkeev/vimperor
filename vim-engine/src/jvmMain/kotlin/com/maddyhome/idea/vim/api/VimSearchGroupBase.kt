@@ -319,7 +319,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     count: Int,
   ): TextRange? {
     // Backward search returns wrong end offset for some cases. That's why we should perform additional forward search
-    val searchOptions = EnumSet.of(SearchOptions.WRAP, SearchOptions.WHOLE_FILE, SearchOptions.BACKWARDS)
+    val searchOptions = enumSetOf(SearchOptions.WRAP, SearchOptions.WHOLE_FILE, SearchOptions.BACKWARDS)
     val foundBackward =
       injector.searchHelper.findPattern(editor, getLastUsedPattern(), offset, count, searchOptions) ?: return null
     var startOffset = foundBackward.startOffset - 1
@@ -515,7 +515,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     forwards: Boolean,
   ): TextRange? {
     return if (forwards) {
-      val searchOptions = EnumSet.of(SearchOptions.WRAP, SearchOptions.WHOLE_FILE)
+      val searchOptions = enumSetOf(SearchOptions.WRAP, SearchOptions.WHOLE_FILE)
       injector.searchHelper.findPattern(
         editor,
         getLastUsedPattern(),
@@ -764,7 +764,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     pattern: String,
     startLine: Int,
     endLine: Int,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
   ) {
     var matchCount = 0
     val matchedLines = mutableSetOf<Int>()
@@ -811,7 +811,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     column: Int,
     hasExpression: Boolean,
     substituteString: String,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
   ): Pair<Int, Pair<VimMatchResult.Success, String>>? {
     for (line in startLine..endLine) {
       val col = if (line == startLine) column else 0
@@ -831,7 +831,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     column: Int,
     hasExpression: Boolean,
     substituteString: String,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
     preview: Boolean,
   ): SubstitutePreparationResult {
     val substituteResult =
@@ -869,7 +869,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     hasExpression: Boolean,
     substituteString: String,
     exceptions: MutableList<ExException>,
-    options: EnumSet<VimRegexOptions>,
+    options: MutableSet<VimRegexOptions>,
     collector: MutableList<SubstitutePreviewChange>?,
   ) {
     val preview = collector != null
@@ -1026,7 +1026,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     var endLine: Int,
     val hasExpression: Boolean,
     val substituteString: String,
-    val options: EnumSet<VimRegexOptions>,
+    val options: MutableSet<VimRegexOptions>,
     var lastMatchLine: Int,
     val exceptions: MutableList<ExException>,
   ) : VimInputInterceptorBase<ReplaceConfirmationChoice>() {
@@ -1541,7 +1541,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
       startOffsetMutable =
         max(0, min((startOffsetMutable - offset), (editor.text().length - 1)))
     }
-    val searchOptions = EnumSet.of(SearchOptions.SHOW_MESSAGES, SearchOptions.WHOLE_FILE)
+    val searchOptions = enumSetOf(SearchOptions.SHOW_MESSAGES, SearchOptions.WHOLE_FILE)
     if (dir === Direction.BACKWARDS) searchOptions.add(SearchOptions.BACKWARDS)
     if (lastIgnoreSmartCase) searchOptions.add(SearchOptions.IGNORE_SMARTCASE)
     if (injector.globalOptions().wrapscan) searchOptions.add(SearchOptions.WRAP)

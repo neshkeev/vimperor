@@ -14,7 +14,6 @@ import com.maddyhome.idea.vim.helper.noneOfEnum
 import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.state.mode.CtrlXCompletionMode
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.util.*
 
 /**
  * Used to maintain state before and while entering a Vim command (operator, motion, text object, etc.)
@@ -39,7 +38,7 @@ class VimStateMachineImpl : VimStateMachine {
    */
   override var executingCommand: Command? = null
 
-  override val executingCommandFlags: EnumSet<CommandFlags>
+  override val executingCommandFlags: MutableSet<CommandFlags>
     get() = executingCommand?.flags ?: noneOfEnum()
 
   override fun reset() {

@@ -17,11 +17,10 @@ import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = [":"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class ExEntryAction : VimActionHandler.SingleExecution() {
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX)
   override val type: Command.Type = Command.Type.MODE_CHANGE
 
   override fun execute(

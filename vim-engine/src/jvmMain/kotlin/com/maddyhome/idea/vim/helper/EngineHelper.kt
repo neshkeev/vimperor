@@ -18,8 +18,6 @@ import com.maddyhome.idea.vim.options.OptionConstants
 import com.maddyhome.idea.vim.state.mode.Mode
 import java.util.*
 
-inline fun <reified T : Enum<T>> noneOfEnum(): EnumSet<T> = EnumSet.noneOf(T::class.java)
-
 val TextRange.endOffsetInclusive: Int
   get() = if (this.endOffset > 0 && this.endOffset > this.startOffset) this.endOffset - 1 else this.endOffset
 
@@ -68,8 +66,3 @@ fun VimEditor.isCaretAtLineEnd(caret: ImmutableVimCaret, allowEnd: Boolean): Boo
   }
 }
 
-inline fun <reified T : Enum<T>> enumSetOf(vararg value: T): EnumSet<T> = when (value.size) {
-  0 -> noneOfEnum()
-  1 -> EnumSet.of(value[0])
-  else -> EnumSet.of(value[0], *value.slice(1..value.lastIndex).toTypedArray())
-}

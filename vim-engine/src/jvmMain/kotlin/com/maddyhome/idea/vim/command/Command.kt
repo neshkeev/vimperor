@@ -9,7 +9,6 @@
 package com.maddyhome.idea.vim.command
 
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
-import java.util.*
 
 /**
  * This represents a single Vim command to be executed (action, motion, operator+motion, v_textobject, etc.)
@@ -46,7 +45,7 @@ data class Command(
   val action: EditorActionHandlerBase,
   val argument: Argument?,
   val type: Type,
-  val flags: EnumSet<CommandFlags>,
+  val flags: MutableSet<CommandFlags>,
 ) {
 
   init {

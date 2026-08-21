@@ -18,7 +18,7 @@ import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimList
 import com.maddyhome.idea.vim.vimscript.model.datatypes.asVimString
-import java.util.*
+import com.maddyhome.idea.vim.helper.allOfEnum
 
 @VimscriptFunction("maplist")
 internal class MapListFunctionHandler : MapFunctionHandlerBase<VimList>(minArity = 0, maxArity = 1) {
@@ -36,7 +36,7 @@ internal class MapListFunctionHandler : MapFunctionHandlerBase<VimList>(minArity
     }
 
     val list = mutableListOf<VimDataType>()
-    val mappings = injector.keyGroup.getAllMappingInfoWithMode(emptyList(), EnumSet.allOf(MappingMode::class.java))
+    val mappings = injector.keyGroup.getAllMappingInfoWithMode(emptyList(), allOfEnum<MappingMode>())
     mappings.forEach {
       val name = injector.parser.toKeyNotation(it.mappingInfo.fromKeys)
       val dictionary = getMappingAsDictionary(name.asVimString(), it)

@@ -16,13 +16,13 @@ import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
-import java.util.*
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 @CommandOrMotion(keys = ["zh", "z<Left>"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class MotionScrollColumnRightAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
-  override val flags: EnumSet<CommandFlags> = EnumSet.of(CommandFlags.FLAG_IGNORE_SIDE_SCROLL_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_IGNORE_SIDE_SCROLL_JUMP)
 
   override fun execute(
     editor: VimEditor,

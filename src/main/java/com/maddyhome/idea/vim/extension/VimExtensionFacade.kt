@@ -243,7 +243,7 @@ object VimExtensionFacade {
     args: List<String>,
     defaultArgs: List<Pair<String, Expression>>,
     hasOptionalArguments: Boolean,
-    flags: EnumSet<FunctionFlag>,
+    flags: MutableSet<FunctionFlag>,
     function: ScriptFunction,
   ) {
     var functionDeclaration: FunctionDeclaration? = null

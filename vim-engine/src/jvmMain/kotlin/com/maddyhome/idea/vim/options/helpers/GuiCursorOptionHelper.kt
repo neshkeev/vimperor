@@ -15,7 +15,6 @@ import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import java.util.*
 
 object GuiCursorOptionHelper {
   fun convertToken(token: String): GuiCursorEntry {
@@ -209,7 +208,7 @@ enum class GuiCursorType(val token: String) {
 }
 
 class GuiCursorEntry(
-  val modes: EnumSet<GuiCursorMode>,
+  val modes: MutableSet<GuiCursorMode>,
   val type: GuiCursorType?,
   val thickness: Int?,
   val highlightGroup: String,

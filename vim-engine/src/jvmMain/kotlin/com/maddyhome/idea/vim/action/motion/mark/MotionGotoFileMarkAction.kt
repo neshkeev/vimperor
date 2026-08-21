@@ -20,13 +20,13 @@ import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
-import java.util.*
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 @CommandOrMotion(keys = ["`"], modes = [Mode.VISUAL, Mode.OP_PENDING])
 class MotionGotoFileMarkAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
   override val argumentType: Argument.Type = Argument.Type.MARK
-  override val flags: EnumSet<CommandFlags> = EnumSet.of(CommandFlags.FLAG_SAVE_JUMP)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 
   override fun getOffset(
     editor: VimEditor,

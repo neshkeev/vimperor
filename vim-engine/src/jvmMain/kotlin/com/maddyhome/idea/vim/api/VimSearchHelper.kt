@@ -10,7 +10,6 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.helper.SearchOptions
-import java.util.*
 
 interface VimSearchHelper {
   /**
@@ -206,7 +205,7 @@ interface VimSearchHelper {
     pattern: String?,
     startOffset: Int,
     count: Int,
-    searchOptions: EnumSet<SearchOptions>?,
+    searchOptions: MutableSet<SearchOptions>?,
   ): TextRange?
 
   /**

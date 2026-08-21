@@ -31,6 +31,7 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.annotations.NonNls
 import java.util.*
 import javax.swing.KeyStroke
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 /**
  * @author vlan
@@ -257,7 +258,7 @@ data class MapCommand(val range: Range, val cmd: String, val modifier: CommandMo
       CommandInfo("ino", "remap", MappingMode.I, false),
       CommandInfo("cno", "remap", MappingMode.C, false),
     )
-    private val UNSUPPORTED_SPECIAL_ARGUMENTS = EnumSet.of(SCRIPT)
+    private val UNSUPPORTED_SPECIAL_ARGUMENTS = enumSetOf(SCRIPT)
     private val logger = vimLogger<MapCommand>()
   }
 }

@@ -24,7 +24,6 @@ import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.handler.VisualOperatorActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import java.util.EnumSet
 
 /**
  * @author vlan
@@ -33,7 +32,7 @@ import java.util.EnumSet
 class ChangeVisualLinesEndAction : VisualOperatorActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.CHANGE
 
-  override val flags: EnumSet<CommandFlags> = enumSetOf(FLAG_MOT_LINEWISE)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_MOT_LINEWISE)
 
   override fun executeAction(
     editor: VimEditor,

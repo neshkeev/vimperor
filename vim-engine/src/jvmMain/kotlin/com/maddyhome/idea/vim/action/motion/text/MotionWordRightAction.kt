@@ -21,7 +21,6 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
-import java.util.*
 
 @CommandOrMotion(keys = ["w"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
 class MotionWordRightAction : MotionActionHandler.ForEachCaret() {
@@ -42,7 +41,7 @@ class MotionWordRightAction : MotionActionHandler.ForEachCaret() {
 @CommandOrMotion(keys = ["<C-Right>", "<C-kRight>"], modes = [Mode.INSERT])
 class MotionWordRightInsertAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
 
   override fun getOffset(
     editor: VimEditor,

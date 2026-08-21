@@ -106,7 +106,7 @@ internal class Matchit : VimExtension {
     var reverse = false
     var isInOpPending = false
 
-    override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
+    override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 
     override val supportsLinewiseDeletePromotion: Boolean = false
 

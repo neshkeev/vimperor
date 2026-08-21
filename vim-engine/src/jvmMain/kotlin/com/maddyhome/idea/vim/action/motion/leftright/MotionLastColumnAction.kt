@@ -25,7 +25,6 @@ import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.state.mode.inVisualMode
-import java.util.*
 
 abstract class MotionLastColumnBaseAction(private val isMotionForOperator: Boolean = false) :
   MotionActionHandler.ForEachCaret() {
@@ -60,5 +59,5 @@ class MotionLastColumnOpPendingAction : MotionLastColumnBaseAction(isMotionForOp
 
 @CommandOrMotion(keys = ["<End>"], modes = [Mode.INSERT])
 class MotionLastColumnInsertAction : MotionLastColumnAction() {
-  override val flags: EnumSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
 }
