@@ -27,6 +27,7 @@ expect annotation class Range(val from: Long, val to: Long)
  */
 @Target(
   AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
   AnnotationTarget.FUNCTION,
   AnnotationTarget.PROPERTY,
   AnnotationTarget.CONSTRUCTOR,

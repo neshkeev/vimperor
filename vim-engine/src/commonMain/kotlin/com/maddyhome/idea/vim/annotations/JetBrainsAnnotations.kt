@@ -9,6 +9,16 @@
 package com.maddyhome.idea.vim.annotations
 
 /*
+ * The @Target lists below are derived from the Java annotations the JVM actuals alias, not from
+ * where the engine happens to use them today. An `expect` narrower than its `actual` compiles
+ * everywhere except common code, so the mismatch only surfaces when a file moves into commonMain -
+ * which is exactly how the missing CLASS target on NonNls was found, long after it was introduced.
+ *
+ * Java to Kotlin: TYPE -> CLASS, ANNOTATION_TYPE -> ANNOTATION_CLASS, METHOD -> FUNCTION/PROPERTY,
+ * PARAMETER -> VALUE_PARAMETER, TYPE_USE -> TYPE. PACKAGE has no Kotlin equivalent and is dropped.
+ */
+
+/*
  * Phase 3 / W4. `org.jetbrains.annotations` is a Java-only library, so referencing it directly
  * pins a file to `jvmMain`. These `expect` declarations let common code keep the annotations;
  * the JVM `actual`s are typealiases to the real thing, so IntelliJ's inspections (i18n,
@@ -50,7 +60,12 @@ expect annotation class Contract(val value: String = "", val pure: Boolean = fal
 @Target(AnnotationTarget.TYPE, AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY)
 expect annotation class Range(val from: Long, val to: Long)
 
-@Target(AnnotationTarget.VALUE_PARAMETER, AnnotationTarget.TYPE)
+@Target(
+  AnnotationTarget.VALUE_PARAMETER,
+  AnnotationTarget.LOCAL_VARIABLE,
+  AnnotationTarget.FIELD,
+  AnnotationTarget.TYPE,
+)
 expect annotation class PropertyKey(val resourceBundle: String)
 
 /*
@@ -58,11 +73,32 @@ expect annotation class PropertyKey(val resourceBundle: String)
  * reproduce the nesting, so usages become `@Internal` / `@Obsolete` / `@ScheduledForRemoval`
  * rather than `@ApiStatus.X`.
  */
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.FIELD)
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FIELD,
+)
 expect annotation class Internal()
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.FIELD)
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FIELD,
+)
 expect annotation class Obsolete()
 
-@Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY, AnnotationTarget.CONSTRUCTOR, AnnotationTarget.FIELD)
+@Target(
+  AnnotationTarget.CLASS,
+  AnnotationTarget.ANNOTATION_CLASS,
+  AnnotationTarget.FUNCTION,
+  AnnotationTarget.PROPERTY,
+  AnnotationTarget.CONSTRUCTOR,
+  AnnotationTarget.FIELD,
+)
 expect annotation class ScheduledForRemoval()

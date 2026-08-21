@@ -12,8 +12,11 @@ import com.intellij.vim.api.models.Path
 import java.nio.file.Paths
 import java.nio.file.Path as JavaPath
 
-private const val PATH_DELIMITER = "/"
-private const val PROTOCOL_DELIMITER = "://"
+/*
+ * The two conversions between the API's Path model and java.nio's. Split out of Path.kt, which is
+ * otherwise pure string manipulation: leaving these together made one JVM-only file that fourteen
+ * other thinapi files transitively depended on.
+ */
 
 val Path.javaPath: JavaPath
   get() {
@@ -37,25 +40,3 @@ val JavaPath.vimPath: Path?
       override val path: Array<String> = components.toTypedArray()
     }
   }
-
-
-/**
- * Function that will create [Path] from protocol and file path passed as function parameters.
- */
-internal fun Path.Companion.createApiPath(protocol: String, filePath: String): Path {
-  val pathComponents: Array<String> = filePath
-    .split(PATH_DELIMITER)
-    .toTypedArray()
-
-  return object : Path {
-    override val protocol: String = protocol
-    override val path: Array<String> = pathComponents
-  }
-}
-
-/**
- * Function that returns a string that represents filePath without a protocol.
- */
-internal fun Path.getFilePath(): String {
-  return path.joinToString(PATH_DELIMITER)
-}
