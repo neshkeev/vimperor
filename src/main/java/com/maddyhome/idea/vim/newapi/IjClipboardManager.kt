@@ -111,7 +111,7 @@ internal class IjClipboardManager : VimClipboardManager, Disposable {
   }
 
   @Deprecated("Please use com.maddyhome.idea.vim.api.VimClipboardManager#setClipboardText")
-  override fun setClipboardText(text: String, rawText: String, transferableData: List<Any>): Transferable? {
+  override fun setClipboardText(text: String, rawText: String, transferableData: List<Any>): Any? {
     return handleTextSetting(text, rawText, transferableData) { content -> setContents(content) }
   }
 

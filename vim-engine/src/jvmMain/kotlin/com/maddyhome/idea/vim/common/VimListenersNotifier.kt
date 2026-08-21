@@ -14,18 +14,17 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.annotations.Internal
-import java.util.concurrent.ConcurrentLinkedDeque
 
 @Internal // please do not use this class in your plugins, API is not final and will be changed in future releases
 class VimListenersNotifier {
-  val modeChangeListeners: MutableCollection<ModeChangeListener> = ConcurrentLinkedDeque()
-  val modeWillChangeListeners: MutableCollection<ModeWillChangeListener> = ConcurrentLinkedDeque()
-  val myEditorListeners: MutableCollection<EditorListener> = ConcurrentLinkedDeque()
-  val macroRecordingListeners: MutableCollection<MacroRecordingListener> = ConcurrentLinkedDeque()
-  val vimPluginListeners: MutableCollection<VimPluginListener> = ConcurrentLinkedDeque()
-  val isReplaceCharListeners: MutableCollection<IsReplaceCharListener> = ConcurrentLinkedDeque()
-  val yankListeners: MutableCollection<VimYankListener> = ConcurrentLinkedDeque()
-  val registerListeners: MutableCollection<VimRegisterListener> = ConcurrentLinkedDeque()
+  val modeChangeListeners: MutableCollection<ModeChangeListener> = concurrentCollectionOf()
+  val modeWillChangeListeners: MutableCollection<ModeWillChangeListener> = concurrentCollectionOf()
+  val myEditorListeners: MutableCollection<EditorListener> = concurrentCollectionOf()
+  val macroRecordingListeners: MutableCollection<MacroRecordingListener> = concurrentCollectionOf()
+  val vimPluginListeners: MutableCollection<VimPluginListener> = concurrentCollectionOf()
+  val isReplaceCharListeners: MutableCollection<IsReplaceCharListener> = concurrentCollectionOf()
+  val yankListeners: MutableCollection<VimYankListener> = concurrentCollectionOf()
+  val registerListeners: MutableCollection<VimRegisterListener> = concurrentCollectionOf()
 
   fun notifyModeWillChange(editor: VimEditor, oldMode: Mode, newMode: Mode) {
     if (!injector.enabler.isEnabled()) return

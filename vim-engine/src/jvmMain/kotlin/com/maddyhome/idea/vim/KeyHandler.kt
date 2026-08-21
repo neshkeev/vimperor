@@ -40,8 +40,8 @@ import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.annotations.ScheduledForRemoval
+import com.maddyhome.idea.vim.common.concurrentCollectionOf
 import com.maddyhome.idea.vim.key.VimKeyStroke
-import java.util.concurrent.ConcurrentLinkedDeque
 
 /**
  * This handles every keystroke that the user can argType except those that are still valid hotkeys for various Idea
@@ -72,7 +72,7 @@ class KeyHandler {
   private var handleKeyRecursionCount = 0
   internal var maxMapDepthReached = false
 
-  private var commandListener: ConcurrentLinkedDeque<() -> Unit> = ConcurrentLinkedDeque()
+  private var commandListener: MutableCollection<() -> Unit> = concurrentCollectionOf()
 
   /**
    * This is an internal API of IdeaVim. External plugins must not use it.

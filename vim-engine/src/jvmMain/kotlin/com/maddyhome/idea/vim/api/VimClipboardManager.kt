@@ -12,7 +12,6 @@ import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.common.VimCopiedText
 import com.maddyhome.idea.vim.helper.VimLockLabel
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import java.awt.datatransfer.Transferable
 
 /** Text published to the PRIMARY selection, paired with the selection type PRIMARY itself cannot store. */
 data class OwnedPrimaryContent(val copiedText: VimCopiedText, val selectionType: SelectionType)
@@ -68,7 +67,14 @@ interface VimClipboardManager {
   fun onVisualSelectionChange(editor: VimEditor, caret: ImmutableVimCaret) {}
 
   @Deprecated("Please use com.maddyhome.idea.vim.api.VimClipboardManager#setClipboardContent")
-  fun setClipboardText(text: String, rawText: String = text, transferableData: List<Any>): Transferable?
+  /**
+   * Returns the host's clipboard content object, or `null` if the clipboard could not be set.
+   *
+   * Opaque to the engine - only the host knows what it is, and only the host casts it back. That
+   * is why it is [Any] rather than AWT's `Transferable`, matching [getTransferableData], which has
+   * always returned `List<Any>` for the same reason.
+   */
+  fun setClipboardText(text: String, rawText: String = text, transferableData: List<Any>): Any?
 
   fun collectCopiedText(
     editor: VimEditor,

@@ -408,7 +408,7 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
   }
 
   override fun isPrimaryRegisterSupported(): Boolean {
-    return System.getenv("DISPLAY") != null && injector.systemInfoService.isXWindow
+    return injector.systemInfoService.getenv("DISPLAY") != null && injector.systemInfoService.isXWindow
   }
 
   override fun getLastExplicitlyWrittenRegister(r: Char): Register? {

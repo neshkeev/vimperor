@@ -16,7 +16,16 @@ package com.maddyhome.idea.vim.api
  * This implementation focuses on Unix-style environment variables.
  * Windows %VAR% syntax is not supported as it's not part of Vim's expand-env.
  */
-class VimPathExpansionImpl : VimPathExpansion {
+class VimPathExpansionImpl(
+  /**
+   * How to read an environment variable.
+   *
+   * A parameter rather than a direct call so this class can be exercised without an injector -
+   * [VimPathExpansionTest] runs it standalone - and so a host with no process environment can
+   * supply its own lookup.
+   */
+  private val getenv: (String) -> String? = { injector.systemInfoService.getenv(it) },
+) : VimPathExpansion {
 
   companion object {
     // Regex for matching $VAR or ${VAR} patterns, accounting for escaped \$
@@ -93,7 +102,7 @@ class VimPathExpansionImpl : VimPathExpansion {
         matchResult.value.substring(1) // Remove the backslash
       } else {
         // Not escaped - expand based on mode
-        val value = System.getenv(varName)
+        val value = getenv(varName)
         if (value != null) {
           value
         } else {

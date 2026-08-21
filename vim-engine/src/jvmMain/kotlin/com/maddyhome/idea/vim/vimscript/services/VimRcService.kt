@@ -67,7 +67,7 @@ object VimRcService {
   }
 
   private fun findIdeaVimRc(homeVimrcPaths: Array<String>, xdgVimrcPath: String): Path? {
-    val customVimrc = System.getenv("IDEA_VIM_CUSTOM_VIMRC")
+    val customVimrc = injector.systemInfoService.getenv("IDEA_VIM_CUSTOM_VIMRC")
     if (!customVimrc.isNullOrEmpty()) {
       val file = Path(customVimrc)
       if (file.exists()) {
@@ -107,7 +107,7 @@ object VimRcService {
    */
   @TestOnly
   @JvmField
-  var xdgConfigHomeProvider: () -> String? = { System.getenv("XDG_CONFIG_HOME") }
+  var xdgConfigHomeProvider: () -> String? = { injector.systemInfoService.getenv("XDG_CONFIG_HOME") }
 
   @JvmStatic
   fun getXdgConfigHome(): Path? {

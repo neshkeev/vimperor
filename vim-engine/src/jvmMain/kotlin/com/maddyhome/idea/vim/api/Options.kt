@@ -225,7 +225,7 @@ object Options {
       "shell",
       GLOBAL,
       "sh",
-      if (injector.systemInfoService.isWindows) "cmd.exe" else System.getenv("SHELL") ?: "sh",
+      if (injector.systemInfoService.isWindows) "cmd.exe" else injector.systemInfoService.getenv("SHELL") ?: "sh",
       expandEnvironmentVariables = true,
     )
   )

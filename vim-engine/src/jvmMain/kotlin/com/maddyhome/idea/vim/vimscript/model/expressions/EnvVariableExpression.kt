@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vimscript.model.expressions
 
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
@@ -21,7 +22,7 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
  */
 data class EnvVariableExpression(val variableName: String) : Expression() {
   override fun evaluate(editor: VimEditor, context: ExecutionContext, vimContext: VimLContext): VimDataType {
-    val value = System.getenv(variableName)
+    val value = injector.systemInfoService.getenv(variableName)
     return if (value == null) VimString.EMPTY else VimString(value)
   }
 }

@@ -16,4 +16,6 @@ class IjVimSystemInfoService : SystemInfoService {
     get() = SystemInfo.isWindows
   override val isXWindow: Boolean
     get() = SystemInfo.isXWindow
+
+  override fun getenv(name: String): String? = System.getenv(name)
 }

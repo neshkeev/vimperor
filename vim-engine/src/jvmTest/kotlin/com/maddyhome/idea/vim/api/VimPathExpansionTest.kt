@@ -12,7 +12,8 @@ import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
 class VimPathExpansionTest {
-  private val pathExpansion = VimPathExpansionImpl()
+  // Reads the real process environment, as this test always has: it asserts against PATH and HOME.
+  private val pathExpansion = VimPathExpansionImpl { System.getenv(it) }
   private val home = System.getProperty("user.home")
 
   @Test
