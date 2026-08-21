@@ -321,3 +321,55 @@ makes the two hosts behave differently. This wants a decision before code.
   four `return@withLock` rewrites inside a 75-line method.
 - `String(IntArray, offset, count)` is the *codepoint* constructor, not the `CharArray` one. The
   compiler caught that by argument type after the deprecation warning pointed at the wrong fix.
+
+
+---
+
+# The runBlocking decision, with the evidence
+
+All 20 remaining errors are `runBlocking` in seven call sites across six files. They are not
+interchangeable, and the difference decides which options are actually available.
+
+## The seven sites
+
+| site | the suspend callback returns | can it be deferred? |
+|---|---|---|
+| `CommandScopeImpl.exportOperatorFunction` | `Boolean` | **no** |
+| `TextObjectScopeImpl` range provider | `TextObjectRange?` | **no** |
+| `CommandScopeImpl.register` | `Unit` | yes |
+| `ListenerScopeImpl` | `Unit` | yes |
+| `MappingScopeImpl` | `Unit` | yes |
+| `ModalInputImpl.inputString` / `inputChar` | `Unit` | yes |
+| `CommandLineScopeImpl.input` | `Unit` | yes |
+
+The engine calls these through its own **synchronous** interfaces. `OperatorFunction.apply` returns
+a `Boolean` the engine needs before it can decide what to do next; the text-object range provider
+returns the range the motion is about to use. Neither can be answered later.
+
+**That rules out the "queue it on the event loop" option**, which the first write-up listed as the
+one preserving both the API and JVM behaviour. It does not: it cannot serve two of the seven sites
+at all. Correcting that here rather than leaving it to be discovered during implementation.
+
+## So the real choice is two
+
+1. **Make the engine's own interfaces suspend.** `OperatorFunction.apply`, `CommandAliasHandler.execute`
+   and the text-object provider become `suspend`, and that propagates up to whatever calls them -
+   ultimately `KeyHandler`. Largest change, no behavioural difference between hosts, and it is the
+   only option where the JVM keeps working exactly as it does now.
+2. **Drop `suspend` from the extension API.** Smallest change to the engine, but it is a public API
+   that extensions are written against, and it removes the ability for an extension callback to
+   suspend at all.
+
+A hybrid is available and probably wrong: defer the five `Unit` sites and make only the two
+value-returning paths suspend. It would leave the API half-suspending with no rule a user could
+predict.
+
+## Not a new discovery
+
+`MappingScopeImpl` line 279 already says:
+
+> `// XXX: It's not OK to call runBlocking, but let's keep it to have an API.`
+
+and `TextObjectScopeImpl` says "bridged via runBlocking for now". The port did not create this
+problem; it removed every other reason not to deal with it, and made the JVM's tolerance of
+`runBlocking` the only thing still hiding it.
