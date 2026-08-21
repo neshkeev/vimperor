@@ -9,9 +9,6 @@
 package com.maddyhome.idea.vim.vimscript.model.datatypes
 
 import com.maddyhome.idea.vim.ex.exExceptionMessage
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
-import java.util.Locale
 import kotlin.math.abs
 
 /**
@@ -36,12 +33,10 @@ data class VimFloat(val value: Double) : VimDataType("float") {
   override fun toOutputString(): String {
     if (value.isNaN()) return "nan"
     if (value.isInfinite()) return if (value > 0) "inf" else "-inf"
+    // Note the branch is decided on the unrounded value, so 999999.9999999 formats as 1000000.0
+    // rather than switching to scientific notation. That is existing behaviour, preserved.
     val tooBigOrTooSmall = abs(value) >= 1e6 || (abs(value) < 1e-3 && value != 0.0)
-    val pattern = if (tooBigOrTooSmall) "0.0#####E0" else "0.0#####"
-    val symbols = DecimalFormatSymbols.getInstance(Locale.ROOT).apply {
-      exponentSeparator = "e"
-    }
-    return DecimalFormat(pattern, symbols).format(value)
+    return formatVimFloat(value, scientific = tooBigOrTooSmall)
   }
 
   override fun copy() = VimFloat(value)

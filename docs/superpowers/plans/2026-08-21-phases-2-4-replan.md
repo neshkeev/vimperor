@@ -181,6 +181,42 @@ what is left is mostly **host services** - clipboard, timers, filesystem, enviro
 which want a host interface, not a shim. That is the same interface phase 2's headless host needs,
 which is a second reason to stop deferring it.
 
+## Re-measurement, 2026-08-21 (stage 3a all but complete)
+
+**Two files** now stand between the engine and 92 % of it compiling as common code.
+
+| | at re-plan | after W4 collections | after W2 | **now** |
+|---|---:|---:|---:|---:|
+| direct seeds | 241 | 126 | 78 | **57** |
+| seeds in the SCC dependency closure | 84 | 54 | 19 | **2** |
+| projected `commonMain` once the closure is clear | 612 (74 %) | 712 (86 %) | 726 (87 %) | **781 (92 %)** |
+| `commonMain` today | 68 | 76 | 83 | **105** |
+
+### A correction to the instrument, not just the numbers
+
+The seed counter was overcounting, and the earlier rows above are affected. A `*.jvm.kt` file is a
+JVM `actual` **by construction** - it exists to hold the platform half of an expect/actual pair and
+can never move to `commonMain`. The classifier saw `java.*` imports in those files and counted them
+as blockers. By the end there were five, which is why reports in this range needed a footnote
+saying "three of these are false positives" every time.
+
+The counter now excludes them. That is also why `commonMain today` jumps 88 to 105 in a single
+step with no code change: those actuals were being counted as blocking their own dependents.
+
+The lesson generalises past this script. Every expect/actual pair the port adds creates one more
+file that looks like a blocker and is not, so a metric based on "files containing JVM references"
+drifts further from the truth the more of the port gets done.
+
+### The last two
+
+| file | blocker | what it needs |
+|---|---|---|
+| `vimscript/model/commands/LazyExCommandInstance.kt` | `KClass` + `ClassLoader` | The KSP registry. `CommandVisitor` does not merely instantiate: it reflects over constructor *parameter types* looking for `(Range, CommandModifier, String)`. So the generated registry has to carry argument-taking factories, not the no-argument lambdas `LazyInstance` now uses. This touches `annotation-processors`. |
+| `thinapi/VimHighlightingService.kt` | `com.intellij.vim.api` | W6, and scoped already in `2026-08-16-phase-1-w6-api-module-scoping.md`. |
+
+Everything else in stage 3a is done. Neither of these is a sweep; both are single, well-understood
+pieces of work.
+
 ## Estimate honesty
 
 Phase 1's spec estimate was wrong by 12×. The numbers here are measured from the current tree,
