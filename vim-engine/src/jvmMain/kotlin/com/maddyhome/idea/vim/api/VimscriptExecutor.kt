@@ -10,7 +10,6 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
-import java.nio.file.Path
 
 interface VimscriptExecutor {
 
@@ -42,7 +41,7 @@ interface VimscriptExecutor {
   ): ExecutionResult
 
   fun executeFile(
-    file: Path,
+    path: String,
     editor: VimEditor,
     fileIsIdeaVimRcConfig: Boolean,
     indicateErrors: Boolean = false,

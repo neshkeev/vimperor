@@ -11,13 +11,13 @@ package com.maddyhome.idea.vim.vimscript
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.vfs.VirtualFileManager
 import com.maddyhome.idea.vim.api.VimScriptExecutorBase
-import java.nio.file.Path
+import kotlin.io.path.Path
 
 internal class Executor : VimScriptExecutorBase() {
-  override fun ensureFileIsSaved(file: Path) {
+  override fun ensureFileIsSaved(path: String) {
     val documentManager = FileDocumentManager.getInstance()
 
-    VirtualFileManager.getInstance().findFileByNioPath(file)
+    VirtualFileManager.getInstance().findFileByNioPath(Path(path))
       ?.let(documentManager::getCachedDocument)
       ?.takeIf(documentManager::isDocumentUnsaved)
       ?.let(documentManager::saveDocumentAsIs)

@@ -29,7 +29,7 @@ class LoadKeymapCommandTest : VimTestCase() {
     file.writeText(content)
     // indicateErrors = true so exceptions thrown while sourcing surface via injector.messages
     // (and are visible to assertPluginError), instead of only being logged.
-    injector.vimscriptExecutor.executeFile(file, fixture.editor.vim, false, indicateErrors = true)
+    injector.vimscriptExecutor.executeFile(file.toString(), fixture.editor.vim, false, indicateErrors = true)
   }
 
   @TestWithoutNeovim(SkipNeovimReason.MAPPING)

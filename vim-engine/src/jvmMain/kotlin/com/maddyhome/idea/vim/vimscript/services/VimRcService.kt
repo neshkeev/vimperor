@@ -212,7 +212,7 @@ object VimRcService {
       // clear all previously enabled extensions
       IdeaPlug.Companion.EnabledExtensions.clearExtensions()
 
-      injector.vimscriptExecutor.executeFile(ideaVimRc, editor, fileIsIdeaVimRcConfig = true)
+      injector.vimscriptExecutor.executeFile(ideaVimRc.absolutePathString(), editor, fileIsIdeaVimRcConfig = true)
     } else {
       logger.info("ideavimrc file isn't found")
     }

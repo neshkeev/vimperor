@@ -124,7 +124,7 @@ class ReloadVimRcTest : VimTestCase() {
 
     val document = editorFactory.createDocument(changedFile)
 
-    injector.vimscriptExecutor.executeFile(tempUpdatedFile, fixture.editor.vim, true)
+    injector.vimscriptExecutor.executeFile(tempUpdatedFile.toString(), fixture.editor.vim, true)
 
     kotlin.test.assertTrue(VimRcFileState.equalTo(document))
   }
@@ -148,7 +148,7 @@ class ReloadVimRcTest : VimTestCase() {
 
     val document = editorFactory.createDocument(changedFile)
 
-    injector.vimscriptExecutor.executeFile(tempUpdatedFile, fixture.editor.vim, false)
+    injector.vimscriptExecutor.executeFile(tempUpdatedFile.toString(), fixture.editor.vim, false)
 
     kotlin.test.assertFalse(VimRcFileState.equalTo(document))
   }

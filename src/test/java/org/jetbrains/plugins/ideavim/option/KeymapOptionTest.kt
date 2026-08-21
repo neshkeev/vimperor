@@ -126,7 +126,7 @@ class KeymapOptionTest : VimTestCase() {
     // Clearing the keymap must not remove it.
     val rc = homeDir!!.resolve(".ideavimrc")
     rc.writeText("nmap x y\n")
-    injector.vimscriptExecutor.executeFile(rc, fixture.editor.vim, true)
+    injector.vimscriptExecutor.executeFile(rc.toString(), fixture.editor.vim, true)
 
     writeUserKeymap("mykeymap", "loadkeymap\na b\n")
     enterCommand("set keymap=mykeymap")

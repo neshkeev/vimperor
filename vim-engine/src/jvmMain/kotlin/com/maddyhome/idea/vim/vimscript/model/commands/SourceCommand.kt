@@ -38,7 +38,7 @@ data class SourceCommand(val range: Range, val modifier: CommandModifier, val ar
     val path = injector.pathExpansion.expandPath(argument.trim())
     val file = Path(path)
     injector.vimscriptExecutor.executeFile(
-      file,
+      path,
       editor,
       VimRcService.isIdeaVimRcFile(file),
       vimContext.getFirstParentContext() is CommandLineVimLContext

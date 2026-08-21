@@ -18,11 +18,6 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.commands.Command
 import com.maddyhome.idea.vim.vimscript.model.commands.RepeatCommand
-import java.io.IOException
-import java.nio.file.Path
-import kotlin.io.path.absolutePathString
-import kotlin.io.path.pathString
-import kotlin.io.path.readText
 
 abstract class VimScriptExecutorBase : VimscriptExecutor {
   private val logger = vimLogger<VimScriptExecutorBase>()
@@ -110,7 +105,7 @@ abstract class VimScriptExecutorBase : VimscriptExecutor {
     injector.extensionRegistrator.enableDelayedExtensions()
   }
 
-  override fun executeFile(file: Path, editor: VimEditor, fileIsIdeaVimRcConfig: Boolean, indicateErrors: Boolean) {
+  override fun executeFile(path: String, editor: VimEditor, fileIsIdeaVimRcConfig: Boolean, indicateErrors: Boolean) {
     val context = injector.executionContextManager.getEditorExecutionContext(editor)
     val wasExecutingFile = injector.vimscriptExecutor.executingFile
     injector.vimscriptExecutor.executingFile = true
@@ -118,25 +113,25 @@ abstract class VimScriptExecutorBase : VimscriptExecutor {
       if (fileIsIdeaVimRcConfig) {
         injector.vimscriptExecutor.executingIdeaVimRcConfiguration = true
       }
-      ensureFileIsSaved(file)
-      execute(file.readText(), editor, context, skipHistory = true, indicateErrors)
-    } catch (e: IOException) {
+      ensureFileIsSaved(path)
+      execute(injector.fileSystem.readText(path), editor, context, skipHistory = true, indicateErrors)
+    } catch (e: VimFileReadException) {
       if (indicateErrors) {
-        injector.messages.showErrorMessage(editor, "Cannot read file \"${file.pathString}\": ${e.message}")
+        injector.messages.showErrorMessage(editor, e.message!!)
       } else {
-        logger.warn("Failed to read file ${file.pathString}: ${e.message}")
+        logger.warn("Failed to read file ${e.path}: ${e.reason}")
       }
     } finally {
       // Save/restore (not just reset) so a nested `:source` inside a sourced file doesn't clear the flag too early.
       injector.vimscriptExecutor.executingFile = wasExecutingFile
       if (fileIsIdeaVimRcConfig) {
-        injector.vimrcFileState.saveFileState(file.absolutePathString())
+        injector.vimrcFileState.saveFileState(path)
         injector.vimscriptExecutor.executingIdeaVimRcConfiguration = false
       }
     }
   }
 
-  protected abstract fun ensureFileIsSaved(file: Path)
+  protected abstract fun ensureFileIsSaved(path: String)
 
   @Throws(ExException::class)
   override fun executeLastCommand(editor: VimEditor, context: ExecutionContext): Boolean {

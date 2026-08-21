@@ -56,7 +56,7 @@ class SourceCommandTest : VimTestCase() {
       """.trimIndent()
       )
 
-      injector.vimscriptExecutor.executeFile(file, fixture.editor.vim, true)
+      injector.vimscriptExecutor.executeFile(file.toString(), fixture.editor.vim, true)
       val mapping = injector.keyGroup.getMappingInfo(keys("x"), MappingMode.NORMAL)
       assertNotNull(mapping)
       assertEquals(MappingOwner.IdeaVim.InitScript, mapping.owner)
@@ -79,7 +79,7 @@ class SourceCommandTest : VimTestCase() {
       """.trimIndent()
       )
 
-      injector.vimscriptExecutor.executeFile(file, fixture.editor.vim, false)
+      injector.vimscriptExecutor.executeFile(file.toString(), fixture.editor.vim, false)
       val mapping = injector.keyGroup.getMappingInfo(keys("x"), MappingMode.NORMAL)
       assertNotNull(mapping)
       assertEquals(MappingOwner.IdeaVim.Other, mapping.owner)
