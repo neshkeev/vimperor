@@ -9,18 +9,15 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.annotations.PropertyKey
-import java.text.MessageFormat
-import java.util.ResourceBundle
 
 object EngineMessageHelper {
   internal const val BUNDLE = "messages.IdeaVimEngineBundle"
 
-  private val bundle: ResourceBundle by lazy { ResourceBundle.getBundle(BUNDLE, ::javaClass.get().module) }
-
   @JvmStatic
-  fun message(@PropertyKey(resourceBundle = BUNDLE) key: String): String = bundle.getString(key)
+  fun message(@PropertyKey(resourceBundle = BUNDLE) key: String): String =
+    lookupEngineMessage(key, emptyArray())
 
   @JvmStatic
   fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any): String =
-    if (params.isEmpty()) bundle.getString(key) else MessageFormat.format(bundle.getString(key), *params)
+    lookupEngineMessage(key, params)
 }

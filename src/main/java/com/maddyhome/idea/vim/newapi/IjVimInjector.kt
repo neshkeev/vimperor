@@ -61,6 +61,7 @@ import com.maddyhome.idea.vim.api.VimStatistics
 import com.maddyhome.idea.vim.api.VimStorageService
 import com.maddyhome.idea.vim.api.VimStringParser
 import com.maddyhome.idea.vim.api.VimTemplateManager
+import com.maddyhome.idea.vim.api.VimTimerService
 import com.maddyhome.idea.vim.api.VimVisualMotionGroup
 import com.maddyhome.idea.vim.api.VimrcFileState
 import com.maddyhome.idea.vim.api.VimscriptExecutor
@@ -231,6 +232,8 @@ internal class IjVimInjector : VimInjectorBase() {
     get() = service()
 
   override val pathExpansion: VimPathExpansion = VimPathExpansionImpl()
+
+  override val timerService: VimTimerService = IjVimTimerService()
 
   override val engineEditorHelper: EngineEditorHelper
     get() = service()

@@ -151,6 +151,7 @@ interface VimInjector {
   val vimrcFileState: VimrcFileState
 
   val systemInfoService: SystemInfoService
+  val timerService: VimTimerService
   val vimStorageService: VimStorageService
 
   /**

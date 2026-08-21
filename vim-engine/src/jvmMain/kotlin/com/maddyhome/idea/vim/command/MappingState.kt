@@ -9,12 +9,11 @@
 package com.maddyhome.idea.vim.command
 
 import com.maddyhome.idea.vim.api.globalOptions
+import com.maddyhome.idea.vim.api.VimTimer
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.VimKeyStroke
-import java.awt.event.ActionListener
-import javax.swing.Timer
 
 class MappingState : Cloneable {
   // Map command depth. 0 - if it is not a map command. 1 - regular map command. 2+ - nested map commands
@@ -43,24 +42,16 @@ class MappingState : Cloneable {
   val hasKeys
     get() = keyList.isNotEmpty()
 
-  private var timer = VimTimer(injector.globalOptions().timeoutlen)
+  private var timer: VimTimer = injector.timerService.createOneShotTimer(injector.globalOptions().timeoutlen)
   private var keyList = mutableListOf<VimKeyStroke>()
 
-  init {
-    timer.isRepeats = false
-  }
-
-  fun startMappingTimer(actionListener: ActionListener) {
-    timer.initialDelay = injector.globalOptions().timeoutlen
-    timer.actionListeners.forEach { timer.removeActionListener(it) }
-    timer.addActionListener(actionListener)
-    timer.start()
+  fun startMappingTimer(action: () -> Unit) {
+    timer.start(injector.globalOptions().timeoutlen, action)
   }
 
   fun stopMappingTimer() {
     LOG.trace { "Stop mapping timer" }
     timer.stop()
-    timer.actionListeners.forEach { timer.removeActionListener(it) }
   }
 
   fun addKey(key: VimKeyStroke) {
@@ -87,15 +78,21 @@ class MappingState : Cloneable {
     other as MappingState
 
     if (mapDepth != other.mapDepth) return false
-    if (timer != other.timer) return false
+    // Compares the timer's observable state rather than the timer, which is what the VimTimer this
+    // replaced compared on. Note that isRunning changes on its own when the timer fires, so two
+    // otherwise identical states can stop being equal without either being touched - that was true
+    // before this change too, and is left alone rather than quietly fixed here.
+    if (timer.isRunning != other.timer.isRunning) return false
+    if (timer.delayMillis != other.timer.delayMillis) return false
     if (keyList != other.keyList) return false
 
     return true
   }
 
   override fun hashCode(): Int {
+    // The old VimTimer.hashCode() was a constant, so the timer contributed nothing; keeping it
+    // out means equal states still hash equally despite isRunning moving on its own.
     var result = mapDepth
-    result = 31 * result + timer.hashCode()
     result = 31 * result + keyList.hashCode()
     return result
   }
@@ -114,24 +111,5 @@ class MappingState : Cloneable {
 
   companion object {
     private val LOG = vimLogger<MappingState>()
-  }
-
-  class VimTimer(delay: Int) : Timer(delay, null) {
-    override fun equals(other: Any?): Boolean {
-      if (this === other) return true
-      if (javaClass != other?.javaClass) return false
-
-      other as VimTimer
-
-      if (delay != other.delay) return false
-      if (initialDelay != other.initialDelay) return false
-      if (isRunning != other.isRunning) return false
-
-      return true
-    }
-
-    override fun hashCode(): Int {
-      return javaClass.hashCode()
-    }
   }
 }
