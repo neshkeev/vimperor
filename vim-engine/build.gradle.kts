@@ -99,9 +99,9 @@ ksp {
 
 kotlin {
   jvm()
-  // No `js` target yet - deliberately. The probe recorded in
-  // docs/superpowers/findings/2026-08-21-phase-4-js-probe.md compiles 729 of commonMain's 798
-  // files; enabling it here would leave `./gradlew build` red until the remaining 69 are done.
+  // No `js` target yet - deliberately. The remaining gap is tracked in
+  // docs/superpowers/findings/2026-08-21-phase-4-js-probe.md; enabling it here would leave
+  // `./gradlew build` red until it closes.
 
   compilerOptions {
     apiVersion.set(org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0)

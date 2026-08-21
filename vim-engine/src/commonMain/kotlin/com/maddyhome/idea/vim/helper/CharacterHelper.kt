@@ -8,6 +8,8 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.helper.charCategoryOf
+import com.maddyhome.idea.vim.helper.isVimWhitespace
 import com.maddyhome.idea.vim.options.helpers.KeywordOptionHelper
 
 /**

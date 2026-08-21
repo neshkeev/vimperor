@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.key.KeyStrokeTrie.TrieNode
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.helper.isVimWhitespace
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
 data class KeyMappingEntry(private val node: TrieNode<MappingInfo>) {
@@ -173,7 +174,7 @@ class KeyMapping(private val mode: MappingMode) : Iterable<List<VimKeyStroke>> {
     // Is this an incomplete RHS on-demand <Action>(...)?
     return keys.first().keyCode == injector.parser.actionKeyStroke.keyCode
       && (keys.size < 2 || keys[1].keyChar == '(')
-      && (keys.size < 3 || !Character.isWhitespace(keys[2].keyChar))
+      && (keys.size < 3 || !isVimWhitespace(keys[2].keyChar))
       && keys.last().keyChar != ')'
   }
 

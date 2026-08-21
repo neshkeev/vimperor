@@ -26,6 +26,8 @@ had no rule for - after `com.intellij.vim.api` (W6) and the `*.jvm.kt` actuals -
 the same each time: **the classifier finds JVM *APIs*, not JVM *modules*.** The compiler is the
 only thing that finds the latter.
 
+## Superseded - see the update below
+
 ## What remains: 308 errors in 69 files
 
 | unresolved reference | count |
@@ -88,3 +90,69 @@ Compiling is not running. Even at zero errors this says nothing about behaviour:
 already lists string and char handling, regex semantics, number coercion and collection iteration
 order as expected divergences, and none of those show up as a compile error. The headless host
 (phase 2) is what would let the suite answer that question, and it is still not built.
+
+
+---
+
+# Update: 171 errors in 64 files
+
+Progress since the first probe, all of it verified against the JVM implementations being replaced:
+
+| | errors |
+|---|---:|
+| first run | 2153 |
+| after extracting `:vim-annotations` | 308 |
+| after `DigraphUnicodeBlock` | 220 |
+| after the codepoint helpers | **171** |
+
+`Character` went from 85 references to 5.
+
+**`DigraphUnicodeBlock`** replaces `Character.UnicodeBlock` for the `:digraphs` headers. Only 27
+blocks are modelled, and that is provably enough: the listing assigns `previousUnicodeBlock` only
+inside the branch that has already confirmed the block has a header name, so a block without one
+can never be observed. The ranges are generated from the JDK and `DigraphUnicodeBlockTest` walks
+every codepoint of every range, plus a margin either side, so a range that is too wide or too
+narrow both fail.
+
+**The codepoint helpers** - `codePointAt`, `codePointBefore`, `charCount`, `codePointCount`,
+`toChars`, `isLetterCodePoint` - are hand-written surrogate arithmetic, pinned by `CodePointsTest`
+against `java.lang.Character`. The test includes unpaired surrogates deliberately: the JDK returns
+them as themselves rather than throwing or substituting, and a reimplementation that tidied them up
+would differ only on malformed text, which is exactly where it would matter and never be noticed.
+
+`isRightToLeft` is expect/actual, and deliberately narrower than the `Character.getDirectionality`
+it replaces: the engine only ever asks whether a codepoint is RTL, and exposing a directionality
+byte would oblige every host to reproduce the whole Unicode bidi table instead of the part in use.
+
+## What remains
+
+| unresolved reference | count |
+|---|---:|
+| `javaClass` | 33 |
+| `JvmStatic` | 14 |
+| `runBlocking` | 11 |
+| `JvmField` | 9 |
+| `it` | 8 |
+| `Runnable` | 6 |
+| `System` | 6 |
+| `Character` | 5 |
+| `format` | 4 |
+| `removeIf` | 4 |
+| `assert` | 4 |
+| `Cloneable` | 4 |
+| `stream` | 3 |
+| `computeIfAbsent` | 3 |
+| `Integer` | 3 |
+| `codePointCount` | 2 |
+
+Grouped:
+
+- **`javaClass` (33)** - mostly `javaClass != other.javaClass` in `equals`, which becomes
+  `this::class != other::class` since `KClass` is multiplatform. Two sites use `.name` and need
+  `platformClassName`; one uses `getResourceAsStream` and cannot move at all.
+- **`@JvmStatic` / `@JvmField` (23)** - optional expectations, unavailable for JS in the positions
+  used here.
+- **`runBlocking` (11) plus 8 suspend-call errors** - the one item that needs a design decision
+  rather than a substitution. The call sites assume they can block; JS has no way to.
+- **the tail (~50)** - `System`, `Runnable`, `Cloneable`, `String.format`, `removeIf`,
+  `computeIfAbsent`, `assert`, and two `synchronized` blocks that Kotlin/JS does not support at all.

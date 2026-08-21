@@ -11,6 +11,9 @@ package com.maddyhome.idea.vim.options.helpers
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.helper.codePointAt
+import com.maddyhome.idea.vim.helper.codePointCount
+import com.maddyhome.idea.vim.helper.isLetterCodePoint
 import com.maddyhome.idea.vim.options.OptionAccessScope
 import com.maddyhome.idea.vim.options.StringListOption
 
@@ -235,8 +238,8 @@ object KeywordOptionHelper {
       // If the string is a number, it's a Unicode code point of a letter. If it's not a number, it should be a single
       // character. Otherwise, it's invalid
       return str.toIntOrNull()
-        ?: if (Character.codePointCount(str, 0, str.length) == 1) {
-          Character.codePointAt(str, 0)
+        ?: if (codePointCount(str, 0, str.length) == 1) {
+          codePointAt(str, 0)
         } else {
           null
         }
@@ -269,7 +272,7 @@ object KeywordOptionHelper {
     operator fun contains(code: Int): Boolean {
       initializeValues()
       if (matchAllLetters) {
-        return Character.isLetter(code)
+        return isLetterCodePoint(code)
       }
       return if (rangeLow != null && rangeHigh != null) {
         code >= rangeLow!! && code <= rangeHigh!!

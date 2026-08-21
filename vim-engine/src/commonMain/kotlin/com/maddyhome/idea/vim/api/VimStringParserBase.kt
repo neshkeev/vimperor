@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.api
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.annotations.Contract
 import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
@@ -96,7 +97,7 @@ abstract class VimStringParserBase : VimStringParser {
         return escape
       }
       try {
-        name = String(Character.toChars(keyCode))
+        name = String(toChars(keyCode))
       } catch (_: IllegalArgumentException) {
       }
     }
@@ -295,7 +296,7 @@ abstract class VimStringParserBase : VimStringParser {
   private fun capitalize(s: String): String {
     if (s.isEmpty()) return s
     if (s.length == 1) return s.uppercase()
-    return if (Character.isUpperCase(s[0])) s else s[0].uppercaseChar().toString() + s.substring(1)
+    return if (s[0].isUpperCase()) s else s[0].uppercaseChar().toString() + s.substring(1)
   }
 
   private fun toEscapeNotation(key: VimKeyStroke): String? {
@@ -337,7 +338,7 @@ abstract class VimStringParserBase : VimStringParser {
             number = octalToDigital
             digitsLeft = 2
             state = VimStringState.OCTAL_NUMBER
-          } else if (Character.toLowerCase(c) == 'x') {
+          } else if (c.lowercaseChar() == 'x') {
             digitsLeft = 2
             state = VimStringState.HEX_NUMBER
           } else if (c == 'u') {
@@ -498,8 +499,8 @@ abstract class VimStringParserBase : VimStringParser {
   }
 
   private fun hexDigitToNumber(c: Char): Int? {
-    val lowerChar = Character.toLowerCase(c)
-    if (Character.isDigit(lowerChar)) {
+    val lowerChar = c.lowercaseChar()
+    if (lowerChar.isDigit()) {
       return lowerChar.code - '0'.code
     } else if (lowerChar in 'a'..'f') {
       return lowerChar.code - 'a'.code + 10
@@ -611,10 +612,10 @@ abstract class VimStringParserBase : VimStringParser {
   private fun getTypedOrPressedKeyStroke(c: Char, modifiers: Int): VimKeyStroke {
     return if (modifiers == 0) {
       VimKeyStroke.getKeyStroke(c)
-    } else if (modifiers == VimKeyCodes.SHIFT_DOWN_MASK && Character.isLetter(c)) {
-      VimKeyStroke.getKeyStroke(Character.toUpperCase(c))
+    } else if (modifiers == VimKeyCodes.SHIFT_DOWN_MASK && c.isLetter()) {
+      VimKeyStroke.getKeyStroke(c.uppercaseChar())
     } else {
-      VimKeyStroke.getKeyStroke(Character.toUpperCase(c).code, modifiers)
+      VimKeyStroke.getKeyStroke(c.uppercaseChar().code, modifiers)
     }
   }
 

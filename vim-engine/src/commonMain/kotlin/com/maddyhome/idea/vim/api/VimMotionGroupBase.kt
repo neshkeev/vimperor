@@ -27,6 +27,7 @@ import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.isEndAllowedIgnoringOnemore
 import com.maddyhome.idea.vim.annotations.Range
+import com.maddyhome.idea.vim.helper.isVimWhitespace
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.max
@@ -593,7 +594,7 @@ abstract class VimMotionGroupBase : VimMotionGroup {
         break
       }
 
-      if (!Character.isWhitespace(chars[offset])) {
+      if (!isVimWhitespace(chars[offset])) {
         pos = offset
         break
       }

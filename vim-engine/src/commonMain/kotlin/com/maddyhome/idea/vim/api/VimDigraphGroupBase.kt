@@ -15,6 +15,9 @@ import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.EngineStringHelper
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.helper.StringTokenizer
+import com.maddyhome.idea.vim.helper.charCategoryOf
+import com.maddyhome.idea.vim.helper.codePointAt
+import com.maddyhome.idea.vim.helper.isRightToLeft
 import kotlin.math.ceil
 
 private val logger = vimLogger<VimDigraphGroup>()
@@ -57,7 +60,7 @@ open class VimDigraphGroupBase : VimDigraphGroup {
     val charsSequence = editor.text()
     if (charsSequence.isEmpty() || offset >= charsSequence.length) return
 
-    val codepoint = Character.codePointAt(charsSequence, offset)
+    val codepoint = codePointAt(charsSequence, offset)
 
     val digraph = customCodepointToDigraph[codepoint] ?: codepointToDigraph[codepoint]
     val digraphText = if (digraph == null) "" else ", Digr $digraph"
@@ -147,7 +150,7 @@ open class VimDigraphGroupBase : VimDigraphGroup {
     val output = buildString(capacity) {
       var column = 0
       var columnLength = 0
-      var previousUnicodeBlock: Character.UnicodeBlock? = null
+      var previousUnicodeBlock: DigraphUnicodeBlock? = null
 
       // We cannot guarantee ordering with the dictionaries, so let's use the defaultDigraphs list.
       // We output in codepoint order, but there are duplicate digraphs for some codepoints and we want control of order
@@ -265,19 +268,19 @@ open class VimDigraphGroupBase : VimDigraphGroup {
   }
 
   private fun isCombiningCharacter(codepoint: Int): Boolean {
-    val type = Character.getType(codepoint).toByte()
-    return type == Character.NON_SPACING_MARK
-      || type == Character.COMBINING_SPACING_MARK
-      || type == Character.ENCLOSING_MARK
-      || type == Character.FORMAT
+    val type = charCategoryOf(codepoint)
+    return type == CharCategory.NON_SPACING_MARK
+      || type == CharCategory.COMBINING_SPACING_MARK
+      || type == CharCategory.ENCLOSING_MARK
+      || type == CharCategory.FORMAT
   }
 
-  private fun getVimCompatibleUnicodeBlock(codepoint: Int): Character.UnicodeBlock {
+  private fun getVimCompatibleUnicodeBlock(codepoint: Int): DigraphUnicodeBlock? {
     // Vim's block boundaries don't agree with Java's. Fudge things so they match
-    val block = Character.UnicodeBlock.of(codepoint)
+    val block = DigraphUnicodeBlock.of(codepoint)
     return when {
-      block == Character.UnicodeBlock.LATIN_1_SUPPLEMENT && codepoint < 0xa1 -> Character.UnicodeBlock.BASIC_LATIN
-      block == Character.UnicodeBlock.NUMBER_FORMS && codepoint < 0x2160 -> Character.UnicodeBlock.LETTERLIKE_SYMBOLS
+      block == DigraphUnicodeBlock.LATIN_1_SUPPLEMENT && codepoint < 0xa1 -> DigraphUnicodeBlock.BASIC_LATIN
+      block == DigraphUnicodeBlock.NUMBER_FORMS && codepoint < 0x2160 -> DigraphUnicodeBlock.LETTERLIKE_SYMBOLS
       else -> block
     }
   }
@@ -1722,32 +1725,32 @@ open class VimDigraphGroupBase : VimDigraphGroup {
    * block, then it's not displayed as a separate header
    */
   private val digraphHeaderNames = mapOf(
-    Character.UnicodeBlock.LATIN_1_SUPPLEMENT to "Latin supplement",
-    Character.UnicodeBlock.GREEK to "Greek and Coptic",
-    Character.UnicodeBlock.CYRILLIC to "Cyrillic",
-    Character.UnicodeBlock.HEBREW to "Hebrew",
-    Character.UnicodeBlock.ARABIC to "Arabic",
-    Character.UnicodeBlock.LATIN_EXTENDED_ADDITIONAL to "Latin extended",
-    Character.UnicodeBlock.GREEK_EXTENDED to "Greek extended",
-    Character.UnicodeBlock.GENERAL_PUNCTUATION to "Punctuation",
-    Character.UnicodeBlock.SUPERSCRIPTS_AND_SUBSCRIPTS to "Super- and subscripts",
-    Character.UnicodeBlock.CURRENCY_SYMBOLS to "Currency",
-    Character.UnicodeBlock.LETTERLIKE_SYMBOLS to "Other",
-    Character.UnicodeBlock.NUMBER_FORMS to "Roman numbers",
-    Character.UnicodeBlock.ARROWS to "Arrows",
-    Character.UnicodeBlock.MATHEMATICAL_OPERATORS to "Mathematical operators",
-    Character.UnicodeBlock.MISCELLANEOUS_TECHNICAL to "Technical",
-    Character.UnicodeBlock.CONTROL_PICTURES to "Other",
-    Character.UnicodeBlock.BOX_DRAWING to "Box drawing",
-    Character.UnicodeBlock.BLOCK_ELEMENTS to "Block elements",
-    Character.UnicodeBlock.GEOMETRIC_SHAPES to "Geometric shapes",
-    Character.UnicodeBlock.MISCELLANEOUS_SYMBOLS to "Symbols",
-    Character.UnicodeBlock.DINGBATS to "Dingbats",
-    Character.UnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION to "CJK symbols and punctuation",
-    Character.UnicodeBlock.HIRAGANA to "Hiragana",
-    Character.UnicodeBlock.KATAKANA to "Katakana",
-    Character.UnicodeBlock.BOPOMOFO to "Bopomofo",
-    Character.UnicodeBlock.ENCLOSED_CJK_LETTERS_AND_MONTHS to "Other",
+    DigraphUnicodeBlock.LATIN_1_SUPPLEMENT to "Latin supplement",
+    DigraphUnicodeBlock.GREEK to "Greek and Coptic",
+    DigraphUnicodeBlock.CYRILLIC to "Cyrillic",
+    DigraphUnicodeBlock.HEBREW to "Hebrew",
+    DigraphUnicodeBlock.ARABIC to "Arabic",
+    DigraphUnicodeBlock.LATIN_EXTENDED_ADDITIONAL to "Latin extended",
+    DigraphUnicodeBlock.GREEK_EXTENDED to "Greek extended",
+    DigraphUnicodeBlock.GENERAL_PUNCTUATION to "Punctuation",
+    DigraphUnicodeBlock.SUPERSCRIPTS_AND_SUBSCRIPTS to "Super- and subscripts",
+    DigraphUnicodeBlock.CURRENCY_SYMBOLS to "Currency",
+    DigraphUnicodeBlock.LETTERLIKE_SYMBOLS to "Other",
+    DigraphUnicodeBlock.NUMBER_FORMS to "Roman numbers",
+    DigraphUnicodeBlock.ARROWS to "Arrows",
+    DigraphUnicodeBlock.MATHEMATICAL_OPERATORS to "Mathematical operators",
+    DigraphUnicodeBlock.MISCELLANEOUS_TECHNICAL to "Technical",
+    DigraphUnicodeBlock.CONTROL_PICTURES to "Other",
+    DigraphUnicodeBlock.BOX_DRAWING to "Box drawing",
+    DigraphUnicodeBlock.BLOCK_ELEMENTS to "Block elements",
+    DigraphUnicodeBlock.GEOMETRIC_SHAPES to "Geometric shapes",
+    DigraphUnicodeBlock.MISCELLANEOUS_SYMBOLS to "Symbols",
+    DigraphUnicodeBlock.DINGBATS to "Dingbats",
+    DigraphUnicodeBlock.CJK_SYMBOLS_AND_PUNCTUATION to "CJK symbols and punctuation",
+    DigraphUnicodeBlock.HIRAGANA to "Hiragana",
+    DigraphUnicodeBlock.KATAKANA to "Katakana",
+    DigraphUnicodeBlock.BOPOMOFO to "Bopomofo",
+    DigraphUnicodeBlock.ENCLOSED_CJK_LETTERS_AND_MONTHS to "Other",
   )
 
   init {

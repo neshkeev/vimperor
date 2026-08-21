@@ -1,5 +1,10 @@
 package com.maddyhome.idea.vim.common
 
+import com.maddyhome.idea.vim.helper.charCategoryOf
+import com.maddyhome.idea.vim.helper.charCount
+import com.maddyhome.idea.vim.helper.codePointAt
+import com.maddyhome.idea.vim.helper.codePointBefore
+
 //
 // RATIONALE:
 //
@@ -52,8 +57,8 @@ object Graphemes {
     return charSeq.nextBoundary(
       start,
       next = Int::plus,
-      nextCode = { if (it < length) Character.codePointAt(this, it) else null },
-      prevCode = { current, _ -> if (current > 0) Character.codePointBefore(this, current) else null },
+      nextCode = { if (it < length) codePointAt(this, it) else null },
+      prevCode = { current, _ -> if (current > 0) codePointBefore(this, current) else null },
       swap = false,
     )
   }
@@ -69,9 +74,9 @@ object Graphemes {
     return charSeq.nextBoundary(
       start,
       next = Int::minus,
-      nextCode = { if (it > 0) Character.codePointBefore(this, it) else null },
+      nextCode = { if (it > 0) codePointBefore(this, it) else null },
       prevCode = { current, charCount ->
-        if (current - charCount > 0) Character.codePointBefore(this, current - charCount)
+        if (current - charCount > 0) codePointBefore(this, current - charCount)
         else null
       },
       swap = true,
@@ -89,9 +94,9 @@ private inline fun CharSequence.nextBoundary(
   var current = start
   while (true) {
     var codePoint = nextCode(current) ?: return current
-    val charCount = Character.charCount(codePoint)
+    val charCount = charCount(codePoint)
     var nextCodePoint = nextCode(next(current, charCount)) ?: return next(current, charCount)
-    val nextCharCount = Character.charCount(nextCodePoint)
+    val nextCharCount = charCount(nextCodePoint)
 
     // Below the two code points are inspected in the direct order, following the grapheme breaking rules.
     // To not duplicate the rules depending on the traversal direction, we ensure that the two code points
@@ -202,11 +207,11 @@ private inline fun CharSequence.countPrev(start: Int, crossinline pred: (Int) ->
   var current = start
   var count = 0
   while (current > 0) {
-    val codePoint = Character.codePointBefore(this, current)
+    val codePoint = codePointBefore(this, current)
     if (!pred(codePoint)) {
       break
     }
-    current -= Character.charCount(codePoint)
+    current -= charCount(codePoint)
     count++
   }
   return count
@@ -229,28 +234,28 @@ private fun classify(codePoint: Int): CodePointType {
     return CodePointType.EXTENDED_PICTOGRAPHIC
   }
 
-  val type = Character.getType(codePoint).toByte()
+  val type = charCategoryOf(codePoint)
   return when (type) {
-    Character.UNASSIGNED -> when (codePoint) {
+    CharCategory.UNASSIGNED -> when (codePoint) {
       in 0x2064..0x2069, in 0xFFF0..0xFFF8, 0xE0000, in 0xE0002..0xE001F, in 0xE0080..0xE00FF, in 0xE01F0..0xE0FFF -> CodePointType.CONTROL
       else -> CodePointType.OTHER
     }
 
-    Character.MODIFIER_LETTER, Character.MODIFIER_SYMBOL -> when (codePoint) {
+    CharCategory.MODIFIER_LETTER, CharCategory.MODIFIER_SYMBOL -> when (codePoint) {
       0xFF9E, 0xFF9F, in 0x1F3FB..0x1F3FF -> CodePointType.EXTEND
       else -> CodePointType.OTHER
     }
 
-    Character.FORMAT -> when (codePoint) {
+    CharCategory.FORMAT -> when (codePoint) {
       0x200D -> CodePointType.ZWJ
       in 0x0600..0x0605, 0x06DD, 0x070F, in 0x0890..0x0891, 0x08E2, 0x110BD, 0x110CD -> CodePointType.PREPEND
       0x200C, in 0xE0020..0xE007F -> CodePointType.EXTEND
       else -> CodePointType.CONTROL
     }
 
-    Character.LINE_SEPARATOR, Character.PARAGRAPH_SEPARATOR, Character.CONTROL -> CodePointType.CONTROL
+    CharCategory.LINE_SEPARATOR, CharCategory.PARAGRAPH_SEPARATOR, CharCategory.CONTROL -> CodePointType.CONTROL
 
-    Character.OTHER_LETTER -> when (codePoint) {
+    CharCategory.OTHER_LETTER -> when (codePoint) {
       0x0D4E, in 0x111C2..0x111C3, 0x1193F, 0x11941, 0x11A3A, in 0x11A84..0x11A89, 0x11D46, 0x11F02 -> CodePointType.PREPEND
       0x0E33, 0x0EB3 -> CodePointType.SPACING_MARK
       in 0x1100..0x115F, in 0xA960..0xA97C -> CodePointType.L
@@ -261,14 +266,14 @@ private fun classify(codePoint: Int): CodePointType {
       else -> CodePointType.OTHER
     }
 
-    Character.OTHER_SYMBOL -> when (codePoint) {
+    CharCategory.OTHER_SYMBOL -> when (codePoint) {
       in 0x1F1E6..0x1F1FF -> CodePointType.REGIONAL_INDICATOR
       else -> CodePointType.OTHER
     }
 
-    Character.NON_SPACING_MARK, Character.ENCLOSING_MARK -> CodePointType.EXTEND
+    CharCategory.NON_SPACING_MARK, CharCategory.ENCLOSING_MARK -> CodePointType.EXTEND
 
-    Character.COMBINING_SPACING_MARK -> when (codePoint) {
+    CharCategory.COMBINING_SPACING_MARK -> when (codePoint) {
       0x09BE, 0x09D7, 0x0b3E, 0x0B57, 0x0BBE, 0x0BD7, 0x0CC2, in 0x0CD5..0x0CD6, 0x0D3E, 0x0D57, 0x0DCF,
       0x0DDF, 0x1B35, in 0x302E..0x302F, 0x1133E, 0x11357, 0x114B0, 0x114BD, 0x115AF, 0x11930, 0x1D165,
       in 0x1D16E..0x1D172 -> CodePointType.EXTEND

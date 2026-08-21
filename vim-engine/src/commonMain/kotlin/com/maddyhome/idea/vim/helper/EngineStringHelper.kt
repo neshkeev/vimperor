@@ -9,6 +9,8 @@
 package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.helper.EngineStringHelper.toPrintableCharacters
+import com.maddyhome.idea.vim.helper.MAX_CODE_POINT
+import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
@@ -76,7 +78,7 @@ object EngineStringHelper {
       }
       return String.format("<%02x>", codepoint)
     }
-    return String(Character.toChars(codepoint))
+    return String(toChars(codepoint))
   }
 
   fun isPrintableCharacter(c: Char) = c.code >= 32 && c.code != 127
@@ -135,7 +137,7 @@ object EngineStringHelper {
         val hex = if (end != -1) text.substring(i + 1, end) else ""
         val codepoint =
           if (hex.isNotEmpty() && hex.length <= MAX_CODEPOINT_HEX_DIGITS && hex.all(::isHexDigit)) hex.toIntOrNull(16) else null
-        if (codepoint != null && codepoint <= Character.MAX_CODE_POINT) {
+        if (codepoint != null && codepoint <= MAX_CODE_POINT) {
           onToken(i..end, codepoint)
           i = end + 1
           continue

@@ -17,6 +17,8 @@ import com.maddyhome.idea.vim.command.CommandBuilder
 import com.maddyhome.idea.vim.common.DigraphResult
 import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
+import com.maddyhome.idea.vim.helper.isSupplementaryCodePoint
+import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.key.KeyConsumer
 import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.VimKeyCodes
@@ -102,8 +104,8 @@ internal class DigraphConsumer : KeyConsumer {
         val codepoint = res.codepoint ?: return false
         keyProcessResultBuilder.addExecutionStep { lambdaKeyState, lambdaEditorState, lambdaContext ->
           lambdaKeyState.commandBuilder.addTypedKeyStroke(key)
-          if (Character.isSupplementaryCodePoint(codepoint)) {
-            val charArray = Character.toChars(codepoint)
+          if (isSupplementaryCodePoint(codepoint)) {
+            val charArray = toChars(codepoint)
             val highSurrogate = charArray[0]
             val lowSurrogate = charArray[1]
 

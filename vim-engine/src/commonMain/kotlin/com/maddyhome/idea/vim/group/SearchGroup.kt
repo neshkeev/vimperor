@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.options
 import com.maddyhome.idea.vim.common.Direction
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.helper.isVimWhitespace
 import kotlin.math.max
 
 const val BLOCK_CHARS: String = "{}()[]<>"
@@ -369,7 +370,7 @@ fun findBlockRange(
       var isSingleLineAllWhiteSpaceUntilClose = false
       var countWhiteSpaceCharacter = 1
       while (end + countWhiteSpaceCharacter < chars.length) {
-        if (Character.isWhitespace(chars[end + countWhiteSpaceCharacter]) &&
+        if (isVimWhitespace(chars[end + countWhiteSpaceCharacter]) &&
           chars[end + countWhiteSpaceCharacter] != '\n'
         ) {
           countWhiteSpaceCharacter++
@@ -426,7 +427,7 @@ fun findBlockRange(
     val o = editor.getLineStartForOffset(blockEnd)
     var allWhite = true
     for (i in o until blockEnd) {
-      if (!Character.isWhitespace(chars[i])) {
+      if (!isVimWhitespace(chars[i])) {
         allWhite = false
         break
       }
