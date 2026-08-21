@@ -24,5 +24,5 @@ interface VimApplication {
   fun <T> runReadAction(action: () -> T): T
 
   fun currentStackTrace(): String
-  fun runAfterGotFocus(runnable: Runnable)
+  fun runAfterGotFocus(runnable: () -> Unit)
 }

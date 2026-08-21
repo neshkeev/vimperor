@@ -15,7 +15,7 @@ import com.maddyhome.idea.vim.diagnostic.trace
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
-class MappingState : Cloneable {
+class MappingState {
   // Map command depth. 0 - if it is not a map command. 1 - regular map command. 2+ - nested map commands
   private var mapDepth = 0
 
@@ -97,7 +97,9 @@ class MappingState : Cloneable {
     return result
   }
 
-  public override fun clone(): MappingState {
+  // Not `Cloneable`: Kotlin/JS has no such interface, and on the JVM it is only a marker -
+  // `clone()` here is a hand-written copy, not `Object.clone()`, so nothing is lost.
+  fun clone(): MappingState {
     val result = MappingState()
     result.timer = timer
     result.mapDepth = mapDepth

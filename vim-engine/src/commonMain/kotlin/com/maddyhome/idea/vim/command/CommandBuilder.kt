@@ -30,7 +30,7 @@ class CommandBuilder private constructor(
   private val counts: MutableList<Int>,
   private val typedKeyStrokes: MutableList<VimKeyStroke>,
   private val commandKeyStrokes: MutableList<VimKeyStroke>,
-) : Cloneable {
+) {
 
   constructor(keyStrokeTrie: KeyStrokeTrie<LazyVimCommand>, initialUncommittedRawCount: Int = 0)
     : this(keyStrokeTrie, mutableListOf(initialUncommittedRawCount), mutableListOf(), mutableListOf())
@@ -435,7 +435,9 @@ class CommandBuilder private constructor(
     return result
   }
 
-  public override fun clone(): CommandBuilder {
+  // Not `Cloneable`: Kotlin/JS has no such interface, and on the JVM it is only a marker -
+  // `clone()` here is a hand-written copy, not `Object.clone()`, so nothing is lost.
+  fun clone(): CommandBuilder {
     val result = CommandBuilder(
       keyStrokeTrie,
       counts.toMutableList(),

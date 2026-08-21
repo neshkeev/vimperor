@@ -264,3 +264,60 @@ JVM compiler caught only by luck:
 Both were reverted precisely rather than patched over. The lesson is narrow and practical: a
 textual rewrite cannot tell a call from a declaration, and `assert`, `String`, `format` and `stream`
 are all words a codebase uses for its own things.
+
+
+---
+
+# Update 4: 20 errors, all of them one problem
+
+| | errors |
+|---|---:|
+| first run | 2153 |
+| ... | ... |
+| after the JVM-API tail | 45 |
+| after `Runnable`, `Cloneable`, `withLock` | **20** |
+
+**99 % gone, and what is left is no longer a list.** All 20 errors are in six files, all
+`thinapi/*ScopeImpl`, and all the same thing:
+
+```
+thinapi/CommandScopeImpl.kt        5
+thinapi/ModalInputImpl.kt          4
+thinapi/ListenerScopeImpl.kt       3
+thinapi/MappingScopeImpl.kt        3
+thinapi/TextObjectScopeImpl.kt     3
+thinapi/commandline/CommandLineScopeImpl.kt  2
+```
+
+## The one remaining question
+
+The extension API (`:api`) declares its callbacks as `suspend` functions. The scope
+implementations are called from the engine's ordinary non-suspend code, so they bridge the gap with
+`kotlinx.coroutines.runBlocking`. One of them says so in a comment: *"suspend lambda bridged via
+runBlocking for now"*.
+
+`runBlocking` does not exist on Kotlin/JS, and cannot: a single-threaded event loop has no way to
+block while waiting for a continuation. This is not a missing shim. Either
+
+1. the engine paths that invoke extension callbacks become `suspend` themselves, which propagates
+   up through `KeyHandler`, or
+2. the extension API stops being `suspend` and the callbacks become ordinary functions, or
+3. the JS host gets a different bridge - callbacks queued and resumed on the event loop - which
+   changes when extension code observes editor state relative to the JVM.
+
+Only the third preserves both the current API and the current JVM behaviour, and it is the one that
+makes the two hosts behave differently. This wants a decision before code.
+
+## Things fixed in this pass
+
+- `Runnable` to `() -> Unit` across the engine API. The IntelliJ implementations still hand a
+  `Runnable` to the platform; Kotlin SAM-converts at that boundary. `KeyHandler` passed the same
+  `ActionRunner` instance as both the work and the command group id, so the replacement passes
+  `action::run` and `action` to keep that identity.
+- `Cloneable` removed from four classes. It is a marker on the JVM and their `clone()` methods are
+  hand-written copies, not `Object.clone()`, so nothing is lost.
+- `synchronized` became `withLock`, an **inline** expect/actual. Inline because the call sites wrap
+  whole method bodies and return from the middle of them - a non-inline wrapper would have needed
+  four `return@withLock` rewrites inside a 75-line method.
+- `String(IntArray, offset, count)` is the *codepoint* constructor, not the `CharArray` one. The
+  compiler caught that by argument type after the deprecation warning pointed at the wrong fix.

@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.ex.exExceptionMessage
+import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.datatypes.asVimString
@@ -33,6 +34,6 @@ internal class DigraphGetFunctionHandler : UnaryFunctionHandler<VimString>() {
     }
 
     val codepoint = injector.digraphGroup.getCharacterForDigraph(chars[0], chars[1])
-    return String(intArrayOf(codepoint), 0, 1).asVimString()
+    return toChars(codepoint).concatToString().asVimString()
   }
 }

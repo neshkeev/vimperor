@@ -49,7 +49,7 @@ interface VimActionExecutor {
 
   fun executeCommand(
     editor: VimEditor?,
-    runnable: Runnable,
+    runnable: () -> Unit,
     name: String?,
     groupId: Any?,
   )

@@ -72,7 +72,7 @@ internal class IjVimApplication : VimApplicationBase() {
     return ExceptionUtil.currentStackTrace()
   }
 
-  override fun runAfterGotFocus(runnable: Runnable) {
+  override fun runAfterGotFocus(runnable: () -> Unit) {
     com.maddyhome.idea.vim.helper.runAfterGotFocus(runnable)
   }
 

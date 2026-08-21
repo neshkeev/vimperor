@@ -190,7 +190,7 @@ class ToHandlerMappingInfo(
 
     val handler = extensionHandler
     if (handler is ExtensionHandler.WithCallback) {
-      handler._backingFunction = Runnable {
+      handler._backingFunction = {
         myFun(shouldCalculateOffsets, editor, startOffsets, keyState)
 
         if (shouldCalculateOffsets) {

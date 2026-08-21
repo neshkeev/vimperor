@@ -33,10 +33,10 @@ interface ExtensionHandler {
     get() = false
 
   abstract class WithCallback : ExtensionHandler {
-    var _backingFunction: Runnable? = null
+    var _backingFunction: (() -> Unit)? = null
     fun continueVimExecution() {
       if (_backingFunction != null) {
-        _backingFunction!!.run()
+        _backingFunction!!.invoke()
       }
     }
   }

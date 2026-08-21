@@ -19,7 +19,7 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 // `'langmap'` maps a typed char to an ASCII char
 object LangMapOptionHelper {
   fun mapChar(from: Char) =
-    injector.optionGroup.getParsedEffectiveOptionValue(Options.langmap, null, ::parse).getOrDefault(from, from)
+    injector.optionGroup.getParsedEffectiveOptionValue(Options.langmap, null, ::parse)[from] ?: from
 
   fun split(langMap: String): List<String> {
     // Negative lookbehind regex to make sure we don't split on escaped commas

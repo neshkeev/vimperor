@@ -147,7 +147,7 @@ class IjActionExecutor : VimActionExecutor {
 
   override fun executeCommand(
     editor: VimEditor?,
-    runnable: Runnable,
+    runnable: () -> Unit,
     name: @NlsContexts.Command String?,
     groupId: Any?,
   ) {

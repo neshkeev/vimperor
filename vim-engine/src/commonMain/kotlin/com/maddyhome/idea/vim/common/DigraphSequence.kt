@@ -16,7 +16,7 @@ import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
-class DigraphSequence : Cloneable {
+class DigraphSequence {
   private var digraphState = DigraphState.DIG_STATE_PENDING
   private var digraphChar = 0.toChar()
   private lateinit var codeChars: CharArray
@@ -258,7 +258,9 @@ class DigraphSequence : Cloneable {
     return result
   }
 
-  public override fun clone(): DigraphSequence {
+  // Not `Cloneable`: Kotlin/JS has no such interface, and on the JVM it is only a marker -
+  // `clone()` here is a hand-written copy, not `Object.clone()`, so nothing is lost.
+  fun clone(): DigraphSequence {
     val result = DigraphSequence()
     result.digraphState = digraphState
     result.digraphChar = digraphChar

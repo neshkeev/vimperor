@@ -41,6 +41,7 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.annotations.ScheduledForRemoval
 import com.maddyhome.idea.vim.common.concurrentCollectionOf
+import com.maddyhome.idea.vim.helper.withLock
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import kotlin.jvm.JvmStatic
 
@@ -178,7 +179,7 @@ class KeyHandler {
     keySource: KeySource,
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ): KeyProcessResult {
-    synchronized(lock) {
+    withLock(lock) {
       logger.trace {
         """
         ------- Key Handler -------
@@ -345,7 +346,7 @@ class KeyHandler {
       }
     }
 
-    val action: Runnable =
+    val action =
       ActionRunner(editor, context, command, keyState, operatorArguments, isSingleCommandFromInsert)
     val cmdAction = command.action
     val name = cmdAction.id
@@ -354,7 +355,9 @@ class KeyHandler {
       // undo an earlier change made by the same macro. See [EditorActionHandlerBase.executesNestedCommands].
       action.run()
     } else {
-      injector.actionExecutor.executeCommand(editor, action, name, action)
+      // `action` is deliberately both the work and the group id, as it was when ActionRunner
+      // implemented Runnable and the same instance was passed twice.
+      injector.actionExecutor.executeCommand(editor, action::run, name, action)
     }
   }
 
@@ -430,8 +433,8 @@ class KeyHandler {
     val keyState: KeyHandlerState,
     val operatorArguments: OperatorArguments,
     val isSingleCommandFromInsert: Boolean = false,
-  ) : Runnable {
-    override fun run() {
+  ) {
+    fun run() {
       val editorState = injector.vimState
 
       val register = cmd.register
@@ -532,7 +535,7 @@ sealed interface KeyProcessResult {
     }
 
     fun execute(editor: VimEditor, context: ExecutionContext) {
-      synchronized(KeyHandler.lock) {
+      withLock(KeyHandler.lock) {
         val keyHandler = KeyHandler.getInstance()
         if (keyHandler.keyHandlerState != originalState) {
           logger.error("Unexpected editor state. Aborting command execution.")

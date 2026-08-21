@@ -22,7 +22,7 @@ data class KeyHandlerState(
   val digraphSequence: DigraphSequence,
   val editorCommandBuilder: CommandBuilder,
   var commandLineCommandBuilder: CommandBuilder?,
-) : Cloneable {
+) {
   constructor() : this(
     MappingState(),
     DigraphSequence(),
@@ -87,7 +87,9 @@ data class KeyHandlerState(
     editorCommandBuilder.resetAll(injector.keyGroup.getBuiltinCommandsTrie(mode.toMappingMode()))
   }
 
-  public override fun clone(): KeyHandlerState {
+  // Not `Cloneable`: Kotlin/JS has no such interface, and on the JVM it is only a marker -
+  // `clone()` here is a hand-written copy, not `Object.clone()`, so nothing is lost.
+  fun clone(): KeyHandlerState {
     return KeyHandlerState(
       mappingState.clone(),
       digraphSequence.clone(),

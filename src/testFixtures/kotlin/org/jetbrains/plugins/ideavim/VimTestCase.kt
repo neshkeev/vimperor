@@ -1187,7 +1187,7 @@ abstract class VimTestCase(private val defaultEditorText: String? = null) {
       ApplicationManager.getApplication().invokeAndWait {
         injector.actionExecutor.executeCommand(
           editor.vim,
-          Runnable {
+          {
             val inputModel = TestInputModel.getInstance(editor)
             var key = inputModel.nextKeyStroke()
             while (key != null) {
