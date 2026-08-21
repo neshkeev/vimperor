@@ -97,15 +97,6 @@ fun toChars(codepoint: Int): CharArray =
   }
 
 /**
- * True if [codepoint] is written right-to-left.
- *
- * Narrower than the `Character.getDirectionality` it replaces, on purpose: the engine only ever
- * asks this one question, and exposing a directionality byte would oblige every host to reproduce
- * the whole Unicode bidi table rather than the part that is used.
- */
-expect fun isRightToLeft(codepoint: Int): Boolean
-
-/**
  * True if [codepoint] is a letter, as `Character.isLetter(int)`.
  *
  * The `Char` overload has a Kotlin equivalent in `Char.isLetter()`; this is the codepoint one,
