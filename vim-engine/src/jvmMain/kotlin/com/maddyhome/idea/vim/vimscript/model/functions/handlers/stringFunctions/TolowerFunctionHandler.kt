@@ -14,10 +14,9 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.functions.UnaryFunctionHandler
-import java.util.*
 
 @VimscriptFunction(name = "tolower")
 internal class TolowerFunctionHandler : UnaryFunctionHandler<VimString>() {
   override fun doFunction(arguments: Arguments, editor: VimEditor, context: ExecutionContext, vimContext: VimLContext) =
-    VimString(arguments.getString(0).value.lowercase(Locale.getDefault()))
+    VimString(arguments.getString(0).value.lowercase())
 }

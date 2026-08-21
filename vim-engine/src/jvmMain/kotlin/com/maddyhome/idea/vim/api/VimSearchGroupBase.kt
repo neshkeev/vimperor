@@ -32,7 +32,6 @@ import com.maddyhome.idea.vim.vimscript.model.functions.handlers.stringFunctions
 import com.maddyhome.idea.vim.annotations.TestOnly
 import java.text.NumberFormat
 import java.text.ParsePosition
-import java.util.*
 import javax.swing.KeyStroke
 import kotlin.math.max
 import kotlin.math.min

@@ -25,7 +25,6 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
 import com.maddyhome.idea.vim.annotations.Contract
 import com.maddyhome.idea.vim.annotations.Range
-import java.util.*
 import java.util.regex.Pattern
 import kotlin.math.abs
 import com.maddyhome.idea.vim.helper.toEnumSet
@@ -1972,21 +1971,21 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     val tagPattern =
       Pattern.compile(String.format(patternString, quotedTagName, quotedTagName), Pattern.CASE_INSENSITIVE)
     val matcher = tagPattern.matcher(sequence.subSequence(0, position + 1))
-    val openTags: Deque<TextRange> = ArrayDeque()
+    val openTags = ArrayDeque<TextRange>()
     while (matcher.find()) {
       val match = TextRange(matcher.start(), matcher.end())
       if (sequence[matcher.start() + 1] == '/') {
         if (!openTags.isEmpty()) {
-          openTags.pop()
+          openTags.removeFirst()
         }
       } else {
-        openTags.push(match)
+        openTags.addFirst(match)
       }
     }
     return if (openTags.isEmpty()) {
       null
     } else {
-      openTags.pop()
+      openTags.removeFirst()
     }
   }
 
@@ -2003,14 +2002,14 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     val closingTagPattern = String.format("</%s>", tagNamePattern)
     val tagPattern = Pattern.compile(String.format("(?:%s)|(?:%s)", openingTagPattern, closingTagPattern))
     val matcher = tagPattern.matcher(sequence.subSequence(position, sequence.length))
-    val openTags: Deque<String> = ArrayDeque()
+    val openTags = ArrayDeque<String>()
     while (matcher.find()) {
       val isClosingTag = matcher.group(1) == null
       if (isClosingTag) {
         val tagName = matcher.group(2)
         // Ignore unmatched open tags. Either the file is malformed or it might be a tag like <br> that does not need to be closed.
-        while (!openTags.isEmpty() && !openTags.peek().equals(tagName, ignoreCase = true)) {
-          openTags.pop()
+        while (!openTags.isEmpty() && !openTags.first().equals(tagName, ignoreCase = true)) {
+          openTags.removeFirst()
         }
         if (openTags.isEmpty()) {
           if (counter <= 1) {
@@ -2019,11 +2018,11 @@ abstract class VimSearchHelperBase : VimSearchHelper {
             counter--
           }
         } else {
-          openTags.pop()
+          openTags.removeFirst()
         }
       } else {
         val tagName = matcher.group(1)
-        openTags.push(tagName)
+        openTags.addFirst(tagName)
       }
     }
     return null

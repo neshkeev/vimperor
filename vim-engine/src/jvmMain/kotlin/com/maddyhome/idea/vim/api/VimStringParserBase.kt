@@ -13,7 +13,6 @@ import com.maddyhome.idea.vim.annotations.Contract
 import com.maddyhome.idea.vim.annotations.NonNls
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
-import java.util.*
 import javax.swing.KeyStroke
 
 abstract class VimStringParserBase : VimStringParser {
@@ -87,7 +86,7 @@ abstract class VimStringParserBase : VimStringParser {
     var name = getVimKeyValue(keyCode)
     if (name != null) {
       name = if (containsDisplayUppercaseKeyNames(name)) {
-        name.uppercase(Locale.getDefault())
+        name.uppercase()
       } else {
         capitalize(name)
       }
@@ -142,7 +141,7 @@ abstract class VimStringParserBase : VimStringParser {
           if (c == '>') {
             state = KeyParserState.INIT
             val specialKeyName = specialKeyBuilder.toString()
-            val lower = specialKeyName.lowercase(Locale.getDefault())
+            val lower = specialKeyName.lowercase()
             require("sid" != lower) { "<$specialKeyName> is not supported" }
 
             if ("leader" == lower) {
@@ -511,7 +510,7 @@ abstract class VimStringParserBase : VimStringParser {
 
   // See https://vimdoc.sourceforge.net/htmldoc/intro.html#key-notation
   private fun parseSpecialKey(s: String, modifiers: Int): KeyStroke? {
-    val lower = s.lowercase(Locale.getDefault())
+    val lower = s.lowercase()
     val keyCode = getVimKeyName(lower)
     val typedChar = getVimTypedKeyName(lower)
     if (keyCode != null) {

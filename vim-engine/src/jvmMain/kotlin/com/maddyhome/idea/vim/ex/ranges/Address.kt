@@ -16,7 +16,7 @@ import com.maddyhome.idea.vim.diagnostic.debug
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.annotations.TestOnly
-import java.util.*
+import com.maddyhome.idea.vim.helper.StringTokenizer
 
 /**
  * Base for all Ex command addresses

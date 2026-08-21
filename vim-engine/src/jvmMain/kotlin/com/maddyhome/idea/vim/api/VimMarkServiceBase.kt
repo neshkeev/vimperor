@@ -27,13 +27,13 @@ import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.diagnostic.debug
 import com.maddyhome.idea.vim.diagnostic.vimLogger
+import com.maddyhome.idea.vim.helper.currentTimeMillis
 import com.maddyhome.idea.vim.mark.Jump
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMark
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.SelectionType.CHARACTER_WISE
-import java.util.*
 
 abstract class VimMarkServiceBase : VimMarkService {
   companion object {
@@ -47,14 +47,14 @@ abstract class VimMarkServiceBase : VimMarkService {
   protected val filepathToLocalMarks: HashMap<String, LocalMarks<Char, Mark>> = HashMap()
 
   class LocalMarks<K, V> : HashMap<K, V>() {
-    var myTimestamp: Date = Date()
+    var myTimestamp: Long = currentTimeMillis()
 
-    fun setTimestamp(timestamp: Date) {
+    fun setTimestamp(timestamp: Long) {
       this.myTimestamp = timestamp
     }
 
     override fun put(key: K, value: V): V? {
-      myTimestamp = Date()
+      myTimestamp = currentTimeMillis()
       return super.put(key, value)
     }
   }

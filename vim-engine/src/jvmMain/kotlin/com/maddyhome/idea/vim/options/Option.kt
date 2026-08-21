@@ -10,10 +10,10 @@ package com.maddyhome.idea.vim.options
 
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.ex.exExceptionMessage
+import com.maddyhome.idea.vim.helper.indexOfSubList
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimInt
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import java.util.*
 import kotlin.collections.component1
 import kotlin.collections.forEach
 
@@ -227,7 +227,7 @@ open class StringListOption(
   open fun appendValue(currentValue: VimString, value: VimString): VimString {
     val valuesToAppend = split(value.value)
     val elements = split(currentValue.value).toMutableList()
-    if (Collections.indexOfSubList(elements, valuesToAppend) != -1) {
+    if (elements.indexOfSubList(valuesToAppend) != -1) {
       return currentValue
     }
     return VimString(joinValues(currentValue.value, value.value))
@@ -236,7 +236,7 @@ open class StringListOption(
   open fun prependValue(currentValue: VimString, value: VimString): VimString {
     val valuesToPrepend = split(value.value)
     val elements = split(currentValue.value).toMutableList()
-    if (Collections.indexOfSubList(elements, valuesToPrepend) != -1) {
+    if (elements.indexOfSubList(valuesToPrepend) != -1) {
       return currentValue
     }
     return VimString(joinValues(value.value, currentValue.value))
@@ -245,7 +245,7 @@ open class StringListOption(
   open fun removeValue(currentValue: VimString, value: VimString): VimString {
     val valuesToRemove = split(value.value)
     val elements = split(currentValue.value).toMutableList()
-    if (Collections.indexOfSubList(elements, valuesToRemove) != -1) {
+    if (elements.indexOfSubList(valuesToRemove) != -1) {
       elements.removeAll(valuesToRemove)
     }
     return VimString(elements.joinToString(separator = ","))

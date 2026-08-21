@@ -8,7 +8,6 @@
 package com.maddyhome.idea.vim.regexp
 
 import java.nio.CharBuffer
-import java.util.*
 
 @Deprecated("Remove once old regex engine is removed")
 class CharPointer {
@@ -208,7 +207,7 @@ class CharPointer {
   }
 
   override fun hashCode(): Int {
-    return Objects.hash(seq, pointer)
+    return 31 * (31 + seq.hashCode()) + pointer.hashCode()
   }
 
   val digits: Int

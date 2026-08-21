@@ -22,6 +22,7 @@ import com.maddyhome.idea.vim.api.VimMarkService
 import com.maddyhome.idea.vim.api.VimMarkServiceBase
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.group.bookmark.BookmarkRemoteApi
+import com.maddyhome.idea.vim.helper.currentTimeMillis
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMark
 import com.maddyhome.idea.vim.mark.VimMark.Companion.create
@@ -127,7 +128,7 @@ internal class VimMarkServiceImpl : VimMarkServiceBase(), PersistentStateCompone
     element.addContent(globalMarksElement)
     val localMarksElement = Element("localmarks")
     var files: List<LocalMarks<Char, Mark>> =
-      filepathToLocalMarks.values.sortedWith(Comparator.comparing(LocalMarks<Char, Mark>::myTimestamp))
+      filepathToLocalMarks.values.sortedBy { it.myTimestamp }
     if (files.size > SAVE_MARK_COUNT) {
       files = files.subList(files.size - SAVE_MARK_COUNT, files.size)
     }
@@ -139,7 +140,7 @@ internal class VimMarkServiceImpl : VimMarkServiceBase(), PersistentStateCompone
       if (marks!!.size > 0) {
         val fileMarkElem = Element("file")
         fileMarkElem.setAttribute("name", file)
-        fileMarkElem.setAttribute("timestamp", java.lang.Long.toString(marks.myTimestamp.time))
+        fileMarkElem.setAttribute("timestamp", marks.myTimestamp.toString())
         for (mark in marks.values) {
           if (!Character.isUpperCase(mark.key) && injector.markService.isValidMark(
               mark.key,
@@ -189,10 +190,9 @@ internal class VimMarkServiceImpl : VimMarkServiceBase(), PersistentStateCompone
       val fileList = fileMarksElem.getChildren("file")
       for (aFileList in fileList) {
         val filename = aFileList.getAttributeValue("name")
-        val timestamp = Date()
+        var timestamp = currentTimeMillis()
         try {
-          val date = aFileList.getAttributeValue("timestamp").toLong()
-          timestamp.time = date
+          timestamp = aFileList.getAttributeValue("timestamp").toLong()
         } catch (e: NumberFormatException) {
           // ignore
         }

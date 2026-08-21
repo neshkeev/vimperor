@@ -104,6 +104,43 @@ target added before stage 3a completes can compile 8 % of the engine and cannot 
 so it produces no signal. **Phase 4 starts after stage 3a, not before.** Stage 3b can overlap
 with it — 74 % is enough to exercise the JS toolchain meaningfully.
 
+## Re-measurement, 2026-08-21 (30 of 84 core seeds retired)
+
+The document asked for this at 20 seeds. It is now due, and the projection has moved **in our
+favour** - the first correction in this port that did.
+
+| | at re-plan | now | change |
+|---|---:|---:|---:|
+| direct seeds, whole engine | 241 | 126 | -115 |
+| seeds in the SCC dependency closure | 84 | 54 | -30 |
+| projected `commonMain` once the closure is clear | 612 (74 %) | **712 (86 %)** | +100 |
+| `commonMain` today | 68 | 76 | +8 |
+
+The projection rose because it is not a constant. Retiring a seed anywhere unblocks every file
+whose *only* blocker it was, so each closure seed fixed makes the remaining ones worth more. The
+612 figure was not too optimistic; it was measured against a tree with 241 seeds still in it.
+
+**The composition changed more than the count.** Of the 54 seeds left in the closure:
+
+| workstream | seeds in closure | seeds in leaf work | total left |
+|---|---:|---:|---:|
+| W2 (neutral key type) | 40 | 17 | 57 |
+| W4 (JDK substitutions) | 14 | 22 | 36 |
+| W6 (`com.intellij.vim.api`) | 1 | 26 | 27 |
+| W1 (ANTLR) | 0 | 14 | 14 |
+| W3 (reflection) | 2 | 3 | 5 |
+
+W4 began stage 3a as the largest share of the closure (41 of 84) and is now 14 of 54. **W2 is the
+critical path** and has been since roughly the halfway point of W4. The `key/` package cannot be
+finished without it, and the re-plan's existing warning that W2 and W4 must be co-designed has
+gone from a risk to a blocker: the W4 seeds that remain in the closure are mostly *inside* `key/`,
+sitting behind the key-type decision.
+
+**Consequence for sequencing.** Continuing to spend W4 effort outside `key/` now buys leaf files,
+not core unlock. Stage 3a's remaining value is concentrated in W2. That makes the phase 2 headless
+host - which this re-plan already put ahead of phase 3 - cheaper to do now than later, because it
+is independent of the key type and the alternative is starting W2 without it.
+
 ## Estimate honesty
 
 Phase 1's spec estimate was wrong by 12×. The numbers here are measured from the current tree,

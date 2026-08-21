@@ -18,7 +18,6 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimInt
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.datatypes.asVimInt
 import com.maddyhome.idea.vim.vimscript.model.functions.BuiltinFunctionHandler
-import java.util.*
 
 internal abstract class MapFunctionHandlerBase<T : VimDataType>(minArity: Int = 0, maxArity: Int? = null) :
   BuiltinFunctionHandler<T>(minArity, maxArity) {

@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.helper
 
 import com.maddyhome.idea.vim.annotations.PropertyKey
 import java.text.MessageFormat
-import java.util.*
+import java.util.ResourceBundle
 
 object EngineMessageHelper {
   internal const val BUNDLE = "messages.IdeaVimEngineBundle"

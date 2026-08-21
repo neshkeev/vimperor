@@ -14,10 +14,9 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.functions.UnaryFunctionHandler
-import java.util.*
 
 @VimscriptFunction(name = "toupper")
 internal class ToupperFunctionHandler : UnaryFunctionHandler<VimString>() {
   override fun doFunction(arguments: Arguments, editor: VimEditor, context: ExecutionContext, vimContext: VimLContext) =
-    VimString(arguments.getString(0).value.uppercase(Locale.getDefault()))
+    VimString(arguments.getString(0).value.uppercase())
 }

@@ -18,7 +18,6 @@ import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.ex.ranges.LineRange
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
-import java.util.*
 
 /**
  * @author Alex Selesse
@@ -112,8 +111,8 @@ data class SortCommand(val range: Range, val modifier: CommandModifier, val argu
         o1ToCompare = tmp
       }
       if (ignoreCase) {
-        o1ToCompare = o1ToCompare.uppercase(Locale.getDefault())
-        o2ToCompare = o2ToCompare.uppercase(Locale.getDefault())
+        o1ToCompare = o1ToCompare.uppercase()
+        o2ToCompare = o2ToCompare.uppercase()
       }
       return if (numeric) {
         // About natural sort order - https://blog.codinghorror.com/sorting-for-humans-natural-sort-order/

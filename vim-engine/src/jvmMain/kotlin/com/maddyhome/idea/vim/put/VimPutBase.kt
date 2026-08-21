@@ -27,6 +27,7 @@ import com.maddyhome.idea.vim.api.setVisualSelectionMarks
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.diagnostic.VimLogger
 import com.maddyhome.idea.vim.diagnostic.vimLogger
+import com.maddyhome.idea.vim.helper.StringTokenizer
 import com.maddyhome.idea.vim.helper.VimLockLabel
 import com.maddyhome.idea.vim.mark.VimMarkConstants.MARK_CHANGE_POS
 import com.maddyhome.idea.vim.options.OptionConstants
@@ -35,7 +36,6 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.state.mode.isBlock
 import com.maddyhome.idea.vim.state.mode.isChar
 import com.maddyhome.idea.vim.state.mode.isLine
-import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min

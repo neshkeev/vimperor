@@ -20,7 +20,6 @@ import com.maddyhome.idea.vim.key.RootNode
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import java.awt.event.KeyEvent
-import java.util.*
 import javax.swing.KeyStroke
 import kotlin.math.min
 
@@ -28,8 +27,8 @@ abstract class VimKeyGroupBase : VimKeyGroup {
   @JvmField
   val myShortcutConflicts: MutableMap<KeyStroke, ShortcutOwnerInfo> = LinkedHashMap()
   val requiredShortcutKeys: MutableSet<RequiredShortcut> = HashSet(300)
-  val builtinCommands: MutableMap<MappingMode, KeyStrokeTrie<LazyVimCommand>> = EnumMap(MappingMode::class.java)
-  val keyMappings: MutableMap<MappingMode, KeyMapping> = EnumMap(MappingMode::class.java)
+  val builtinCommands: MutableMap<MappingMode, KeyStrokeTrie<LazyVimCommand>> = mutableMapOf()
+  val keyMappings: MutableMap<MappingMode, KeyMapping> = mutableMapOf()
 
   override fun removeKeyMapping(modes: Set<MappingMode>, keys: List<KeyStroke>) {
     modes.map { getKeyMapping(it) }.forEach { it.removeKeyMapping(keys) }
@@ -148,7 +147,7 @@ abstract class VimKeyGroupBase : VimKeyGroup {
     get() = myShortcutConflicts
 
   protected fun initIdentityChecker() {
-    identityChecker = EnumMap(MappingMode::class.java)
+    identityChecker = mutableMapOf()
     prefixes = HashMap()
   }
 

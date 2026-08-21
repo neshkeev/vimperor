@@ -14,7 +14,7 @@ import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.EngineStringHelper
 import com.maddyhome.idea.vim.annotations.TestOnly
-import java.util.*
+import com.maddyhome.idea.vim.helper.StringTokenizer
 import kotlin.math.ceil
 
 private val logger = vimLogger<VimDigraphGroup>()
@@ -1700,7 +1700,7 @@ open class VimDigraphGroupBase : VimDigraphGroup {
    *
    * Note that when a character has multiple digraphs (e.g. `!I` and `~!`), only the first is kept!
    */
-  private val codepointToDigraph: MutableMap<Int, String> = TreeMap<Int, String>()
+  private val codepointToDigraph: MutableMap<Int, String> = mutableMapOf()
 
   /**
    * A map of custom digraph to a digraph codepoint

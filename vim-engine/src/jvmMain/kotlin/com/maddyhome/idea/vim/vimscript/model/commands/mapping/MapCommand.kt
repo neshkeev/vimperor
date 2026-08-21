@@ -29,7 +29,6 @@ import com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand.Specia
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.annotations.NonNls
-import java.util.*
 import javax.swing.KeyStroke
 import com.maddyhome.idea.vim.helper.enumSetOf
 

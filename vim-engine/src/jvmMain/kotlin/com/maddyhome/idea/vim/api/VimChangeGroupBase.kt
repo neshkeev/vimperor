@@ -52,7 +52,6 @@ import com.maddyhome.idea.vim.annotations.NonNls
 import com.maddyhome.idea.vim.annotations.TestOnly
 import java.awt.event.KeyEvent
 import java.math.BigInteger
-import java.util.*
 import javax.swing.KeyStroke
 import kotlin.math.abs
 import kotlin.math.max
@@ -1684,7 +1683,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
     }
     var ch = text[0]
     if (hex && NumberType.HEX == numberType) {
-      if (!text.lowercase(Locale.getDefault()).startsWith(HEX_START)) {
+      if (!text.lowercase().startsWith(HEX_START)) {
         throw RuntimeException("Hex number should start with 0x: $text")
       }
       for (i in text.length - 1 downTo 2) {
@@ -1702,7 +1701,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       number = num.toString(16)
       number = number.padStart(text.length - 2, '0')
       if (!lastLower) {
-        number = number.uppercase(Locale.getDefault())
+        number = number.uppercase()
       }
       number = text.substring(0, 2) + number
     } else if (octal && NumberType.OCT == numberType && text.length > 1) {
@@ -1792,7 +1791,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
     octal: Boolean,
   ): Pair<TextRange, NumberType>? {
     val lline = caret.getBufferPosition().line
-    val text = editor.getLineText(lline).lowercase(Locale.getDefault())
+    val text = editor.getLineText(lline).lowercase()
     val startLineOffset = editor.getLineStartOffset(lline)
     val posOnLine = caret.offset - startLineOffset
 
