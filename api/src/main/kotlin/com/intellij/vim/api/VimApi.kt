@@ -25,14 +25,14 @@ import com.intellij.vim.api.scopes.get
 import com.intellij.vim.api.scopes.set
 import com.intellij.vim.api.scopes.commandline.CommandLineScope
 import com.intellij.vim.api.scopes.editor.EditorScope
-import org.jetbrains.annotations.ApiStatus
+import com.intellij.vim.api.annotations.Experimental
 
 /**
  * Entry point of the Vim API
  *
  * The API is currently in experimental status and not suggested to be used.
  */
-@ApiStatus.Experimental
+@Experimental
 @VimApiDsl
 interface VimApi {
   /**

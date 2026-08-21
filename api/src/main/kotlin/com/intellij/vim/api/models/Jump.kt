@@ -8,7 +8,7 @@
 
 package com.intellij.vim.api.models
 
-import org.jetbrains.annotations.Range
+import com.intellij.vim.api.annotations.Range
 
 /**
  * Represents a Vim jump location.

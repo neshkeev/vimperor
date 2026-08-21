@@ -109,6 +109,9 @@ kotlin {
       // Phase 1 task 5. Only files with no JVM-API dependency live here; the
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
       dependencies {
+        // :api is multiplatform as of W6, so common code can depend on it. `implementation`
+        // rather than `api`, matching the visibility this had when it sat in jvmMain.
+        implementation(project(":api"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
       }
     }
@@ -118,7 +121,6 @@ kotlin {
       // (it does not compile it - compileJvmMainJava does that, below).
       kotlin.srcDir(antlrOutputDir)
       dependencies {
-        implementation(project(":api"))
         // Was runtimeOnly under the antlr plugin, which put the runtime on the
         // compile path via its own `antlr` configuration. Without the plugin the
         // engine's own `org.antlr.v4.runtime.*` imports need it at compile time.

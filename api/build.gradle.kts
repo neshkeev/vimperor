@@ -14,14 +14,17 @@ repositories {
   maven { url = uri("https://cache-redirector.jetbrains.com/repo.maven.apache.org/maven2") }
 }
 
-// PHASE 1 TASK 1 PROBE: does a KMP jvm target compile Java sources without the
-// `java` plugin? Sources left in place; only the build wiring changed.
 kotlin {
   jvm()
 
   sourceSets {
-    val jvmMain by getting {
+    val commonMain by getting {
+      // Phase 3 / W6. The whole module is platform-neutral now: its only JVM dependency was
+      // `org.jetbrains.annotations`, which src/commonMain + src/jvmMain shim as expect/actual.
+      // Sources stay in src/main/kotlin rather than moving, so the diff stays reviewable.
       kotlin.srcDir("src/main/kotlin")
+    }
+    val jvmMain by getting {
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")

@@ -13,7 +13,7 @@ import com.intellij.vim.api.scopes.MappingScope
 import com.intellij.vim.api.scopes.TextObjectScope
 import com.intellij.vim.api.scopes.VariableScope
 import com.intellij.vim.api.scopes.get
-import org.jetbrains.annotations.ApiStatus
+import com.intellij.vim.api.annotations.Experimental
 
 /**
  * Restricted API available during plugin initialization.
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.ApiStatus
  *
  * This is a delegation wrapper around [VimApi] — it exposes only the init-safe subset.
  */
-@ApiStatus.Experimental
+@Experimental
 class VimInitApi(private val delegate: VimApi) {
   fun <T> variables(block: VariableScope.() -> T): T = delegate.variables(block)
 

@@ -217,6 +217,56 @@ drifts further from the truth the more of the port gets done.
 Everything else in stage 3a is done. Neither of these is a sweep; both are single, well-understood
 pieces of work.
 
+## Stage 3a is complete, 2026-08-21
+
+**The core is unlocked. Zero seeds remain in the SCC dependency closure.**
+
+| | at re-plan | **now** |
+|---|---:|---:|
+| direct seeds | 241 | **32** |
+| seeds in the SCC dependency closure | 84 | **0** |
+| files that could compile as common | 68 (8 %) | **796 (94 %)** |
+
+The last one was W6, and it was far cheaper than the phase 1 scoping expected. That document
+judged W6 "phase 3, not now" on the grounds that its payoff to `vim-engine` was **zero files**.
+That was true when it was written and stopped being true as the other workstreams landed: by the
+end, W6 was the *only* thing holding the core, and one module conversion released 728 files.
+
+The conversion itself was four annotation usages. `:api` was already a `kotlin("multiplatform")`
+module - the phase 1 task 1 probe left it that way - so it needed a `commonMain` source set, its
+own copies of the `org.jetbrains.annotations` shims (it cannot use vim-engine's, because
+vim-engine depends on it and not the reverse), and the `:api` dependency moved from `jvmMain` to
+`commonMain` in vim-engine. Kept as `implementation` rather than `api`, matching the visibility it
+already had.
+
+### What is left, and it is all leaf work
+
+32 seeds, none of them blocking anything else:
+
+| workstream | seeds | notes |
+|---|---:|---|
+| W4 | 19 | scattered `java.*`, mostly in `VimDigraphGroupBase` and the deprecated regex classes |
+| W1 | 14 | ANTLR to antlr-kotlin, deferred since phase 0 and independent of everything else |
+| W3 | 3 | remaining reflection |
+| W2 | 1 | one straggler |
+
+These are parallelisable and none of them gates the others, which is exactly the property stage 3a
+was for. Per this document's own entry condition, **phase 4 can now start**: `commonMain` is no
+longer 8 % of the engine.
+
+### On the measurements in this document
+
+Two of the instruments were wrong and have been corrected, both in the same direction - they
+overstated the work remaining:
+
+- `*.jvm.kt` files were counted as blockers. A JVM `actual` cannot move to `commonMain` by
+  construction. Five had accumulated.
+- The W6 rule flagged every `com.intellij.vim.api` import. That was correct until `:api` became
+  multiplatform and is now retired.
+
+Both mistakes share a shape: a rule that was true when written, kept being applied after the thing
+it described had changed. Worth expecting more of that as the port continues.
+
 ## Estimate honesty
 
 Phase 1's spec estimate was wrong by 12×. The numbers here are measured from the current tree,
