@@ -36,4 +36,4 @@ inline fun VimLogger.debug(message: () -> String) {
   }
 }
 
-inline fun <reified T : Any> vimLogger(): VimLogger = injector.getLogger(T::class.java)
+inline fun <reified T : Any> vimLogger(): VimLogger = injector.getLogger(T::class)

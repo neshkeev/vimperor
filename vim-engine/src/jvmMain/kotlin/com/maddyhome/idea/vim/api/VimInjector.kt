@@ -26,6 +26,7 @@ import com.maddyhome.idea.vim.undo.VimUndoRedo
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.yank.VimYankGroup
 import com.maddyhome.idea.vim.annotations.Internal
+import kotlin.reflect.KClass
 
 interface VimInjector {
   val vimState: VimStateMachine
@@ -158,7 +159,13 @@ interface VimInjector {
   /**
    * Please use vimLogger() function
    */
-  fun <T : Any> getLogger(clazz: Class<T>): VimLogger
+  /**
+   * A logger named after [clazz].
+   *
+   * [KClass] rather than `Class` so the call site can live in common code; the host maps it to
+   * whatever its own logging wants.
+   */
+  fun <T : Any> getLogger(clazz: KClass<T>): VimLogger
 
   val listenersNotifier: VimListenersNotifier
 

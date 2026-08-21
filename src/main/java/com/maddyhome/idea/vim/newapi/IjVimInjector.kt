@@ -91,6 +91,7 @@ import com.maddyhome.idea.vim.undo.VimUndoRedo
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.yank.VimYankGroup
 import javax.swing.JTextArea
+import kotlin.reflect.KClass
 
 /**
  * Currently, injector has to be initialized in all "entry points" from the IJ platform.
@@ -103,7 +104,7 @@ fun initInjector() {
 }
 
 internal class IjVimInjector : VimInjectorBase() {
-  override fun <T : Any> getLogger(clazz: Class<T>): VimLogger = IjVimLogger(Logger.getInstance(clazz))
+  override fun <T : Any> getLogger(clazz: KClass<T>): VimLogger = IjVimLogger(Logger.getInstance(clazz.java))
 
   override val fallbackWindow: VimEditor by lazy {
     TextComponentEditorImpl(null, JTextArea()).vim.also {

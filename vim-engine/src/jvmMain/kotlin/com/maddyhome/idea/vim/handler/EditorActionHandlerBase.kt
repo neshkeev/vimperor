@@ -22,6 +22,7 @@ import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.annotations.NonNls
+import com.maddyhome.idea.vim.diagnostic.platformClassName
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
@@ -42,7 +43,7 @@ import com.maddyhome.idea.vim.key.VimKeyStroke
  *    are already implemented.
  */
 abstract class EditorActionHandlerBase(private val myRunForEachCaret: Boolean) {
-  val id: String = getActionId(this::class.java.name)
+  val id: String = getActionId(platformClassName(this))
 
   /**
    * Note: I don't like this field because it controls RW lock. In case we process RW lock inside the command,
@@ -162,7 +163,7 @@ abstract class EditorActionHandlerBase(private val myRunForEachCaret: Boolean) {
   ) {
     if (!injector.enabler.isEnabled()) return
 
-    logger.debug("Execute command with handler: " + this.javaClass.name)
+    logger.debug("Execute command with handler: " + platformClassName(this))
 
     val cmd = injector.vimState.executingCommand ?: run {
       injector.messages.indicateError()
