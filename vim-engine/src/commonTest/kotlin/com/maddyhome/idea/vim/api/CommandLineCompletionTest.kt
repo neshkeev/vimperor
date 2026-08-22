@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 

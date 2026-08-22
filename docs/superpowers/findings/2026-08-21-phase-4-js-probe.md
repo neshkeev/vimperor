@@ -1076,3 +1076,25 @@ feature. Roughly 130 more assertions could reach Node with a one-line import cha
 
 Two should **not** move. `VimPathExpansionTest` tests `VimPathExpansionImpl`, which is host code.
 `JdkKeyStrokeParityTest` compares against AWT on purpose, so it is JVM-only by design.
+
+## Which tests belong on both targets, and which do not
+
+Six more test files moved to `commonTest`, taking `jsNodeTest` from 286 to **383**: command-line
+parsing, completion, comment-leader parsing, search without PSI, and the string helpers. None of
+them had a reason to be JVM-bound beyond the JUnit import.
+
+Five did **not** move, and the reason corrects the framing in the section above. `CharacterHelperTest`,
+`CodePointsTest`, `RightToLeftTest`, `JdkCollectionShimsTest` and `DigraphUnicodeBlockTest` look like
+tests of multiplatform helpers, and they are - but their bodies call `Character.isWhitespace`,
+`Character.getDirectionality` and `java.util.StringTokenizer`. They are **differential tests against
+the JDK**: the question they ask is "does the common implementation match Java", which only has an
+answer on the JVM. Moving them does not broaden coverage, it deletes the comparison.
+
+Same category as `JdkKeyStrokeParityTest` and `NumbersDifferentialTest`, both of which were always
+JVM-only on purpose. The rule: **a test that names a JDK API is measuring against it, and belongs
+where that API exists.**
+
+This leaves a real gap worth naming. `RightToLeft` and the codepoint helpers are common code whose
+only tests run on the JVM. The same source through the JS backend could still differ - surrogate
+arithmetic is the obvious candidate. `PlatformContractsTest` covers part of that on both targets;
+it does not cover all of it.

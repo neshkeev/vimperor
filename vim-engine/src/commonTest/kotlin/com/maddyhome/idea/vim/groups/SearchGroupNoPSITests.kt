@@ -11,7 +11,7 @@ package com.maddyhome.idea.vim.groups
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.group.getDoubleQuotesRangeNoPSI
 import com.maddyhome.idea.vim.group.getSingleQuotesRangeNoPSI
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
