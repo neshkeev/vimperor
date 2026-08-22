@@ -110,7 +110,9 @@ class PlatformContractsTest {
 
   @Test
   fun `test codepoint helpers return an unpaired surrogate as itself`() {
-    val lone = "\uD83D"
+    // Built rather than written as a literal: Kotlin/JS does not carry a lone surrogate through a
+    // source literal - it arrives as '?' - so a literal here would test the compiler, not the code.
+    val lone = charArrayOf(0xD83D.toChar()).concatToString()
     assertEquals(0xD83D, codePointAt(lone, 0))
     assertEquals(0xD83D, codePointBefore(lone, 1))
   }

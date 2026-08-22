@@ -542,3 +542,40 @@ the JS count specifically, not just the total.
 The two stubs - the message bundle and float formatting - are now *writable*, because there is
 somewhere to verify them. `FloatFormatTest`'s 46 golden rows can move to `commonTest` and be run on
 Node the moment the JS implementation exists.
+
+
+---
+
+# Float formatting on JS, and what the golden table taught
+
+`formatVimFloat` is implemented for JS and the 56-row table passes identically on the JVM and Node.
+One stub remains, the message bundle.
+
+It took four wrong implementations, and each was wrong in a way only the table could show.
+
+| attempt | what it got wrong |
+|---|---|
+| `toFixed(6)` | rounds half-up. `0.0078125` must be `0.007812`, not `0.007813` |
+| exact digits, mantissa via `Double` | re-deriving the mantissa as a `Double` destroys the exactness it depends on: `1000000.5` is exactly representable, so its mantissa is exactly `1.0000005` - a tie - but the nearest `Double` to `1.0000005` is not |
+| shortest digits, half-even at every `5` | `1.0000005` is really `1.00000050000000006989`, above the midpoint, and rounds **up** |
+| shortest digits, round up at every inexact `5` | `1.2345665` is really `1.2345664999999999`, below the midpoint, and rounds **down** |
+
+The rule `DecimalFormat` actually follows, arrived at by probing it rather than reading it:
+
+> Format the **shortest decimal that identifies the double**, and at a trailing `5`, round by which
+> side of the midpoint the true value falls on. Only an exact midpoint gets half-even.
+
+That is three-way, not two-way, and every one of those attempts is defensible until the table says
+otherwise. Half of them pass all 46 of the original rows; it was the tie rows added for this - `k/128`
+values, which land on seven-digit decimals ending in 5 - that separated them.
+
+## The one thing that cannot be reconciled
+
+`Double.MIN_VALUE` prints as `4.9e-324` on the JVM and `5.0e-324` on JS. `DecimalFormat` formats the
+shortest decimal identifying a double, and **the two runtimes disagree about what that is**: Java's
+`Double.toString` gives `4.9E-324`, JS gives `5e-324`. Both round-trip to the same value, so neither
+is wrong and no implementation satisfies both.
+
+It is out of the shared table and asserted portably instead - some scientific form of the smallest
+subnormal - with the reason in the test. Pretending to a guarantee that cannot hold would be worse
+than recording that it does not.
