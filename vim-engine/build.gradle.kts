@@ -19,6 +19,8 @@
 //
 // This avoids option (c) (a structural JVM-only parser subproject).
 
+import java.util.Properties
+
 plugins {
     kotlin("multiplatform")
 //    id("org.jlleitschuh.gradle.ktlint")
@@ -97,6 +99,42 @@ ksp {
   arg("extensions_file", "ideavim_extensions.json")
 }
 
+// The engine's message bundle is a JVM `.properties` resource, which a JS target cannot read. This
+// emits the same key/value pairs as a Kotlin map for jsMain, so the two hosts serve identical text.
+// Generated rather than checked in: these strings are user-visible, and a copy would drift silently.
+val engineBundle = layout.projectDirectory.file("src/jvmMain/resources/messages/IdeaVimEngineBundle.properties")
+val generatedBundleDir = layout.buildDirectory.dir("generated/messages/kotlin")
+
+val generateJsMessageBundle by tasks.registering {
+  // Captured as locals so the action closes over plain values, not the build script: the
+  // configuration cache cannot serialize script object references.
+  val bundleFile = engineBundle.asFile
+  val outputDir = generatedBundleDir
+  inputs.file(bundleFile)
+  outputs.dir(outputDir)
+  doLast {
+    val properties = Properties()
+    bundleFile.inputStream().use { properties.load(it) }
+    val out = outputDir.get().file("com/maddyhome/idea/vim/helper/GeneratedMessages.kt").asFile
+    out.parentFile.mkdirs()
+    val entries = properties.stringPropertyNames().sorted().joinToString("\n") { key ->
+      "  \"" + key.replace("\\", "\\\\").replace("\"", "\\\"") + "\" to \"" +
+        properties.getProperty(key).replace("\\", "\\\\").replace("\"", "\\\"")
+          .replace("\n", "\\n").replace("\r", "\\r").replace("$", "\${'$'}") + "\","
+    }
+    out.writeText(
+      buildString {
+        appendLine("// Generated from IdeaVimEngineBundle.properties by generateJsMessageBundle. Do not edit.")
+        appendLine("package com.maddyhome.idea.vim.helper")
+        appendLine()
+        appendLine("internal val GENERATED_ENGINE_MESSAGES: Map<String, String> = mapOf(")
+        appendLine(entries)
+        appendLine(")")
+      }
+    )
+  }
+}
+
 kotlin {
   jvm()
   js(IR) {
@@ -147,6 +185,12 @@ kotlin {
       dependencies {
         implementation(kotlin("test"))
       }
+    }
+    val jsMain by getting {
+      // The task provider, not the directory: that is what makes Gradle run the generator before
+      // compiling. Wiring the bare directory compiles fine until someone runs `clean`, which is
+      // exactly how this was found.
+      kotlin.srcDir(generateJsMessageBundle)
     }
     val jsTest by getting {
       dependencies {

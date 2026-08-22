@@ -579,3 +579,43 @@ is wrong and no implementation satisfies both.
 It is out of the shared table and asserted portably instead - some scientific form of the smallest
 subnormal - with the reason in the test. Pretending to a guarantee that cannot hold would be worse
 than recording that it does not.
+
+
+---
+
+# All four stubs implemented
+
+`jsMain` has no `TODO()` left. The engine compiles for JavaScript, produces a library, and 27
+assertions run on Node as part of the ordinary `./gradlew test`.
+
+The bundle is emitted as a Kotlin map by `generateJsMessageBundle`, from the same `.properties`
+file the JVM reads, so the two hosts cannot drift. The formatter implements the three MessageFormat
+features the bundle actually uses - `{n}`, `{n,number,..}`, and quoting - and the quoting is the
+part that matters.
+
+## Two pre-existing bugs in the bundle, now pinned by tests
+
+Neither was introduced by the port. Both are asserted as current behaviour so that fixing them is a
+deliberate, visible change rather than something that silently differs between hosts.
+
+**`E354` never shows the register name.** Its pattern is `Invalid register name: '{0}'`, and in
+MessageFormat a single quote opens a quoted section - so `'{0}'` is the literal text `{0}`. The user
+sees `E354: Invalid register name: {0}`.
+
+**`E146` shows a doubled quote.** Its text is `Regular expressions can''t be delimited by letters`,
+written with the MessageFormat escape, but E146 takes no parameters and the no-argument path returns
+the pattern verbatim without ever running MessageFormat over it. The user sees `can''t`.
+
+Four messages in the bundle contain `''`; three of them take `{0}` and are fine. E146 is the one
+that does not.
+
+## And one more silently-passing build
+
+`compileKotlinJs` was wired to the *generated directory* rather than to the generating *task*. It
+compiled perfectly until `clean`, at which point the bundle did not exist yet. Passing the task
+provider to `kotlin.srcDir` is what makes Gradle order them.
+
+That is the third variant of the same failure in this project - after `test` matching by name and
+missing `jvmTest`, then missing `jsNodeTest`. All three shared a shape: **the build was green
+because it was not doing the work, not because the work succeeded.** Only `clean` plus a full gate
+finds them.
