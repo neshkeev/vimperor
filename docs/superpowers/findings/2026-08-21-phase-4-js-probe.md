@@ -1036,3 +1036,43 @@ code that a second host simply replaces.**
 The engine's common code is self-contained. The open question is no longer what else must move; it
 is phase 2 - a headless host, so the suite can run against the engine without IntelliJ and "compiles
 for JS" can become "verified on JS".
+
+---
+
+# Caveat 6, the other half: the regex matcher runs on JS
+
+Phase 0 called `PatternVisitor` and the NFA matcher "the largest untested surface this gate leaves
+behind" - both were pruned from the spike and never executed. W1 ported them. This runs them:
+**247 tests, on both targets, zero failures.** `jsNodeTest` goes from 39 to 286.
+
+The blocker was Mockito, which pinned `VimRegexTestUtils` to the JVM. Replacing it with hand-written
+fakes is a strict improvement rather than a workaround:
+
+**The fakes are stricter than the mocks were.** Mockito silently returns null or zero for anything
+unstubbed, so a test that started depending on a new editor member would quietly match against a
+default. `TestVimEditor` implements the 8 members the regex engine actually asks for and `TODO`s the
+other 55, each naming itself.
+
+**The compiler wrote the stub list.** Write the real members, compile, and Kotlin prints every
+missing signature; a script turned those into stubs. 55 for the editor, 24 for the caret.
+
+**One member needed judgement rather than a stub.** `LocalMarkStorage.getMark` asks
+`injector.markService` when the caret is primary and reads its own map otherwise. There is no
+injector in a common test, so `TestVimCaret.isPrimary = false` is what makes local marks work - and
+marks are not incidental here, they are what `\%'m`, `\%<'m` and `\%>'m` compare against.
+
+Two portability bugs surfaced on the way: `StringBuilder.delete` is a JVM-only member, and the
+JUnit `@Test` import had to become `kotlin.test.Test`.
+
+What Node now runs is real Vim regex behaviour - collections, back-references, lookaround,
+quantifiers, marks, case sensitivity - not just construction.
+
+## The remaining jvmTest files, and which of them should move
+
+Several exist specifically to pin the multiplatform helpers written for this port -
+`CodePointsTest`, `CharacterHelperTest`, `RightToLeftTest`, `JdkCollectionShimsTest` - and currently
+test only one of the two actuals, which is an argument against where they live rather than a
+feature. Roughly 130 more assertions could reach Node with a one-line import change each.
+
+Two should **not** move. `VimPathExpansionTest` tests `VimPathExpansionImpl`, which is host code.
+`JdkKeyStrokeParityTest` compares against AWT on purpose, so it is JVM-only by design.

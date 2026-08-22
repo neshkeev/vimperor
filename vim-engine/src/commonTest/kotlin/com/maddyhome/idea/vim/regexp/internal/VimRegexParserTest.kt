@@ -10,7 +10,7 @@ package com.maddyhome.idea.vim.regexp.internal
 
 import com.maddyhome.idea.vim.regexp.parser.VimRegexParser
 import com.maddyhome.idea.vim.regexp.parser.VimRegexParserResult
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.fail
 
 
