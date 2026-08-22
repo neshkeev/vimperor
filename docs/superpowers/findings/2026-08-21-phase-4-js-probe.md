@@ -730,3 +730,78 @@ the matching three-argument constructor is always the *primary* constructor. But
 useless on JS until the vimscript parser runs there, which is W1 - so this is left to be settled in
 the same unit that makes it matter, from the JVM's own answer rather than a second implementation
 of it.
+
+---
+
+# What is left is the parser, not the JDK
+
+Four more seeds cleared, and the interesting result is not the count - it is what happened when the
+files were then moved to `commonMain` to see whether they could go.
+
+`VimSearchGroupBase` (1,640 lines) and `VimChangeGroupBase` (2,283 lines) both now have **no JVM API
+dependency at all**, and both still fail to move. Every error is `VimRegex` or `CharPointer`. They
+are no longer JDK-blocked; they are W1-blocked. That is now the shape of the whole remaining set.
+
+## `<C-A>` was three different problems wearing one import
+
+`java.math.BigInteger` appeared at three call sites in the increment/decrement path, and they do not
+want the same replacement.
+
+**Hex and octal are 64-bit unsigned and wrap.** `ChangeNumberDecActionTest` pins `0x0000` decremented
+to `0xffffffffffffffff`. `ULong` wraps on its own, so `parseUnsignedWrapping` plus
+`count.toLong().toULong()` reproduces it and the explicit "if it went negative, add 2^64" correction
+disappears. One deliberate difference: `BigInteger` let `0xffffffffffffffff` incremented grow a
+seventeenth hex digit, and this wraps to zero, which is what Vim does.
+
+**Decimal is arbitrary precision, and narrowing it would lose data.** Vim's own `<C-A>` is 64-bit,
+but this has always incremented a number of any length correctly, and someone incrementing a long
+identifier would silently get a wrapped value. So decimal got schoolbook digit-string addition,
+preserving the old behaviour exactly rather than moving toward Vim here.
+
+Hand-written carry and borrow is exactly the code that looks right and is wrong at one carry, so it
+is not trusted: `NumbersDifferentialTest` runs **30,000 randomised comparisons against
+`BigInteger`**, over values up to 25 digits, with `Int.MIN_VALUE`, `Int.MAX_VALUE`, `-0`, and leading
+zeros among the deltas. `NumbersTest` pins a handful of the same cases on both targets.
+
+## The printability check was measured, not guessed
+
+`isPrintableChar` used `Character.UnicodeBlock.of(c) != null`, which no runtime outside the JVM has.
+The obvious substitute is `CharCategory.UNASSIGNED`, and the obvious substitute is wrong: running
+both across the whole BMP, **1,427 code points differ**, every one of them a character the JVM calls
+printable and the category test does not. They are code points inside a defined block that Unicode
+has not assigned.
+
+Too many to change on a hunch, so this became `expect`/`actual` with the JVM keeping its previous
+implementation verbatim and the JS side documenting what it decides differently. None of the 1,427
+can arrive as a `keyChar` from a real keystroke, which is the only thing the single call site - Select
+mode deciding whether a key should replace the selection - ever asks about.
+
+This is the same shape as `localeCollator`: where the platform *is* the data, an `expect` that names
+the divergence is the honest answer, and a common implementation that quietly picks one is not.
+
+## Search offsets: a locale-dependent parse that was never meant to be
+
+`/pattern/e+3` offsets were read with `NumberFormat.getIntegerInstance()`, which is locale-aware: in
+an English locale `/pattern/e+1,5` read as an offset of 15, because the comma is a grouping
+separator. Vim reads these with `atoi` and stops at the comma, giving 1.
+
+`parseIntPrefix` is deliberately narrower than what it replaced, and matching Vim is the point. The
+old behaviour was not even stable - it changed with the IDE's locale. It still rejects a leading
+`+`, which the JDK also did, because callers strip the `+` themselves and pass the index after it.
+
+It returns where it stopped as well as the value, because the caller uses that position to find the
+`;` that chains a second search - `pp.index` was read 60 lines further down, which is easy to miss.
+
+## Two moves that did land
+
+`IdeaPlug` needed a concurrent *set* rather than the concurrent collection already in place, since
+enabling an extension twice must leave one entry. `concurrentSetOf` keeps `ConcurrentHashMap` on the
+JVM. Iteration order was already unspecified there and stays unspecified.
+
+`VimVariableServiceBase` (453 lines) used `kotlin.reflect.full.createType` twice, both
+`keyArgumentType != String::class.createType()`. `typeOf<String>()` is a compiler intrinsic
+available on every target - but only equivalent if the two are genuinely equal, including that
+neither is nullable, which is the entire point of the check. `StringKTypeEquivalenceTest` asserts
+both halves rather than assuming them.
+
+**37 assertions now run on Node**, up from 32.

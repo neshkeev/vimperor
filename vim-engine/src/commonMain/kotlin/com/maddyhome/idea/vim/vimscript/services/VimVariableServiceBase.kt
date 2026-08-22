@@ -37,7 +37,7 @@ import com.maddyhome.idea.vim.vimscript.model.variables.RegisterVariable
 import com.maddyhome.idea.vim.vimscript.model.variables.ValueVariable
 import kotlin.reflect.KClass
 import kotlin.reflect.KType
-import kotlin.reflect.full.createType
+import kotlin.reflect.typeOf
 
 abstract class VimVariableServiceBase : VariableService {
   private var globalVariables: MutableMap<String, VimDataType> = mutableMapOf()
@@ -359,7 +359,7 @@ abstract class VimVariableServiceBase : VariableService {
 
           // the fist argument has to be string
           val keyArgumentType: KType = mapArgumentTypes[0]
-          if (keyArgumentType != String::class.createType()) {
+          if (keyArgumentType != typeOf<String>()) {
             throw IllegalArgumentException("Expected Map with String as key, but got ${vimDataType::class.simpleName}")
           }
 
@@ -425,7 +425,7 @@ abstract class VimVariableServiceBase : VariableService {
 
         // the first argument has to be string
         val keyArgumentType: KType = mapArgumentTypes[0]
-        if (keyArgumentType != String::class.createType()) {
+        if (keyArgumentType != typeOf<String>()) {
           throw IllegalArgumentException("Map must have String keys for conversion to VimDictionary")
         }
 

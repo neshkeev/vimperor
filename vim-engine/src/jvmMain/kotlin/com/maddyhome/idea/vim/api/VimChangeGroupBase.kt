@@ -50,9 +50,11 @@ import com.maddyhome.idea.vim.undo.VimTimestampBasedUndoService
 import com.maddyhome.idea.vim.vimscript.model.commands.SortOption
 import com.maddyhome.idea.vim.annotations.NonNls
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.helper.addToDecimalString
+import com.maddyhome.idea.vim.helper.isPrintableChar
+import com.maddyhome.idea.vim.helper.parseUnsignedWrapping
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
-import java.math.BigInteger
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -1225,14 +1227,6 @@ abstract class VimChangeGroupBase : VimChangeGroup {
     return true
   }
 
-  private fun isPrintableChar(c: Char): Boolean {
-    val block = Character.UnicodeBlock.of(c)
-    return !Character.isISOControl(c) &&
-      (c != VimKeyCodes.CHAR_UNDEFINED) &&
-      (block != null) &&
-      block !== Character.UnicodeBlock.SPECIALS
-  }
-
   private fun activeTemplateWithLeftRightMotion(editor: VimEditor, keyStroke: VimKeyStroke): Boolean {
     return injector.templateManager.getTemplateState(editor) != null &&
       (keyStroke.keyCode == VimKeyCodes.VK_LEFT || keyStroke.keyCode == VimKeyCodes.VK_RIGHT)
@@ -1693,11 +1687,9 @@ abstract class VimChangeGroupBase : VimChangeGroup {
           break
         }
       }
-      var num = BigInteger(text.substring(2), 16)
-      num = num.add(BigInteger.valueOf(count.toLong()))
-      if (num.compareTo(BigInteger.ZERO) < 0) {
-        num = BigInteger(MAX_HEX_INTEGER, 16).add(BigInteger.ONE).add(num)
-      }
+      // Unsigned 64-bit, wrapping in both directions: `count` is added as its two's complement, so
+      // going below zero comes out as ffffffffffffffff without a correction step.
+      val num = parseUnsignedWrapping(text.substring(2), 16) + count.toLong().toULong()
       number = num.toString(16)
       number = number.padStart(text.length - 2, '0')
       if (!lastLower) {
@@ -1706,29 +1698,24 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       number = text.substring(0, 2) + number
     } else if (octal && NumberType.OCT == numberType && text.length > 1) {
       if (!text.startsWith("0")) throw RuntimeException("Oct number should start with 0: $text")
-      var num = BigInteger(text, 8).add(BigInteger.valueOf(count.toLong()))
-      if (num.compareTo(BigInteger.ZERO) < 0) {
-        num = BigInteger("1777777777777777777777", 8).add(BigInteger.ONE).add(num)
-      }
+      val num = parseUnsignedWrapping(text, 8) + count.toLong().toULong()
       number = num.toString(8)
       number = "0" + number.padStart(text.length - 1, '0')
     } else if (alpha && NumberType.ALPHA == numberType) {
-      if (!Character.isLetter(ch)) throw RuntimeException("Not alpha number : $text")
+      if (!ch.isLetter()) throw RuntimeException("Not alpha number : $text")
       ch += count.toChar().code
-      if (Character.isLetter(ch)) {
+      if (ch.isLetter()) {
         number = ch.toString()
       }
     } else if (NumberType.DEC == numberType) {
-      if (ch != '-' && !Character.isDigit(ch)) throw RuntimeException("Not dec number : $text")
+      if (ch != '-' && !ch.isDigit()) throw RuntimeException("Not dec number : $text")
       var pad = ch == '0'
       var len = text.length
       if (ch == '-' && text[1] == '0') {
         pad = true
         len--
       }
-      var num = BigInteger(text)
-      num = num.add(BigInteger.valueOf(count.toLong()))
-      number = num.toString()
+      number = addToDecimalString(text, count)
       if (!octal && pad) {
         var neg = false
         if (number[0] == '-') {
@@ -2272,12 +2259,12 @@ abstract class VimChangeGroupBase : VimChangeGroup {
    */
   private fun changeCase(ch: Char, type: VimChangeGroup.ChangeCaseType): Char = when (type) {
     VimChangeGroup.ChangeCaseType.TOGGLE -> when {
-      Character.isLowerCase(ch) -> Character.toUpperCase(ch)
-      Character.isUpperCase(ch) -> Character.toLowerCase(ch)
+      ch.isLowerCase() -> ch.uppercaseChar()
+      ch.isUpperCase() -> ch.lowercaseChar()
       else -> ch
     }
 
-    VimChangeGroup.ChangeCaseType.LOWER -> Character.toLowerCase(ch)
-    VimChangeGroup.ChangeCaseType.UPPER -> Character.toUpperCase(ch)
+    VimChangeGroup.ChangeCaseType.LOWER -> ch.lowercaseChar()
+    VimChangeGroup.ChangeCaseType.UPPER -> ch.uppercaseChar()
   }
 }

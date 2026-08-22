@@ -49,3 +49,40 @@ private class CopyOnWriteCollection<T> : AbstractMutableCollection<T>() {
 }
 
 actual fun <T> concurrentCollectionOf(): MutableCollection<T> = CopyOnWriteCollection()
+
+/** Copy-on-write for the same reason [CopyOnWriteCollection] is, and insertion-ordered as a result. */
+private class CopyOnWriteSet<T> : AbstractMutableSet<T>() {
+  private var items: Set<T> = emptySet()
+
+  override val size: Int get() = items.size
+
+  override fun contains(element: T): Boolean = element in items
+
+  override fun add(element: T): Boolean {
+    if (element in items) return false
+    items = items + element
+    return true
+  }
+
+  override fun remove(element: T): Boolean {
+    if (element !in items) return false
+    items = items - element
+    return true
+  }
+
+  override fun clear() {
+    items = emptySet()
+  }
+
+  override fun iterator(): MutableIterator<T> {
+    val snapshot = items.toList()
+    var cursor = 0
+    return object : MutableIterator<T> {
+      override fun hasNext() = cursor < snapshot.size
+      override fun next(): T = snapshot[cursor++]
+      override fun remove() = throw UnsupportedOperationException("remove during iteration")
+    }
+  }
+}
+
+actual fun <T> concurrentSetOf(): MutableSet<T> = CopyOnWriteSet()

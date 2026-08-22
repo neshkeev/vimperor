@@ -112,3 +112,15 @@ fun isLetterCodePoint(codepoint: Int): Boolean = when (charCategoryOf(codepoint)
   -> true
   else -> false
 }
+
+/**
+ * Whether [c] is a character that can sensibly be typed into a document: not a control character,
+ * not the "no character" sentinel, and not one of the specials at the top of the BMP.
+ *
+ * Platform-specific because the JVM answers it with `Character.UnicodeBlock`, whose tables no other
+ * runtime has. The two targets disagree on 1,427 BMP code points - the ones that sit inside a
+ * defined block but have not been assigned a character - which the JVM calls printable and a
+ * category-based test does not. None of them can arrive as a `keyChar` from a real keystroke, which
+ * is the only thing this is asked about, and the JVM keeps its exact previous answer.
+ */
+expect fun isPrintableChar(c: Char): Boolean

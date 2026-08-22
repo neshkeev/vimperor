@@ -30,9 +30,8 @@ import com.maddyhome.idea.vim.state.mode.inVisualMode
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.functions.handlers.stringFunctions.SubmatchFunctionHandler
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.helper.parseIntPrefix
 import com.maddyhome.idea.vim.key.VimKeyStroke
-import java.text.NumberFormat
-import java.text.ParsePosition
 import kotlin.math.max
 import kotlin.math.min
 
@@ -1487,9 +1486,9 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     var offset = 0
     var offsetIsLineOffset = false
     var hasEndOffset = false
-    var pp = ParsePosition(0)
+    var parsedOffsetEnd = 0
     if (lastPatternTrailing!!.isNotEmpty()) {
-      if (Character.isDigit(lastPatternTrailing!![0]) || lastPatternTrailing!![0] == '+' || lastPatternTrailing!![0] == '-') {
+      if (lastPatternTrailing!![0].isDigit() || lastPatternTrailing!![0] == '+' || lastPatternTrailing!![0] == '-') {
         offsetIsLineOffset = true
         if (lastPatternTrailing == "+") {
           offset = 1
@@ -1499,11 +1498,10 @@ abstract class VimSearchGroupBase : VimSearchGroup {
           if (lastPatternTrailing!![0] == '+') {
             lastPatternTrailing = lastPatternTrailing!!.substring(1)
           }
-          val nf = NumberFormat.getIntegerInstance()
-          pp = ParsePosition(0)
-          val num = nf.parse(lastPatternTrailing, pp)
-          if (num != null) {
-            offset = num.toInt()
+          val parsed = parseIntPrefix(lastPatternTrailing!!, 0)
+          parsedOffsetEnd = parsed.endIndex
+          if (parsed.value != null) {
+            offset = parsed.value
           }
         }
       } else if ("ebs".indexOf(lastPatternTrailing!![0]) != -1) {
@@ -1511,11 +1509,11 @@ abstract class VimSearchGroupBase : VimSearchGroup {
           if ("+-".indexOf(lastPatternTrailing!![1]) != -1) {
             offset = 1
           }
-          val nf = NumberFormat.getIntegerInstance()
-          pp = ParsePosition(if (lastPatternTrailing!![1] == '+') 2 else 1)
-          val num = nf.parse(lastPatternTrailing, pp)
-          if (num != null) {
-            offset = num.toInt()
+          val parsed =
+            parseIntPrefix(lastPatternTrailing!!, if (lastPatternTrailing!![1] == '+') 2 else 1)
+          parsedOffsetEnd = parsed.endIndex
+          if (parsed.value != null) {
+            offset = parsed.value
           }
         }
         hasEndOffset = lastPatternTrailing!![0] == 'e'
@@ -1564,7 +1562,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
       val base = if (hasEndOffset) range.endOffset - 1 else range.startOffset
       res = max(0, min((base + offset), (editor.text().length - 1)))
     }
-    var ppos = pp.index
+    var ppos = parsedOffsetEnd
     if (ppos < lastPatternTrailing!!.length - 1 && lastPatternTrailing!![ppos] == ';') {
       val nextDir: Direction = if (lastPatternTrailing!![ppos + 1] == '/') {
         Direction.FORWARDS

@@ -34,3 +34,15 @@ package com.maddyhome.idea.vim.common
  * round.
  */
 expect fun <T> concurrentCollectionOf(): MutableCollection<T>
+
+/**
+ * A set that can be added to and cleared from any thread, for membership rather than notification.
+ *
+ * Separate from [concurrentCollectionOf] because the callers need the deduplication: enabling the
+ * same extension twice must leave one entry, not two.
+ *
+ * **Iteration order is unspecified and the targets differ.** The JVM backs this with a
+ * `ConcurrentHashMap`, so it comes out in hash order; a copy-on-write set keeps insertion order.
+ * That was already unspecified before the port - nothing may depend on it.
+ */
+expect fun <T> concurrentSetOf(): MutableSet<T>

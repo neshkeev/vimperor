@@ -8,6 +8,8 @@
 
 package com.maddyhome.idea.vim.helper
 
+import com.maddyhome.idea.vim.key.VimKeyCodes
+
 /*
  * JS `RegExp` supports Unicode property escapes with the `u` flag, so the general category can be
  * asked of the platform rather than embedded as a table. One regex per category, built once.
@@ -60,4 +62,17 @@ actual fun charCategoryOf(codepoint: Int): CharCategory {
   }
   // General_Category is a partition, so falling through means the codepoint is unassigned.
   return CharCategory.UNASSIGNED
+}
+
+/**
+ * The nearest test available without Java's block tables: reject control characters, the sentinel,
+ * the specials block, and code points Unicode has not assigned. See the `expect` for what this
+ * decides differently.
+ */
+actual fun isPrintableChar(c: Char): Boolean {
+  val code = c.code
+  if (code <= 0x1F || code in 0x7F..0x9F) return false
+  if (c == VimKeyCodes.CHAR_UNDEFINED) return false
+  if (code in 0xFFF0..0xFFFF) return false
+  return c.category != CharCategory.UNASSIGNED
 }

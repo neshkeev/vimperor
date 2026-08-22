@@ -13,10 +13,9 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.common.concurrentSetOf
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
-import java.util.Collections
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Command that is used for enabling plugins. E.g. `IdeaPlug 'ReplaceWithRegister'`
@@ -54,7 +53,7 @@ class IdeaPlug(val range: Range, val modifier: CommandModifier, val argument: St
 
   companion object {
     object EnabledExtensions {
-      private val _enabledExtensions = Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
+      private val _enabledExtensions = concurrentSetOf<String>()
       val enabledExtensions: List<String> get() = _enabledExtensions.toList()
 
       fun clearExtensions() {

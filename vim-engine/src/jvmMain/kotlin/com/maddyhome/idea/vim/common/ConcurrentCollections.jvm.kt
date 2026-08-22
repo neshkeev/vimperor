@@ -8,6 +8,11 @@
 
 package com.maddyhome.idea.vim.common
 
+import java.util.Collections
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedDeque
 
 actual fun <T> concurrentCollectionOf(): MutableCollection<T> = ConcurrentLinkedDeque()
+
+actual fun <T> concurrentSetOf(): MutableSet<T> =
+  Collections.newSetFromMap(ConcurrentHashMap<T, Boolean>())
