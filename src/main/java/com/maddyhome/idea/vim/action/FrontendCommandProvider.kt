@@ -8,6 +8,6 @@
 
 package com.maddyhome.idea.vim.action
 
-object FrontendCommandProvider : CommandProvider {
+object FrontendCommandProvider : JsonCommandProvider {
   override val commandListFileName: String = "frontend_commands.json"
 }

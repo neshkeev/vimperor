@@ -14,11 +14,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import java.io.InputStream
 
-interface VimscriptFunctionProvider {
+/** A [VimscriptFunctionProvider] backed by a JSON classpath resource and the class loader. */
+interface JsonVimscriptFunctionProvider : VimscriptFunctionProvider {
   val functionListFileName: String
 
   @OptIn(ExperimentalSerializationApi::class)
-  fun getFunctions(): Collection<LazyVimscriptFunction> {
+  override fun getFunctions(): Collection<LazyVimscriptFunction> {
     val classLoader = this.javaClass.classLoader
     val functionDict: Map<String, String> = Json.decodeFromStream(getFile())
     return functionDict.map { LazyVimscriptFunction(it.key, reflectiveFactory(it.value, classLoader)) }

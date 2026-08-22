@@ -8,6 +8,6 @@
 
 package com.maddyhome.idea.vim.vimscript.model.functions
 
-object IntellijFunctionProvider : VimscriptFunctionProvider {
+object IntellijFunctionProvider : JsonVimscriptFunctionProvider {
   override val functionListFileName: String = "frontend_vimscript_functions.json"
 }

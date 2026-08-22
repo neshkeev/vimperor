@@ -13,11 +13,12 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import java.io.InputStream
 
-interface ExCommandProvider {
+/** An [ExCommandProvider] backed by a JSON classpath resource and the class loader. */
+interface JsonExCommandProvider : ExCommandProvider {
   val exCommandsFileName: String
 
   @OptIn(ExperimentalSerializationApi::class)
-  fun getCommands(): Map<String, LazyExCommandInstance> {
+  override fun getCommands(): Map<String, LazyExCommandInstance> {
     val classLoader = this.javaClass.classLoader
     val commandToClass: Map<String, String> = Json.decodeFromStream(getFile())
     return commandToClass.entries.associate { it.key to lazyExCommand(it.value, classLoader) }

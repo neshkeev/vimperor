@@ -24,8 +24,9 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimList
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.expressions.Scope
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
+import com.maddyhome.idea.vim.helper.caseInsensitiveOrder
+import com.maddyhome.idea.vim.helper.localeCollator
 import com.maddyhome.idea.vim.vimscript.model.functions.BuiltinFunctionHandler
-import java.text.Collator
 
 @VimscriptFunction(name = "sort")
 internal class SortFunctionHandler : SortUniqFunctionHandlerBase() {
@@ -84,8 +85,8 @@ internal abstract class SortUniqFunctionHandlerBase : BuiltinFunctionHandler<Vim
 
       is VimString -> {
         when (how.value) {
-          "i", "1" -> getTypeAndStringValueComparator(String.CASE_INSENSITIVE_ORDER)
-          "l" -> getTypeAndStringValueComparator(Collator.getInstance())
+          "i", "1" -> getTypeAndStringValueComparator(caseInsensitiveOrder)
+          "l" -> getTypeAndStringValueComparator(localeCollator())
 
           // Allows Float and Number, everything else is treated as 0
           "n" -> { a: VimDataType, b: VimDataType ->
@@ -108,7 +109,7 @@ internal abstract class SortUniqFunctionHandlerBase : BuiltinFunctionHandler<Vim
             a1.compareTo(b1)
           }
 
-          "", "0" -> getTypeAndStringValueComparator(Comparator.naturalOrder())
+          "", "0" -> getTypeAndStringValueComparator(naturalOrder())
 
           else -> {
             val handler = injector.functionService.getFunctionHandlerOrNull(Scope.GLOBAL_VARIABLE, how.value, vimContext)
@@ -127,7 +128,7 @@ internal abstract class SortUniqFunctionHandlerBase : BuiltinFunctionHandler<Vim
         }
       }
 
-      null -> getTypeAndStringValueComparator(Comparator.naturalOrder())
+      null -> getTypeAndStringValueComparator(naturalOrder())
       else -> throw exExceptionMessage("E474")
     }
 

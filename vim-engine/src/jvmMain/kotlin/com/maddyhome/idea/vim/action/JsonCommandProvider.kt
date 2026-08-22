@@ -19,16 +19,17 @@ import kotlinx.serialization.json.decodeFromStream
 import java.io.InputStream
 
 /**
- * An interface defining the contract for providers responsible for reading and parsing JSON files.
- * These files contain a list of command beans that are intended to be lazily loaded during runtime.
- * The primary functionality of this interface is to transform the JSON data into a collection of
- * {@code LazyVimCommand} instances.
+ * A [CommandProvider] that reads its command list from a JSON classpath resource written by the
+ * annotation processor, and builds each handler by loading the named class.
+ *
+ * The class loader is what makes this JVM-only, not the JSON: the beans name their handlers as
+ * strings, which only means something to a host that can resolve a name to a class.
  */
-interface CommandProvider {
+interface JsonCommandProvider : CommandProvider {
   val commandListFileName: String
 
   @OptIn(ExperimentalSerializationApi::class)
-  fun getCommands(): Collection<LazyVimCommand> {
+  override fun getCommands(): Collection<LazyVimCommand> {
     val classLoader = this.javaClass.classLoader
     val commands: List<CommandBean> = Json.decodeFromStream(getFile())
     return commands

@@ -8,6 +8,11 @@
 
 package com.maddyhome.idea.vim.vimscript.model.commands
 
-object IntellijExCommandProvider : JsonExCommandProvider {
-  override val exCommandsFileName: String = "frontend_ex_commands.json"
+/**
+ * A source of ex-commands, keyed by the command name as it is typed after `:`.
+ *
+ * See [CommandProvider] for why this does not mention where the mapping comes from.
+ */
+interface ExCommandProvider {
+  fun getCommands(): Map<String, LazyExCommandInstance>
 }

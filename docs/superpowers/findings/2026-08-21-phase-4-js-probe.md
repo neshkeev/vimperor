@@ -619,3 +619,114 @@ That is the third variant of the same failure in this project - after `test` mat
 missing `jvmTest`, then missing `jsNodeTest`. All three shared a shape: **the build was green
 because it was not doing the work, not because the work succeeded.** Only `clean` plus a full gate
 finds them.
+
+---
+
+# The command registry: 468 handlers reachable on JS without a class loader
+
+The three providers - commands, ex-commands, vimscript functions - were the last big block of
+JVM-bound engine code that was not the parser. All three worked the same way: read a JSON resource
+written by the annotation processor, then turn each class *name* into a constructor through the
+class loader. Neither half survives on JS.
+
+## Splitting the interface from the way it is filled
+
+The provider interfaces now say only what they produce:
+
+```kotlin
+interface CommandProvider {
+  fun getCommands(): Collection<LazyVimCommand>
+}
+```
+
+The JSON-and-class-loader implementation moved down into `JsonCommandProvider`, `JsonExCommandProvider`
+and `JsonVimscriptFunctionProvider`, which stay in `jvmMain`. The six existing implementors - three
+in the engine, three in the IntelliJ plugin - name the `Json` interface instead. `RegisterActions.registerCommandProvider`
+and its two siblings still take the plain interface, so a caller registering a provider is unaffected.
+
+That move alone took `VimScriptFunctionServiceBase` - the whole builtin-function service - to
+`commonMain`, because the provider type was the only thing keeping it on the JVM.
+
+## Generating the registry the KDoc already described
+
+`reflectiveFactory` had carried this note since the seam was cut: *"A host without a class loader
+supplies its factories directly instead, from a generated registry; that is the seam this exists to
+create."* `generateJsCommandRegistry` is that registry. It reads the same `engine_commands.json` and
+`engine_vimscript_functions.json` the JVM reads at runtime and emits Kotlin:
+
+```kotlin
+entry(listOf("iw"), "XO", "com.maddyhome.idea.vim.action.motion.object.MotionInnerWordAction") {
+  com.maddyhome.idea.vim.action.motion.`object`.MotionInnerWordAction()
+},
+```
+
+375 commands and 93 functions. One JSON file, read by both targets, so the two cannot drift: there
+is no second list to keep in step.
+
+The key sequences stay as strings and are parsed by `getCommands()` exactly as the JVM parses them,
+and the mode characters go through the same `MappingMode.parseModeChar`. Both targets run the same
+construction code over the same input; only the factory differs.
+
+**A missing or misspelled class is now a JS compile error**, where on the JVM it is a
+`ClassNotFoundException` the first time that key is pressed.
+
+## Two things the generator got wrong, both caught by the compiler
+
+**`object` is a Kotlin keyword and a package name here.** The text objects live in
+`com.maddyhome.idea.vim.action.motion.object`, which has to be written `` `object` `` in Kotlin.
+
+**`InsertRegisterAction` exists twice** - `action.change.insert` for `<C-R>` in insert mode and
+`action.ex` for `<C-R>` on the command line. Emitting simple names with imports was ambiguous.
+
+Fully qualified, keyword-escaped constructor calls fix both at once, and need no imports at all.
+
+## What the test found: 12 handlers read the injector while constructing
+
+The obvious test - construct all 375 - fails. Twelve handlers parse their own key sequences in a
+property initializer:
+
+```kotlin
+private val keySet = parseKeysSet("<C-Down>")
+```
+
+which reaches `injector.parser`. This is not a defect and not new: `LazyInstance` defers
+construction to first use, so the engine never builds a handler before the injector exists, on
+either target. `getCommands()` needs the injector for exactly the same reason.
+
+So the test counts `UninitializedPropertyAccessException` separately and fails only on any *other*
+error - and asserts that the injector-dependent handlers stay a small minority, since a list where
+most of them needed it could no longer be built early.
+
+**32 assertions now run on Node**, up from 27.
+
+## `sort()` and `uniq()` came along
+
+`SortUniqFunctionHandlers` was the only thing left keeping a handler class out of `commonMain`, and
+it was two JVM APIs:
+
+- `String.CASE_INSENSITIVE_ORDER` → `compareTo(ignoreCase = true)`, which is the same algorithm and
+  is literally the same comparator on the JVM.
+- `Comparator.naturalOrder()` → Kotlin's `naturalOrder()`.
+- `java.text.Collator.getInstance()` → `expect fun localeCollator()`, with `Intl.Collator` on JS.
+
+**The collator is the one place where the two targets are not promised to agree.** The JDK collates
+with its own copy of CLDR and a JS runtime with whatever ICU it was built against. Both implement
+the Unicode collation contract and both order accents, case and digits the way users expect, but
+pinning them to each other would mean shipping our own tables. `sort(list, 'l')` is locale-sensitive
+by definition, so it is not a fixed order on either target anyway. Documented at the declaration.
+
+Clearing it meant the generator needs no exclusion list: all 468 classes it names are in
+`commonMain`.
+
+## Ex-commands are deliberately not done
+
+`lazyExCommand` also has to decide whether each class has a `(Range, CommandModifier, String)`
+constructor - `LazyExCommandInstance` carries a factory or null. A generator cannot read that off the
+JSON, and inventing a second way to answer it would be a source of truth that can disagree with the
+reflective one.
+
+`ExCommandConstructorInvariantsTest` already established the invariant that makes it answerable:
+the matching three-argument constructor is always the *primary* constructor. But ex-commands are
+useless on JS until the vimscript parser runs there, which is W1 - so this is left to be settled in
+the same unit that makes it matter, from the JVM's own answer rather than a second implementation
+of it.

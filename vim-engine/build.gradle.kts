@@ -135,6 +135,127 @@ val generateJsMessageBundle by tasks.registering {
   }
 }
 
+// The JVM reads its command list from a JSON resource and turns each class name into a constructor
+// by way of the class loader. A JS host has neither, so the same JSON is turned into Kotlin here:
+// direct constructor calls, resolved at compile time. This is the "generated registry" the KDoc on
+// `reflectiveFactory` describes - the seam that made the providers platform-neutral.
+//
+// The upshot is that a missing or misspelled class name is a JS compile error, where on the JVM it
+// is a crash the first time that command is pressed.
+val kspGeneratedDir = layout.projectDirectory.dir("src/jvmMain/resources/ksp-generated")
+val generatedRegistryDir = layout.buildDirectory.dir("generated/registry/kotlin")
+
+val generateJsCommandRegistry by tasks.registering {
+  // Locals, not script references: the configuration cache cannot serialize the latter.
+  val commandsJson = kspGeneratedDir.file("engine_commands.json").asFile
+  val functionsJson = kspGeneratedDir.file("engine_vimscript_functions.json").asFile
+  val outputDir = generatedRegistryDir
+  inputs.file(commandsJson)
+  inputs.file(functionsJson)
+  outputs.dir(outputDir)
+  doLast {
+    fun quote(value: String): String =
+      "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\${'$'}") + "\""
+
+    // Kotlin's hard keywords are legal Java package segments, and the engine has a package called
+    // `object` (the text objects). Emitting fully qualified constructor calls rather than imports
+    // also settles the other name problem: two different packages both declare an
+    // `InsertRegisterAction`, so simple names are not unique across this list.
+    val hardKeywords = setOf(
+      "as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
+      "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true",
+      "try", "typealias", "typeof", "val", "var", "when", "while",
+    )
+
+    fun escapeQualifiedName(className: String): String =
+      className.split(".").joinToString(".") { if (it in hardKeywords) "`" + it + "`" else it }
+
+    val slurper = groovy.json.JsonSlurper()
+
+    @Suppress("UNCHECKED_CAST")
+    val beans = slurper.parse(commandsJson) as List<Map<String, String>>
+
+    @Suppress("UNCHECKED_CAST")
+    val functions = slurper.parse(functionsJson) as Map<String, String>
+
+    // Grouped by class, exactly as JsonCommandProvider groups them: one LazyVimCommand per handler,
+    // carrying every key sequence bound to it.
+    val grouped = beans.groupBy { it.getValue("class") }
+    val commandEntries = grouped.entries.sortedBy { it.key }.joinToString("\n") { (className, rows) ->
+      val keys = rows.map { quote(it.getValue("keys")) }.joinToString(", ")
+      val modes = quote(rows.first().getValue("modes"))
+      "  entry(listOf($keys), $modes, ${quote(className)}) { ${escapeQualifiedName(className)}() },"
+    }
+    val functionEntries = functions.entries.sortedBy { it.key }.joinToString("\n") { (name, className) ->
+      "  LazyVimscriptFunction(${quote(name)}) { ${escapeQualifiedName(className)}() },"
+    }
+
+    val out = outputDir.get().file("com/maddyhome/idea/vim/GeneratedEngineRegistry.kt").asFile
+    out.parentFile.mkdirs()
+    out.writeText(
+      buildString {
+        appendLine("// Generated from ksp-generated/*.json by generateJsCommandRegistry. Do not edit.")
+        appendLine("@file:Suppress(\"ktlint\", \"RedundantVisibilityModifier\")")
+        appendLine()
+        appendLine("package com.maddyhome.idea.vim")
+        appendLine()
+        appendLine("import com.maddyhome.idea.vim.action.CommandProvider")
+        appendLine("import com.maddyhome.idea.vim.action.change.LazyVimCommand")
+        appendLine("import com.maddyhome.idea.vim.api.injector")
+        appendLine("import com.maddyhome.idea.vim.command.MappingMode")
+        appendLine("import com.maddyhome.idea.vim.handler.EditorActionHandlerBase")
+        appendLine("import com.maddyhome.idea.vim.vimscript.model.functions.LazyVimscriptFunction")
+        appendLine("import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvider")
+        appendLine()
+        appendLine("/**")
+        appendLine(" * One command as the annotation processor recorded it, with its handler's constructor already")
+        appendLine(" * resolved. The key sequences stay unparsed: parsing them needs `injector`, which is not there")
+        appendLine(" * yet when this list is built.")
+        appendLine(" */")
+        appendLine("internal class GeneratedCommandEntry(")
+        appendLine("  val keys: List<String>,")
+        appendLine("  val modes: String,")
+        appendLine("  val className: String,")
+        appendLine("  val factory: () -> EditorActionHandlerBase,")
+        appendLine(")")
+        appendLine()
+        appendLine("private fun entry(")
+        appendLine("  keys: List<String>,")
+        appendLine("  modes: String,")
+        appendLine("  className: String,")
+        appendLine("  factory: () -> EditorActionHandlerBase,")
+        appendLine(") = GeneratedCommandEntry(keys, modes, className, factory)")
+        appendLine()
+        appendLine("internal val GENERATED_ENGINE_COMMANDS: List<GeneratedCommandEntry> = listOf(")
+        appendLine(commandEntries)
+        appendLine(")")
+        appendLine()
+        appendLine("internal val GENERATED_ENGINE_FUNCTIONS: List<LazyVimscriptFunction> = listOf(")
+        appendLine(functionEntries)
+        appendLine(")")
+        appendLine()
+        appendLine("/** The JS twin of the JVM object of the same name, built without a class loader. */")
+        appendLine("object EngineCommandProvider : CommandProvider {")
+        appendLine("  override fun getCommands(): Collection<LazyVimCommand> =")
+        appendLine("    GENERATED_ENGINE_COMMANDS.map {")
+        appendLine("      LazyVimCommand(")
+        appendLine("        it.keys.map { keys -> injector.parser.parseKeys(keys) }.toSet(),")
+        appendLine("        it.modes.map { mode -> MappingMode.parseModeChar(mode) }.toSet(),")
+        appendLine("        it.className,")
+        appendLine("        it.factory,")
+        appendLine("      )")
+        appendLine("    }")
+        appendLine("}")
+        appendLine()
+        appendLine("/** The JS twin of the JVM object of the same name, built without a class loader. */")
+        appendLine("object EngineFunctionProvider : VimscriptFunctionProvider {")
+        appendLine("  override fun getFunctions(): Collection<LazyVimscriptFunction> = GENERATED_ENGINE_FUNCTIONS")
+        appendLine("}")
+      }
+    )
+  }
+}
+
 kotlin {
   jvm()
   js(IR) {
@@ -191,6 +312,7 @@ kotlin {
       // compiling. Wiring the bare directory compiles fine until someone runs `clean`, which is
       // exactly how this was found.
       kotlin.srcDir(generateJsMessageBundle)
+      kotlin.srcDir(generateJsCommandRegistry)
     }
     val jsTest by getting {
       dependencies {
