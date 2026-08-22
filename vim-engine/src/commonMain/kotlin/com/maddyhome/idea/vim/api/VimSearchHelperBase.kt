@@ -8,6 +8,9 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.maddyhome.idea.vim.helper.vimAssert
+import com.maddyhome.idea.vim.helper.isVimWhitespace
+import com.maddyhome.idea.vim.helper.isSpaceChar
 import com.maddyhome.idea.vim.common.Direction
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.diagnostic.vimLogger
@@ -663,7 +666,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
    * [startIndex] is inclusive
    */
   private fun findCamelStart(chars: CharSequence, startIndex: Int, count: Int, direction: Direction): Int? {
-    assert(count >= 1)
+    vimAssert(count >= 1)
     var counter = 0
     var offset = startIndex
     while (counter < count) {
@@ -678,7 +681,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
    * [startIndex] is inclusive
    */
   private fun findCamelEnd(chars: CharSequence, startIndex: Int, count: Int, direction: Direction): Int? {
-    assert(count >= 1)
+    vimAssert(count >= 1)
     var counter = 0
     var offset = startIndex
     while (counter < count) {
@@ -927,7 +930,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
   ): @Range(from = 0, to = Int.MAX_VALUE.toLong()) Int? {
     var count = count
     val dir = if (count > 0) Direction.FORWARDS else Direction.BACKWARDS
-    count = Math.abs(count)
+    count = abs(count)
     val total = count
     val chars: CharSequence = editor.text()
     val start: Int = offset
@@ -973,7 +976,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
   ): @Range(from = 0, to = Int.MAX_VALUE.toLong()) Int? {
     var count = count
     val dir = if (count > 0) Direction.FORWARDS else Direction.BACKWARDS
-    count = Math.abs(count)
+    count = abs(count)
     val total = count
     val chars: CharSequence = editor.text()
     val start: Int = offset
@@ -1037,7 +1040,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
       var offset = end + 1
       while (offset < max) {
         val ch = chars[offset]
-        if (!Character.isWhitespace(ch)) {
+        if (!isVimWhitespace(ch)) {
           break
         }
         offset++
@@ -1066,7 +1069,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
       res = end + 1
       while (res < max) {
         val ch = chars[res]
-        if (!Character.isWhitespace(ch)) {
+        if (!isVimWhitespace(ch)) {
           break
         }
         res++
@@ -1133,7 +1136,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
         }
 
         // The next character must be whitespace for this to be a valid end-of-sentence.
-        if (offset >= max || Character.isWhitespace(ch)) {
+        if (offset >= max || isVimWhitespace(ch)) {
           // So we have found the end of the next sentence. Now let's see if we ended
           // where we started (or further) on a back search. This will happen if we happen
           // to start this whole search already on a sentence end.
@@ -1236,7 +1239,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
   ): @Range(from = 0, to = Int.MAX_VALUE.toLong()) Int {
     var count = count
     val dir = if (count > 0) Direction.FORWARDS else Direction.BACKWARDS
-    count = Math.abs(count)
+    count = abs(count)
     count
     val toggle = !isOuter
     var findend = dir == Direction.BACKWARDS
@@ -1254,7 +1257,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
       which = 0
       if (oneway) {
         findend = dir == Direction.FORWARDS
-      } else if (dir == Direction.FORWARDS && start < max - 1 && !Character.isSpaceChar(chars[start + 1])) {
+      } else if (dir == Direction.FORWARDS && start < max - 1 && !isSpaceChar(chars[start + 1])) {
         findend = true
       }
     } else if (start == snext) // On sentence start
@@ -1350,7 +1353,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     val offset: Int = caret.offset
     val ssel: Int = caret.selectionStart
     val esel: Int = caret.selectionEnd
-    return if (Math.abs(esel - ssel) > 1) {
+    return if (abs(esel - ssel) > 1) {
       val start: Int
       val end: Int
       // Forward selection
@@ -1366,7 +1369,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     } else {
       val end = findSentenceRangeEnd(editor, chars, offset, max, count, isOuter, false)
       var space = isOuter
-      if (Character.isSpaceChar(chars[end])) {
+      if (isSpaceChar(chars[end])) {
         space = false
       }
       val start = findSentenceRangeEnd(editor, chars, offset, max, -1, space, false)
@@ -1907,12 +1910,10 @@ abstract class VimSearchHelperBase : VimSearchHelper {
    */
   private fun ignoreWhitespaceAtLineStart(seq: CharSequence, lineStart: Int, pos: Int): Int {
     var position = pos
-    if (seq.subSequence(lineStart, position).chars().allMatch { codePoint: Int ->
-        Character.isWhitespace(
-          codePoint
-        )
-      }) {
-      while (position < seq.length && seq[position] != '\n' && Character.isWhitespace(seq[position])) {
+    // Was `.chars().allMatch { Character.isWhitespace(it) }` over codepoints. Every whitespace
+    // character is in the BMP, so walking `Char`s asks the same question of the same characters.
+    if (seq.subSequence(lineStart, position).all { char -> isVimWhitespace(char) }) {
+      while (position < seq.length && seq[position] != '\n' && isVimWhitespace(seq[position])) {
         position++
       }
     }

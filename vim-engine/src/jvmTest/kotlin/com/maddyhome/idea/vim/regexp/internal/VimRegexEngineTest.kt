@@ -1780,7 +1780,7 @@ class VimRegexEngineTest {
       return when (parserResult) {
         is VimRegexParserResult.Failure -> fail("Parsing failed")
         is VimRegexParserResult.Success -> NFA.fromMatcher(DotMatcher(true)).closure(false)
-          .concatenate(PatternVisitor.visit(parserResult.tree))
+          .concatenate(PatternVisitor.visit(parserResult.tree) ?: fail("the pattern produced no automaton"))
       }
     }
   }

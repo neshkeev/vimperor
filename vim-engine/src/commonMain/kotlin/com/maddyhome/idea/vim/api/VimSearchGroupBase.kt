@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
+import kotlin.jvm.JvmStatic
 import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.common.Direction
 import com.maddyhome.idea.vim.common.TextRange
@@ -258,7 +259,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
 
   // TODO I think that this method (and the method above) should be part of the global command
   fun parseGlobalCommand(argument: String): GlobalCommandArguments? {
-    val cmd = CharPointer(StringBuffer(argument))
+    val cmd = CharPointer(StringBuilder(argument))
 
     val pat: CharPointer
     val delimiter: Char

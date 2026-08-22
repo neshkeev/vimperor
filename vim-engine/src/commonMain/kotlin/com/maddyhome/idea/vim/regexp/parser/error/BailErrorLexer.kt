@@ -10,8 +10,8 @@ package com.maddyhome.idea.vim.regexp.parser.error
 
 import com.maddyhome.idea.vim.parser.generated.RegexLexer
 import com.maddyhome.idea.vim.regexp.VimRegexErrors
-import org.antlr.v4.runtime.CharStream
-import org.antlr.v4.runtime.LexerNoViableAltException
+import org.antlr.v4.kotlinruntime.CharStream
+import org.antlr.v4.kotlinruntime.LexerNoViableAltException
 
 internal class BailErrorLexer(input: CharStream) : RegexLexer(input) {
   override fun recover(e: LexerNoViableAltException) {

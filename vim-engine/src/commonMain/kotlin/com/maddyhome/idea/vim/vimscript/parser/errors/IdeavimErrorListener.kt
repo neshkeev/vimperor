@@ -10,9 +10,9 @@ package com.maddyhome.idea.vim.vimscript.parser.errors
 
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.diagnostic.vimLogger
-import org.antlr.v4.runtime.BaseErrorListener
-import org.antlr.v4.runtime.RecognitionException
-import org.antlr.v4.runtime.Recognizer
+import org.antlr.v4.kotlinruntime.BaseErrorListener
+import org.antlr.v4.kotlinruntime.RecognitionException
+import org.antlr.v4.kotlinruntime.Recognizer
 
 class IdeavimErrorListener : BaseErrorListener() {
   private val logger = vimLogger<IdeavimErrorListener>()
@@ -22,11 +22,11 @@ class IdeavimErrorListener : BaseErrorListener() {
   }
 
   override fun syntaxError(
-    recognizer: Recognizer<*, *>?,
+    recognizer: Recognizer<*, *>,
     offendingSymbol: Any?,
     line: Int,
     charPositionInLine: Int,
-    msg: String?,
+    msg: String,
     e: RecognitionException?,
   ) {
     injector.vimscriptParser.linesWithErrors.add(line)

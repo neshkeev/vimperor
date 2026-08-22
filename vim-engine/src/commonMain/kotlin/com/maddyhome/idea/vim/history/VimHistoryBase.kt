@@ -30,11 +30,11 @@ open class VimHistoryBase : VimHistory {
 
     val entries = block.getEntries()
     if (myFirst == 0 && myLast == 0) {
-      myLast = Integer.MAX_VALUE
+      myLast = Int.MAX_VALUE
     }
     if (myFirst < 0) {
       myFirst = if (-myFirst > entries.size) {
-        Integer.MAX_VALUE
+        Int.MAX_VALUE
       } else {
         val entry = entries[entries.size + myFirst]
         entry.number
@@ -42,7 +42,7 @@ open class VimHistoryBase : VimHistory {
     }
     if (myLast < 0) {
       myLast = if (-myLast > entries.size) {
-        Integer.MIN_VALUE
+        Int.MIN_VALUE
       } else {
         val entry = entries[entries.size + myLast]
         entry.number

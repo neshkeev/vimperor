@@ -13,7 +13,7 @@ import com.maddyhome.idea.vim.parser.generated.VimscriptLexer
 import com.maddyhome.idea.vim.parser.generated.VimscriptParser
 import com.maddyhome.idea.vim.vimscript.model.Script
 import com.maddyhome.idea.vim.vimscript.model.commands.Command
-import com.maddyhome.idea.vim.vimscript.model.commands.EngineExCommandProvider
+import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandTree
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
@@ -22,10 +22,10 @@ import com.maddyhome.idea.vim.vimscript.parser.errors.IdeavimErrorListener
 import com.maddyhome.idea.vim.vimscript.parser.visitors.CommandVisitor
 import com.maddyhome.idea.vim.vimscript.parser.visitors.ExpressionVisitor
 import com.maddyhome.idea.vim.vimscript.parser.visitors.ScriptVisitor
-import org.antlr.v4.runtime.CharStream
-import org.antlr.v4.runtime.CharStreams
-import org.antlr.v4.runtime.CommonTokenStream
-import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.kotlinruntime.CharStream
+import com.maddyhome.idea.vim.parser.VimCharStream
+import org.antlr.v4.kotlinruntime.CommonTokenStream
+import org.antlr.v4.kotlinruntime.tree.ParseTree
 
 abstract class VimscriptParserBase : com.maddyhome.idea.vim.api.VimscriptParser {
   private companion object {
@@ -38,7 +38,7 @@ abstract class VimscriptParserBase : com.maddyhome.idea.vim.api.VimscriptParser 
   override val lastParseErrors: MutableList<String> = mutableListOf()
   private var tries = 0
   private var deletionInfo: DeletionInfo = DeletionInfo()
-  protected open val commandProviders: List<ExCommandProvider> = listOf(EngineExCommandProvider)
+  protected open val commandProviders: List<ExCommandProvider> = listOf(engineExCommandProvider)
   override val exCommands: ExCommandTree by lazy {
     val commandTree = ExCommandTree()
     commandProviders.forEach { provider -> provider.getCommands().forEach { commandTree.addCommand(it.key, it.value) } }
@@ -68,7 +68,9 @@ abstract class VimscriptParserBase : com.maddyhome.idea.vim.api.VimscriptParser 
         parse(preprocessedText)
       }
     } else {
-      ScriptVisitor.visit(AST)
+      // The visitors are nullable-typed so `visitChildren` can pass a wrapper rule's single child
+      // through; a `script` tree always yields a Script.
+      ScriptVisitor.visit(AST) ?: Script(listOf())
     }
     script.units.forEach { it.restoreOriginalRange(deletionInfo) }
     resetParser()
@@ -119,11 +121,11 @@ abstract class VimscriptParserBase : com.maddyhome.idea.vim.api.VimscriptParser 
   }
 
   private fun getParser(text: String, addListener: Boolean = false): VimscriptParser {
-    val input: CharStream = CharStreams.fromString(text)
+    val input: CharStream = VimCharStream(text)
     val lexer = VimscriptLexer(input)
     val tokens = CommonTokenStream(lexer)
     val parser = VimscriptParser(tokens)
-    parser.errorListeners.clear()
+    parser.removeErrorListeners()
     if (addListener) {
       parser.addErrorListener(IdeavimErrorListener())
     }

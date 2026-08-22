@@ -82,7 +82,12 @@ class VimRegex(pattern: String) {
     when (parseResult) {
       is VimRegexParserResult.Failure -> throw VimRegexException(parseResult.errorCode.toString())
       is VimRegexParserResult.Success -> {
+        // The visitor is nullable-typed because `visitChildren` walks wrapper rules by passing the
+        // last child's result through, starting from null. A parse tree that reached here always
+        // yields an NFA; a null would be a visitor that lost track of a rule, and this says so at
+        // the point it happened rather than somewhere in the matcher.
         nfa = PatternVisitor.visit(parseResult.tree)
+          ?: throw VimRegexException("the pattern parsed but produced no automaton")
         hasUpperCase = PatternVisitor.hasUpperCase
         nonExactNFA = NFA.fromMatcher(DotMatcher(false)).closure(false).concatenate(nfa)
         caseSensitivitySettings = parseResult.caseSensitivitySettings

@@ -124,3 +124,44 @@ fun isLetterCodePoint(codepoint: Int): Boolean = when (charCategoryOf(codepoint)
  * is the only thing this is asked about, and the JVM keeps its exact previous answer.
  */
 expect fun isPrintableChar(c: Char): Boolean
+
+/**
+ * True if [c] is a space character as `java.lang.Character.isSpaceChar` defines it: a member of one
+ * of the three Unicode separator categories.
+ *
+ * Not the same question as [isVimWhitespace], and the difference is not academic - `isSpaceChar`
+ * accepts a non-breaking space and rejects tab and newline, while whitespace does the opposite.
+ * Both are used, a few lines apart, in the word-motion code.
+ */
+fun isSpaceChar(c: Char): Boolean = when (c.category) {
+  CharCategory.SPACE_SEPARATOR,
+  CharCategory.LINE_SEPARATOR,
+  CharCategory.PARAGRAPH_SEPARATOR,
+  -> true
+  else -> false
+}
+
+/**
+ * True if [c] may appear after the first character of a Java identifier, as
+ * `java.lang.Character.isJavaIdentifierPart` defines it. This backs Vim's `\i` and `[:ident:]`.
+ *
+ * Phase 0's spike approximated this as `isLetterOrDigit() || '_' || '$'` and flagged that the
+ * approximation changes which characters `\i` matches - currency symbols and several Unicode
+ * categories. This is the JDK's actual rule instead: a letter, one of six categories, or an
+ * ignorable control character.
+ */
+fun isIdentifierPart(c: Char): Boolean {
+  if (c.isLetter()) return true
+  return when (c.category) {
+    CharCategory.CURRENCY_SYMBOL,
+    CharCategory.CONNECTOR_PUNCTUATION,
+    CharCategory.DECIMAL_DIGIT_NUMBER,
+    CharCategory.LETTER_NUMBER,
+    CharCategory.COMBINING_SPACING_MARK,
+    CharCategory.NON_SPACING_MARK,
+    -> true
+    // `isIdentifierIgnorable`: the non-whitespace ISO controls, and the format characters.
+    CharCategory.FORMAT -> true
+    else -> c.code in 0x00..0x08 || c.code in 0x0E..0x1B || c.code in 0x7F..0x9F
+  }
+}

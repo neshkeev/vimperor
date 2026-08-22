@@ -37,11 +37,20 @@ import com.maddyhome.idea.vim.vimscript.model.statements.loops.ForLoop
 import com.maddyhome.idea.vim.vimscript.model.statements.loops.ForLoopWithList
 import com.maddyhome.idea.vim.vimscript.model.statements.loops.WhileLoop
 
-object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
+object ExecutableVisitor : VimscriptBaseVisitor<Executable?>() {
+
+  /**
+   * Null, which is what the Java runtime's `defaultResult()` returned and what `visitBlockMember`
+   * still returns for a block member that is not a statement - a comment or a blank line.
+   * `ScriptVisitor` reads this list with `mapNotNull`, so null is part of the contract here rather
+   * than a case nobody thought about, and the visitor is typed nullable to say so.
+   */
+  override fun defaultResult(): Executable? = null
+
 
   override fun visitBlockMember(ctx: VimscriptParser.BlockMemberContext): Executable? {
     return when {
-      ctx.command() != null -> CommandVisitor.visit(ctx.command())
+      ctx.command() != null -> CommandVisitor.visit(ctx.command()!!)
       ctx.breakStatement() != null -> {
         val statement = BreakStatement()
         statement.rangeInScript = ctx.getTextRange()
@@ -60,14 +69,14 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
         statement
       }
 
-      ctx.returnStatement() != null -> visitReturnStatement(ctx.returnStatement())
-      ctx.ifStatement() != null -> visitIfStatement(ctx.ifStatement())
-      ctx.forLoop() != null -> visitForLoop(ctx.forLoop())
-      ctx.whileLoop() != null -> visitWhileLoop(ctx.whileLoop())
-      ctx.functionDefinition() != null -> visitFunctionDefinition(ctx.functionDefinition())
-      ctx.throwStatement() != null -> visitThrowStatement(ctx.throwStatement())
-      ctx.tryStatement() != null -> visitTryStatement(ctx.tryStatement())
-      ctx.autoCmd() != null -> visitAutoCmd(ctx.autoCmd())
+      ctx.returnStatement() != null -> visitReturnStatement(ctx.returnStatement()!!)
+      ctx.ifStatement() != null -> visitIfStatement(ctx.ifStatement()!!)
+      ctx.forLoop() != null -> visitForLoop(ctx.forLoop()!!)
+      ctx.whileLoop() != null -> visitWhileLoop(ctx.whileLoop()!!)
+      ctx.functionDefinition() != null -> visitFunctionDefinition(ctx.functionDefinition()!!)
+      ctx.throwStatement() != null -> visitThrowStatement(ctx.throwStatement()!!)
+      ctx.tryStatement() != null -> visitTryStatement(ctx.tryStatement()!!)
+      ctx.autoCmd() != null -> visitAutoCmd(ctx.autoCmd()!!)
       else -> null
     }
   }
@@ -92,21 +101,21 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
   }
 
   override fun visitWhileLoop(ctx: VimscriptParser.WhileLoopContext): Executable {
-    val condition: Expression = ExpressionVisitor.visit(ctx.expr())
-    val body: List<Executable> = ctx.blockMember().mapNotNull { visitBlockMember(it) }
+    val condition: Expression = ExpressionVisitor.visitExpression(ctx.expr()!!)
+    val body: List<Executable> = ctx.blockMember()!!.mapNotNull { visitBlockMember(it) }
     val loop = WhileLoop(condition, body)
     loop.rangeInScript = ctx.getTextRange()
     return loop
   }
 
   override fun visitForLoop(ctx: VimscriptParser.ForLoopContext): Executable {
-    val iterable = ExpressionVisitor.visit(ctx.expr())
-    val body = ctx.blockMember().mapNotNull { visitBlockMember(it) }
+    val iterable = ExpressionVisitor.visitExpression(ctx.expr()!!)
+    val body = ctx.blockMember()!!.mapNotNull { visitBlockMember(it) }
     val loop = if (ctx.argumentsDeclaration() == null) {
-      val variable = VariableExpression(Scope.getByValue(ctx.variableScope()?.text ?: ""), ctx.variableName().text)
+      val variable = VariableExpression(Scope.getByValue(ctx.variableScope()?.text ?: ""), ctx.variableName()!!.text)
       ForLoop(variable, iterable, body)
     } else {
-      val variables = ctx.argumentsDeclaration().variableName().map { it.text }
+      val variables = ctx.argumentsDeclaration()!!.variableName().map { it.text }
       ForLoopWithList(variables, iterable, body)
     }
     loop.rangeInScript = ctx.getTextRange()
@@ -114,22 +123,22 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
   }
 
   override fun visitFunctionDefinition(ctx: VimscriptParser.FunctionDefinitionContext): Executable {
-    val functionScope = if (ctx.functionScope() != null) Scope.getByValue(ctx.functionScope().text) else null
-    val args = ctx.argumentsDeclaration().variableName().map { it.text }
-    val defaultArgs = ctx.argumentsDeclaration().defaultValue()
-      .map { Pair<String, Expression>(it.variableName().text, ExpressionVisitor.visit(it.expr())) }
-    val body = ctx.blockMember().mapNotNull { visitBlockMember(it) }
+    val functionScope = if (ctx.functionScope() != null) Scope.getByValue(ctx.functionScope()!!.text) else null
+    val args = ctx.argumentsDeclaration()!!.variableName().map { it.text }
+    val defaultArgs = ctx.argumentsDeclaration()!!.defaultValue()
+      .map { Pair<String, Expression>(it.variableName().text, ExpressionVisitor.visitExpression(it.expr())) }
+    val body = ctx.blockMember()!!.mapNotNull { visitBlockMember(it) }
     val replaceExisting = ctx.replace != null
     val flags = mutableSetOf<FunctionFlag?>()
-    val hasOptionalArguments = ctx.argumentsDeclaration().ETC() != null
-    for (flag in ctx.functionFlag()) {
+    val hasOptionalArguments = ctx.argumentsDeclaration()!!.ETC() != null
+    for (flag in ctx.functionFlag()!!) {
       flags.add(FunctionFlag.getByName(flag.text))
     }
     val definition = if (ctx.functionName() != null) {
       // Preserve the autoload namespace prefix (e.g. `foo#bar#`) so the function is stored under its
       // full name rather than just the last segment.
-      val autoloadPrefix = ctx.anyCaseNameWithDigitsAndUnderscores().joinToString(separator = "") { "${it.text}#" }
-      val functionName = autoloadPrefix + ctx.functionName().text
+      val autoloadPrefix = ctx.anyCaseNameWithDigitsAndUnderscores()!!.joinToString(separator = "") { "${it.text}#" }
+      val functionName = autoloadPrefix + ctx.functionName()!!.text
       FunctionDeclaration(
         functionScope,
         functionName,
@@ -142,12 +151,12 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
       )
     } else {
       var sublistExpression = IndexedExpression(
-        SimpleExpression(ctx.literalDictionaryKey(1).text),
-        VariableExpression(functionScope, ctx.literalDictionaryKey(0).text)
+        SimpleExpression(ctx.literalDictionaryKey(1)!!.text),
+        VariableExpression(functionScope, ctx.literalDictionaryKey(0)!!.text)
       )
-      for (i in 2 until ctx.literalDictionaryKey().size) {
+      for (i in 2 until ctx.literalDictionaryKey()!!.size) {
         sublistExpression =
-          IndexedExpression(SimpleExpression(ctx.literalDictionaryKey(i).text), sublistExpression)
+          IndexedExpression(SimpleExpression(ctx.literalDictionaryKey(i)!!.text), sublistExpression)
       }
       AnonymousFunctionDeclaration(
         sublistExpression,
@@ -164,10 +173,10 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
   }
 
   override fun visitTryStatement(ctx: VimscriptParser.TryStatementContext): Executable {
-    val tryBlock = TryBlock(ctx.tryBlock().blockMember().mapNotNull { visitBlockMember(it) })
-    tryBlock.rangeInScript = ctx.tryBlock().getTextRange()
+    val tryBlock = TryBlock(ctx.tryBlock()!!.blockMember().mapNotNull { visitBlockMember(it) })
+    tryBlock.rangeInScript = ctx.tryBlock()!!.getTextRange()
     val catchBlocks: MutableList<CatchBlock> = mutableListOf()
-    for (catchBlock in ctx.catchBlock()) {
+    for (catchBlock in ctx.catchBlock()!!) {
       val cb = CatchBlock(
         catchBlock.pattern()?.patternBody()?.text ?: ".",
         catchBlock.blockMember().mapNotNull { visitBlockMember(it) })
@@ -176,8 +185,8 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
     }
     var finallyBlock: FinallyBlock? = null
     if (ctx.finallyBlock() != null) {
-      finallyBlock = FinallyBlock(ctx.finallyBlock().blockMember().mapNotNull { visitBlockMember(it) })
-      finallyBlock.rangeInScript = ctx.finallyBlock().getTextRange()
+      finallyBlock = FinallyBlock(ctx.finallyBlock()!!.blockMember().mapNotNull { visitBlockMember(it) })
+      finallyBlock.rangeInScript = ctx.finallyBlock()!!.getTextRange()
     }
     val statement = TryStatement(tryBlock, catchBlocks, finallyBlock)
     statement.rangeInScript = ctx.getTextRange()
@@ -185,14 +194,14 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
   }
 
   override fun visitReturnStatement(ctx: VimscriptParser.ReturnStatementContext): Executable {
-    val expression: Expression = ctx.expr()?.let { ExpressionVisitor.visit(ctx.expr()) } ?: SimpleExpression(0)
+    val expression: Expression = ctx.expr()?.let { ExpressionVisitor.visitExpression(ctx.expr()!!) } ?: SimpleExpression(0)
     val statement = ReturnStatement(expression)
     statement.rangeInScript = ctx.getTextRange()
     return statement
   }
 
   override fun visitThrowStatement(ctx: VimscriptParser.ThrowStatementContext): Executable {
-    val expression: Expression = ExpressionVisitor.visit(ctx.expr())
+    val expression: Expression = ExpressionVisitor.visitExpression(ctx.expr()!!)
     val statement = ThrowStatement(expression)
     statement.rangeInScript = ctx.getTextRange()
     return statement
@@ -201,19 +210,19 @@ object ExecutableVisitor : VimscriptBaseVisitor<Executable>() {
   override fun visitIfStatement(ctx: VimscriptParser.IfStatementContext): Executable {
     val conditionToBody: MutableList<Pair<Expression, List<Executable>>> = mutableListOf()
     conditionToBody.add(
-      ExpressionVisitor.visit(ctx.ifBlock().expr()) to ctx.ifBlock().blockMember()
+      ExpressionVisitor.visitExpression(ctx.ifBlock()!!.expr()) to ctx.ifBlock()!!.blockMember()
         .mapNotNull { visitBlockMember(it) },
     )
     if (ctx.elifBlock() != null) {
       conditionToBody.addAll(
-        ctx.elifBlock().map {
-          ExpressionVisitor.visit(it.expr()) to it.blockMember().mapNotNull { it2 -> visitBlockMember(it2) }
+        ctx.elifBlock()!!.map {
+          ExpressionVisitor.visitExpression(it.expr()) to it.blockMember().mapNotNull { it2 -> visitBlockMember(it2) }
         },
       )
     }
     if (ctx.elseBlock() != null) {
       conditionToBody.add(
-        SimpleExpression(1) to ctx.elseBlock().blockMember()
+        SimpleExpression(1) to ctx.elseBlock()!!.blockMember()
           .mapNotNull { visitBlockMember(it) },
       )
     }

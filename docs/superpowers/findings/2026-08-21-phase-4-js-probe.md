@@ -805,3 +805,100 @@ neither is nullable, which is the entire point of the check. `StringKTypeEquival
 both halves rather than assuming them.
 
 **37 assertions now run on Node**, up from 32.
+
+---
+
+# W1: one parser, both targets
+
+The ANTLR Java tool is gone. `antlr-kotlin` compiles the three grammars into `commonMain`, so the
+JVM and JS run the *same* generated parser rather than two that have to be kept saying the same
+thing - and IdeaVim's 12,700 IntelliJ tests now exercise the exact artifact JS will use.
+
+Phase 0's caveat 1 offered three grammar-sharing policies. (c) - migrate outright, drop the Java
+copy - turned out to be nearly free: `Vimscript.g4` needed **no edits at all**, and `RegexLexer.g4`
+needed four lines of `@members` translated. Its eight inline actions needed none, because
+`{ setIgnoreCase(); }` is valid Kotlin too. The only real find was that `setIgnoreCase` collides
+with the generated setter for `var ignoreCase`, hence `markIgnoreCase`. There is no second grammar
+to keep in sync, ever.
+
+## `defaultResult()` is a fold seed, not a "should never happen" hook
+
+This cost four rounds of failures and is the most useful thing in this section.
+
+`AbstractParseTreeVisitor.visitChildren` starts from `defaultResult()` and combines each child with
+`aggregateResult`, whose default returns the *last* child's result. So every rule without an
+explicit override is walked by that fold. Java's `defaultResult()` returned null and the pass-through
+worked. The Kotlin runtime makes it abstract, and a non-null type parameter leaves nothing to
+return - which makes throwing look like the obvious answer.
+
+It isn't. It breaks the mechanism the visitor pattern is built on:
+
+| visitor | overrides | of base methods |
+|---|---:|---:|
+| ScriptVisitor | 1 | 140 |
+| ExecutableVisitor | 9 | 140 |
+| CommandVisitor | 15 | 140 |
+| ExpressionVisitor | 32 | 140 |
+| PatternVisitor | 73 | 114 |
+
+Wrapper rules - `atom`, `collec`, `char_class`, `lambda_expression` - have no override *by design*;
+they exist to delegate to their single child. `ExpressionVisitor.visitLambdaExpression` calls
+`super.visitLambdaExpression(ctx)`, which is the pass-through invoked by hand.
+
+Phase 0's spike asserted the opposite - "every alternative has an override" - and made
+`MultiVisitor` and `CollectionElementVisitor` throw. That assertion shipped into this port and was
+reproduced three more times before the evidence arrived: **199 engine-test failures**, then **73
+more** in the IntelliJ suite. This is caveat 6 landing exactly as written: the spike's 63/64 was
+parse-tree construction only, and nothing downstream had ever been executed.
+
+The faithful translation is what Java had - nullable visitors with `defaultResult() = null`. Where a
+value is genuinely required the assertion goes at the point of use, not at the seed:
+`ExpressionVisitor.visitExpression()` is one named helper carrying one message with the offending
+text in it, instead of forty `!!`.
+
+One piece of evidence beat all of the reasoning: `ScriptVisitor` reads `ExecutableVisitor` results
+with `mapNotNull`. That is a proof that null is in the contract, and it was sitting in the code the
+whole time.
+
+## Caveat 3 was smaller than budgeted; caveat 4 is fixed rather than accepted
+
+197 compile errors, not "plausibly hundreds of signature edits" times some multiplier. Rewriting
+`org.antlr.v4.runtime` to `org.antlr.v4.kotlinruntime` took it to 148. Six files phase 0 had already
+ported were still byte-identical in the repo, so they were restored verbatim: 111. The rest was `!!`
+at grammar-guaranteed accessors, a few smart-cast locals, and one signature that went the *other*
+way - `syntaxError` takes a non-null `Recognizer` and `msg` in the Kotlin runtime.
+
+Caveat 4 - antlr-kotlin's `StringCharStream` reporting EOF when a surrogate pair is the last
+codepoint, so any Vim pattern ending in an emoji fails to lex - would have been a regression against
+today's JVM behaviour, not a limitation to accept. `VimCharStream` indexes by codepoint, lives in
+`commonMain` so both targets get it, and the phase-0 test that pinned the defect now passes.
+
+## The classifier was wrong a fourth time
+
+17 files were reported here as having "no JDK dependency left". They had 79. The instrument reads
+`import` lines, and `java.lang.Character`, `Math`, `Integer`, `StringBuffer` and `System` need no
+import. **The rule is now: the only classifier that counts is compiling for JS.**
+
+Two of those 79 were traps:
+
+- `Character.isWhitespace` must not become `Char.isWhitespace()`, which is broader
+  (`isWhitespace() || isSpaceChar()`) and would move where `w` and `b` stop.
+- `Character.isSpaceChar` is a *third* question again - category-based, so it accepts a non-breaking
+  space and rejects tab and newline. Both appear within a few lines of each other in the word-motion
+  code.
+
+**Caveat 5 is closed properly.** `isJavaIdentifierPart` backs `\i` and `[:ident:]`, and the spike's
+`isLetterOrDigit() || '_' || '$'` approximation changed which characters match. `isIdentifierPart`
+implements the JDK's actual rule - a letter, six categories, or an ignorable control - and was
+checked against `Character.isJavaIdentifierPart` across all 65,536 BMP code points: zero mismatches.
+
+## Where this leaves the engine
+
+`jvmMain` is 28 files, from 51. Eleven of those are `.jvm.kt` actuals that belong there. `commonMain`
+is 836.
+
+Ex-commands are the one deliberate hole: `LazyExCommandInstance` needs to know whether each class has
+a `(Range, CommandModifier, String)` constructor, which is not in the JSON, and deciding it from
+source would be a second answer that can disagree with the reflective one. 68 of the 86 classes have
+it; the 18 that do not are exactly the ones `CommandVisitor` special-cases. `engineExCommandProvider`
+is an `expect val` that is empty on JS until that is generated from the JVM's own answer.

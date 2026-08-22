@@ -16,7 +16,10 @@ import com.maddyhome.idea.vim.parser.generated.RegexParserBaseVisitor
  *
  * @see :help /collection
  */
-internal class CollectionElementVisitor : RegexParserBaseVisitor<Pair<CollectionElement, Boolean>>() {
+internal class CollectionElementVisitor : RegexParserBaseVisitor<Pair<CollectionElement, Boolean>?>() {
+
+  /** Null, as the Java runtime returned - see the note on `MultiVisitor.defaultResult`. */
+  override fun defaultResult(): Pair<CollectionElement, Boolean>? = null
 
   override fun visitSingleColElem(ctx: RegexParser.SingleColElemContext): Pair<CollectionElement, Boolean> {
     val elem = cleanLiteralChar(ctx.text)
@@ -24,45 +27,45 @@ internal class CollectionElementVisitor : RegexParserBaseVisitor<Pair<Collection
   }
 
   override fun visitRangeColElem(ctx: RegexParser.RangeColElemContext): Pair<CollectionElement, Boolean> {
-    val rangeStart = cleanLiteralChar(ctx.start.text)
-    val rangeEnd = cleanLiteralChar(ctx.end.text)
+    val rangeStart = cleanLiteralChar(ctx.rangeStart!!.text!!)
+    val rangeEnd = cleanLiteralChar(ctx.end!!.text!!)
     val includesEOL = rangeStart.second || rangeEnd.second
     return Pair(CollectionElement.CharacterRange(rangeStart.first, rangeEnd.first), includesEOL)
   }
 
-  override fun visitAlnumClass(ctx: RegexParser.AlnumClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitAlnumClass(ctx: RegexParser.AlnumClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isLetterOrDigit() }, false)
   }
 
-  override fun visitAlphaClass(ctx: RegexParser.AlphaClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitAlphaClass(ctx: RegexParser.AlphaClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isLetter() }, false)
   }
 
-  override fun visitBlankClass(ctx: RegexParser.BlankClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitBlankClass(ctx: RegexParser.BlankClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { " \t".contains(it) }, false)
   }
 
-  override fun visitCntrlClass(ctx: RegexParser.CntrlClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitCntrlClass(ctx: RegexParser.CntrlClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isISOControl() }, false)
   }
 
-  override fun visitDigitClass(ctx: RegexParser.DigitClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitDigitClass(ctx: RegexParser.DigitClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isDigit() }, false)
   }
 
-  override fun visitGraphClass(ctx: RegexParser.GraphClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitGraphClass(ctx: RegexParser.GraphClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it in '!'..'~' }, false)
   }
 
-  override fun visitLowerClass(ctx: RegexParser.LowerClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitLowerClass(ctx: RegexParser.LowerClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isLowerCase() }, false)
   }
 
-  override fun visitPrintClass(ctx: RegexParser.PrintClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitPrintClass(ctx: RegexParser.PrintClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { !it.isISOControl() }, false)
   }
 
-  override fun visitPunctClass(ctx: RegexParser.PunctClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitPunctClass(ctx: RegexParser.PunctClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression {
       it in '!'..'/' ||
         it in ':'..'@' ||
@@ -71,15 +74,15 @@ internal class CollectionElementVisitor : RegexParserBaseVisitor<Pair<Collection
     }, false)
   }
 
-  override fun visitSpaceClass(ctx: RegexParser.SpaceClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitSpaceClass(ctx: RegexParser.SpaceClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isWhitespace() }, false)
   }
 
-  override fun visitUpperClass(ctx: RegexParser.UpperClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitUpperClass(ctx: RegexParser.UpperClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isUpperCase() }, false)
   }
 
-  override fun visitXdigitClass(ctx: RegexParser.XdigitClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitXdigitClass(ctx: RegexParser.XdigitClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression {
       it in '0'..'9' ||
         it in 'a'..'f' ||
@@ -87,31 +90,34 @@ internal class CollectionElementVisitor : RegexParserBaseVisitor<Pair<Collection
     }, false)
   }
 
-  override fun visitReturnClass(ctx: RegexParser.ReturnClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitReturnClass(ctx: RegexParser.ReturnClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it == '\r' }, false)
   }
 
-  override fun visitTab(ctx: RegexParser.TabContext?): Pair<CollectionElement, Boolean> {
+  override fun visitTab(ctx: RegexParser.TabContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it == '\t' }, false)
   }
 
-  override fun visitEsc(ctx: RegexParser.EscContext?): Pair<CollectionElement, Boolean> {
+  override fun visitEsc(ctx: RegexParser.EscContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it == '' }, false)
   }
 
-  override fun visitBackspaceClass(ctx: RegexParser.BackspaceClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitBackspaceClass(ctx: RegexParser.BackspaceClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it == '\b' }, false)
   }
 
-  override fun visitIdentClass(ctx: RegexParser.IdentClassContext?): Pair<CollectionElement, Boolean> {
-    return Pair(CollectionElement.CharacterClassExpression { it.isJavaIdentifierPart() }, false)
+  override fun visitIdentClass(ctx: RegexParser.IdentClassContext): Pair<CollectionElement, Boolean> {
+    // Char.isJavaIdentifierPart() is JVM-only and unavailable on Kotlin/JS; approximated here
+    // for the spike. Not an exact match for the JDK's identifier-part rules (e.g. currency
+    // symbols), and needs a real multiplatform equivalent if this ever leaves spike status.
+    return Pair(CollectionElement.CharacterClassExpression { it.isLetterOrDigit() || it == '_' || it == '$' }, false)
   }
 
-  override fun visitKeywordClass(ctx: RegexParser.KeywordClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitKeywordClass(ctx: RegexParser.KeywordClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isLetterOrDigit() || it == '_' }, false)
   }
 
-  override fun visitFnameClass(ctx: RegexParser.FnameClassContext?): Pair<CollectionElement, Boolean> {
+  override fun visitFnameClass(ctx: RegexParser.FnameClassContext): Pair<CollectionElement, Boolean> {
     return Pair(CollectionElement.CharacterClassExpression { it.isLetter() || "_/.-+,#$%~=".contains(it) }, false)
   }
 

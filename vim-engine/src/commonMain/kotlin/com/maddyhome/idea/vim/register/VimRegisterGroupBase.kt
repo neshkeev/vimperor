@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.register
 
+import kotlin.jvm.JvmField
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.Options
@@ -203,8 +204,8 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
       }
     logger.debug { "Copy to '$lastRegisterChar' with copied text: $copiedText" }
     // If this is an uppercase register, we need to append the text to the corresponding lowercase register
-    if (Character.isUpperCase(register)) {
-      val lreg = Character.toLowerCase(register)
+    if (register.isUpperCase()) {
+      val lreg = register.lowercaseChar()
       val r = myRegisters[lreg]
       // Append the text if the lowercase register existed
       if (r != null) {
@@ -544,8 +545,8 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
   override fun getRegister(editor: VimEditor, context: ExecutionContext, r: Char): Register? {
     var myR = r
     // Uppercase registers actually get the lowercase register
-    if (Character.isUpperCase(myR)) {
-      myR = Character.toLowerCase(myR)
+    if (myR.isUpperCase()) {
+      myR = myR.lowercaseChar()
     }
     return if (CLIPBOARD_REGISTERS.indexOf(myR) >= 0) refreshClipboardRegister(
       editor,
@@ -564,7 +565,7 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
   }
 
   override fun saveRegister(editor: VimEditor, context: ExecutionContext, r: Char, register: Register) {
-    var myR = if (Character.isUpperCase(r)) Character.toLowerCase(r) else r
+    var myR = if (r.isUpperCase()) r.lowercaseChar() else r
 
     if (CLIPBOARD_REGISTERS.indexOf(myR) >= 0) {
       when (myR) {
@@ -617,15 +618,15 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
     val register = recordRegister
     if (register != null) {
       var reg: Register? = null
-      if (Character.isUpperCase(register)) {
+      if (register.isUpperCase()) {
         reg = getRegister(editor, context, register)
       }
 
       val myRecordList = recordList
       if (myRecordList != null) {
         if (reg == null) {
-          reg = Register(Character.toLowerCase(register), SelectionType.CHARACTER_WISE, myRecordList)
-          myRegisters[Character.toLowerCase(register)] = reg
+          reg = Register(register.lowercaseChar(), SelectionType.CHARACTER_WISE, myRecordList)
+          myRegisters[register.lowercaseChar()] = reg
         } else {
           myRegisters[reg.name.lowercaseChar()] = reg.addText(injector.parser.toPrintableString(myRecordList))
         }

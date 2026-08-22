@@ -10,8 +10,8 @@ package com.maddyhome.idea.vim.regexp.parser.visitors
 
 import com.maddyhome.idea.vim.parser.generated.RegexParser
 import com.maddyhome.idea.vim.parser.generated.RegexParserBaseVisitor
-import org.antlr.v4.runtime.Token
-import org.antlr.v4.runtime.tree.TerminalNode
+import org.antlr.v4.kotlinruntime.Token
+import org.antlr.v4.kotlinruntime.tree.TerminalNode
 
 /**
  * A tree visitor for visiting nodes representing a multi. It is used to identify
@@ -19,7 +19,15 @@ import org.antlr.v4.runtime.tree.TerminalNode
  *
  * @see :help /multi
  */
-internal class MultiVisitor : RegexParserBaseVisitor<Multi>() {
+internal class MultiVisitor : RegexParserBaseVisitor<Multi?>() {
+
+  /**
+   * Null, as the Java runtime returned. Phase 0's spike asserted here that every `multi`
+   * alternative has an override and that this is unreachable; 15 engine tests say otherwise. The
+   * wrapper rules - `multi`, `range_quantifier` and the lookaround groups - have no override and
+   * are walked by `visitChildren`, which starts from this value and keeps the last child's result.
+   */
+  override fun defaultResult(): Multi? = null
 
   override fun visitZeroOrMore(ctx: RegexParser.ZeroOrMoreContext): Multi {
     return Multi.RangeMulti(RangeBoundary.IntRangeBoundary(0), RangeBoundary.InfiniteRangeBoundary, true)
@@ -29,7 +37,7 @@ internal class MultiVisitor : RegexParserBaseVisitor<Multi>() {
     return Multi.RangeMulti(RangeBoundary.IntRangeBoundary(1), RangeBoundary.InfiniteRangeBoundary, true)
   }
 
-  override fun visitZeroOrOne(ctx: RegexParser.ZeroOrOneContext?): Multi {
+  override fun visitZeroOrOne(ctx: RegexParser.ZeroOrOneContext): Multi {
     return Multi.RangeMulti(RangeBoundary.IntRangeBoundary(0), RangeBoundary.IntRangeBoundary(1), true)
   }
 
@@ -48,32 +56,32 @@ internal class MultiVisitor : RegexParserBaseVisitor<Multi>() {
     isGreedy: Boolean,
   ): Multi {
     val lowerDelimiter =
-      if (lowerBoundToken == null) RangeBoundary.IntRangeBoundary(0) else RangeBoundary.IntRangeBoundary(lowerBoundToken.text.toInt())
+      if (lowerBoundToken == null) RangeBoundary.IntRangeBoundary(0) else RangeBoundary.IntRangeBoundary(lowerBoundToken.text!!.toInt())
     val upperDelimiter =
       if (comma != null) if (upperBoundToken == null) RangeBoundary.InfiniteRangeBoundary else RangeBoundary.IntRangeBoundary(
-        upperBoundToken.text.toInt()
+        upperBoundToken.text!!.toInt()
       )
       else if (lowerBoundToken == null) RangeBoundary.InfiniteRangeBoundary else lowerDelimiter
     return Multi.RangeMulti(lowerDelimiter, upperDelimiter, isGreedy)
   }
 
-  override fun visitAtomic(ctx: RegexParser.AtomicContext?): Multi {
+  override fun visitAtomic(ctx: RegexParser.AtomicContext): Multi {
     return Multi.AtomicMulti
   }
 
-  override fun visitPositiveLookahead(ctx: RegexParser.PositiveLookaheadContext?): Multi {
+  override fun visitPositiveLookahead(ctx: RegexParser.PositiveLookaheadContext): Multi {
     return Multi.AssertionMulti(isPositive = true, isAhead = true)
   }
 
-  override fun visitNegativeLookahead(ctx: RegexParser.NegativeLookaheadContext?): Multi {
+  override fun visitNegativeLookahead(ctx: RegexParser.NegativeLookaheadContext): Multi {
     return Multi.AssertionMulti(isPositive = false, isAhead = true)
   }
 
-  override fun visitPositiveLookbehind(ctx: RegexParser.PositiveLookbehindContext?): Multi {
+  override fun visitPositiveLookbehind(ctx: RegexParser.PositiveLookbehindContext): Multi {
     return Multi.AssertionMulti(isPositive = true, isAhead = false)
   }
 
-  override fun visitNegativeLookbehind(ctx: RegexParser.NegativeLookbehindContext?): Multi {
+  override fun visitNegativeLookbehind(ctx: RegexParser.NegativeLookbehindContext): Multi {
     return Multi.AssertionMulti(isPositive = false, isAhead = false)
   }
 

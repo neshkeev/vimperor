@@ -52,11 +52,14 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.Scope
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.operators.AssignmentOperator
 import com.maddyhome.idea.vim.vimscript.model.expressions.operators.AssignmentOperator.Companion.getByValue
-import org.antlr.v4.runtime.ParserRuleContext
-import java.util.stream.Collectors
+import org.antlr.v4.kotlinruntime.ParserRuleContext
 import kotlin.reflect.KClass
 
-object CommandVisitor : VimscriptBaseVisitor<Command>() {
+object CommandVisitor : VimscriptBaseVisitor<Command?>() {
+
+  /** Null, as the Java runtime returned - see [ExpressionVisitor.defaultResult]. */
+  override fun defaultResult(): Command? = null
+
 
   private val logger = vimLogger<CommandVisitor>()
   private val expressionVisitor: ExpressionVisitor = ExpressionVisitor
@@ -67,7 +70,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
       offset += ctx.plusOneOffset().size
       offset -= ctx.minusOneOffset().size
       for (number in ctx.numberInOffset()) {
-        offset += Integer.parseInt(number.text)
+        offset += number.text!!.toInt()
       }
     }
     return offset
@@ -79,11 +82,16 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
       return Pair(".", offset)
     } else if (ctx.rangeMember() == null) {
       Pair(".", offset)
-    } else if (ctx.rangeMember().search() == null || ctx.rangeMember().search().isEmpty()) {
-      Pair(ctx.rangeMember().text, offset)
     } else {
-      val memberString = ctx.rangeMember().search().joinToString("\u0000") { it.text }
-      Pair(memberString, offset)
+      // One call, not four: each `rangeMember()` is a fresh invocation, so the null check above
+      // does not smart-cast the ones that follow it.
+      val rangeMember = ctx.rangeMember()!!
+      val search = rangeMember.search()
+      if (search == null || search.isEmpty()) {
+        Pair(rangeMember.text, offset)
+      } else {
+        Pair(search.joinToString("\u0000") { it.text }, offset)
+      }
     }
   }
 
@@ -118,17 +126,17 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitLet1Command(ctx: VimscriptParser.Let1CommandContext): Command {
     val range: Range = parseRange(ctx.range())
-    val lvalue: Expression? = ctx.lvalue?.let { expressionVisitor.visit(it) }
-    val unpackLValues = ctx.unpack?.lvalues?.map { expressionVisitor.visit(it)!! }
-    val unpackRest: Expression? = ctx.unpack?.rest?.let { expressionVisitor.visit(it) }
+    val lvalue: Expression? = ctx.lvalue?.let { expressionVisitor.visitExpression(it) }
+    val unpackLValues = ctx.unpack?.lvalues?.map { expressionVisitor.visitExpression(it) }
+    val unpackRest: Expression? = ctx.unpack?.rest?.let { expressionVisitor.visitExpression(it) }
     val operator = getByValue(ctx.assignmentOperator().text)
-    val expression: Expression = expressionVisitor.visit(ctx.rvalue)
+    val expression: Expression = expressionVisitor.visitExpression(ctx.rvalue!!)
     val assignmentTextForErrors = buildString {
-      ctx.children
+      ctx.children.orEmpty()
         .dropWhile { it != ctx.unpack && it != ctx.lvalue }
         .takeWhile { it != ctx.rvalue }
         .forEach { append(it.text) }
-      append(ctx.rvalue.text)
+      append(ctx.rvalue!!.text)
     }
     val command = LetCommand(
       range,
@@ -159,11 +167,10 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitEchoCommand(ctx: EchoCommandContext): Command {
     val range: Range = parseRange(ctx.range())
-    val expressions = ctx.expr().stream()
+    val expressions = ctx.expr()
       .map { tree: ExprContext ->
-        expressionVisitor.visit(tree)
+        expressionVisitor.visitExpression(tree)
       }
-      .collect(Collectors.toList())
     val command = EchoCommand(range, expressions)
     command.rangeInScript = ctx.getTextRange()
     return command
@@ -171,7 +178,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitCallCommand(ctx: CallCommandContext): Command {
     val range: Range = parseRange(ctx.range())
-    val functionCall = ExpressionVisitor.visit(ctx.expr())
+    val functionCall = ExpressionVisitor.visitExpression(ctx.expr())
     val command = CallCommand(range, functionCall)
     command.rangeInScript = ctx.getTextRange()
     return command
@@ -180,7 +187,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
   override fun visitDelfunctionCommand(ctx: DelfunctionCommandContext): DelfunctionCommand {
     val range: Range = parseRange(ctx.range())
     val functionScope =
-      if (ctx.functionScope() != null) Scope.getByValue(ctx.functionScope().text) else null
+      if (ctx.functionScope() != null) Scope.getByValue(ctx.functionScope()!!.text) else null
     // Preserve the autoload namespace prefix (e.g. `foo#bar#`) so deletion targets the full name.
     val autoloadPrefix = ctx.anyCaseNameWithDigitsAndUnderscores().joinToString(separator = "") { "${it.text}#" }
     val functionName = autoloadPrefix + ctx.functionName().text
@@ -197,7 +204,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
     } else {
       range = Range()
       range.addAddresses(
-        createRangeAddresses(ctx.shortRange().text, 0, false)
+        createRangeAddresses(ctx.shortRange()!!.text, 0, false)
           ?: throw ExException("Could not create a range"),
       )
     }
@@ -208,7 +215,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitCommandWithComment(ctx: VimscriptParser.CommandWithCommentContext): Command {
     val ranges = parseRange(ctx.range())
-    val commandName = ctx.name.text
+    val commandName = ctx.name!!.text!!
     val modifier = if (ctx.bangModifier != null) CommandModifier.BANG else CommandModifier.NONE
     val argument = ctx.commandArgumentWithoutBars()?.text ?: ""
     return createCommandByCommandContext(ranges, commandName, modifier, argument, ctx)
@@ -216,7 +223,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitCommandWithoutComments(ctx: VimscriptParser.CommandWithoutCommentsContext): Command {
     val ranges = parseRange(ctx.range())
-    val commandName = ctx.name.text
+    val commandName = ctx.name!!.text!!
     val modifier = if (ctx.bangModifier != null) CommandModifier.BANG else CommandModifier.NONE
     val argument = ctx.commandArgumentWithoutBars()?.text ?: ""
     return createCommandByCommandContext(ranges, commandName, modifier, argument, ctx)
@@ -232,7 +239,7 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitCommandWithBars(ctx: VimscriptParser.CommandWithBarsContext): Command {
     val ranges = parseRange(ctx.range())
-    val commandName = ctx.name.text
+    val commandName = ctx.name!!.text!!
     val argument = ctx.commandArgumentWithBars()?.text ?: ""
     val modifier = if (ctx.bangModifier != null) CommandModifier.BANG else CommandModifier.NONE
     return createCommandByCommandContext(ranges, commandName, modifier, argument, ctx)
@@ -298,11 +305,10 @@ object CommandVisitor : VimscriptBaseVisitor<Command>() {
 
   override fun visitExecuteCommand(ctx: VimscriptParser.ExecuteCommandContext): ExecuteCommand {
     val ranges = parseRange(ctx.range())
-    val expressions = ctx.expr().stream()
+    val expressions = ctx.expr()
       .map { tree: ExprContext ->
-        expressionVisitor.visit(tree)
+        expressionVisitor.visitExpression(tree)
       }
-      .collect(Collectors.toList())
     val command = ExecuteCommand(ranges, expressions)
     command.rangeInScript = ctx.getTextRange()
     return command

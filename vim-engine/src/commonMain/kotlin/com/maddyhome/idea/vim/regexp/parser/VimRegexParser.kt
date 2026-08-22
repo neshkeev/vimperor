@@ -13,8 +13,8 @@ import com.maddyhome.idea.vim.parser.generated.RegexParser
 import com.maddyhome.idea.vim.regexp.parser.error.BailErrorLexer
 import com.maddyhome.idea.vim.regexp.parser.error.VimRegexParserErrorStrategy
 import com.maddyhome.idea.vim.regexp.parser.error.VimRegexParserException
-import org.antlr.v4.runtime.CharStreams
-import org.antlr.v4.runtime.CommonTokenStream
+import com.maddyhome.idea.vim.parser.VimCharStream
+import org.antlr.v4.kotlinruntime.CommonTokenStream
 
 /**
  * Represents a parser of Vim's patterns.
@@ -31,11 +31,11 @@ internal object VimRegexParser {
    */
   fun parse(pattern: String): VimRegexParserResult {
     return try {
-      val regexLexer = BailErrorLexer(CharStreams.fromString(BracketNormalizer.normalize(pattern)))
+      val regexLexer = BailErrorLexer(VimCharStream(BracketNormalizer.normalize(pattern)))
       val tokens = CommonTokenStream(regexLexer)
       val parser = RegexParser(tokens)
       parser.errorHandler = VimRegexParserErrorStrategy()
-      parser.errorListeners.clear()
+      parser.removeErrorListeners()
       val tree = parser.pattern()
       VimRegexParserResult.Success(tree, getCaseSensitivitySettings(regexLexer))
     } catch (e: VimRegexParserException) {

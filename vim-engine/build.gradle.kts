@@ -19,11 +19,13 @@
 //
 // This avoids option (c) (a structural JVM-only parser subproject).
 
+import com.strumenta.antlrkotlin.gradle.AntlrKotlinTask
 import java.util.Properties
 
 plugins {
     kotlin("multiplatform")
 //    id("org.jlleitschuh.gradle.ktlint")
+    id("com.strumenta.antlr-kotlin") version "1.0.13"
     id("com.google.devtools.ksp") version "2.3.7"
     kotlin("plugin.serialization") version "2.3.20"
     `maven-publish`
@@ -48,47 +50,24 @@ repositories {
     maven { url = uri("https://cache-redirector.jetbrains.com/repo.maven.apache.org/maven2") }
 }
 
-// --- ANTLR without the antlr plugin
-
-val antlrTool by configurations.registering
-
-val antlrOutputDir = layout.buildDirectory.dir("generated-src/antlr/jvmMain")
-val antlrSrcDir = layout.projectDirectory.dir("antlr")
-
-// RegexParser.g4 declares `options { tokenVocab=RegexLexer; }`, so RegexLexer
-// must be generated first to produce RegexLexer.tokens. Two ordered steps.
-val generateLexerGrammars by tasks.registering(JavaExec::class) {
-  classpath = files(antlrTool)
-  mainClass.set("org.antlr.v4.Tool")
-  inputs.files(antlrSrcDir.file("RegexLexer.g4"), antlrSrcDir.file("Vimscript.g4"))
-  outputs.dir(antlrOutputDir)
-  args(
-    "-package", "com.maddyhome.idea.vim.parser.generated",
-    "-visitor",
-    "-o", antlrOutputDir.get().asFile.absolutePath,
-    antlrSrcDir.file("RegexLexer.g4").asFile.absolutePath,
-    antlrSrcDir.file("Vimscript.g4").asFile.absolutePath,
-  )
-}
-
-val generateParserGrammars by tasks.registering(JavaExec::class) {
-  dependsOn(generateLexerGrammars)
-  classpath = files(antlrTool)
-  mainClass.set("org.antlr.v4.Tool")
-  inputs.files(antlrSrcDir.file("RegexParser.g4"))
-  outputs.dir(antlrOutputDir)
-  args(
-    "-package", "com.maddyhome.idea.vim.parser.generated",
-    "-visitor",
-    // -lib is where tokenVocab looks for RegexLexer.tokens
-    "-lib", antlrOutputDir.get().asFile.absolutePath,
-    "-o", antlrOutputDir.get().asFile.absolutePath,
-    antlrSrcDir.file("RegexParser.g4").asFile.absolutePath,
-  )
-}
-
-val generateGrammarSource by tasks.registering {
-  dependsOn(generateLexerGrammars, generateParserGrammars)
+// --- ANTLR, generated as Kotlin for every target
+//
+// This was the ANTLR Java tool driven through JavaExec, feeding generated Java into the jvm
+// target's `compileJvmMainJava`. That works, and only works there: a JS target has no Java. The
+// grammars are now compiled by antlr-kotlin into `commonMain`, so both targets run the *same*
+// generated parser rather than two parsers that have to be kept saying the same thing.
+//
+// The grammars carry three edits for this, all of them in phase 0's report: `RegexLexer.g4`'s
+// members block is Kotlin instead of Java, its actions call `markIgnoreCase` rather than
+// `setIgnoreCase` (which would collide with the generated setter for `var ignoreCase`), and
+// `RegexParser.g4`'s `start=` label is `rangeStart=`, because `start` is a final member of the
+// Kotlin runtime's ParserRuleContext. Java hid that collision silently.
+val generateKotlinGrammarSource by tasks.registering(AntlrKotlinTask::class) {
+  source = fileTree(layout.projectDirectory.dir("antlr")) { include("**/*.g4") }
+  packageName = "com.maddyhome.idea.vim.parser.generated"
+  arguments = listOf("-visitor")
+  outputDirectory =
+    layout.buildDirectory.dir("generatedAntlr/com/maddyhome/idea/vim/parser/generated").get().asFile
 }
 
 ksp {
@@ -271,7 +250,10 @@ kotlin {
     val commonMain by getting {
       // Phase 1 task 5. Only files with no JVM-API dependency live here; the
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
+      // The task provider, not the directory - see the note on jsMain below for why.
+      kotlin.srcDir(generateKotlinGrammarSource)
       dependencies {
+        implementation("com.strumenta:antlr-kotlin-runtime:1.0.13")
         // :api is multiplatform as of W6, so common code can depend on it. `implementation`
         // rather than `api`, matching the visibility this had when it sat in jvmMain.
         implementation(project(":api"))
@@ -284,14 +266,7 @@ kotlin {
     }
     val jvmMain by getting {
       // src/jvmMain/{kotlin,resources} are KMP defaults - no srcDir needed.
-      // Kotlin needs the generated ANTLR Java on its source path to RESOLVE it
-      // (it does not compile it - compileJvmMainJava does that, below).
-      kotlin.srcDir(antlrOutputDir)
       dependencies {
-        // Was runtimeOnly under the antlr plugin, which put the runtime on the
-        // compile path via its own `antlr` configuration. Without the plugin the
-        // engine's own `org.antlr.v4.runtime.*` imports need it at compile time.
-        implementation("org.antlr:antlr4-runtime:4.13.2")
         compileOnly("org.jetbrains:annotations:26.1.0")
         compileOnly(project(":annotation-processors"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$kotlinxSerializationVersion")
@@ -342,25 +317,14 @@ kotlin {
 }
 
 dependencies {
-  antlrTool("org.antlr:antlr4:4.13.2")
   add("kspJvm", project(":annotation-processors"))
 }
 
-// The generated ANTLR Java feeds the jvm target's own Java compilation, and the
-// Kotlin compilation needs it on the source path too for resolution.
-tasks.named<JavaCompile>("compileJvmMainJava") {
-  dependsOn(generateGrammarSource)
-  source(antlrOutputDir)
-}
-
-tasks.named("compileKotlinJvm") {
-  dependsOn(generateGrammarSource)
-}
-
 // KSP's tasks are registered lazily by the plugin, so match rather than name().
-// Mirrors the original `afterEvaluate { kspKotlin dependsOn generateGrammarSource }`.
+// KSP reads the engine's own annotated sources, which reference the generated parser, so the
+// grammars still have to be built first.
 tasks.matching { it.name == "kspKotlinJvm" }.configureEach {
-  dependsOn(generateGrammarSource)
+  dependsOn(generateKotlinGrammarSource)
 }
 tasks.matching { it.name == "kspTestKotlinJvm" }.configureEach {
   enabled = false

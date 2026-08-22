@@ -155,7 +155,7 @@ collection : COLLECTION_START CARET collection_elems+=collection_elem* COLLECTIO
            ;
 
 collection_elem : collection_char_class_expression                                                                 #CharClassColElem
-                | start=(COLLECTION_LITERAL_CHAR | DASH | CARET) DASH end=(COLLECTION_LITERAL_CHAR | DASH | CARET) #RangeColElem
+                | rangeStart=(COLLECTION_LITERAL_CHAR | DASH | CARET) DASH end=(COLLECTION_LITERAL_CHAR | DASH | CARET) #RangeColElem
                 | (COLLECTION_LITERAL_CHAR | DASH | CARET)                                                         #SingleColElem
                 ;
 

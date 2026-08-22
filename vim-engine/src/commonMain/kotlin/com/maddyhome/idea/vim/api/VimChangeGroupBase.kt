@@ -8,6 +8,8 @@
 
 package com.maddyhome.idea.vim.api
 
+import kotlin.jvm.JvmField
+import com.maddyhome.idea.vim.helper.nanoTime
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.KeyProcessResult
 import com.maddyhome.idea.vim.command.Argument
@@ -286,7 +288,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
             }
 
             else -> {
-              throw RuntimeException("Unexpected stroke type: ${stroke.javaClass} $stroke")
+              throw RuntimeException("Unexpected stroke type: ${stroke::class} $stroke")
             }
           }
         }
@@ -557,7 +559,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
           when (undo) {
             is VimKeyBasedUndoService -> undo.setInsertNonMergeUndoKey()
             is VimTimestampBasedUndoService -> {
-              val nanoTime = System.nanoTime()
+              val nanoTime = nanoTime()
               editor.forEachCaret { undo.startInsertSequence(it, it.offset, nanoTime) }
             }
           }
@@ -661,7 +663,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
     if (lastStrokes != null) {
       for (lastStroke in lastStrokes!!) {
         if (lastStroke is CharArray) {
-          textToPutRegister.append(String(lastStroke))
+          textToPutRegister.append(lastStroke.concatToString())
         }
       }
     }

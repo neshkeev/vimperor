@@ -26,10 +26,10 @@ tokens {
 }
 
 @members {
-    public Boolean ignoreCase = null;
+    var ignoreCase: Boolean? = null
 
-    void setIgnoreCase() { ignoreCase = true; }
-    void setNoIgnoreCase() { if (ignoreCase == null) ignoreCase = false; }
+    fun markIgnoreCase() { ignoreCase = true }
+    fun markNoIgnoreCase() { if (ignoreCase == null) ignoreCase = false }
 }
 
 // ------------------------------------------------------------------------------------------------ //
@@ -103,8 +103,8 @@ BEFORE_MARK_MAGIC: '\\%<\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(BEFORE_
 AFTER_MARK_MAGIC: '\\%>\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(AFTER_MARK);
 
 // case-related tokens
-IGNORE_CASE_MAGIC: '\\c' { setIgnoreCase(); } -> skip;
-NO_IGNORE_CASE_MAGIC: '\\C' { setNoIgnoreCase(); } -> skip;
+IGNORE_CASE_MAGIC: '\\c' { markIgnoreCase() } -> skip;
+NO_IGNORE_CASE_MAGIC: '\\C' { markNoIgnoreCase() } -> skip;
 
 // character classes
 CLASS_IDENTIFIER_MAGIC: '\\i' -> type(CLASS_IDENTIFIER);
@@ -248,8 +248,8 @@ BEFORE_MARK_NOMAGIC: '\\%<\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(BEFOR
 AFTER_MARK_NOMAGIC: '\\%>\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(AFTER_MARK);
 
 // case-related tokens
-IGNORE_CASE_NOMAGIC: '\\c' { setIgnoreCase(); } -> skip;
-NO_IGNORE_CASE_NOMAGIC: '\\C' { setNoIgnoreCase(); } -> skip;
+IGNORE_CASE_NOMAGIC: '\\c' { markIgnoreCase() } -> skip;
+NO_IGNORE_CASE_NOMAGIC: '\\C' { markNoIgnoreCase() } -> skip;
 
 // character classes
 CLASS_IDENTIFIER_NOMAGIC: '\\i' -> type(CLASS_IDENTIFIER);
@@ -394,8 +394,8 @@ BEFORE_MARK_VMAGIC: '%<\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(BEFORE_M
 AFTER_MARK_VMAGIC: '%>\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(AFTER_MARK);
 
 // case-related tokens
-IGNORE_CASE_VMAGIC: '\\c' { setIgnoreCase(); } -> skip;
-NO_IGNORE_CASE_VMAGIC: '\\C' { setNoIgnoreCase(); } -> skip;
+IGNORE_CASE_VMAGIC: '\\c' { markIgnoreCase() } -> skip;
+NO_IGNORE_CASE_VMAGIC: '\\C' { markNoIgnoreCase() } -> skip;
 
 // character classes
 CLASS_IDENTIFIER_VMAGIC: '\\i' -> type(CLASS_IDENTIFIER);
@@ -539,8 +539,8 @@ BEFORE_MARK_VNOMAGIC: '\\%<\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(BEFO
 AFTER_MARK_VNOMAGIC: '\\%>\'' ([a-zA-Z0-9<>'`"^.(){}] | '[' | ']') -> type(AFTER_MARK);
 
 // case-related tokens
-IGNORE_CASE_VNOMAGIC: '\\c' { setIgnoreCase(); } -> skip;
-OT_IGNORE_CASE_VNOMAGIC: '\\C' { setNoIgnoreCase(); } -> skip;
+IGNORE_CASE_VNOMAGIC: '\\c' { markIgnoreCase() } -> skip;
+OT_IGNORE_CASE_VNOMAGIC: '\\C' { markNoIgnoreCase() } -> skip;
 
 // character classes
 CLASS_IDENTIFIER_VNOMAGIC: '\\i' -> type(CLASS_IDENTIFIER);

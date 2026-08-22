@@ -7,6 +7,8 @@
  */
 package com.maddyhome.idea.vim.regexp
 
+import kotlin.jvm.JvmOverloads
+
 
 @Deprecated("Remove once old regex engine is removed")
 class CharPointer {
@@ -19,7 +21,7 @@ class CharPointer {
     readonly = true
   }
 
-  constructor(text: StringBuffer) {
+  constructor(text: StringBuilder) {
     seq = text
     readonly = false
   }
@@ -33,11 +35,11 @@ class CharPointer {
   @JvmOverloads
   fun set(ch: Char, offset: Int = 0): CharPointer {
     check(!readonly) { "readonly string" }
-    val data = seq as StringBuffer
+    val data = seq as StringBuilder
     while (pointer + offset >= data.length) {
       data.append('\u0000')
     }
-    data.setCharAt(pointer + offset, ch)
+    data[pointer + offset] = ch
     return this
   }
 
@@ -212,7 +214,7 @@ class CharPointer {
   val digits: Int
     get() {
       var res = 0
-      while (Character.isDigit(charAt())) {
+      while (charAt().isDigit()) {
         res = res * 10 + (charAt() - '0')
         inc()
       }
@@ -220,7 +222,7 @@ class CharPointer {
     }
 
   private fun normalize(pos: Int): Int {
-    return Math.min(seq.length, pos)
+    return minOf(seq.length, pos)
   }
 
   override fun toString(): String {

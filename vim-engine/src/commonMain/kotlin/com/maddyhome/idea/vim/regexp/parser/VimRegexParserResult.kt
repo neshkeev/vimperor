@@ -9,7 +9,7 @@
 package com.maddyhome.idea.vim.regexp.parser
 
 import com.maddyhome.idea.vim.regexp.VimRegexErrors
-import org.antlr.v4.runtime.tree.ParseTree
+import org.antlr.v4.kotlinruntime.tree.ParseTree
 
 /**
  * The result of trying to parse a string representing a Vim

@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.regexp.parser.visitors
 
+import com.maddyhome.idea.vim.helper.isIdentifierPart
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.options.helpers.KeywordOptionHelper
 import com.maddyhome.idea.vim.parser.generated.RegexParser
@@ -49,7 +50,18 @@ import com.maddyhome.idea.vim.regexp.engine.nfa.matcher.VisualAreaMatcher
  * NFA, that is then used to then find matches in an editor.
  * This is a singleton.
  */
-internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
+internal object PatternVisitor : RegexParserBaseVisitor<NFA?>() {
+
+  /**
+   * Null, exactly as the Java runtime's `defaultResult()` returned.
+   *
+   * This is load-bearing, and a throwing implementation fails 199 tests. 41 of the 114 rules have
+   * no override here - `atom`, `collec`, `char_class` and the rest are wrappers whose single child
+   * carries the real alternative - and `visitChildren` walks them by starting from this value and
+   * keeping the last child's result. Making the visitor nullable is what lets that keep working.
+   */
+  override fun defaultResult(): NFA? = null
+
 
   /**
    * Tracks the number of capture groups visited
@@ -71,7 +83,7 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     groupCount = 0
     groupNumbers.clear()
     groupCount++
-    val subNfa = visit(ctx.sub_pattern())
+    val subNfa = visit(ctx.sub_pattern())!!
     subNfa.capture(0, false)
     return subNfa
   }
@@ -85,11 +97,11 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     val nfaEnd = if (ctx.DOLLAR() != null) NFA.fromMatcher(EndOfLineMatcher()) else NFA.fromSingleState()
 
     for (concat in ctx.concats.dropLast(1)) {
-      val subNFA = visit(concat)
+      val subNFA = visit(concat)!!
       subNFA.assert(shouldConsume = false, isPositive = true, isAhead = true)
       nfaStart.concatenate(subNFA)
     }
-    return nfaStart.concatenate(if (ctx.concats.isNotEmpty()) visit(ctx.concats.last()) else NFA.fromSingleState())
+    return nfaStart.concatenate(if (ctx.concats.isNotEmpty()) visit(ctx.concats.last())!! else NFA.fromSingleState())
       .concatenate(nfaEnd)
   }
 
@@ -98,14 +110,18 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
   }
 
   override fun visitPiece(ctx: RegexParser.PieceContext): NFA {
-    if (ctx.multi() == null) return visit(ctx.atom())
+    if (ctx.multi() == null) return visit(ctx.atom())!!
 
-    val multi = MultiVisitor().visit(ctx.multi())
+    // Non-null for any `multi` the grammar can produce; the visitor is nullable-typed only so that
+    // `visitChildren` can walk the wrapper rules. Java reached the same end by throwing
+    // NoWhenBranchMatchedException here.
+    val multi = MultiVisitor().visit(ctx.multi()!!)
+      ?: error("a multi parsed but produced no quantifier")
 
     return when (multi) {
       is Multi.RangeMulti -> buildQuantifiedNFA(ctx.atom(), multi)
-      is Multi.AtomicMulti -> return visit(ctx.atom()).assert(shouldConsume = true, isPositive = true, isAhead = true)
-      is Multi.AssertionMulti -> return visit(ctx.atom()).assert(
+      is Multi.AtomicMulti -> return visit(ctx.atom())!!.assert(shouldConsume = true, isPositive = true, isAhead = true)
+      is Multi.AssertionMulti -> return visit(ctx.atom())!!.assert(
         shouldConsume = false,
         isPositive = multi.isPositive,
         isAhead = multi.isAhead,
@@ -117,13 +133,13 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
   private fun buildQuantifiedNFA(atom: RegexParser.AtomContext, range: Multi.RangeMulti): NFA {
     val prefixNFA = NFA.fromSingleState()
     for (i in 0 until range.lowerBoundary.i)
-      prefixNFA.concatenate(visit(atom))
+      prefixNFA.concatenate(visit(atom)!!)
 
     var suffixNFA = NFA.fromSingleState()
-    if (range.upperBoundary is RangeBoundary.InfiniteRangeBoundary) suffixNFA = visit(atom).closure(range.isGreedy)
+    if (range.upperBoundary is RangeBoundary.InfiniteRangeBoundary) suffixNFA = visit(atom)!!.closure(range.isGreedy)
     else {
       for (i in range.lowerBoundary.i until (range.upperBoundary as RangeBoundary.IntRangeBoundary).i) {
-        suffixNFA.concatenate(visit(atom))
+        suffixNFA.concatenate(visit(atom)!!)
         suffixNFA.optional(range.isGreedy)
       }
     }
@@ -138,7 +154,7 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
   override fun visitGroupingCapture(ctx: RegexParser.GroupingCaptureContext): NFA {
     val groupNumber = groupNumbers[ctx] ?: groupCount.also { groupNumbers[ctx] = it; groupCount++ }
 
-    val nfa = if (ctx.sub_pattern() == null) NFA.fromSingleState() else visit(ctx.sub_pattern())
+    val nfa = if (ctx.sub_pattern() == null) NFA.fromSingleState() else visit(ctx.sub_pattern()!!)!!
     nfa.capture(groupNumber)
 
     return nfa
@@ -146,27 +162,27 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
 
   override fun visitGroupingNoCapture(ctx: RegexParser.GroupingNoCaptureContext): NFA {
     return if (ctx.sub_pattern() == null) NFA.fromSingleState()
-    else visit(ctx.sub_pattern())
+    else visit(ctx.sub_pattern()!!)!!
   }
 
   override fun visitLiteralChar(ctx: RegexParser.LiteralCharContext): NFA {
     return NFA.fromMatcher(CharacterMatcher(cleanLiteralChar(ctx.text)))
   }
 
-  override fun visitAnyChar(ctx: RegexParser.AnyCharContext?): NFA {
+  override fun visitAnyChar(ctx: RegexParser.AnyCharContext): NFA {
     return NFA.fromMatcher(DotMatcher(false))
   }
 
-  override fun visitAnyCharNL(ctx: RegexParser.AnyCharNLContext?): NFA {
+  override fun visitAnyCharNL(ctx: RegexParser.AnyCharNLContext): NFA {
     return NFA.fromMatcher(DotMatcher(true))
   }
 
-  override fun visitCursor(ctx: RegexParser.CursorContext?): NFA {
+  override fun visitCursor(ctx: RegexParser.CursorContext): NFA {
     return NFA.fromMatcher(CursorMatcher())
   }
 
   override fun visitIdentifier(ctx: RegexParser.IdentifierContext): NFA {
-    val base = { char: Char -> char.isJavaIdentifierPart() }
+    val base = { char: Char -> isIdentifierPart(char) }
     return if (ctx.text.contains('_'))
       NFA.fromMatcher(
         PredicateMatcher { char -> char == '\n' || base(char) }
@@ -178,7 +194,7 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
   }
 
   override fun visitIdentifierNotDigit(ctx: RegexParser.IdentifierNotDigitContext): NFA {
-    val base = { char: Char -> !char.isDigit() && char.isJavaIdentifierPart() }
+    val base = { char: Char -> !char.isDigit() && isIdentifierPart(char) }
     return if (ctx.text.contains('_'))
       NFA.fromMatcher(
         PredicateMatcher { char -> char == '\n' || base(char) }
@@ -474,31 +490,31 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     )
   }
 
-  override fun visitEsc(ctx: RegexParser.EscContext?): NFA {
+  override fun visitEsc(ctx: RegexParser.EscContext): NFA {
     return NFA.fromMatcher(
       CharacterMatcher('')
     )
   }
 
-  override fun visitTab(ctx: RegexParser.TabContext?): NFA {
+  override fun visitTab(ctx: RegexParser.TabContext): NFA {
     return NFA.fromMatcher(
       CharacterMatcher('\t')
     )
   }
 
-  override fun visitCR(ctx: RegexParser.CRContext?): NFA {
+  override fun visitCR(ctx: RegexParser.CRContext): NFA {
     return NFA.fromMatcher(
       CharacterMatcher('\r')
     )
   }
 
-  override fun visitBS(ctx: RegexParser.BSContext?): NFA {
+  override fun visitBS(ctx: RegexParser.BSContext): NFA {
     return NFA.fromMatcher(
       CharacterMatcher('\b')
     )
   }
 
-  override fun visitNL(ctx: RegexParser.NLContext?): NFA {
+  override fun visitNL(ctx: RegexParser.NLContext): NFA {
     return NFA.fromMatcher(
       CharacterMatcher('\n')
     )
@@ -525,6 +541,7 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
 
     for (elem in collectionElements) {
       val result = collectionElementVisitor.visit(elem)
+        ?: error("a collection element parsed but produced no element")
       containsEOL = containsEOL || result.second
       val element = result.first
       when (element) {
@@ -559,13 +576,13 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     )
   }
 
-  override fun visitStartMatch(ctx: RegexParser.StartMatchContext?): NFA {
+  override fun visitStartMatch(ctx: RegexParser.StartMatchContext): NFA {
     val nfa = NFA.fromSingleState()
     nfa.startMatch()
     return nfa
   }
 
-  override fun visitEndMatch(ctx: RegexParser.EndMatchContext?): NFA {
+  override fun visitEndMatch(ctx: RegexParser.EndMatchContext): NFA {
     val nfa = NFA.fromSingleState()
     nfa.endMatch()
     return nfa
@@ -577,27 +594,27 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     )
   }
 
-  override fun visitStartOfFile(ctx: RegexParser.StartOfFileContext?): NFA {
+  override fun visitStartOfFile(ctx: RegexParser.StartOfFileContext): NFA {
     return NFA.fromMatcher(StartOfFileMatcher())
   }
 
-  override fun visitEndOfFile(ctx: RegexParser.EndOfFileContext?): NFA {
+  override fun visitEndOfFile(ctx: RegexParser.EndOfFileContext): NFA {
     return NFA.fromMatcher(EndOfFileMatcher())
   }
 
-  override fun visitStartOfLine(ctx: RegexParser.StartOfLineContext?): NFA {
+  override fun visitStartOfLine(ctx: RegexParser.StartOfLineContext): NFA {
     return NFA.fromMatcher(StartOfLineMatcher())
   }
 
-  override fun visitEndOfLine(ctx: RegexParser.EndOfLineContext?): NFA {
+  override fun visitEndOfLine(ctx: RegexParser.EndOfLineContext): NFA {
     return NFA.fromMatcher(EndOfLineMatcher())
   }
 
-  override fun visitStartOfWord(ctx: RegexParser.StartOfWordContext?): NFA {
+  override fun visitStartOfWord(ctx: RegexParser.StartOfWordContext): NFA {
     return NFA.fromMatcher(StartOfWordMatcher())
   }
 
-  override fun visitEndOfWord(ctx: RegexParser.EndOfWordContext?): NFA {
+  override fun visitEndOfWord(ctx: RegexParser.EndOfWordContext): NFA {
     return NFA.fromMatcher(EndOfWordMatcher())
   }
 
@@ -679,27 +696,27 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     )
   }
 
-  override fun visitLineCursor(ctx: RegexParser.LineCursorContext?): NFA {
+  override fun visitLineCursor(ctx: RegexParser.LineCursorContext): NFA {
     return NFA.fromMatcher(AtLineCursorMatcher())
   }
 
-  override fun visitBeforeLineCursor(ctx: RegexParser.BeforeLineCursorContext?): NFA {
+  override fun visitBeforeLineCursor(ctx: RegexParser.BeforeLineCursorContext): NFA {
     return NFA.fromMatcher(BeforeLineCursorMatcher())
   }
 
-  override fun visitAfterLineCursor(ctx: RegexParser.AfterLineCursorContext?): NFA {
+  override fun visitAfterLineCursor(ctx: RegexParser.AfterLineCursorContext): NFA {
     return NFA.fromMatcher(AfterLineCursorMatcher())
   }
 
-  override fun visitColumnCursor(ctx: RegexParser.ColumnCursorContext?): NFA {
+  override fun visitColumnCursor(ctx: RegexParser.ColumnCursorContext): NFA {
     return NFA.fromMatcher(AtColumnCursorMatcher())
   }
 
-  override fun visitBeforeColumnCursor(ctx: RegexParser.BeforeColumnCursorContext?): NFA {
+  override fun visitBeforeColumnCursor(ctx: RegexParser.BeforeColumnCursorContext): NFA {
     return NFA.fromMatcher(BeforeColumnCursorMatcher())
   }
 
-  override fun visitAfterColumnCursor(ctx: RegexParser.AfterColumnCursorContext?): NFA {
+  override fun visitAfterColumnCursor(ctx: RegexParser.AfterColumnCursorContext): NFA {
     return NFA.fromMatcher(AfterColumnCursorMatcher())
   }
 
@@ -709,11 +726,11 @@ internal object PatternVisitor : RegexParserBaseVisitor<NFA>() {
     } // TODO: Throw E70 error
 
     val nfa = NFA.fromSingleState()
-    for (atom in ctx.atoms) nfa.concatenate(visit(atom).optional(true))
+    for (atom in ctx.atoms) nfa.concatenate(visit(atom)!!.optional(true))
     return nfa
   }
 
-  override fun visitVisual(ctx: RegexParser.VisualContext?): NFA {
+  override fun visitVisual(ctx: RegexParser.VisualContext): NFA {
     return NFA.fromMatcher(VisualAreaMatcher())
   }
 

@@ -12,11 +12,15 @@ import com.maddyhome.idea.vim.parser.generated.VimscriptBaseVisitor
 import com.maddyhome.idea.vim.parser.generated.VimscriptParser
 import com.maddyhome.idea.vim.vimscript.model.Script
 
-object ScriptVisitor : VimscriptBaseVisitor<Script>() {
+object ScriptVisitor : VimscriptBaseVisitor<Script?>() {
+
+  /** Null, as the Java runtime returned - see [ExpressionVisitor.defaultResult]. */
+  override fun defaultResult(): Script? = null
 
   override fun visitScript(ctx: VimscriptParser.ScriptContext): Script {
-    val script = if (ctx.children != null) {
-      val statements = ctx.children.mapNotNull { ExecutableVisitor.visit(it) }
+    val children = ctx.children
+    val script = if (children != null) {
+      val statements = children.mapNotNull { ExecutableVisitor.visit(it) }
       Script(statements)
     } else {
       Script(emptyList())
