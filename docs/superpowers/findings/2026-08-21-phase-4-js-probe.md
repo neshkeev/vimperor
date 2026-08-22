@@ -1142,3 +1142,34 @@ It is the first behaviour the engine performs against a host that is not Intelli
 It is also two services out of 69. The value of the `TODO`-per-service shape is that the next
 increment is discovered rather than designed: run something, read which service it names, implement
 that one.
+
+## Vimscript parses into executable objects on both targets
+
+Two more services, both nearly free: `VimscriptParserBase` leaves nothing abstract, and
+`VimApplication` has eleven members that all have honest single-threaded answers - `invokeLater`
+runs immediately, `runWriteAction` just runs the action, `isMainThread` is true because there is one
+thread. A headless host is not faking those; it genuinely has nothing to marshal between.
+
+That is enough to check the layer *above* the corpus differential. The corpus compares parse trees;
+this checks the five visitors and the `Command` objects they build - `set number` becoming a
+`SetCommand`, `let x = 1 + 2` keeping its `BinExpression`, `if`/`else` keeping both branches, `for`
+keeping its body, and the ex-command tree resolving `s`, `d` and `g` to their full names. That is
+exactly where W1's nullable-visitor decision lands, and trees agreeing was never the same as
+commands agreeing.
+
+### Host services must be lazy, and that is a requirement
+
+Every test failed first with `lateinit property injector has not been initialized`. Engine services
+read the global `injector` **in their constructors** - `VimscriptParserBase` builds a logger in its
+initialiser - so a host that constructs its services eagerly touches `injector` before the
+assignment installing that host has finished. Every service in `HeadlessInjector` is `by lazy` for
+that reason, not for style. IntelliJ never meets this because the platform creates services on first
+use.
+
+### A shape to watch
+
+`HeadlessInjector` lives in `commonTest`, which is right while it exists to run tests. A real VS Code
+host needs the same 69 services in `jsMain`. Most of what this accumulates - parser, application,
+functions, variables, registers - is genuinely host-neutral, and only the editor-touching services
+should differ between a test harness and an extension. Worth resolving before there are two
+implementations of the same thing rather than after.
