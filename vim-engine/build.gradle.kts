@@ -140,6 +140,19 @@ kotlin {
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
       }
     }
+    val commonTest by getting {
+      // Tests of platform-neutral behaviour, run on *every* target. The differential tests that
+      // compare against java.lang.* stay in jvmTest - they need the JDK to compare against - so
+      // this is where the shared contracts get checked on JS as well as the JVM.
+      dependencies {
+        implementation(kotlin("test"))
+      }
+    }
+    val jsTest by getting {
+      dependencies {
+        implementation(kotlin("test"))
+      }
+    }
     val jvmTest by getting {
       dependencies {
         implementation("org.junit.jupiter:junit-jupiter-api:6.0.0")
@@ -220,9 +233,14 @@ publishing {
 artifacts.add(sourcesJarArtifacts.name, tasks.named("jvmSourcesJar"))
 
 // KMP renames the JVM test task from `test` to `jvmTest`. `./gradlew test` matches
-// by task NAME across projects, so without this alias it silently skips all 530 of
-// vim-engine's tests - 0 failures, 530 fewer tests, and a green build. Keeps the
+// by task NAME across projects, so without this alias it silently skips all of
+// vim-engine's tests - 0 failures, hundreds fewer tests, and a green build. Keeps the
 // command documented in CLAUDE.md and used by CI honest.
+//
+// jsNodeTest is here for the same reason and was caught the same way: commonTest compiles for both
+// targets, so the JS half ran and passed locally while `./gradlew test` reported zero JS tests. A
+// target whose tests are not in the gate is a target whose tests rot.
 tasks.register("test") {
   dependsOn("jvmTest")
+  dependsOn("jsNodeTest")
 }

@@ -25,5 +25,12 @@ package com.maddyhome.idea.vim.common
  * sites used before, so the JVM behaviour is unchanged. A single-threaded platform still needs
  * property 2 - a copy-on-write list, or a snapshot taken on iteration - and must not simply return
  * `mutableListOf()`.
+ *
+ * **Whether an element added *during* an iteration is seen by that iteration is unspecified, and
+ * the targets differ.** `ConcurrentLinkedDeque` is weakly consistent and may show it; a
+ * copy-on-write implementation walks a snapshot and will not. This was found by running
+ * `PlatformContractsTest` on both, not by reading either implementation. Do not rely on it: a
+ * listener that registers another listener must not assume the new one is notified in the same
+ * round.
  */
 expect fun <T> concurrentCollectionOf(): MutableCollection<T>

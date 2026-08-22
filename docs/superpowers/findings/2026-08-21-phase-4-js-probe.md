@@ -497,3 +497,48 @@ than derive them.
 ## The JVM is untouched
 
 12687 tests, 0 failures. The plugin zip builds.
+
+
+---
+
+# The engine runs on JavaScript
+
+`commonTest` and `jsTest` are wired, and `PlatformContractsTest` - 17 assertions about behaviour
+that must hold everywhere - passes on **both** the JVM and Node.
+
+That is a different claim from the one above it. Compiling proved the code had no JVM dependencies;
+this proves the JS `actual`s do what the JVM ones do.
+
+## It immediately earned its keep, twice
+
+**A real divergence.** The listener collection test asserted that iteration walks the snapshot it
+started with. That passed on JS and *failed on the JVM*: `ConcurrentLinkedDeque` is weakly
+consistent and showed an element added mid-iteration, where the copy-on-write JS actual never will.
+
+Neither is wrong - the `expect` had said "safe mutation during iteration" without saying whether an
+addition is *observed*. The test now asserts only what is actually guaranteed (a removal must not
+truncate the walk), and the `expect` records the difference explicitly, with the warning that a
+listener registering another listener must not assume the new one is notified in the same round.
+That divergence was invisible to the compiler and to 12689 JVM tests.
+
+**A silently missing target.** The first full gate reported 12706 tests, **0 of them JS**. The
+tests existed and passed; `./gradlew test` simply did not run them, because `test` matches by task
+name and `jsNodeTest` is not called `test` - the same trap phase 1 hit when KMP renamed `test` to
+`jvmTest` and 530 tests vanished from a green build. The alias now depends on both.
+
+A target whose tests are not in the gate is a target whose tests rot. The gate assertion now checks
+the JS count specifically, not just the total.
+
+## Where this leaves phase 4
+
+| | |
+|---|---|
+| `commonMain` compiles for JS | yes |
+| a JS library artifact builds | yes |
+| shared contracts verified on Node | 17 assertions |
+| JS tests in the standard gate | yes |
+| remaining `TODO()` stubs | 2 |
+
+The two stubs - the message bundle and float formatting - are now *writable*, because there is
+somewhere to verify them. `FloatFormatTest`'s 46 golden rows can move to `commonTest` and be run on
+Node the moment the JS implementation exists.
