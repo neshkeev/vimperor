@@ -431,6 +431,10 @@ kotlin {
         runtimeOnly("org.junit.vintage:junit-vintage-engine:6.1.2")
         implementation("org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
         implementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
+        // The engine has kotlinx.serialization as compileOnly - the IDE supplies it at runtime -
+        // so the JSON providers cannot read their resources in this module's tests without it.
+        // Only the JVM needs this: JS reads a generated registry, not JSON.
+        runtimeOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
       }
     }
   }

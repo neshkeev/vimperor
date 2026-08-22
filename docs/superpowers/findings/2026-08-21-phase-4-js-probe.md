@@ -1098,3 +1098,47 @@ This leaves a real gap worth naming. `RightToLeft` and the codepoint helpers are
 only tests run on the JVM. The same source through the JS backend could still differ - surrogate
 arithmetic is the obvious candidate. `PlatformContractsTest` covers part of that on both targets;
 it does not cover all of it.
+
+---
+
+# Phase 2 begins: a headless injector, and the defect it found immediately
+
+`VimInjector` is the one interface the engine reaches the outside world through, so a headless host
+is exactly the subset of its 69 services that a given behaviour touches - and nobody knows that
+subset from reading the code. `HeadlessInjectorBase` implements all 69 as `TODO`s that name
+themselves, so running a command reports which service it wants next and the host grows to fit real
+demand rather than a guess about it.
+
+`HeadlessInjector` supplies two so far. `VimStringParserBase` leaves nothing abstract - turning
+`"<C-A>"` into keystrokes is string work with no editor in it - and the logger is silent. That is
+enough to build the engine's entire command list: 375 commands with their keys parsed and their
+modes resolved, on both targets. The JS side moves from "these handler classes construct" to "the
+command table builds".
+
+## Two commands share one action id
+
+The first real test found it. `getActionId` derives ids from the **simple** class name, and there
+are two `InsertRegisterAction` classes - `action.change.insert` for insert-mode `<C-R>` and
+`action.ex` for the command line. Both become `VimInsertRegisterAction`.
+`RegisterActions.findAction` returns the first match, so **the command-line handler cannot be
+reached by id at all**; the insert-mode one shadows it. That lookup is how `<Action>` mappings
+resolve handlers.
+
+It reproduces identically on both targets, so it is not a port artefact - it is pre-existing
+IdeaVim behaviour that nothing had ever asserted. Not fixed here: action ids appear in users'
+`.ideavimrc` `<Action>` mappings, so renaming one is a user-visible change that should be
+deliberate. Pinned as current behaviour, like the two message-bundle bugs, so that fixing it fails
+this test rather than passing silently. **Worth a YouTrack ticket.**
+
+## A smaller thing the JVM half exposed
+
+`kotlinx.serialization` is `compileOnly` in the engine - the IDE supplies it at runtime - so the
+JSON providers could not read their own resources in this module's tests. Added as `runtimeOnly` for
+`jvmTest` only; JS needs nothing, because it reads the generated registry rather than JSON.
+
+## What this is and is not
+
+It is the first behaviour the engine performs against a host that is not IntelliJ, on both targets.
+It is also two services out of 69. The value of the `TODO`-per-service shape is that the next
+increment is discovered rather than designed: run something, read which service it names, implement
+that one.
