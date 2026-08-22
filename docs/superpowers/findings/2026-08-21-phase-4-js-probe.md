@@ -1173,3 +1173,43 @@ host needs the same 69 services in `jsMain`. Most of what this accumulates - par
 functions, variables, registers - is genuinely host-neutral, and only the editor-touching services
 should differ between a test harness and an extension. Worth resolving before there are two
 implementations of the same thing rather than after.
+
+## Expressions evaluate on Node, and the service graph turns out to be four deep
+
+`2 * 3`, `7 % 3`, `toupper('abc')`, `len([1, 2, 3])`, `max`, `min`, comparisons, `&&` - and the float
+formatting written by hand earlier in this port, now reached through the parser and evaluator rather
+than called directly. On both targets.
+
+The `TODO`-per-service shape earned its keep here. Each failure named the next service, and the
+chain for `1 < 2` was **`statisticsService` → `optionGroup` → `vimStorageService` →
+`systemInfoService`**. None of that is derivable by reading: comparison operators honour
+`'ignorecase'`, so they reach the option group; local option values live per-editor, so it reaches
+storage; option *defaults* branch on the environment, because `'clipboard'` consults `isXWindow`.
+Four services deep for an integer comparison.
+
+Most had honest headless answers rather than fakes - no editors open, no operating system
+underneath, one buffer so the window/buffer/tab scopes cannot be told apart and share a map. Only
+statistics is a genuine no-op, since usage telemetry belongs to a shipped host.
+
+**A test of mine was wrong, not the engine.** `strlen()` is not an engine function - the engine owns
+93 builtins and `strlen` comes from the IntelliJ side. The test now asserts the engine's own
+functions resolve *and* that `strlen` does not, so the boundary is recorded rather than assumed.
+
+## What the base classes say about the cost of the next step
+
+Counted rather than guessed, after predicting the opposite:
+
+| base class | abstract members |
+|---|---:|
+| `VimChangeGroupBase` | 1 (`reformatCode`, an IDE feature) |
+| `VimRegisterGroupBase` | 0 |
+| `VimMarkServiceBase` | 0 |
+| `VimCaretBase` | 0 |
+| `VimSearchHelperBase` | 0 |
+| `VimMotionGroupBase` | 0 |
+
+`MutableVimEditor` is three methods: `addLine`, `insertText`, `replaceString`. So the remaining cost
+of executing a keystroke is not spread across those services - it sits in a mutable editor and in
+carets that actually move, since `TestVimCaret` currently `TODO`s every mutation. Narrow interfaces
+do not make the *semantics* narrow, and caret motion, selection and mark adjustment are where Vim's
+subtleties live - but this is a smaller problem than "implement the change group".

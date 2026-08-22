@@ -9,11 +9,25 @@
 package com.maddyhome.idea.vim.host
 
 import com.maddyhome.idea.vim.api.VimApplication
+import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimEditorGroup
 import com.maddyhome.idea.vim.api.VimStringParser
 import com.maddyhome.idea.vim.api.VimStringParserBase
+import com.maddyhome.idea.vim.api.VimOptionGroup
+import com.maddyhome.idea.vim.api.VimOptionGroupBase
+import com.maddyhome.idea.vim.api.VimScriptFunctionServiceBase
+import com.maddyhome.idea.vim.api.SystemInfoService
+import com.maddyhome.idea.vim.api.VimStatistics
+import com.maddyhome.idea.vim.api.VimStorageService
+import com.maddyhome.idea.vim.api.Key
+import com.maddyhome.idea.vim.api.VimscriptFunctionService
 import com.maddyhome.idea.vim.api.VimscriptParser
 import com.maddyhome.idea.vim.api.VimscriptParserBase
+import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvider
+import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
+import com.maddyhome.idea.vim.vimscript.services.VariableService
+import com.maddyhome.idea.vim.vimscript.services.VimVariableServiceBase
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.diagnostic.VimLogger
 import kotlin.reflect.KClass
@@ -44,6 +58,53 @@ class HeadlessInjector : HeadlessInjectorBase() {
   override val vimscriptParser: VimscriptParser by lazy { object : VimscriptParserBase() {} }
 
   override val application: VimApplication by lazy { HeadlessApplication }
+
+  /**
+   * The engine's own builtin functions and nothing else - no host adds any here. The provider is
+   * the JSON resource on the JVM and the generated registry on JS, so evaluating `strlen("abc")`
+   * exercises whichever of the two this target uses.
+   */
+  override val functionService: VimscriptFunctionService by lazy {
+    object : VimScriptFunctionServiceBase() {
+      override val functionProviders: List<VimscriptFunctionProvider> = listOf(engineFunctionProvider)
+    }
+  }
+
+  /**
+   * Records nothing. Usage statistics are a product decision belonging to a shipped host, and the
+   * engine calls this on ordinary paths - evaluating a function call reaches it - so it has to
+   * exist rather than throw.
+   */
+  override val statisticsService: VimStatistics by lazy { HeadlessStatistics }
+
+  /** `VimOptionGroupBase` leaves nothing abstract; the options are the engine's own defaults. */
+  override val optionGroup: VimOptionGroup by lazy {
+    object : VimOptionGroupBase() {}.also { it.initialiseOptions() }
+  }
+
+  /**
+   * No editors. The option group asks for them when a value is read at global scope - it looks for
+   * open windows to apply a changed option to - and "none open" is a truthful answer for a host
+   * with no windows, not a placeholder.
+   */
+  override val editorGroup: VimEditorGroup by lazy { HeadlessEditorGroup }
+
+  /**
+   * Maps keyed by editor. The engine stores per-window, per-buffer and per-tab data here - local
+   * option values among them - and with one buffer and no windows the three scopes cannot be told
+   * apart, so they share a map rather than pretending to a distinction this host does not have.
+   */
+  override val vimStorageService: VimStorageService by lazy { HeadlessStorageService() }
+
+  /**
+   * Neither Windows nor X, and no environment. Option defaults branch on these - `'clipboard'`
+   * consults `isXWindow` - so answering rather than throwing is what lets options initialise, and a
+   * host with no operating system underneath it has no truthful alternative.
+   */
+  override val systemInfoService: SystemInfoService by lazy { HeadlessSystemInfo }
+
+  /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
+  override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
 
   /** Silent. A test that needs to read the log can swap this out; nothing does yet. */
   override fun <T : Any> getLogger(clazz: KClass<T>): VimLogger = SilentLogger
@@ -83,4 +144,60 @@ private object HeadlessApplication : VimApplication {
 
   override fun postKey(stroke: VimKeyStroke, editor: VimEditor) =
     TODO("headless host has no key queue yet")
+}
+
+private object HeadlessStatistics : VimStatistics {
+  override fun logTrackedAction(actionId: String) {}
+  override fun logCopiedAction(actionId: String) {}
+  override fun setIfIfUsed(value: Boolean) {}
+  override fun setIfFunctionCallUsed(value: Boolean) {}
+  override fun setIfFunctionDeclarationUsed(value: Boolean) {}
+  override fun setIfLoopUsed(value: Boolean) {}
+  override fun setIfMapExprUsed(value: Boolean) {}
+  override fun addExtensionEnabledWithPlug(extension: String) {}
+  override fun addSourcedFile(path: String) {}
+}
+
+private object HeadlessEditorGroup : VimEditorGroup {
+  override fun notifyIdeaJoin(editor: VimEditor) {}
+  override fun getEditorsRaw(): Collection<VimEditor> = emptyList()
+  override fun getEditors(): Collection<VimEditor> = emptyList()
+  override fun getEditors(buffer: VimDocument): Collection<VimEditor> = emptyList()
+  override fun updateCaretsVisualAttributes(editor: VimEditor) {}
+  override fun updateCaretsVisualPosition(editor: VimEditor) {}
+  override fun getFocusedEditor(): VimEditor? = null
+  override fun getSelectedEditor(projectId: String): VimEditor? = null
+  override fun getSelectedEditor(): VimEditor? = null
+}
+
+private class HeadlessStorageService : VimStorageService {
+  private val windowData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
+  private val bufferData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
+  private val tabData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
+
+  @Suppress("UNCHECKED_CAST")
+  private fun <T> get(store: MutableMap<VimEditor, MutableMap<Key<*>, Any?>>, editor: VimEditor, key: Key<T>): T? =
+    store[editor]?.get(key) as T?
+
+  private fun <T> put(
+    store: MutableMap<VimEditor, MutableMap<Key<*>, Any?>>,
+    editor: VimEditor,
+    key: Key<T>,
+    data: T,
+  ) {
+    store.getOrPut(editor) { mutableMapOf() }[key] = data
+  }
+
+  override fun <T> getDataFromWindow(editor: VimEditor, key: Key<T>): T? = get(windowData, editor, key)
+  override fun <T> putDataToWindow(editor: VimEditor, key: Key<T>, data: T) = put(windowData, editor, key, data)
+  override fun <T> getDataFromBuffer(editor: VimEditor, key: Key<T>): T? = get(bufferData, editor, key)
+  override fun <T> putDataToBuffer(editor: VimEditor, key: Key<T>, data: T) = put(bufferData, editor, key, data)
+  override fun <T> getDataFromTab(editor: VimEditor, key: Key<T>): T? = get(tabData, editor, key)
+  override fun <T> putDataToTab(editor: VimEditor, key: Key<T>, data: T) = put(tabData, editor, key, data)
+}
+
+private object HeadlessSystemInfo : SystemInfoService {
+  override val isWindows: Boolean = false
+  override val isXWindow: Boolean = false
+  override fun getenv(name: String): String? = null
 }
