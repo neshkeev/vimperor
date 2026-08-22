@@ -34,11 +34,9 @@ class SmileCommand(val range: Range, val modifier: CommandModifier, val argument
 
     val smileResourcePath: String = extensionToResourceMap[extension] ?: DEFAULT_RESOURCE_PATH
 
-    val smileText: String = runCatching {
-      javaClass.getResourceAsStream(smileResourcePath)
-        ?.bufferedReader()
-        ?.use { it.readText() }
-    }.getOrNull() ?: return ExecutionResult.Error
+    // Generated from the same .txt files this used to read off the classpath, so the art is
+    // identical and no host needs a resource loader to print it.
+    val smileText: String = GENERATED_ASCII_ART[smileResourcePath] ?: return ExecutionResult.Error
 
     injector.outputPanel.output(editor, context, smileText)
     return ExecutionResult.Success

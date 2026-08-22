@@ -16,8 +16,6 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
-import com.maddyhome.idea.vim.vimscript.services.VimRcService
-import kotlin.io.path.Path
 
 /**
  * @author vlan
@@ -36,11 +34,10 @@ data class SourceCommand(val range: Range, val modifier: CommandModifier, val ar
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     val path = injector.pathExpansion.expandPath(argument.trim())
-    val file = Path(path)
     injector.vimscriptExecutor.executeFile(
       path,
       editor,
-      VimRcService.isIdeaVimRcFile(file),
+      injector.vimrcFileState.isVimRcFile(path),
       vimContext.getFirstParentContext() is CommandLineVimLContext
     )
 

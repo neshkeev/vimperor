@@ -83,18 +83,18 @@ class GeneratedEngineRegistryTest {
   }
 
   @Test
-  fun `test the ex-command registry is complete apart from the two host-bound commands`() {
+  fun `test the ex-command registry is complete`() {
     assertTrue(
       GENERATED_ENGINE_EX_COMMANDS.size > 130,
       "expected the full ex-command list, got ${GENERATED_ENGINE_EX_COMMANDS.size}",
     )
-    // `:smile` reads an ASCII-art classpath resource and `:source` reads a file, so both classes
-    // are still JVM-only. Pinned by name: this list shrinking is progress, and it growing is a
-    // regression that would otherwise be invisible.
+    // These two were the last commands JS could not reach: `:smile` read its art off the classpath
+    // and `:source` asked the JVM whether a path was the vimrc. Both are named here so that
+    // reintroducing a host dependency in either shows up as a failure.
     assertEquals(
-      emptyList(),
+      listOf("smile", "so[urce]"),
       listOf("smile", "so[urce]").filter { GENERATED_ENGINE_EX_COMMANDS.containsKey(it) },
-      "these were expected to be unavailable on JS",
+      "these should be available on JS",
     )
     // Most names build generically; the rest are the 18 classes CommandVisitor constructs itself,
     // and those cover disproportionately many names because of aliases - one MapCommand answers to

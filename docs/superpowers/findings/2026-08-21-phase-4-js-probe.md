@@ -987,3 +987,52 @@ One sample each, and JVM warmup amortises differently across a suite, so read it
 magnitude, roughly 3-4x" rather than a ratio. It matters because Vim parses patterns on every
 keystroke during incremental search, so this is the number a VS Code host will be living with.
 Nothing here is a blocker; it is a baseline to measure against when there is a host to measure.
+
+---
+
+# All 149 ex-commands, and what "remaining" actually means
+
+`:smile` and `:source` were the last two commands JS could not reach, and neither needed the
+filesystem abstraction they seemed to.
+
+`:smile` was never file IO - it reads four fixed `.txt` files off the classpath, which is the message
+bundle's shape. `generateAsciiArt` emits them as a Kotlin map; the `.txt` files stay the source of
+truth and both targets print identical art.
+
+`:source` already delegated the reading to `injector.vimscriptExecutor.executeFile`. Its only
+remaining tie was `VimRcService.isIdeaVimRcFile(file)`, and that is a **host** question rather than
+an engine one: where the vimrc lives is a host convention - `$HOME`, XDG, or an IDE setting - and
+comparing two paths for the same file is a filesystem question, not a string one. It is now
+`VimrcFileState.isVimRcFile(path)` on the injector, with the IntelliJ implementation delegating to
+the service that knows the whole search order. That is what makes `:source ~/.ideavimrc` and
+`:source $HOME/.ideavimrc` both count as sourcing the vimrc.
+
+The exclusion list in the generator is gone, and the test was flipped rather than deleted: it now
+asserts both commands *are* present, so reintroducing a host dependency in either fails.
+
+## No commonMain file depends on any jvmMain file
+
+Checked directly rather than assumed. The only two hits are a KDoc link and a commented-out line -
+no code dependency at all. The 26 files left in `jvmMain` are four terminal categories:
+
+| | count | |
+|---|---:|---|
+| `.jvm.kt` actuals | 12 | `expect`/`actual` pairs, by design |
+| Registry implementations | 8 | JSON and the class loader; JS has its generated twin |
+| JVM adapters | 2 | `AwtKeyStrokes`, `JavaPath` - bridges to AWT and `java.nio` |
+| Host code | 4 | `VimRcService`, `VimPathExpansionImpl`, the two extension loaders |
+
+**`LazyVimExtension` and `LazyExtensionFunctionInstance` do not need porting.** They were listed here
+as pending; they are referenced only from `src/main`'s `IjExtensionLoader`, and the engine's own
+`ideavim_extensions.json` is empty - extensions come from the plugin and from third parties.
+`ExtensionLoader` in `commonMain` is already the seam, and a VS Code host would load JS modules
+rather than resolve class names.
+
+That is the second time in this phase that "pending work" turned out to be already seamed, after
+`VimRcService`. Both times the mistake was the same: reading the *file's* dependencies instead of
+asking who depends on the file. **Before porting a file, check who needs it - some of them are host
+code that a second host simply replaces.**
+
+The engine's common code is self-contained. The open question is no longer what else must move; it
+is phase 2 - a headless host, so the suite can run against the engine without IntelliJ and "compiles
+for JS" can become "verified on JS".

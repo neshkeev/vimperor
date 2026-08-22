@@ -177,16 +177,10 @@ val generateJsCommandRegistry by tasks.registering {
     // `standardConstructor` is the annotation processor's answer, computed from the declared types.
     // The 18 classes without one are the ones CommandVisitor builds itself, and they get a null
     // factory here exactly as `lazyExCommand` gives them on the JVM.
-    // Two ex-commands cannot be reached from JS: `:smile` reads an ASCII-art classpath resource and
-    // `:source` reads a file, so both classes are still jvmMain-only. Listing them here rather than
-    // discovering them from a compile error keeps the gap deliberate, and `GeneratedEngineRegistryTest`
-    // asserts exactly which commands are missing so it cannot quietly grow.
-    val jsUnavailable = setOf(
-      "com.maddyhome.idea.vim.vimscript.model.commands.SmileCommand",
-      "com.maddyhome.idea.vim.vimscript.model.commands.SourceCommand",
-    )
+    // Every ex-command class is reachable from commonMain now, so nothing is excluded here. If one
+    // ever is not, this is where the exclusion goes - and `GeneratedEngineRegistryTest` asserts the
+    // registry is complete, so the gap would show up as a failing test rather than a silent hole.
     val exCommandEntries = exCommands.entries
-      .filter { it.value.getValue("class") as String !in jsUnavailable }
       .sortedBy { it.key }.joinToString("\n") { (name, bean) ->
       val className = escapeQualifiedName(bean.getValue("class") as String)
       val factory =
@@ -325,6 +319,42 @@ val generateVimscriptCorpus by tasks.registering {
 }
 
 
+// `:smile` prints ASCII art chosen by the file's extension, read until now from four classpath
+// resources. Same problem as the message bundle: a JS host has no classpath. The .txt files stay
+// the source of truth and are emitted as a Kotlin map, so both targets print identical art.
+val asciiArtDir = layout.projectDirectory.dir("src/jvmMain/resources/ascii-art")
+val generatedAsciiArtDir = layout.buildDirectory.dir("generated/ascii-art/kotlin")
+
+val generateAsciiArt by tasks.registering {
+  val artDir = asciiArtDir.asFile
+  val outputDir = generatedAsciiArtDir
+  inputs.dir(artDir)
+  outputs.dir(outputDir)
+  doLast {
+    fun quote(value: String): String =
+      "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
+        .replace("$", "\${'$'}").replace("\n", "\\n").replace("\r", "\\r") + "\""
+
+    val entries = artDir.listFiles().orEmpty().filter { it.name.endsWith(".txt") }.sortedBy { it.name }
+      .joinToString("\n") { file ->
+        "  " + quote("/ascii-art/" + file.name) + " to " + quote(file.readText()) + ","
+      }
+    val out = outputDir.get().file("com/maddyhome/idea/vim/vimscript/model/commands/GeneratedAsciiArt.kt").asFile
+    out.parentFile.mkdirs()
+    out.writeText(
+      buildString {
+        appendLine("// Generated from src/jvmMain/resources/ascii-art by generateAsciiArt. Do not edit.")
+        appendLine("package com.maddyhome.idea.vim.vimscript.model.commands")
+        appendLine()
+        appendLine("internal val GENERATED_ASCII_ART: Map<String, String> = mapOf(")
+        appendLine(entries)
+        appendLine(")")
+      }
+    )
+  }
+}
+
+
 kotlin {
   jvm()
   js(IR) {
@@ -350,6 +380,7 @@ kotlin {
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
       // The task provider, not the directory - see the note on jsMain below for why.
       kotlin.srcDir(generateKotlinGrammarSource)
+      kotlin.srcDir(generateAsciiArt)
       dependencies {
         implementation("com.strumenta:antlr-kotlin-runtime:1.0.13")
         // :api is multiplatform as of W6, so common code can depend on it. `implementation`

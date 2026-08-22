@@ -14,7 +14,7 @@ import com.maddyhome.idea.vim.action.change.LazyVimCommand
  * A source of built-in commands, keyed by the keystrokes that invoke them.
  *
  * Deliberately says nothing about where the list comes from. On the JVM it is a JSON resource
- * written by the annotation processor and read back reflectively ([JsonCommandProvider]); a host
+ * written by the annotation processor and read back reflectively (`JsonCommandProvider`, which only that target has); a host
  * with no class loader supplies the same commands from a registry generated at build time. The
  * engine only ever asks for the collection, so both are equally valid answers.
  */

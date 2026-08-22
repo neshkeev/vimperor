@@ -71,6 +71,13 @@ internal object VimRcFileState : VimrcFileState {
     saveStateListeners.forEach { it() }
   }
 
+  /**
+   * Delegates to [VimRcService], which knows the whole search order - a custom path from the IDE
+   * setting, then `$HOME`, then XDG. Comparing the resolved paths is what makes `:source ~/.ideavimrc`
+   * and `:source $HOME/.ideavimrc` both count as sourcing the vimrc.
+   */
+  override fun isVimRcFile(path: String): Boolean = VimRcService.isIdeaVimRcFile(Path.of(path))
+
   override fun saveFileState(filePath: String) {
     val ideaVimRcText = Path.of(filePath).let {
       kotlin.runCatching { it.readText() }.onFailure { LOG.error(it) }.getOrNull()
