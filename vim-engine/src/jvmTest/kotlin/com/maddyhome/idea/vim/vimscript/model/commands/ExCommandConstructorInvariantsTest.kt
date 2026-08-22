@@ -36,15 +36,18 @@ class ExCommandConstructorInvariantsTest {
           it.parameters[2].type == String::class.createType()
       }
 
-  private fun engineExCommandClasses(): List<String> {
+  /** Class name to the processor's `standardConstructor` flag, as recorded in the JSON. */
+  private fun engineExCommands(): Map<String, Boolean> {
     val stream = javaClass.classLoader.getResourceAsStream("ksp-generated/engine_ex_commands.json")
       ?: error("engine_ex_commands.json is not on the test classpath")
     // Parsed by hand rather than with kotlinx.serialization, which the engine has only as a
-    // compileOnly dependency and so is absent from this module's test runtime. The file is a flat
-    // map of command name to class name, so the values are every quoted string after a colon.
+    // compileOnly dependency and so is absent from this module's test runtime.
     val text = stream.reader().readText()
-    return Regex(":\\s*\"([^\"]+)\"").findAll(text).map { it.groupValues[1] }.distinct().sorted().toList()
+    val entry = Regex("\"class\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"standardConstructor\"\\s*:\\s*(true|false)")
+    return entry.findAll(text).associate { it.groupValues[1] to it.groupValues[2].toBoolean() }
   }
+
+  private fun engineExCommandClasses(): List<String> = engineExCommands().keys.sorted()
 
   @Test
   fun `test a matching three-argument constructor is always the primary one`() {
@@ -61,6 +64,20 @@ class ExCommandConstructorInvariantsTest {
       "these declare a (Range, CommandModifier, String) constructor that is not the primary one, " +
         "so the two lookup paths in CommandVisitor would disagree for them",
     )
+  }
+
+  @Test
+  fun `test the processor's constructor flag matches reflection`() {
+    // The flag exists so a host with no reflection can be told the answer. That is only safe while
+    // the two agree, so this compares KSP's view of the declared types against the runtime's view
+    // of the loaded class, for every registered command.
+    val disagreements = mutableListOf<String>()
+    for ((name, flagged) in engineExCommands()) {
+      val kClass = javaClass.classLoader.loadClass(name).kotlin
+      val actual = standardConstructorOf(kClass) != null
+      if (actual != flagged) disagreements.add("$name: json says $flagged, reflection says $actual")
+    }
+    assertEquals(emptyList(), disagreements, "the generated flag and the class have drifted apart")
   }
 
   @Test

@@ -21,7 +21,7 @@ import com.intellij.vim.annotations.ExCommand
 
 class ExCommandProcessor(private val environment: SymbolProcessorEnvironment) : SymbolProcessor {
   private val visitor = EXCommandVisitor()
-  private val commandToClass = mutableMapOf<String, String>()
+  private val commandToClass = mutableMapOf<String, ExCommandBean>()
   private val fileWriter = JsonFileWriter(environment)
 
   override fun process(resolver: Resolver): List<KSAnnotated> {
@@ -29,10 +29,28 @@ class ExCommandProcessor(private val environment: SymbolProcessorEnvironment) : 
 
     resolver.getAllFiles().forEach { it.accept(visitor, Unit) }
 
-    val sortedCommandToClass = commandToClass.toList().sortedWith(compareBy({ it.first }, { it.second })).toMap()
+    val sortedCommandToClass =
+      commandToClass.toList().sortedWith(compareBy({ it.first }, { it.second.`class` })).toMap()
     fileWriter.write(exCommandsFile, sortedCommandToClass)
 
     return emptyList()
+  }
+
+  /**
+   * Whether the class declares a `(Range, CommandModifier, String)` primary constructor.
+   *
+   * The primary one is the right one to look at: `ExCommandConstructorInvariantsTest` establishes
+   * that when a matching three-argument constructor exists, it is always the primary constructor.
+   */
+  private fun hasStandardConstructor(classDeclaration: KSClassDeclaration): Boolean {
+    val parameters = classDeclaration.primaryConstructor?.parameters ?: return false
+    if (parameters.size != 3) return false
+    val types = parameters.map { it.type.resolve().declaration.qualifiedName?.asString() }
+    return types == listOf(
+      "com.maddyhome.idea.vim.ex.ranges.Range",
+      "com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier",
+      "kotlin.String",
+    )
   }
 
   private inner class EXCommandVisitor : KSVisitorVoid() {
@@ -40,8 +58,12 @@ class ExCommandProcessor(private val environment: SymbolProcessorEnvironment) : 
     override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
       val exCommandAnnotation = classDeclaration.getAnnotationsByType(ExCommand::class).firstOrNull() ?: return
       val commands = exCommandAnnotation.command.split(",")
+      val bean = ExCommandBean(
+        classDeclaration.qualifiedName!!.asString(),
+        hasStandardConstructor(classDeclaration),
+      )
       for (command in commands) {
-        commandToClass[command] = classDeclaration.qualifiedName!!.asString()
+        commandToClass[command] = bean
       }
     }
 

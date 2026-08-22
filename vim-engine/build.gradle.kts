@@ -128,9 +128,11 @@ val generateJsCommandRegistry by tasks.registering {
   // Locals, not script references: the configuration cache cannot serialize the latter.
   val commandsJson = kspGeneratedDir.file("engine_commands.json").asFile
   val functionsJson = kspGeneratedDir.file("engine_vimscript_functions.json").asFile
+  val exCommandsJson = kspGeneratedDir.file("engine_ex_commands.json").asFile
   val outputDir = generatedRegistryDir
   inputs.file(commandsJson)
   inputs.file(functionsJson)
+  inputs.file(exCommandsJson)
   outputs.dir(outputDir)
   doLast {
     fun quote(value: String): String =
@@ -157,6 +159,9 @@ val generateJsCommandRegistry by tasks.registering {
     @Suppress("UNCHECKED_CAST")
     val functions = slurper.parse(functionsJson) as Map<String, String>
 
+    @Suppress("UNCHECKED_CAST")
+    val exCommands = slurper.parse(exCommandsJson) as Map<String, Map<String, Any>>
+
     // Grouped by class, exactly as JsonCommandProvider groups them: one LazyVimCommand per handler,
     // carrying every key sequence bound to it.
     val grouped = beans.groupBy { it.getValue("class") }
@@ -167,6 +172,30 @@ val generateJsCommandRegistry by tasks.registering {
     }
     val functionEntries = functions.entries.sortedBy { it.key }.joinToString("\n") { (name, className) ->
       "  LazyVimscriptFunction(${quote(name)}) { ${escapeQualifiedName(className)}() },"
+    }
+
+    // `standardConstructor` is the annotation processor's answer, computed from the declared types.
+    // The 18 classes without one are the ones CommandVisitor builds itself, and they get a null
+    // factory here exactly as `lazyExCommand` gives them on the JVM.
+    // Two ex-commands cannot be reached from JS: `:smile` reads an ASCII-art classpath resource and
+    // `:source` reads a file, so both classes are still jvmMain-only. Listing them here rather than
+    // discovering them from a compile error keeps the gap deliberate, and `GeneratedEngineRegistryTest`
+    // asserts exactly which commands are missing so it cannot quietly grow.
+    val jsUnavailable = setOf(
+      "com.maddyhome.idea.vim.vimscript.model.commands.SmileCommand",
+      "com.maddyhome.idea.vim.vimscript.model.commands.SourceCommand",
+    )
+    val exCommandEntries = exCommands.entries
+      .filter { it.value.getValue("class") as String !in jsUnavailable }
+      .sortedBy { it.key }.joinToString("\n") { (name, bean) ->
+      val className = escapeQualifiedName(bean.getValue("class") as String)
+      val factory =
+        if (bean.getValue("standardConstructor") as Boolean) {
+          "{ range, modifier, argument -> $className(range, modifier, argument) }"
+        } else {
+          "null"
+        }
+      "  ${quote(name)} to LazyExCommandInstance($className::class, $factory),"
     }
 
     val out = outputDir.get().file("com/maddyhome/idea/vim/GeneratedEngineRegistry.kt").asFile
@@ -184,6 +213,8 @@ val generateJsCommandRegistry by tasks.registering {
         appendLine("import com.maddyhome.idea.vim.command.MappingMode")
         appendLine("import com.maddyhome.idea.vim.handler.EditorActionHandlerBase")
         appendLine("import com.maddyhome.idea.vim.vimscript.model.functions.LazyVimscriptFunction")
+        appendLine("import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider")
+        appendLine("import com.maddyhome.idea.vim.vimscript.model.commands.LazyExCommandInstance")
         appendLine("import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvider")
         appendLine()
         appendLine("/**")
@@ -229,6 +260,15 @@ val generateJsCommandRegistry by tasks.registering {
         appendLine("/** The JS twin of the JVM object of the same name, built without a class loader. */")
         appendLine("object EngineFunctionProvider : VimscriptFunctionProvider {")
         appendLine("  override fun getFunctions(): Collection<LazyVimscriptFunction> = GENERATED_ENGINE_FUNCTIONS")
+        appendLine("}")
+        appendLine()
+        appendLine("internal val GENERATED_ENGINE_EX_COMMANDS: Map<String, LazyExCommandInstance> = mapOf(")
+        appendLine(exCommandEntries)
+        appendLine(")")
+        appendLine()
+        appendLine("/** The JS twin of the JVM object of the same name, built without a class loader. */")
+        appendLine("object EngineExCommandProvider : ExCommandProvider {")
+        appendLine("  override fun getCommands(): Map<String, LazyExCommandInstance> = GENERATED_ENGINE_EX_COMMANDS")
         appendLine("}")
       }
     )

@@ -902,3 +902,45 @@ a `(Range, CommandModifier, String)` constructor, which is not in the JSON, and 
 source would be a second answer that can disagree with the reflective one. 68 of the 86 classes have
 it; the 18 that do not are exactly the ones `CommandVisitor` special-cases. `engineExCommandProvider`
 is an `expect val` that is empty on JS until that is generated from the JVM's own answer.
+
+---
+
+# Ex-commands: the answer belongs where the types are
+
+The hole left by W1 was that `LazyExCommandInstance` needs to know whether each command class takes
+`(Range, CommandModifier, String)`, and that is not in the JSON. Deriving it in the generator would
+have been a second answer that can disagree with the reflective one, so it was deferred rather than
+guessed.
+
+The fix is to compute it once, in the annotation processor, which is the only place that has the
+declared types. `standardConstructor` is now a field on each entry:
+
+```json
+"g[lobal]": { "class": "...GlobalCommand", "standardConstructor": false }
+```
+
+The JVM reader and the JS generator both consume it. The JVM still needs reflection to *find* the
+constructor, but no longer to decide whether one exists.
+
+Two independent checks:
+
+- The processor's verdict - 68 classes standard, 18 not - matches the hand-written source parse used
+  to scope this work: same counts, same 18 names.
+- `ExCommandConstructorInvariantsTest` now compares the flag against runtime reflection for every
+  registered command, so KSP's view of the declared types and the JVM's view of the loaded class
+  cannot drift apart silently.
+
+**JS has 147 of the 149 ex-commands.** `smile` reads an ASCII-art classpath resource and `so[urce]`
+reads a file, so both classes are still JVM-only; they are a named exclusion in the build with the
+reason recorded, and a jsTest pins them so the list shrinking reads as progress and the list growing
+reads as a regression.
+
+Two things the test caught that assumption had wrong:
+
+**The keys are Vim's abbreviation syntax** - `d[elete]`, `s[ubstitute]`, `g[lobal]` - because that is
+what the parser matches a typed command name against.
+
+**Only 83 of 147 names carry a factory**, which looks wrong until aliases explain it: one
+`MapCommand` answers to `map`, `nmap`, `vmap` and more, so the 18 non-standard classes cover
+disproportionately many names. The assertion is now a majority check plus named cases on both sides
+of the split, rather than a floor picked to pass.

@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -79,6 +80,35 @@ class GeneratedEngineRegistryTest {
       GENERATED_ENGINE_FUNCTIONS.size > 80,
       "expected the full function list, got ${GENERATED_ENGINE_FUNCTIONS.size}",
     )
+  }
+
+  @Test
+  fun `test the ex-command registry is complete apart from the two host-bound commands`() {
+    assertTrue(
+      GENERATED_ENGINE_EX_COMMANDS.size > 130,
+      "expected the full ex-command list, got ${GENERATED_ENGINE_EX_COMMANDS.size}",
+    )
+    // `:smile` reads an ASCII-art classpath resource and `:source` reads a file, so both classes
+    // are still JVM-only. Pinned by name: this list shrinking is progress, and it growing is a
+    // regression that would otherwise be invisible.
+    assertEquals(
+      emptyList(),
+      listOf("smile", "so[urce]").filter { GENERATED_ENGINE_EX_COMMANDS.containsKey(it) },
+      "these were expected to be unavailable on JS",
+    )
+    // Most names build generically; the rest are the 18 classes CommandVisitor constructs itself,
+    // and those cover disproportionately many names because of aliases - one MapCommand answers to
+    // `map`, `nmap`, `vmap` and more.
+    val withFactory = GENERATED_ENGINE_EX_COMMANDS.values.count { it.hasStandardConstructor }
+    assertTrue(
+      withFactory > GENERATED_ENGINE_EX_COMMANDS.size / 2,
+      "expected most ex-commands to have a factory, got $withFactory of ${GENERATED_ENGINE_EX_COMMANDS.size}",
+    )
+    // Named cases on both sides of that split, so the flag is checked and not just counted. The
+    // keys are Vim's abbreviation syntax, which is how the parser matches a typed command name.
+    assertTrue(GENERATED_ENGINE_EX_COMMANDS.getValue("d[elete]").hasStandardConstructor)
+    assertFalse(GENERATED_ENGINE_EX_COMMANDS.getValue("s[ubstitute]").hasStandardConstructor)
+    assertFalse(GENERATED_ENGINE_EX_COMMANDS.getValue("g[lobal]").hasStandardConstructor)
   }
 
   @Test

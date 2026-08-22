@@ -20,10 +20,17 @@ import kotlin.reflect.full.createType
  * their command lists from classpath resources. A host without a class loader builds the
  * [LazyExCommandInstance] from a generated registry instead.
  */
-internal fun lazyExCommand(className: String, classLoader: ClassLoader): LazyExCommandInstance {
+internal fun lazyExCommand(
+  className: String,
+  standardConstructor: Boolean,
+  classLoader: ClassLoader,
+): LazyExCommandInstance {
   @Suppress("UNCHECKED_CAST")
   val kClass = classLoader.loadClass(className).kotlin as KClass<out Command>
-  val constructor = kClass.constructors
+  // Whether the constructor exists is the processor's answer, read from the JSON; finding the
+  // constructor itself still needs reflection here. ExCommandConstructorInvariantsTest asserts the
+  // two agree for every registered command, so the flag cannot drift away from the class.
+  val constructor = if (!standardConstructor) null else kClass.constructors
     .filter { it.parameters.size == 3 }
     .firstOrNull {
       it.parameters[0].type == Range::class.createType() &&

@@ -1,12 +1,42 @@
 {
-  "!": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
-  "actionl[ist]": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
-  "b[uffer]": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
-  "buffers": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-  "files": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-  "h[elp]": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
-  "ls": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-  "r[ead]": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
-  "res[ize]": "com.maddyhome.idea.vim.resize.ResizeCommand",
-  "vert[ical]": "com.maddyhome.idea.vim.resize.VerticalCommand"
+  "!": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
+    "standardConstructor": true
+  },
+  "actionl[ist]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
+    "standardConstructor": true
+  },
+  "b[uffer]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
+    "standardConstructor": true
+  },
+  "buffers": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
+    "standardConstructor": true
+  },
+  "files": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
+    "standardConstructor": true
+  },
+  "h[elp]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
+    "standardConstructor": true
+  },
+  "ls": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
+    "standardConstructor": true
+  },
+  "r[ead]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
+    "standardConstructor": true
+  },
+  "res[ize]": {
+    "class": "com.maddyhome.idea.vim.resize.ResizeCommand",
+    "standardConstructor": true
+  },
+  "vert[ical]": {
+    "class": "com.maddyhome.idea.vim.resize.VerticalCommand",
+    "standardConstructor": true
+  }
 }

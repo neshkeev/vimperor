@@ -1,151 +1,598 @@
 {
-  "&": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
-  "<": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftLeftCommand",
-  "=": "com.maddyhome.idea.vim.vimscript.model.commands.PrintLineNumberCommand",
-  ">": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftRightCommand",
-  "@": "com.maddyhome.idea.vim.vimscript.model.commands.RepeatCommand",
-  "IdeaPlug": "com.maddyhome.idea.vim.vimscript.model.commands.IdeaPlug",
-  "N[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-  "P[rint]": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
-  "PlugDisable": "com.maddyhome.idea.vim.vimscript.model.commands.PlugDisable",
-  "PlugEnable": "com.maddyhome.idea.vim.vimscript.model.commands.PlugEnable",
-  "Plug[in]": "com.maddyhome.idea.vim.vimscript.model.commands.PlugCommand",
-  "ab[breviate]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "abc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-  "action": "com.maddyhome.idea.vim.vimscript.model.commands.ActionCommand",
-  "argu[ment]": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFileCommand",
-  "as[cii]": "com.maddyhome.idea.vim.vimscript.model.commands.AsciiCommand",
-  "au[tocmd]": "com.maddyhome.idea.vim.vimscript.model.commands.AutoCmdCommand",
-  "aug[roup]": "com.maddyhome.idea.vim.vimscript.model.commands.AutogroupCommand",
-  "bd[elete]": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
-  "bn[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
-  "bp[revious]": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-  "bro[wse]": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-  "ca[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "cabc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-  "cal[l]": "com.maddyhome.idea.vim.vimscript.model.commands.CallCommand",
-  "cle[arjumps]": "com.maddyhome.idea.vim.vimscript.model.commands.ClearJumpsCommand",
-  "clo[se]": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-  "cm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "cmapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "cno[remap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "cnorea[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "co[py]": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
-  "com[mand]": "com.maddyhome.idea.vim.vimscript.model.commands.CmdCommand",
-  "comc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.CmdClearCommand",
-  "cu[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "cuna[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-  "d[elete]": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteLinesCommand",
-  "delc[ommand]": "com.maddyhome.idea.vim.vimscript.model.commands.DelCmdCommand",
-  "delf[unction]": "com.maddyhome.idea.vim.vimscript.model.commands.DelfunctionCommand",
-  "delm[arks]": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteMarksCommand",
-  "dig[raphs]": "com.maddyhome.idea.vim.vimscript.model.commands.DigraphCommand",
-  "dis[play]": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
-  "e[dit]": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-  "ec[ho]": "com.maddyhome.idea.vim.vimscript.model.commands.EchoCommand",
-  "exe[cute]": "com.maddyhome.idea.vim.vimscript.model.commands.ExecuteCommand",
-  "exi[t]": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-  "f[ile]": "com.maddyhome.idea.vim.vimscript.model.commands.FileCommand",
-  "fin[d]": "com.maddyhome.idea.vim.vimscript.model.commands.FindFileCommand",
-  "fir[st]": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-  "g[lobal]": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
-  "go[to]": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
-  "hid[e]": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-  "his[tory]": "com.maddyhome.idea.vim.vimscript.model.commands.HistoryCommand",
-  "ia[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "iabc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-  "im[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "imapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "ino[remap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "inorea[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "iu[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "iuna[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-  "j[oin]": "com.maddyhome.idea.vim.vimscript.model.commands.JoinLinesCommand",
-  "ju[mps]": "com.maddyhome.idea.vim.vimscript.model.commands.JumpsCommand",
-  "k": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
-  "la[st]": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
-  "let": "com.maddyhome.idea.vim.vimscript.model.commands.LetCommand",
-  "lm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "lmapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "ln[oremap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "loadk[eymap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
-  "lockv[ar]": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
-  "lu[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "m[ove]": "com.maddyhome.idea.vim.vimscript.model.commands.MoveTextCommand",
-  "ma[rk]": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
-  "map": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "mapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "marks": "com.maddyhome.idea.vim.vimscript.model.commands.MarksCommand",
-  "n[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
-  "nm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "nmapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "nn[oremap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "no[remap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "noh[lsearch]": "com.maddyhome.idea.vim.vimscript.model.commands.NoHLSearchCommand",
-  "norea[bbrev]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-  "norm[al]": "com.maddyhome.idea.vim.vimscript.model.commands.NormalCommand",
-  "nun[map]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "om[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "omapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "on[ly]": "com.maddyhome.idea.vim.vimscript.model.commands.OnlyCommand",
-  "ono[remap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "ou[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "p[rint]": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
-  "pa[ckadd]": "com.maddyhome.idea.vim.vimscript.model.commands.PackaddCommand",
-  "prev[ious]": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-  "pu[t]": "com.maddyhome.idea.vim.vimscript.model.commands.PutLinesCommand",
-  "q[uit]": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-  "qa[ll]": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-  "quita[ll]": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-  "red[o]": "com.maddyhome.idea.vim.vimscript.model.commands.RedoCommand",
-  "reg[isters]": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
-  "s[ubstitute]": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
-  "scripte[ncoding]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.ScriptEncodingCommand",
-  "se[t]": "com.maddyhome.idea.vim.vimscript.model.commands.SetCommand",
-  "setg[lobal]": "com.maddyhome.idea.vim.vimscript.model.commands.SetglobalCommand",
-  "sethandler": "com.maddyhome.idea.vim.vimscript.model.commands.SetHandlerCommand",
-  "setl[ocal]": "com.maddyhome.idea.vim.vimscript.model.commands.SetlocalCommand",
-  "sh[ell]": "com.maddyhome.idea.vim.vimscript.model.commands.ShellCommand",
-  "smap": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "smapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "smile": "com.maddyhome.idea.vim.vimscript.model.commands.SmileCommand",
-  "snor[emap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "so[urce]": "com.maddyhome.idea.vim.vimscript.model.commands.SourceCommand",
-  "sor[t]": "com.maddyhome.idea.vim.vimscript.model.commands.SortCommand",
-  "sp[lit]": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
-  "stopi[nsert]": "com.maddyhome.idea.vim.vimscript.model.commands.StopInsertCommand",
-  "sunm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "t": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
-  "tabN[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
-  "tabc[lose]": "com.maddyhome.idea.vim.vimscript.model.commands.TabCloseCommand",
-  "tabm[ove]": "com.maddyhome.idea.vim.vimscript.model.commands.TabMoveCommand",
-  "tabn[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.NextTabCommand",
-  "tabo[nly]": "com.maddyhome.idea.vim.vimscript.model.commands.TabOnlyCommand",
-  "tabp[revious]": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
-  "u[ndo]": "com.maddyhome.idea.vim.vimscript.model.commands.UndoCommand",
-  "una[bbreviate]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-  "unlo[ckvar]": "com.maddyhome.idea.vim.vimscript.model.commands.UnlockVarCommand",
-  "unm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "up[date]": "com.maddyhome.idea.vim.vimscript.model.commands.UpdateCommand",
-  "v[global]": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
-  "vm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "vmapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "vn[oremap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "vs[plit]": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
-  "vu[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "wN[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
-  "w[rite]": "com.maddyhome.idea.vim.vimscript.model.commands.WriteCommand",
-  "wa[ll]": "com.maddyhome.idea.vim.vimscript.model.commands.WriteAllCommand",
-  "wn[ext]": "com.maddyhome.idea.vim.vimscript.model.commands.WriteNextFileCommand",
-  "wp[revious]": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
-  "wq": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-  "wqa[ll]": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-  "x[it]": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-  "xa[ll]": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-  "xm[ap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "xmapc[lear]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-  "xn[oremap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-  "xu[nmap]": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-  "y[ank]": "com.maddyhome.idea.vim.vimscript.model.commands.YankLinesCommand",
-  "~": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand"
+  "&": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
+    "standardConstructor": false
+  },
+  "<": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftLeftCommand",
+    "standardConstructor": false
+  },
+  "=": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintLineNumberCommand",
+    "standardConstructor": true
+  },
+  ">": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftRightCommand",
+    "standardConstructor": false
+  },
+  "@": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RepeatCommand",
+    "standardConstructor": true
+  },
+  "IdeaPlug": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.IdeaPlug",
+    "standardConstructor": true
+  },
+  "N[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
+    "standardConstructor": true
+  },
+  "P[rint]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
+    "standardConstructor": true
+  },
+  "PlugDisable": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugDisable",
+    "standardConstructor": true
+  },
+  "PlugEnable": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugEnable",
+    "standardConstructor": true
+  },
+  "Plug[in]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugCommand",
+    "standardConstructor": true
+  },
+  "ab[breviate]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "abc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
+    "standardConstructor": false
+  },
+  "action": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionCommand",
+    "standardConstructor": true
+  },
+  "argu[ment]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFileCommand",
+    "standardConstructor": true
+  },
+  "as[cii]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AsciiCommand",
+    "standardConstructor": true
+  },
+  "au[tocmd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AutoCmdCommand",
+    "standardConstructor": false
+  },
+  "aug[roup]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AutogroupCommand",
+    "standardConstructor": true
+  },
+  "bd[elete]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
+    "standardConstructor": true
+  },
+  "bn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
+    "standardConstructor": true
+  },
+  "bp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
+    "standardConstructor": true
+  },
+  "bro[wse]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "ca[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "cabc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
+    "standardConstructor": false
+  },
+  "cal[l]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CallCommand",
+    "standardConstructor": false
+  },
+  "cle[arjumps]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ClearJumpsCommand",
+    "standardConstructor": true
+  },
+  "clo[se]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
+    "standardConstructor": true
+  },
+  "cm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "cmapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "cno[remap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "cnorea[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "co[py]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
+    "standardConstructor": true
+  },
+  "com[mand]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdCommand",
+    "standardConstructor": true
+  },
+  "comc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdClearCommand",
+    "standardConstructor": true
+  },
+  "cu[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "cuna[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
+    "standardConstructor": false
+  },
+  "d[elete]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteLinesCommand",
+    "standardConstructor": true
+  },
+  "delc[ommand]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DelCmdCommand",
+    "standardConstructor": true
+  },
+  "delf[unction]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DelfunctionCommand",
+    "standardConstructor": false
+  },
+  "delm[arks]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteMarksCommand",
+    "standardConstructor": true
+  },
+  "dig[raphs]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DigraphCommand",
+    "standardConstructor": true
+  },
+  "dis[play]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
+    "standardConstructor": true
+  },
+  "e[dit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "ec[ho]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoCommand",
+    "standardConstructor": false
+  },
+  "exe[cute]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExecuteCommand",
+    "standardConstructor": false
+  },
+  "exi[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
+    "standardConstructor": true
+  },
+  "f[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FileCommand",
+    "standardConstructor": true
+  },
+  "fin[d]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FindFileCommand",
+    "standardConstructor": true
+  },
+  "fir[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
+    "standardConstructor": true
+  },
+  "g[lobal]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
+    "standardConstructor": false
+  },
+  "go[to]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
+    "standardConstructor": true
+  },
+  "hid[e]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
+    "standardConstructor": true
+  },
+  "his[tory]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HistoryCommand",
+    "standardConstructor": true
+  },
+  "ia[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "iabc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
+    "standardConstructor": false
+  },
+  "im[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "imapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "ino[remap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "inorea[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "iu[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "iuna[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
+    "standardConstructor": false
+  },
+  "j[oin]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.JoinLinesCommand",
+    "standardConstructor": true
+  },
+  "ju[mps]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.JumpsCommand",
+    "standardConstructor": true
+  },
+  "k": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
+    "standardConstructor": true
+  },
+  "la[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
+    "standardConstructor": true
+  },
+  "let": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LetCommand",
+    "standardConstructor": false
+  },
+  "lm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "lmapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "ln[oremap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "loadk[eymap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
+    "standardConstructor": false
+  },
+  "lockv[ar]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
+    "standardConstructor": true
+  },
+  "lu[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "m[ove]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MoveTextCommand",
+    "standardConstructor": true
+  },
+  "ma[rk]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
+    "standardConstructor": true
+  },
+  "map": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "mapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "marks": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarksCommand",
+    "standardConstructor": true
+  },
+  "n[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
+    "standardConstructor": true
+  },
+  "nm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "nmapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "nn[oremap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "no[remap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "noh[lsearch]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoHLSearchCommand",
+    "standardConstructor": true
+  },
+  "norea[bbrev]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
+    "standardConstructor": false
+  },
+  "norm[al]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NormalCommand",
+    "standardConstructor": true
+  },
+  "nun[map]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "om[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "omapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "on[ly]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.OnlyCommand",
+    "standardConstructor": true
+  },
+  "ono[remap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "ou[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "p[rint]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
+    "standardConstructor": true
+  },
+  "pa[ckadd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackaddCommand",
+    "standardConstructor": true
+  },
+  "prev[ious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
+    "standardConstructor": true
+  },
+  "pu[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PutLinesCommand",
+    "standardConstructor": true
+  },
+  "q[uit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
+    "standardConstructor": true
+  },
+  "qa[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
+    "standardConstructor": true
+  },
+  "quita[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
+    "standardConstructor": true
+  },
+  "red[o]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedoCommand",
+    "standardConstructor": true
+  },
+  "reg[isters]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
+    "standardConstructor": true
+  },
+  "s[ubstitute]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
+    "standardConstructor": false
+  },
+  "scripte[ncoding]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.ScriptEncodingCommand",
+    "standardConstructor": true
+  },
+  "se[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetCommand",
+    "standardConstructor": true
+  },
+  "setg[lobal]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetglobalCommand",
+    "standardConstructor": true
+  },
+  "sethandler": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetHandlerCommand",
+    "standardConstructor": true
+  },
+  "setl[ocal]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetlocalCommand",
+    "standardConstructor": true
+  },
+  "sh[ell]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShellCommand",
+    "standardConstructor": true
+  },
+  "smap": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "smapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "smile": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SmileCommand",
+    "standardConstructor": true
+  },
+  "snor[emap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "so[urce]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SourceCommand",
+    "standardConstructor": true
+  },
+  "sor[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SortCommand",
+    "standardConstructor": true
+  },
+  "sp[lit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
+    "standardConstructor": false
+  },
+  "stopi[nsert]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopInsertCommand",
+    "standardConstructor": true
+  },
+  "sunm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "t": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
+    "standardConstructor": true
+  },
+  "tabN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
+    "standardConstructor": true
+  },
+  "tabc[lose]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabCloseCommand",
+    "standardConstructor": true
+  },
+  "tabm[ove]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabMoveCommand",
+    "standardConstructor": true
+  },
+  "tabn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextTabCommand",
+    "standardConstructor": true
+  },
+  "tabo[nly]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabOnlyCommand",
+    "standardConstructor": true
+  },
+  "tabp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
+    "standardConstructor": true
+  },
+  "u[ndo]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UndoCommand",
+    "standardConstructor": true
+  },
+  "una[bbreviate]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
+    "standardConstructor": false
+  },
+  "unlo[ckvar]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnlockVarCommand",
+    "standardConstructor": true
+  },
+  "unm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "up[date]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UpdateCommand",
+    "standardConstructor": true
+  },
+  "v[global]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
+    "standardConstructor": false
+  },
+  "vm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "vmapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "vn[oremap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "vs[plit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
+    "standardConstructor": false
+  },
+  "vu[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "wN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
+    "standardConstructor": true
+  },
+  "w[rite]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteCommand",
+    "standardConstructor": true
+  },
+  "wa[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteAllCommand",
+    "standardConstructor": true
+  },
+  "wn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteNextFileCommand",
+    "standardConstructor": true
+  },
+  "wp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
+    "standardConstructor": true
+  },
+  "wq": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
+    "standardConstructor": true
+  },
+  "wqa[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
+    "standardConstructor": true
+  },
+  "x[it]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
+    "standardConstructor": true
+  },
+  "xa[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
+    "standardConstructor": true
+  },
+  "xm[ap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "xmapc[lear]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
+    "standardConstructor": false
+  },
+  "xn[oremap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
+    "standardConstructor": false
+  },
+  "xu[nmap]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
+    "standardConstructor": false
+  },
+  "y[ank]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.YankLinesCommand",
+    "standardConstructor": true
+  },
+  "~": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
+    "standardConstructor": false
+  }
 }
