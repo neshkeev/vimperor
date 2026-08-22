@@ -18,6 +18,9 @@ import com.maddyhome.idea.vim.api.VimOptionGroup
 import com.maddyhome.idea.vim.api.VimOptionGroupBase
 import com.maddyhome.idea.vim.api.VimScriptFunctionServiceBase
 import com.maddyhome.idea.vim.api.SystemInfoService
+import com.maddyhome.idea.vim.api.ImmutableVimCaret
+import com.maddyhome.idea.vim.api.VimSearchHelper
+import com.maddyhome.idea.vim.api.VimSearchHelperBase
 import com.maddyhome.idea.vim.api.VimStatistics
 import com.maddyhome.idea.vim.api.VimStorageService
 import com.maddyhome.idea.vim.api.Key
@@ -102,6 +105,25 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * host with no operating system underneath it has no truthful alternative.
    */
   override val systemInfoService: SystemInfoService by lazy { HeadlessSystemInfo }
+
+  /**
+   * `VimSearchHelperBase` leaves nothing abstract: word motions are functions of the buffer text
+   * and an offset, with no editor operation in them.
+   */
+  override val searchHelper: VimSearchHelper by lazy {
+    object : VimSearchHelperBase() {
+      // The three the base leaves to a host are all IDE features rather than Vim ones: method
+      // navigation needs a syntax tree and misspelled-word navigation needs a spellchecker.
+      override fun findMethodStart(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
+        TODO("headless host has no syntax tree to find methods in")
+
+      override fun findMethodEnd(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
+        TODO("headless host has no syntax tree to find methods in")
+
+      override fun findMisspelledWord(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
+        TODO("headless host has no spellchecker")
+    }
+  }
 
   /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }

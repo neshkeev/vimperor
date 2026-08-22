@@ -1213,3 +1213,27 @@ of executing a keystroke is not spread across those services - it sits in a muta
 carets that actually move, since `TestVimCaret` currently `TODO`s every mutation. Narrow interfaces
 do not make the *semantics* narrow, and caret motion, selection and mark adjustment are where Vim's
 subtleties live - but this is a smaller problem than "implement the change group".
+
+## Word motions run on Node, and a correction to the table above
+
+`w` stopping at word starts, punctuation counting as its own word, `W` running through to
+whitespace, counts moving several words - and the case that matters most here: a non-breaking space
+is **not** whitespace. Kotlin's `Char.isWhitespace()` accepts U+00A0 and Java's does not, Vim
+follows Java, so `w` stops on it rather than skipping it. That divergence is invisible to the
+compiler and is now asserted on both targets.
+
+**The abstract-member table in the previous section is wrong.** It reported `VimSearchHelperBase` as
+having none; it has three - `findMethodStart`, `findMethodEnd`, `findMisspelledWord`. The count
+grepped for the `abstract` keyword inside each base file, which misses interface members the base
+never implements at all. The reliable way to count what a host must supply is to instantiate it and
+read the compiler. That is the third time in this port that a grep-shaped instrument under-reported,
+after the import classifier and the "who depends on this file" question.
+
+Those three are IDE features rather than Vim ones - two want a syntax tree, one wants a
+spellchecker - so they are honest `TODO`s.
+
+**A Kotlin evaluation-order trap**, worth knowing for anything that installs the injector inside a
+test: a receiver is evaluated before its arguments, so
+`injector.searchHelper.findNextWord(buildEditor(), ...)` reads `injector` *before* `buildEditor()`
+installs it. It fails with the same `lateinit property injector has not been initialized` as the
+constructor-order problem and has nothing to do with it.
