@@ -944,3 +944,46 @@ what the parser matches a typed command name against.
 `MapCommand` answers to `map`, `nmap`, `vmap` and more, so the 18 non-standard classes cover
 disproportionately many names. The assertion is now a majority check plus named cases on both sides
 of the split, rather than a floor picked to pass.
+
+---
+
+# Caveat 7: the corpus runs on Node, and agrees
+
+1,865 Vimscript commands, extracted from IdeaVim's own test suite, parsed on both targets and
+compared tree-for-tree against what the **Java** ANTLR parser produced. **Zero divergences.**
+
+This is the first evidence about JS behaviour that is not structural. Everything before it rested on
+"both targets compile the same source"; this runs the parser on real input and checks the output.
+And since the Java toolchain was deleted with W1, `corpus/vimscript-golden.txt` is the only
+surviving record of the old parser's behaviour - it is the only thing that can still catch the
+migration having changed how Vimscript parses.
+
+The two targets share the generated parser source, so this is not looking for grammar divergence.
+It is looking underneath: the ANTLR runtime's platform code, character handling, and the ATN
+interpreter's arithmetic - the places Kotlin/JS and Kotlin/JVM can still differ.
+
+## The format problem is gone rather than checked
+
+Caveat 7(i) noted that the tab-delimited golden file breaks if any input ever contains a literal tab
+- zero today, so latent rather than live. Rather than add a validator, the format is no longer
+parsed at test time: `generateVimscriptCorpus` emits separate Kotlin string literals, so there is no
+delimiter to break. The generator itself fails the build, naming the offending line, if a tab ever
+appears.
+
+Emitting Kotlin is also what lets the test run on both targets at all - `commonTest` has no resource
+loading.
+
+## The first performance signal for JS
+
+The initial Node run failed on Mocha's 2-second default timeout, not on a divergence. Raised to 60s,
+and the number underneath is worth recording:
+
+| | 1,865 parses |
+|---|---|
+| JVM | ~1.4s |
+| Node | ~5.3s |
+
+One sample each, and JVM warmup amortises differently across a suite, so read it as "same order of
+magnitude, roughly 3-4x" rather than a ratio. It matters because Vim parses patterns on every
+keystroke during incremental search, so this is the number a VS Code host will be living with.
+Nothing here is a blocker; it is a baseline to measure against when there is a host to measure.

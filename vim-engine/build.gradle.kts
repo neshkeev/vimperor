@@ -275,10 +275,68 @@ val generateJsCommandRegistry by tasks.registering {
   }
 }
 
+// The Vimscript corpus differential, from phase 0's caveat 7.
+//
+// `vimscript-golden.txt` records what the **Java** ANTLR parser produced for 1,865 commands
+// extracted from IdeaVim's own test suite. That parser no longer exists in this repository, so this
+// file is the only surviving record of its behaviour and the only check that switching to
+// antlr-kotlin did not change how Vimscript parses.
+//
+// Emitted as Kotlin rather than read as a resource so it runs on **both** targets. Caveat 7 also
+// noted that the tab-delimited format would break on an input containing a literal tab - verified
+// zero today, but latent. Generating separate string literals removes the format entirely, and the
+// check below fails the build rather than silently mis-splitting if one ever appears.
+val vimscriptGolden = layout.projectDirectory.file("corpus/vimscript-golden.txt")
+val generatedCorpusDir = layout.buildDirectory.dir("generated/corpus/kotlin")
+
+val generateVimscriptCorpus by tasks.registering {
+  val goldenFile = vimscriptGolden.asFile
+  val outputDir = generatedCorpusDir
+  inputs.file(goldenFile)
+  outputs.dir(outputDir)
+  doLast {
+    fun quote(value: String): String =
+      "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"")
+        .replace("$", "\${'$'}") + "\""
+
+    val entries = goldenFile.readLines().filter { it.isNotEmpty() }.map { line ->
+      val parts = line.split("\t")
+      require(parts.size == 2) {
+        "corpus line does not split into exactly an input and a tree, so one of them contains a " +
+          "tab and the golden file needs a different format: $line"
+      }
+      "  " + quote(parts[0]) + " to " + quote(parts[1]) + ","
+    }
+
+    val out = outputDir.get().file("com/maddyhome/idea/vim/vimscript/GeneratedVimscriptCorpus.kt").asFile
+    out.parentFile.mkdirs()
+    out.writeText(
+      buildString {
+        appendLine("// Generated from corpus/vimscript-golden.txt by generateVimscriptCorpus. Do not edit.")
+        appendLine("package com.maddyhome.idea.vim.vimscript")
+        appendLine()
+        appendLine("/** Command text to the parse tree the Java ANTLR parser produced for it. */")
+        appendLine("internal val VIMSCRIPT_CORPUS: List<Pair<String, String>> = listOf(")
+        entries.forEach { appendLine(it) }
+        appendLine(")")
+      }
+    )
+  }
+}
+
+
 kotlin {
   jvm()
   js(IR) {
-    nodejs()
+    nodejs {
+      testTask {
+        useMocha {
+          // The corpus differential parses 1,865 commands in one test, which is past Mocha's 2s
+          // default. Node is slower than the JVM here by enough to matter - see the finding.
+          timeout = "60s"
+        }
+      }
+    }
     binaries.library()
   }
 
@@ -315,6 +373,7 @@ kotlin {
       }
     }
     val commonTest by getting {
+      kotlin.srcDir(generateVimscriptCorpus)
       // Tests of platform-neutral behaviour, run on *every* target. The differential tests that
       // compare against java.lang.* stay in jvmTest - they need the JDK to compare against - so
       // this is where the shared contracts get checked on JS as well as the JVM.
