@@ -7,7 +7,6 @@
  */
 package com.maddyhome.idea.vim.regexp
 
-import java.nio.CharBuffer
 
 @Deprecated("Remove once old regex engine is removed")
 class CharPointer {
@@ -78,7 +77,7 @@ class CharPointer {
     if (end()) return ""
     val start = pointer
     val end = normalize(pointer + len)
-    return CharBuffer.wrap(seq, start, end).toString()
+    return seq.subSequence(start, end).toString()
   }
 
   fun strlen(): Int {
@@ -94,7 +93,7 @@ class CharPointer {
   fun strncmp(str: String, len: Int): Int {
     var len = len
     if (end()) return -1
-    val s = CharBuffer.wrap(seq, pointer, normalize(pointer + len)).toString()
+    val s = seq.subSequence(pointer, normalize(pointer + len)).toString()
     if (len > str.length) {
       len = str.length
     }
@@ -103,8 +102,8 @@ class CharPointer {
 
   fun strncmp(str: CharPointer, len: Int, ignoreCase: Boolean): Int {
     if (end()) return -1
-    val cs1: CharSequence = CharBuffer.wrap(seq, pointer, normalize(pointer + len))
-    val cs2: CharSequence = CharBuffer.wrap(str.seq, str.pointer, str.normalize(str.pointer + len))
+    val cs1: CharSequence = seq.subSequence(pointer, normalize(pointer + len))
+    val cs2: CharSequence = str.seq.subSequence(str.pointer, str.normalize(str.pointer + len))
     val l = cs1.length
     if (l != cs2.length) {
       return 1

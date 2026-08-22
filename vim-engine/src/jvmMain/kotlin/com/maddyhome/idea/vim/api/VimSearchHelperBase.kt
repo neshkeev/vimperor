@@ -25,7 +25,6 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
 import com.maddyhome.idea.vim.annotations.Contract
 import com.maddyhome.idea.vim.annotations.Range
-import java.util.regex.Pattern
 import kotlin.math.abs
 import com.maddyhome.idea.vim.helper.toEnumSet
 
@@ -1960,21 +1959,21 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     position: Int,
     tagName: String,
   ): TextRange? {
-    val quotedTagName = Pattern.quote(tagName)
-    val patternString = ("(</%s>)" // match closing tags
-      +
-      "|(<%s" // or opening tags starting with tagName
-      +
-      "(\\s([^>]*" // After at least one whitespace there might be additional text in the tag. E.g. <html lang="en">
-      +
-      "[^/])?)?>)") // Slash is not allowed as last character (this would be a self closing tag).
-    val tagPattern =
-      Pattern.compile(String.format(patternString, quotedTagName, quotedTagName), Pattern.CASE_INSENSITIVE)
-    val matcher = tagPattern.matcher(sequence.subSequence(0, position + 1))
+    // Regex.escape rather than Pattern.quote: both quote a literal, but Pattern.quote emits \Q..\E,
+    // which Kotlin/JS does not support. Regex.escape picks whichever form the target understands.
+    val quotedTagName = Regex.escape(tagName)
+    val patternString =
+      "(</" + quotedTagName + ">)" + // match closing tags
+        "|(<" + quotedTagName + // or opening tags starting with tagName
+        // After at least one whitespace there might be additional text in the tag, e.g. <html lang="en">.
+        // A slash is not allowed as the last character - that would be a self-closing tag.
+        "(\\s([^>]*[^/])?)?>)"
+    val tagPattern = Regex(patternString, RegexOption.IGNORE_CASE)
     val openTags = ArrayDeque<TextRange>()
-    while (matcher.find()) {
-      val match = TextRange(matcher.start(), matcher.end())
-      if (sequence[matcher.start() + 1] == '/') {
+    for (matched in tagPattern.findAll(sequence.subSequence(0, position + 1))) {
+      val start = matched.range.first
+      val match = TextRange(start, matched.range.last + 1)
+      if (sequence[start + 1] == '/') {
         if (!openTags.isEmpty()) {
           openTags.removeFirst()
         }
@@ -1998,22 +1997,26 @@ abstract class VimSearchHelperBase : VimSearchHelper {
     var counter = count
     val tagNamePattern = "([^/\\s>]+)"
     // An opening tag consists of '<' followed by a tag name, optionally some additional text after whitespace and a '>'
-    val openingTagPattern = String.format("<%s(?:\\s[^>]*)?>", tagNamePattern)
-    val closingTagPattern = String.format("</%s>", tagNamePattern)
-    val tagPattern = Pattern.compile(String.format("(?:%s)|(?:%s)", openingTagPattern, closingTagPattern))
-    val matcher = tagPattern.matcher(sequence.subSequence(position, sequence.length))
+    val openingTagPattern = "<" + tagNamePattern + "(?:\\s[^>]*)?>"
+    val closingTagPattern = "</" + tagNamePattern + ">"
+    val tagPattern = Regex("(?:" + openingTagPattern + ")|(?:" + closingTagPattern + ")")
     val openTags = ArrayDeque<String>()
-    while (matcher.find()) {
-      val isClosingTag = matcher.group(1) == null
+    for (matched in tagPattern.findAll(sequence.subSequence(position, sequence.length))) {
+      // groups[n], not groupValues[n]: an unmatched group must read as null, and groupValues
+      // flattens it to "", which would make every closing tag look like an opening one.
+      val isClosingTag = matched.groups[1] == null
       if (isClosingTag) {
-        val tagName = matcher.group(2)
+        val tagName = matched.groups[2]!!.value
         // Ignore unmatched open tags. Either the file is malformed or it might be a tag like <br> that does not need to be closed.
         while (!openTags.isEmpty() && !openTags.first().equals(tagName, ignoreCase = true)) {
           openTags.removeFirst()
         }
         if (openTags.isEmpty()) {
           if (counter <= 1) {
-            return Pair(TextRange(position + matcher.start(), position + matcher.end()), tagName)
+            return Pair(
+              TextRange(position + matched.range.first, position + matched.range.last + 1),
+              tagName,
+            )
           } else {
             counter--
           }
@@ -2021,8 +2024,7 @@ abstract class VimSearchHelperBase : VimSearchHelper {
           openTags.removeFirst()
         }
       } else {
-        val tagName = matcher.group(1)
-        openTags.addFirst(tagName)
+        openTags.addFirst(matched.groups[1]!!.value)
       }
     }
     return null

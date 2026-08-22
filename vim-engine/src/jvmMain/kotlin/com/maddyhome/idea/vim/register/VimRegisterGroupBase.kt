@@ -58,7 +58,7 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
   protected var recordList: MutableList<VimKeyStroke>? = null
 
   @JvmField
-  protected val myRegisters: java.util.HashMap<Char, Register> = HashMap()
+  protected val myRegisters: HashMap<Char, Register> = HashMap()
 
   @JvmField
   protected var defaultRegisterChar: Char = UNNAMED_REGISTER
