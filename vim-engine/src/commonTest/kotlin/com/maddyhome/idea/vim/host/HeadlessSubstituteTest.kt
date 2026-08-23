@@ -12,6 +12,8 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 /**
  * `:s` from typed text to changed buffer, on both targets.
@@ -42,6 +44,23 @@ class HeadlessSubstituteTest {
     parsed.vimContext = CommandLineVimLContext
     parsed.execute(buffer.editor, HeadlessExecutionContext)
     return buffer.editor.text
+  }
+
+  @Test
+  fun `test an unregistered submatch reports what is wrong`() {
+    // The precondition that used to fail as a NullPointerException from a cast, nowhere near its
+    // cause. A host that forgets `registerHandlers()` should be told which call it missed.
+    injector = HeadlessInjector()
+    val buffer = Buffer("foo")
+    val parsed = injector.vimscriptParser.parseCommand("s/foo/bar/")!!
+    parsed.vimContext = CommandLineVimLContext
+    val failure = assertFailsWith<IllegalStateException> {
+      parsed.execute(buffer.editor, HeadlessExecutionContext)
+    }
+    assertTrue(
+      failure.message!!.contains("registerHandlers"),
+      "the message should name the call that was missed, but was: ${failure.message}",
+    )
   }
 
   @Test

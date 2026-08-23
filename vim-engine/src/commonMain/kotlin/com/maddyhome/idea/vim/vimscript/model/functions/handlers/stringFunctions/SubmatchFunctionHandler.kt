@@ -35,8 +35,21 @@ internal class SubmatchFunctionHandler : BuiltinFunctionHandler<VimString>(minAr
   }
 
   companion object {
+    /**
+     * The registered `submatch()` handler, which the search group publishes every match through.
+     *
+     * A host must call `injector.functionService.registerHandlers()` before any substitute runs. If
+     * it has not, the lookup returns null and the cast that used to be here failed with a
+     * NullPointerException from inside a plain `:s` - nowhere near the actual cause, and mentioning
+     * neither `submatch` nor registration. This says what went wrong instead.
+     */
     fun getInstance(): SubmatchFunctionHandler {
-      return injector.functionService.getBuiltInFunction("submatch") as SubmatchFunctionHandler
+      val handler = injector.functionService.getBuiltInFunction("submatch")
+        ?: error(
+          "submatch() is not registered, so the substitute has nowhere to publish its match. " +
+            "A host must call injector.functionService.registerHandlers() during start-up."
+        )
+      return handler as SubmatchFunctionHandler
     }
   }
 }

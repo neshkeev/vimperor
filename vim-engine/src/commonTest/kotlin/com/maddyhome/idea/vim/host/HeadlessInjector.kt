@@ -338,24 +338,6 @@ class HeadlessInjector : HeadlessInjectorBase() {
 
       /** Reading a character straight from the keyboard, as `r` and `f` do. Nothing types here. */
       override fun getChar(editor: VimEditor): Char? = null
-
-      /**
-       * Puts a command into the builtin trie for each mode it works in.
-       *
-       * `VimKeyGroup` declares this with an **empty default body**, and `VimKeyGroupBase` does not
-       * override it - so the engine owns the trie but not the filling of it, and a host that does
-       * not implement this gets a key handler that recognises nothing. That is a gap worth knowing
-       * about: it is the one piece of command registration the engine leaves to every host to
-       * repeat.
-       */
-      override fun registerCommandAction(command: LazyVimCommand) {
-        for (mode in command.modes) {
-          val trie = getBuiltinCommandsTrie(mode)
-          for (keys in command.keys) {
-            trie.add(keys, command)
-          }
-        }
-      }
     }
   }
 

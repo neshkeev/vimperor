@@ -219,6 +219,26 @@ abstract class VimKeyGroupBase : VimKeyGroup {
     registerKeyMapping(fromKeys, owner)
   }
 
+  /**
+   * Puts a command into the builtin trie for every mode it works in.
+   *
+   * The trie is engine state - [builtinCommands], [getBuiltinCommandsTrie] and
+   * [unregisterCommandActions] all live here - so filling it belongs here too. `VimKeyGroup`
+   * declares this with an empty default body, which means a host that neither implements it nor
+   * inherits this gets a key handler that recognises nothing at all: no error, every keystroke
+   * ignored.
+   *
+   * A host with more to do - registering the keys with a platform keymap, say - overrides this and
+   * calls `super.registerCommandAction(command)` for the trie itself.
+   */
+  override fun registerCommandAction(command: LazyVimCommand) {
+    for (keyStrokes in command.keys) {
+      for (mappingMode in command.modes) {
+        getBuiltinCommandsTrie(mappingMode).add(keyStrokes, command)
+      }
+    }
+  }
+
   override fun unregisterCommandActions() {
     builtinCommands.clear()
   }

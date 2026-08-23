@@ -1409,3 +1409,24 @@ one consumer: the test host. That is speculative generality, and the same reason
 moving `HeadlessInjector` out of `commonTest` - **there is no second host yet.** When the VS Code
 host exists, what is genuinely shared will be visible from having both in front of us rather than
 guessed at now.
+
+## Three engine fixes the headless host argued for
+
+**`submatch` now says what is wrong.** `SubmatchFunctionHandler.getInstance()` cast a function
+lookup to a non-null type, so a plain `:s` with the builtins unregistered died on a
+NullPointerException that mentioned neither `submatch` nor registration. It now fails naming the
+call a host missed - `injector.functionService.registerHandlers()` - and a test asserts the message
+contains it, so the diagnostic cannot quietly regress to something useless.
+
+**`registerCommandAction` moved into `VimKeyGroupBase`.** The trie is engine state -
+`builtinCommands`, `getBuiltinCommandsTrie` and `unregisterCommandActions` all live there - so
+filling it is engine work. This removes real duplication rather than anticipating it: there were two
+implementations, and now there is one. `KeyGroup.java` keeps its platform shortcut registration and
+calls `super`; the headless host dropped its copy entirely.
+
+**Marks without a virtual file were left alone, deliberately.** `createMark` returning null when
+`getVirtualFile()` is null is silent and surprising, and it is still the first thing a VS Code host
+will hit. But every available fix changes behaviour for real users on scratch buffers - inventing an
+identity for an unidentified buffer, or making marks throw - to solve what is really "a host must
+give buffers identity". That is a documentation problem, and it is documented. Changing engine
+semantics to make a test host's life easier would be the wrong trade.

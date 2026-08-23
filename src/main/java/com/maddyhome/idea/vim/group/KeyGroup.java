@@ -287,11 +287,10 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
 
     for (List<VimKeyStroke> keyStrokes : command.getKeys()) {
       registerRequiredShortcut(keyStrokes, MappingOwner.IdeaVim.System.INSTANCE);
-
-      for (MappingMode mappingMode : command.getModes()) {
-        getBuiltinCommandsTrie(mappingMode).add(keyStrokes, command);
-      }
     }
+
+    // The trie itself is engine state, and VimKeyGroupBase fills it.
+    super.registerCommandAction(command);
   }
 
   private @NotNull List<AnAction> getActions(@NotNull Component component, @NotNull VimKeyStroke keyStroke) {
