@@ -1316,3 +1316,42 @@ actual text manipulation needed none of it.
 
 That line is the useful result. It says a host has to supply a viewport and a way to paint, and that
 everything else the engine already carries.
+
+## Keystrokes: `x`, `2x` and `dw` in a JavaScript runtime
+
+The last vertical. Keys go in, `KeyHandler` maps them, builds commands, runs the handlers, and the
+buffer changes. Everything before this drove the engine through an API a host calls deliberately;
+this drives it the way a user does.
+
+### `registerCommandAction` is duplication waiting to happen
+
+`VimKeyGroup.registerCommandAction` has an **empty default body**, and `VimKeyGroupBase` does not
+implement it. The engine owns the builtin command trie - `builtinCommands`,
+`getBuiltinCommandsTrie` and `unregisterCommandActions` are all common - but filling it is left to
+each host. A host that does not implement it gets a key handler that recognises nothing: no error,
+every keystroke ignored.
+
+The only implementation is `KeyGroup.java` in the IntelliJ plugin, and its loop is the same six
+lines any host would write: for each key sequence, for each mode, add to the trie. Since the trie
+and the accessor are both engine code, that loop belongs in `VimKeyGroupBase`. Not a defect today -
+IdeaVim works - but the second host reinvents it or silently gets nothing.
+
+**A correction on how this was found.** The first search for the override returned nothing, and the
+conclusion drawn was that *no* implementation existed. `KeyGroup.java` is **Java**, so the pattern
+`override fun registerCommandAction` could never match it. That is the same instrument failure as
+the import classifier and the `abstract`-keyword count: a grep shaped for Kotlin, run over a
+codebase that is two languages. Fifth time in this port.
+
+### Two members that explain themselves once seen
+
+`findLastVersionOfCaret` exists because IntelliJ **replaces** caret objects as the document changes,
+so the engine has to ask for the current version of one it is holding. A caret that is mutable and
+never replaced returns itself.
+
+`createRangeMarker` is the one thing here left as a `TODO` rather than faked. IntelliJ's range
+markers move as the document changes, which is what keeps a visual selection anchored across an
+edit; a marker that ignored edits would be quietly wrong exactly where it matters.
+
+Everything else stayed screen-shaped, as before: inlays, fold regions, screen width, viewport lines,
+and visual-versus-buffer position - identical here, because they differ only under folding and soft
+wrap.

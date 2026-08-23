@@ -18,7 +18,34 @@ import com.maddyhome.idea.vim.api.VimOptionGroup
 import com.maddyhome.idea.vim.api.VimOptionGroupBase
 import com.maddyhome.idea.vim.api.VimScriptFunctionServiceBase
 import com.maddyhome.idea.vim.api.SystemInfoService
+import com.maddyhome.idea.vim.api.VimCommandLine
+import com.maddyhome.idea.vim.api.VimCommandLineService
+import com.maddyhome.idea.vim.api.VimModalInput
+import com.maddyhome.idea.vim.api.VimModalInputService
+import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
+import com.maddyhome.idea.vim.api.VimMessages
+import com.maddyhome.idea.vim.helper.EngineMessageHelper
+import com.maddyhome.idea.vim.api.VimKeyGroup
+import com.maddyhome.idea.vim.action.change.LazyVimCommand
+import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.EngineEditorHelper
+import com.maddyhome.idea.vim.api.EngineEditorHelperBase
+import com.maddyhome.idea.vim.api.VimRangeMarker
+import com.maddyhome.idea.vim.api.VimVisualPosition
+import com.maddyhome.idea.vim.api.NativeAction
+import com.maddyhome.idea.vim.common.VimListenersNotifier
+import com.maddyhome.idea.vim.undo.LineChange
+import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
+import com.maddyhome.idea.vim.undo.VimUndoRedo
+import com.maddyhome.idea.vim.api.VimEnabler
+import com.maddyhome.idea.vim.api.VimActionExecutor
+import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
+import com.maddyhome.idea.vim.api.VimKeyGroupBase
+import com.maddyhome.idea.vim.api.VimTimer
+import com.maddyhome.idea.vim.api.VimTimerService
 import com.maddyhome.idea.vim.handler.Motion
+import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.api.VimMotionGroup
 import com.maddyhome.idea.vim.api.VimMotionGroupBase
 import com.maddyhome.idea.vim.api.VimScrollGroup
@@ -284,6 +311,170 @@ class HeadlessInjector : HeadlessInjectorBase() {
     }
   }
 
+  /**
+   * A timer that never fires.
+   *
+   * `'timeoutlen'` is what this is for: an unfinished mapping sequence waits, and if nothing more
+   * arrives the prefix is executed as typed. A test types every key it means to, so a timer that
+   * never fires is the behaviour it wants - and firing on a wall clock would make tests depend on
+   * how fast the machine is.
+   */
+  override val timerService: VimTimerService by lazy { HeadlessTimerService }
+
+  /**
+   * `VimKeyGroupBase` holds the mapping tries and the builtin command lookup; a host supplies only
+   * the parts about keyboard shortcuts the IDE has to be told about.
+   */
+  override val keyGroup: VimKeyGroup by lazy {
+    object : VimKeyGroupBase() {
+      // All four are about the *host's* keyboard: which of its own actions a key is bound to, and
+      // which of those conflict with Vim's. A host with no keymap has no conflicts to report.
+      override fun getActions(editor: VimEditor, keyStroke: VimKeyStroke): List<NativeAction> = emptyList()
+      override fun getKeymapConflicts(keyStroke: VimKeyStroke): List<NativeAction> = emptyList()
+      override fun updateShortcutKeysRegistration() {}
+      override val shortcutConflicts: MutableMap<VimKeyStroke, ShortcutOwnerInfo> get() = myShortcutConflicts
+
+      /** Reading a character straight from the keyboard, as `r` and `f` do. Nothing types here. */
+      override fun getChar(editor: VimEditor): Char? = null
+
+      /**
+       * Puts a command into the builtin trie for each mode it works in.
+       *
+       * `VimKeyGroup` declares this with an **empty default body**, and `VimKeyGroupBase` does not
+       * override it - so the engine owns the trie but not the filling of it, and a host that does
+       * not implement this gets a key handler that recognises nothing. That is a gap worth knowing
+       * about: it is the one piece of command registration the engine leaves to every host to
+       * repeat.
+       */
+      override fun registerCommandAction(command: LazyVimCommand) {
+        for (mode in command.modes) {
+          val trie = getBuiltinCommandsTrie(mode)
+          for (keys in command.keys) {
+            trie.add(keys, command)
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Messages are recorded rather than shown, so a test can assert what Vim said - `:s` reporting
+   * "E486: Pattern not found" is behaviour, not decoration. [HeadlessMessages.lastMessage] and
+   * [HeadlessMessages.lastError] are the readable ends.
+   */
+  override val messages: VimMessages by lazy { HeadlessMessages() }
+
+  /**
+   * No prompt is ever open. `KeyHandler` asks on every keystroke whether one is - `r`, `f` and the
+   * digraph entry put one up - and "none" is the answer for a host that never draws one.
+   */
+  override val modalInput: VimModalInputService by lazy { HeadlessModalInput }
+
+  /**
+   * No command line. `KeyHandler` asks whether one is active on every keystroke, so this has to
+   * answer; opening one needs a widget to type into, which is a host with a screen.
+   *
+   * Note that this does not stop `:` commands running - those are parsed and executed directly, as
+   * `HeadlessSubstituteTest` does. What is missing is the *prompt*, not the command.
+   */
+  override val commandLine: VimCommandLineService by lazy { HeadlessCommandLineService }
+
+  /**
+   * Runs Vim's own actions and nothing else.
+   *
+   * `executeVimAction` is the one that matters - it is how `KeyHandler` runs the handler it found -
+   * and it is pure engine code. Everything else on this interface is about the *IDE's* actions:
+   * running one by id, mapping `<Action>` to it, undo and redo. A host with no action system has
+   * none to run, which is exactly what `<Action>` mappings will need from a VS Code host later.
+   */
+  override val actionExecutor: VimActionExecutor by lazy { HeadlessActionExecutor }
+
+  /** Vim is on. The host-level "IdeaVim is disabled" switch has no meaning without a UI to flip it. */
+  override val enabler: VimEnabler by lazy {
+    object : VimEnabler {
+      override fun isEnabled(): Boolean = true
+      override fun isNewIdeaVimUser(): Boolean = false
+    }
+  }
+
+  /**
+   * No undo stack. Vim delegates undo to the host - IntelliJ's own document history is what `u`
+   * drives - so a host without one has nothing to offer, and `u` reports failure rather than
+   * pretending.
+   */
+  override val undo: VimUndoRedo by lazy {
+    // `VimUndoRedo` is sealed: a host picks key-based undo - IntelliJ's, where a keystroke group is
+    // one document command - or timestamp-based. Key-based is the simpler of the two contracts.
+    object : VimKeyBasedUndoService {
+      override fun undo(editor: VimEditor, context: ExecutionContext): Boolean = false
+      override fun redo(editor: VimEditor, context: ExecutionContext): Boolean = false
+      override fun setMergeUndoKey() {}
+      override fun updateNonMergeUndoKey() {}
+      override fun setInsertNonMergeUndoKey(refresh: Boolean) {}
+    }
+  }
+
+  /** `U` restores a whole line, and needs the same host history that [undo] does. */
+  override val lineChange: LineChange by lazy {
+    object : LineChange {
+      override fun snapshotLine(line: Int, editor: VimEditor): Boolean = false
+      override fun undoLineChange(editor: VimEditor, context: ExecutionContext): Boolean = false
+    }
+  }
+
+  /**
+   * The engine's own listener registry - `VimListenersNotifier` is common code - so a host provides
+   * an instance and nothing else. Extensions and the IDE subscribe to mode changes and yanks
+   * through it.
+   */
+  override val listenersNotifier: VimListenersNotifier by lazy { VimListenersNotifier() }
+
+  /** `EngineEditorHelperBase` leaves nothing abstract; it is arithmetic over offsets and lines. */
+  override val engineEditorHelper: EngineEditorHelper by lazy {
+    object : EngineEditorHelperBase() {
+      /** Inlays are IntelliJ's inline hints; there are none, so nothing shifts a visual column. */
+      override fun amountOfInlaysBeforeVisualPosition(editor: VimEditor, pos: VimVisualPosition): Int = 0
+
+      // With no viewport, the whole buffer is "on screen".
+      override fun getVisualLineAtTopOfScreen(editor: VimEditor): Int = 0
+      override fun getVisualLineAtBottomOfScreen(editor: VimEditor): Int = editor.lineCount() - 1
+
+      // A width has to be *some* number: `:registers` and `:marks` truncate their output to it,
+      // and 80 is the terminal's traditional answer.
+      override fun getApproximateScreenWidth(editor: VimEditor): Int = 80
+      override fun getApproximateOutputPanelWidth(editor: VimEditor): Int = 80
+
+      /** IntelliJ's guarded-block rejection; nothing here is guarded, so nothing throws it. */
+      override fun handleWithReadonlyFragmentModificationHandler(editor: VimEditor, exception: Exception) {}
+
+      /** No inlays, so this is the plain offset-to-position conversion. */
+      override fun inlayAwareOffsetToVisualPosition(editor: VimEditor, offset: Int): VimVisualPosition =
+        editor.offsetToVisualPosition(offset)
+
+      /**
+       * Clamps a column to the line, with Vim's off-by-one: normal mode stops on the last
+       * character, and insert or visual mode may sit one past it.
+       */
+      override fun normalizeVisualColumn(editor: VimEditor, visualLine: Int, col: Int, allowEnd: Boolean): Int {
+        val length = getVisualLineLength(editor, visualLine)
+        val max = if (allowEnd) length else (length - 1).coerceAtLeast(0)
+        return col.coerceIn(0, max)
+      }
+
+      /** Visual lines are buffer lines here, so a line's length is its buffer length. */
+      override fun getVisualLineLength(editor: VimEditor, visualLine: Int): Int =
+        editor.getLineEndOffset(visualLine) - editor.getLineStartOffset(visualLine)
+
+      /**
+       * A marker that does not track edits. IntelliJ's range markers move as the document changes,
+       * which is what keeps a visual selection anchored across an edit; nothing here needs that yet,
+       * and pretending to it would be worse than saying so.
+       */
+      override fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker =
+        TODO("headless host has no range markers that follow edits")
+    }
+  }
+
   /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
 
@@ -449,4 +640,156 @@ private object HeadlessScrollGroup : VimScrollGroup {
   override fun scrollColumns(editor: VimEditor, columns: Int): Boolean = false
   override fun scrollCaretColumnToDisplayLeftEdge(vimEditor: VimEditor): Boolean = false
   override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean = false
+}
+
+private object HeadlessTimerService : VimTimerService {
+  override fun createOneShotTimer(delayMillis: Int): VimTimer = HeadlessTimer(delayMillis)
+}
+
+private class HeadlessTimer(override var delayMillis: Int) : VimTimer {
+  override var isRunning: Boolean = false
+    private set
+
+  override fun start(delayMillis: Int, action: () -> Unit) {
+    this.delayMillis = delayMillis
+    isRunning = true
+  }
+
+  override fun stop() {
+    isRunning = false
+  }
+}
+
+class HeadlessMessages : VimMessages {
+  var lastMessage: String? = null
+    private set
+  var lastError: String? = null
+    private set
+  private var statusBar: String? = null
+  private var error = false
+
+  override fun showMessage(editor: VimEditor, message: String?) {
+    lastMessage = message
+  }
+
+  override fun showErrorMessage(editor: VimEditor, message: String?) {
+    lastError = message
+    error = true
+  }
+
+  override fun appendErrorMessage(editor: VimEditor, message: String?) {
+    lastError = (lastError ?: "") + (message ?: "")
+    error = true
+  }
+
+  override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+    statusBar = message
+  }
+
+  override fun getStatusBarMessage(): String? = statusBar
+
+  override fun clearStatusBarMessage() {
+    statusBar = null
+  }
+
+  override fun indicateError() {
+    error = true
+  }
+
+  override fun clearError() {
+    error = false
+  }
+
+  override fun isError(): Boolean = error
+
+  /** The engine's own bundle, so a headless host reports the same text the IDE does. */
+  override fun message(key: String, vararg params: Any): String =
+    EngineMessageHelper.message(key, *params)
+
+  override fun updateStatusBar(editor: VimEditor) {}
+}
+
+private object HeadlessModalInput : VimModalInputService {
+  override fun getCurrentModalInput(): VimModalInput? = null
+
+  override fun create(
+    editor: VimEditor,
+    context: ExecutionContext,
+    label: String,
+    inputInterceptor: VimInputInterceptor,
+  ): VimModalInput = TODO("headless host cannot prompt for input")
+}
+
+private object HeadlessCommandLineService : VimCommandLineService {
+  override fun isCommandLineSupported(editor: VimEditor): Boolean = false
+
+  override fun getActiveCommandLine(): VimCommandLine? = null
+
+  override fun readInputAndProcess(
+    vimEditor: VimEditor,
+    context: ExecutionContext,
+    prompt: String,
+    finishOn: Char?,
+    processing: (String) -> Unit,
+  ) = TODO("headless host cannot prompt on the command line")
+
+  override fun createSearchPrompt(
+    editor: VimEditor,
+    context: ExecutionContext,
+    label: String,
+    initialText: String,
+  ): VimCommandLine = TODO("headless host has no command line to open")
+
+  override fun createCommandPrompt(
+    editor: VimEditor,
+    context: ExecutionContext,
+    count0: Int,
+    initialText: String,
+  ): VimCommandLine = TODO("headless host has no command line to open")
+
+  override fun fullReset() {}
+
+  override fun getActiveCommandLineHeight(): Int = 0
+}
+
+private object HeadlessActionExecutor : VimActionExecutor {
+  override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
+  override val ACTION_COLLAPSE_ALL_REGIONS: String = ""
+  override val ACTION_COLLAPSE_REGION: String = ""
+  override val ACTION_COLLAPSE_REGION_RECURSIVELY: String = ""
+  override val ACTION_EXPAND_ALL_REGIONS: String = ""
+  override val ACTION_EXPAND_REGION: String = ""
+  override val ACTION_EXPAND_REGION_RECURSIVELY: String = ""
+  override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = ""
+  override val ACTION_UNDO: String = ""
+  override val ACTION_REDO: String = ""
+
+  /** The engine running its own handler - the only one of these that is not about the IDE. */
+  override fun executeVimAction(
+    editor: VimEditor,
+    cmd: EditorActionHandlerBase,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ) {
+    // IntelliJ wraps this in its CommandProcessor so the change is one undoable unit; with no undo
+    // stack to group into, the call itself is all that is left.
+    cmd.execute(editor, context, operatorArguments)
+  }
+
+  override fun executeCommand(editor: VimEditor?, runnable: () -> Unit, name: String?, groupId: Any?) =
+    runnable()
+
+  override fun executeAction(editor: VimEditor?, action: NativeAction, context: ExecutionContext): Boolean = false
+  override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean = false
+  override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean = false
+  override fun executeEsc(editor: VimEditor, context: ExecutionContext): Boolean = false
+  override fun getAction(actionId: String): NativeAction? = null
+  override fun getActionIdList(idPrefix: String): List<String> = emptyList()
+
+  /** Vim's own actions are findable, because the registry that holds them is the engine's. */
+  override fun findVimAction(id: String): EditorActionHandlerBase? =
+    engineCommandProvider.getCommands().firstOrNull { it.actionId == id }?.instance
+
+  override fun findVimActionOrDie(id: String): EditorActionHandlerBase =
+    findVimAction(id) ?: error("no Vim action with id $id")
 }

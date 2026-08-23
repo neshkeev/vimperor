@@ -128,17 +128,63 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   // ---- Not reached by the regex engine. Each names itself if that ever changes.
 
   override fun getLineRange(line: Int): Pair<Int, Int> = TODO("TestVimEditor.getLineRange is not needed by the regex tests")
-  override fun forEachCaret(action: (VimCaret) -> Unit): Unit = TODO("TestVimEditor.forEachCaret is not needed by the regex tests")
-  override fun forEachNativeCaret(action: (VimCaret) -> Unit, reverse: Boolean): Unit = TODO("TestVimEditor.forEachNativeCaret is not needed by the regex tests")
-  override fun isInForEachCaretScope(): Boolean = TODO("TestVimEditor.isInForEachCaretScope is not needed by the regex tests")
-  override fun isWritable(): Boolean = TODO("TestVimEditor.isWritable is not needed by the regex tests")
-  override fun isDocumentWritable(): Boolean = TODO("TestVimEditor.isDocumentWritable is not needed by the regex tests")
-  override fun isOneLineMode(): Boolean = TODO("TestVimEditor.isOneLineMode is not needed by the regex tests")
-  override fun search(pair: Pair<Int, Int>, editor: VimEditor, shiftType: LineDeleteShift): Pair<Pair<Int, Int>, LineDeleteShift>? = TODO("TestVimEditor.search is not needed by the regex tests")
-  override fun offsetToVisualPosition(offset: Int): VimVisualPosition = TODO("TestVimEditor.offsetToVisualPosition is not needed by the regex tests")
-  override fun visualPositionToOffset(position: VimVisualPosition): Int = TODO("TestVimEditor.visualPositionToOffset is not needed by the regex tests")
-  override fun visualPositionToBufferPosition(position: VimVisualPosition): BufferPosition = TODO("TestVimEditor.visualPositionToBufferPosition is not needed by the regex tests")
-  override fun bufferPositionToVisualPosition(position: BufferPosition): VimVisualPosition = TODO("TestVimEditor.bufferPositionToVisualPosition is not needed by the regex tests")
+  override fun forEachCaret(action: (VimCaret) -> Unit) {
+    inForEachCaret = true
+    try {
+      carets.forEach(action)
+    } finally {
+      inForEachCaret = false
+    }
+  }
+
+  override fun forEachNativeCaret(action: (VimCaret) -> Unit, reverse: Boolean) =
+    forEachCaret(action)
+
+  /**
+   * Whether a per-caret walk is in progress. IntelliJ forbids nesting them, and the engine asks
+   * before starting one; with a single caret there is nothing to nest.
+   */
+  override fun isInForEachCaretScope(): Boolean = inForEachCaret
+
+  private var inForEachCaret = false
+
+  /** Writable. A read-only buffer is a real editor state, but not one these tests exercise. */
+  override fun isWritable(): Boolean = true
+
+  override fun isDocumentWritable(): Boolean = true
+
+  /** False - a one-line editor is IntelliJ's inline input field, not a buffer. */
+  override fun isOneLineMode(): Boolean = false
+
+  /**
+   * The range, unchanged. The engine's own comment calls this "a function for refactoring, get rid
+   * of it": it exists so a host can widen a delete to swallow a trailing newline. A buffer that is
+   * plain text has nothing to adjust, so it hands back what it was given.
+   */
+  override fun search(
+    pair: Pair<Int, Int>,
+    editor: VimEditor,
+    shiftType: LineDeleteShift,
+  ): Pair<Pair<Int, Int>, LineDeleteShift> = pair to shiftType
+
+  /**
+   * Visual position equals buffer position here. They differ in a real editor when lines are folded
+   * or soft-wrapped, and nothing is displayed to fold or wrap.
+   */
+  override fun offsetToVisualPosition(offset: Int): VimVisualPosition {
+    val position = offsetToBufferPosition(offset)
+    return VimVisualPosition(position.line, position.column)
+  }
+
+  override fun visualPositionToOffset(position: VimVisualPosition): Int =
+    bufferPositionToOffset(BufferPosition(position.line, position.column))
+
+  override fun visualPositionToBufferPosition(position: VimVisualPosition): BufferPosition =
+    BufferPosition(position.line, position.column)
+
+  override fun bufferPositionToVisualPosition(position: BufferPosition): VimVisualPosition =
+    VimVisualPosition(position.line, position.column)
+
   /**
    * A file, because marks require one.
    *
@@ -151,7 +197,10 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
    * arrive here, and an untitled buffer with no URI would lose marks.
    */
   override fun getVirtualFile(): VimVirtualFile = TestVirtualFile
-  override fun deleteString(range: TextRange): Unit = TODO("TestVimEditor.deleteString is not needed by the regex tests")
+  override fun deleteString(range: TextRange) {
+    replaceString(range.startOffset, range.endOffset, "")
+  }
+
   override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not needed by the regex tests")
   override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not needed by the regex tests")
   override fun addCaret(offset: Int): VimCaret? = TODO("TestVimEditor.addCaret is not needed by the regex tests")
@@ -159,7 +208,8 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition): Unit = TODO("TestVimEditor.vimSetSystemBlockSelectionSilently is not needed by the regex tests")
   override fun addCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.addCaretListener is not needed by the regex tests")
   override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.removeCaretListener is not needed by the regex tests")
-  override fun isDisposed(): Boolean = TODO("TestVimEditor.isDisposed is not needed by the regex tests")
+  override fun isDisposed(): Boolean = false
+
   override fun removeSelection(): Unit = TODO("TestVimEditor.removeSelection is not needed by the regex tests")
   /**
    * A stable name, because local marks are keyed by it.
@@ -174,37 +224,52 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override fun extractProtocol(): String? = TODO("TestVimEditor.extractProtocol is not needed by the regex tests")
   override fun exitInsertMode(context: ExecutionContext): Unit = TODO("TestVimEditor.exitInsertMode is not needed by the regex tests")
   override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("TestVimEditor.exitSelectModeNative is not needed by the regex tests")
-  override fun isTemplateActive(): Boolean = TODO("TestVimEditor.isTemplateActive is not needed by the regex tests")
-  override fun startGuardedBlockChecking(): Unit = TODO("TestVimEditor.startGuardedBlockChecking is not needed by the regex tests")
-  override fun stopGuardedBlockChecking(): Unit = TODO("TestVimEditor.stopGuardedBlockChecking is not needed by the regex tests")
-  override fun hasUnsavedChanges(): Boolean = TODO("TestVimEditor.hasUnsavedChanges is not needed by the regex tests")
+  /** No live templates without an IDE that has them. */
+  override fun isTemplateActive(): Boolean = false
+
+  override fun startGuardedBlockChecking() {}
+
+  override fun stopGuardedBlockChecking() {}
+
+  override fun hasUnsavedChanges(): Boolean = false
+
   override fun getLastVisualLineColumnNumber(line: Int): Int = TODO("TestVimEditor.getLastVisualLineColumnNumber is not needed by the regex tests")
   override fun createLiveMarker(start: Int, end: Int): LiveRange = TODO("TestVimEditor.createLiveMarker is not needed by the regex tests")
   override fun createIndentBySize(size: Int): String = TODO("TestVimEditor.createIndentBySize is not needed by the regex tests")
-  override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? = TODO("TestVimEditor.getCollapsedFoldRegionAtOffset is not needed by the regex tests")
-  override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> = TODO("TestVimEditor.getFoldRegionsAtOffset is not needed by the regex tests")
+  override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? = null
+
+  override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> = emptyList()
+
   override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("TestVimEditor.getFoldRegionAtLine is not needed by the regex tests")
-  override fun getCollapsedFoldRegionAtVisualStartLine(line: Int): VimFoldRegion? = TODO("TestVimEditor.getCollapsedFoldRegionAtVisualStartLine is not needed by the regex tests")
-  override fun getAllFoldRegions(): List<VimFoldRegion> = TODO("TestVimEditor.getAllFoldRegions is not needed by the regex tests")
+  /** Nothing is folded, because nothing is displayed. */
+  override fun getCollapsedFoldRegionAtVisualStartLine(line: Int): VimFoldRegion? = null
+
+  override fun getAllFoldRegions(): List<VimFoldRegion> = emptyList()
+
   override fun applyFoldLevel(foldLevel: Int): Unit = TODO("TestVimEditor.applyFoldLevel is not needed by the regex tests")
   override fun getMaxFoldDepth(): Int = TODO("TestVimEditor.getMaxFoldDepth is not needed by the regex tests")
   override fun createFoldRegion(startOffset: Int, endOffset: Int, collapse: Boolean): VimFoldRegion? = TODO("TestVimEditor.createFoldRegion is not needed by the regex tests")
   override fun deleteFoldRegionAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionAtOffset is not needed by the regex tests")
   override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionsRecursivelyAtOffset is not needed by the regex tests")
-  override fun <T : ImmutableVimCaret> findLastVersionOfCaret(caret: T): T? = TODO("TestVimEditor.findLastVersionOfCaret is not needed by the regex tests")
+  /**
+   * The caret itself. IntelliJ replaces caret objects as the document changes, so the engine asks
+   * for the current version of one it is holding; this caret is mutable and never replaced.
+   */
+  override fun <T : ImmutableVimCaret> findLastVersionOfCaret(caret: T): T = caret
+
   /**
    * Normal, and settable. The mode belongs to the editor rather than to the engine, because each
    * window is in its own mode; `:s` reads it to decide whether it is operating on a visual
    * selection.
    */
   override var mode: Mode = Mode.NORMAL()
-  override var isReplaceCharacter: Boolean
-    get() = TODO("TestVimEditor.isReplaceCharacter is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.isReplaceCharacter is not needed by the regex tests")
+  /** True between `r` and the character that replaces; the editor owns it because `R` is a mode. */
+  override var isReplaceCharacter: Boolean = false
+
   override val lfMakesNewLine: Boolean get() = TODO("TestVimEditor.lfMakesNewLine is not needed by the regex tests")
-  override var vimChangeActionSwitchMode: Mode?
-    get() = TODO("TestVimEditor.vimChangeActionSwitchMode is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.vimChangeActionSwitchMode is not needed by the regex tests")
+  /** Where to go after a change finishes - insert after `cw`, normal after `x`. */
+  override var vimChangeActionSwitchMode: Mode? = null
+
   override val indentConfig: VimIndentConfig get() = TODO("TestVimEditor.indentConfig is not needed by the regex tests")
   override var replaceMask: VimEditorReplaceMask?
     get() = TODO("TestVimEditor.replaceMask is not needed by the regex tests")
@@ -218,9 +283,8 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override var vimLastSelectionType: SelectionType?
     get() = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")
     set(_) = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")
-  override var insertMode: Boolean
-    get() = TODO("TestVimEditor.insertMode is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.insertMode is not needed by the regex tests")
+  override var insertMode: Boolean = false
+
   override val document: VimDocument get() = TODO("TestVimEditor.document is not needed by the regex tests")
 }
 

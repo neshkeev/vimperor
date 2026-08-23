@@ -17,6 +17,7 @@ import com.maddyhome.idea.vim.api.SelectionInfo
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.group.visual.VisualChange
 import com.maddyhome.idea.vim.api.CaretRegisterStorage
+import com.maddyhome.idea.vim.api.CaretRegisterStorageBase
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMark
 
@@ -97,12 +98,14 @@ class TestVimCaret(
 
   override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("TestVimCaret.moveToVisualPosition is not needed by the regex tests")
   override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("TestVimCaret.setVimLastColumnAndGetCaret is not needed by the regex tests")
-  override var vimLastColumn: Int
-    get() = TODO("TestVimCaret.vimLastColumn is not needed by the regex tests")
-    set(_) = TODO("TestVimCaret.vimLastColumn is not needed by the regex tests")
-  override var vimSelectionStart: Int
-    get() = TODO("TestVimCaret.vimSelectionStart is not needed by the regex tests")
-    set(_) = TODO("TestVimCaret.vimSelectionStart is not needed by the regex tests")
+  /**
+   * The column `j` and `k` try to return to. Vim remembers it across vertical motions so that
+   * moving through a short line and out the other side lands back where you started.
+   */
+  override var vimLastColumn: Int = 0
+
+  override var vimSelectionStart: Int = 0
+
   override var vimInsertStart: LiveRange
     get() = TODO("TestVimCaret.vimInsertStart is not needed by the regex tests")
     set(_) = TODO("TestVimCaret.vimInsertStart is not needed by the regex tests")
@@ -127,5 +130,10 @@ class TestVimCaret(
   override var lastSelectionInfo: SelectionInfo
     get() = TODO("TestVimCaret.lastSelectionInfo is not needed by the regex tests")
     set(_) = TODO("TestVimCaret.lastSelectionInfo is not needed by the regex tests")
-  override val registerStorage: CaretRegisterStorage get() = TODO("TestVimCaret.registerStorage is not needed by the regex tests")
+  /**
+   * Per-caret registers, which is what multiple cursors need: each caret yanks into its own copy so
+   * that `"ayiw` on three carets does not have them overwrite each other.
+   */
+  override val registerStorage: CaretRegisterStorage = CaretRegisterStorageBase(this)
+
 }
