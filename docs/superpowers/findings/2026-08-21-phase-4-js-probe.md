@@ -1274,3 +1274,45 @@ So the cost of phase 2 is not implementing services. It is discovering the contr
 them. Estimates here have now been wrong in both directions - too pessimistic about how many
 services a behaviour needs, too optimistic about how long each one takes - and the only reliable way
 to size the next increment is to attempt it.
+
+## `:%s/foo/bar/g` runs in a JavaScript runtime
+
+The first vertical slice, and the one that matters: the vimscript parser, `CommandVisitor` building
+a `SubstituteCommand`, the NFA matcher finding the match, and the change group rewriting the buffer -
+four layers proved separately in this port, now proved together, on both targets. First-match
+replacement, the `g` flag, a line range, `%` for the whole buffer, and `s/a\+/X/` through the regex
+engine.
+
+### The service chain was twelve deep and not predictable
+
+`vimState` → `historyGroup` → `registerGroup` → `clipboardManager` → `jumpService` → `projectId` →
+`scroll` → selection mutation → `submatch()` registration → `motion` → display-line stubs.
+
+Three of those are worth naming:
+
+- **The register group needs a clipboard manager**, because Vim's `"*` and `"+` registers *are* the
+  selection and the system clipboard.
+- **`:s` reaches the jump service**, which needs a project id, because substituting records a jump.
+- **`:s` needs the builtin functions registered** even for a substitution that mentions no function.
+
+### `setLatestMatch` is a latent crash, not just a host requirement
+
+`VimSearchGroupBase.setLatestMatch` calls `SubmatchFunctionHandler.getInstance()`, which casts a
+function lookup to a non-null type. With `submatch` unregistered, a plain `:s` dies on a
+`NullPointerException` from a cast - not a diagnostic, and nowhere near the apparent cause.
+
+IdeaVim never meets this because the plugin registers handlers at startup, so the search group has a
+hard unchecked dependency on the function registry being initialised. **For a VS Code host it is an
+ordering constraint: register the builtins before any substitute can run.** Same shape as the marks
+contract - an undocumented precondition whose violation produces something unhelpful. A null check
+with a message would be a small, worthwhile fix, separate from this port.
+
+### What stayed a TODO is a clean line
+
+Everything the host could not answer was about a **screen**: search highlighting, the `'incsearch'`
+preview, the "3 of 12" match count, the `:s///c` confirmation highlight, all ten scroll operations,
+and the nine display-line motions - `H`, `M`, `L`, `g0`, `gm`, `g$` - plus tab switching. Vim's
+actual text manipulation needed none of it.
+
+That line is the useful result. It says a host has to supply a viewport and a way to paint, and that
+everything else the engine already carries.

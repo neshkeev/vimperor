@@ -192,9 +192,12 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override fun deleteFoldRegionAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionAtOffset is not needed by the regex tests")
   override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionsRecursivelyAtOffset is not needed by the regex tests")
   override fun <T : ImmutableVimCaret> findLastVersionOfCaret(caret: T): T? = TODO("TestVimEditor.findLastVersionOfCaret is not needed by the regex tests")
-  override var mode: Mode
-    get() = TODO("TestVimEditor.mode is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.mode is not needed by the regex tests")
+  /**
+   * Normal, and settable. The mode belongs to the editor rather than to the engine, because each
+   * window is in its own mode; `:s` reads it to decide whether it is operating on a visual
+   * selection.
+   */
+  override var mode: Mode = Mode.NORMAL()
   override var isReplaceCharacter: Boolean
     get() = TODO("TestVimEditor.isReplaceCharacter is not needed by the regex tests")
     set(_) = TODO("TestVimEditor.isReplaceCharacter is not needed by the regex tests")
@@ -206,7 +209,12 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override var replaceMask: VimEditorReplaceMask?
     get() = TODO("TestVimEditor.replaceMask is not needed by the regex tests")
     set(_) = TODO("TestVimEditor.replaceMask is not needed by the regex tests")
-  override val projectId: String get() = TODO("TestVimEditor.projectId is not needed by the regex tests")
+  /**
+   * One project, one id. The jump list is keyed by it, because IntelliJ keeps a separate jump list
+   * per project window.
+   */
+  override val projectId: String get() = "headless"
+
   override var vimLastSelectionType: SelectionType?
     get() = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")
     set(_) = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")

@@ -83,10 +83,18 @@ class TestVimCaret(
 
   // ---- Not reached by the regex engine. Each names itself if that ever changes.
 
-  override fun resetLastColumn(): Unit = TODO("TestVimCaret.resetLastColumn is not needed by the regex tests")
-  override fun vimSelectionStartClear(): Unit = TODO("TestVimCaret.vimSelectionStartClear is not needed by the regex tests")
-  override fun setSelection(start: Int, end: Int): Unit = TODO("TestVimCaret.setSelection is not needed by the regex tests")
-  override fun removeSelection(): Unit = TODO("TestVimCaret.removeSelection is not needed by the regex tests")
+  override fun resetLastColumn() {}
+
+  override fun vimSelectionStartClear() {}
+
+  override fun setSelection(start: Int, end: Int) {}
+
+  /**
+   * Nothing to remove. The selection is fixed at construction here, because the regex tests express
+   * one by writing tags into the buffer text rather than by moving a caret.
+   */
+  override fun removeSelection() {}
+
   override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("TestVimCaret.moveToVisualPosition is not needed by the regex tests")
   override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("TestVimCaret.setVimLastColumnAndGetCaret is not needed by the regex tests")
   override var vimLastColumn: Int
@@ -101,12 +109,19 @@ class TestVimCaret(
   override var vimLastVisualOperatorRange: VisualChange?
     get() = TODO("TestVimCaret.vimLastVisualOperatorRange is not needed by the regex tests")
     set(_) = TODO("TestVimCaret.vimLastVisualOperatorRange is not needed by the regex tests")
-  override fun getBufferPosition(): BufferPosition = TODO("TestVimCaret.getBufferPosition is not needed by the regex tests")
+  /** The caret's offset as a line and column, which only the editor can work out. */
+  override fun getBufferPosition(): BufferPosition = editor.offsetToBufferPosition(offset)
+
   override fun getVisualPosition(): VimVisualPosition = TODO("TestVimCaret.getVisualPosition is not needed by the regex tests")
-  override fun getLine(): Int = TODO("TestVimCaret.getLine is not needed by the regex tests")
-  override fun hasSelection(): Boolean = TODO("TestVimCaret.hasSelection is not needed by the regex tests")
-  override val id: String get() = TODO("TestVimCaret.id is not needed by the regex tests")
-  override val isValid: Boolean get() = TODO("TestVimCaret.isValid is not needed by the regex tests")
+  override fun getLine(): Int = getBufferPosition().line
+
+  /** A selection exists when the two ends were given, which is how the regex tests build one. */
+  override fun hasSelection(): Boolean = selectionStart >= 0 && selectionEnd >= 0
+  override val id: String get() = "headless-caret"
+
+  /** Always. A caret becomes invalid when its editor closes, and this one never closes. */
+  override val isValid: Boolean get() = true
+
   override val vimLine: Int get() = TODO("TestVimCaret.vimLine is not needed by the regex tests")
   override val visualLineStart: Int get() = TODO("TestVimCaret.visualLineStart is not needed by the regex tests")
   override var lastSelectionInfo: SelectionInfo

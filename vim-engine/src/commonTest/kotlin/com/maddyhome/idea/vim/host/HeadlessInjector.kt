@@ -18,6 +18,21 @@ import com.maddyhome.idea.vim.api.VimOptionGroup
 import com.maddyhome.idea.vim.api.VimOptionGroupBase
 import com.maddyhome.idea.vim.api.VimScriptFunctionServiceBase
 import com.maddyhome.idea.vim.api.SystemInfoService
+import com.maddyhome.idea.vim.handler.Motion
+import com.maddyhome.idea.vim.api.VimMotionGroup
+import com.maddyhome.idea.vim.api.VimMotionGroupBase
+import com.maddyhome.idea.vim.api.VimScrollGroup
+import com.maddyhome.idea.vim.api.VimJumpService
+import com.maddyhome.idea.vim.api.VimJumpServiceBase
+import com.maddyhome.idea.vim.api.VimClipboardManager
+import com.maddyhome.idea.vim.state.mode.SelectionType
+import com.maddyhome.idea.vim.common.VimCopiedText
+import com.maddyhome.idea.vim.register.VimRegisterGroup
+import com.maddyhome.idea.vim.register.VimRegisterGroupBase
+import com.maddyhome.idea.vim.history.VimHistory
+import com.maddyhome.idea.vim.history.VimHistoryBase
+import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
+import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimSearchHelper
 import com.maddyhome.idea.vim.api.VimCaret
@@ -25,6 +40,8 @@ import com.maddyhome.idea.vim.api.VimChangeGroup
 import com.maddyhome.idea.vim.api.VimChangeGroupBase
 import com.maddyhome.idea.vim.api.VimMarkService
 import com.maddyhome.idea.vim.api.VimMarkServiceBase
+import com.maddyhome.idea.vim.api.VimSearchGroup
+import com.maddyhome.idea.vim.api.VimSearchGroupBase
 import com.maddyhome.idea.vim.api.VimSearchHelperBase
 import com.maddyhome.idea.vim.api.VimStatistics
 import com.maddyhome.idea.vim.api.VimStorageService
@@ -164,6 +181,109 @@ class HeadlessInjector : HeadlessInjectorBase() {
   /** `VimMarkServiceBase` leaves nothing abstract; marks are offsets in a buffer. */
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
 
+  /** `VimSearchGroupBase` holds the `:s` and `/` logic; only the highlighting is a host concern. */
+  override val searchGroup: VimSearchGroup by lazy {
+    object : VimSearchGroupBase() {
+      // Everything the base leaves open is about what the user can *see* - `'hlsearch'`
+      // highlighting, the `'incsearch'` preview, the "3 of 12" count, and the confirmation
+      // highlight `:s///c` paints. A host with no window draws none of it, and `:s` works without
+      // any of it, which is why the substitution itself is common code.
+      override fun isSomeTextHighlighted(): Boolean = false
+      override fun getCurrentIncsearchResultRange(editor: VimEditor): TextRange? = null
+      override fun highlightSearchLines(editor: VimEditor, startLine: Int, endLine: Int) {}
+      override fun updateSearchHighlights(force: Boolean) {}
+      override fun updateSearchCount(matchOffset: Int) {}
+      override fun resetIncsearchHighlights() {}
+      override fun setShouldShowSearchHighlights() {}
+      override fun clearSearchHighlight() {}
+
+      override fun addSubstitutionConfirmationHighlight(
+        editor: VimEditor,
+        startOffset: Int,
+        endOffset: Int,
+      ): SearchHighlight = TODO("headless host cannot paint a confirmation highlight")
+    }
+  }
+
+  /**
+   * The engine ships its own state machine - `VimStateMachineImpl` is in `commonMain` - so a host
+   * supplies nothing here beyond an instance. It tracks the pending command, the register in use,
+   * and the digraph state.
+   */
+  override val vimState: VimStateMachine by lazy { VimStateMachineImpl() }
+
+  /** `VimHistoryBase` leaves nothing abstract; the search and command histories are lists. */
+  override val historyGroup: VimHistory by lazy { object : VimHistoryBase() {} }
+
+  /**
+   * `VimRegisterGroupBase` leaves nothing abstract - registers are a map from a character to text
+   * plus a selection type. `:s` reaches it because the last substitute pattern goes to the `/`
+   * register.
+   */
+  override val registerGroup: VimRegisterGroup by lazy { object : VimRegisterGroupBase() {} }
+
+  override val registerGroupIfCreated: VimRegisterGroup? get() = registerGroup
+
+  /**
+   * An in-memory clipboard with no system behind it.
+   *
+   * The register group reaches this because Vim's `"*` and `"+` registers *are* the selection and
+   * the clipboard. "Transferable data" - the IDE's rich-text payload that travels with a copy - has
+   * no meaning here, so it is always empty.
+   */
+  override val clipboardManager: VimClipboardManager by lazy { HeadlessClipboardManager() }
+
+  /** `VimJumpServiceBase` leaves nothing abstract; the jump list is a list of positions. */
+  override val jumpService: VimJumpService by lazy {
+    object : VimJumpServiceBase() {
+      /** IntelliJ's own navigation history; there is none to add to here. */
+      override fun includeCurrentCommandAsNavigation(editor: VimEditor) {}
+      override var lastJumpTimeStamp: Long = 0
+    }
+  }
+
+  /**
+   * Nothing scrolls, because nothing is displayed. Every one of these moves a viewport, and a host
+   * with no viewport has none to move - `scrollCaretIntoView` is the one `:s` reaches, after
+   * jumping to a match.
+   */
+  override val scroll: VimScrollGroup by lazy { HeadlessScrollGroup }
+
+  /** `VimMotionGroupBase` holds the motion logic; `:s` uses it to put the caret on the match. */
+  override val motion: VimMotionGroup by lazy {
+    object : VimMotionGroupBase() {
+      // What the base leaves open is every motion defined in terms of the *screen* rather than the
+      // buffer - `H`, `M`, `L`, `g0`, `gm`, `g$` - plus tab switching. A host with no viewport and
+      // no tabs cannot answer them, and buffer motions do not go through here.
+      override fun moveCaretToFirstDisplayLine(editor: VimEditor, caret: ImmutableVimCaret, count: Int, normalizeToScreen: Boolean): Int =
+        TODO("headless host has no display lines or tabs: moveCaretToFirstDisplayLine")
+
+      override fun moveCaretToMiddleDisplayLine(editor: VimEditor, caret: ImmutableVimCaret): Int =
+        TODO("headless host has no display lines or tabs: moveCaretToMiddleDisplayLine")
+
+      override fun moveCaretToLastDisplayLine(editor: VimEditor, caret: ImmutableVimCaret, count: Int, normalizeToScreen: Boolean): Int =
+        TODO("headless host has no display lines or tabs: moveCaretToLastDisplayLine")
+
+      override fun moveCaretToCurrentDisplayLineStart(editor: VimEditor, caret: ImmutableVimCaret): Motion =
+        TODO("headless host has no display lines or tabs: moveCaretToCurrentDisplayLineStart")
+
+      override fun moveCaretToCurrentDisplayLineStartSkipLeading(editor: VimEditor, caret: ImmutableVimCaret): Int =
+        TODO("headless host has no display lines or tabs: moveCaretToCurrentDisplayLineStartSkipLeading")
+
+      override fun moveCaretToCurrentDisplayLineMiddle(editor: VimEditor, caret: ImmutableVimCaret): Motion =
+        TODO("headless host has no display lines or tabs: moveCaretToCurrentDisplayLineMiddle")
+
+      override fun moveCaretToCurrentDisplayLineEnd(editor: VimEditor, caret: ImmutableVimCaret, allowEnd: Boolean): Motion =
+        TODO("headless host has no display lines or tabs: moveCaretToCurrentDisplayLineEnd")
+
+      override fun moveCaretGotoNextTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int =
+        TODO("headless host has no display lines or tabs: moveCaretGotoNextTab")
+
+      override fun moveCaretGotoPreviousTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int =
+        TODO("headless host has no display lines or tabs: moveCaretGotoPreviousTab")
+    }
+  }
+
   /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
 
@@ -261,4 +381,72 @@ private object HeadlessSystemInfo : SystemInfoService {
   override val isWindows: Boolean = false
   override val isXWindow: Boolean = false
   override fun getenv(name: String): String? = null
+}
+
+private class HeadlessClipboardManager : VimClipboardManager {
+  private var clipboard: VimCopiedText? = null
+  private var primary: VimCopiedText? = null
+
+  override fun getPrimaryContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? = primary
+
+  override fun getClipboardContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? = clipboard
+
+  override fun setClipboardContent(
+    editor: VimEditor,
+    context: ExecutionContext,
+    textData: VimCopiedText,
+  ): Boolean {
+    clipboard = textData
+    return true
+  }
+
+  override fun setPrimaryContent(
+    editor: VimEditor,
+    context: ExecutionContext,
+    textData: VimCopiedText,
+    selectionType: SelectionType,
+  ): Boolean {
+    primary = textData
+    return true
+  }
+
+  override fun setClipboardText(text: String, rawText: String, transferableData: List<Any>): Any? {
+    clipboard = HeadlessCopiedText(text)
+    return null
+  }
+
+  override fun collectCopiedText(
+    editor: VimEditor,
+    context: ExecutionContext,
+    range: TextRange,
+    text: String,
+  ): VimCopiedText = HeadlessCopiedText(text)
+
+  override fun dumbCopiedText(text: String): VimCopiedText = HeadlessCopiedText(text)
+
+  override fun getTransferableData(vimEditor: VimEditor, textRange: TextRange): List<Any> = emptyList()
+
+  override fun preprocessText(
+    vimEditor: VimEditor,
+    textRange: TextRange,
+    text: String,
+    transferableData: List<*>,
+  ): String = text
+}
+
+private data class HeadlessCopiedText(override val text: String) : VimCopiedText {
+  override fun updateText(newText: String): VimCopiedText = copy(text = newText)
+}
+
+private object HeadlessScrollGroup : VimScrollGroup {
+  override fun scrollCaretIntoView(editor: VimEditor) {}
+  override fun scrollFullPage(editor: VimEditor, caret: VimCaret, pages: Int): Boolean = false
+  override fun scrollHalfPage(editor: VimEditor, caret: VimCaret, rawCount: Int, down: Boolean): Boolean = false
+  override fun scrollLines(editor: VimEditor, lines: Int): Boolean = false
+  override fun scrollCurrentLineToDisplayTop(editor: VimEditor, rawCount: Int, start: Boolean): Boolean = false
+  override fun scrollCurrentLineToDisplayMiddle(editor: VimEditor, rawCount: Int, start: Boolean): Boolean = false
+  override fun scrollCurrentLineToDisplayBottom(editor: VimEditor, rawCount: Int, start: Boolean): Boolean = false
+  override fun scrollColumns(editor: VimEditor, columns: Int): Boolean = false
+  override fun scrollCaretColumnToDisplayLeftEdge(vimEditor: VimEditor): Boolean = false
+  override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean = false
 }

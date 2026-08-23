@@ -107,7 +107,11 @@ class HeadlessExpressionTest {
   }
 }
 
-/** Nothing to carry: these expressions never reach for editor context. */
-private object HeadlessExecutionContext : ExecutionContext {
+/**
+ * Nothing to carry. `ExecutionContext` is how IntelliJ threads its `DataContext` through the engine;
+ * a headless host has no such object, and the engine only reaches for it when handing control back
+ * to the IDE.
+ */
+internal object HeadlessExecutionContext : ExecutionContext {
   override val context: Any get() = TODO("headless host has no execution context yet")
 }
