@@ -9,8 +9,6 @@
 package com.maddyhome.idea.vim.host
 
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.regexp.TestVimCaret
-import com.maddyhome.idea.vim.regexp.TestVimEditor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

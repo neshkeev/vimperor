@@ -1355,3 +1355,27 @@ edit; a marker that ignored edits would be quietly wrong exactly where it matter
 Everything else stayed screen-shaped, as before: inlays, fold regions, screen width, viewport lines,
 and visual-versus-buffer position - identical here, because they differ only under folding and soft
 wrap.
+
+## The fakes move to `host`, and what is left unimplemented
+
+`TestVimEditor` and `TestVimCaret` were written for the regex matcher and lived in the `regexp`
+package, with every `TODO` reading "not needed by the regex tests". That stopped being true several
+increments ago - they are now the editor and caret for keystrokes, substitution, word motions and
+buffer editing - and a `TODO` that names the wrong reason costs whoever reads it next an hour. Both
+now sit in `host` beside the injector, with messages that say what the member needs rather than who
+first wanted it.
+
+What remains unimplemented is a useful inventory: **28 members on the editor, 11 on the caret**, and
+they group cleanly:
+
+- **Multiple carets** - `addCaret`, `removeCaret`, `removeSecondaryCarets`, the caret listeners.
+  This host has exactly one caret, and multiple-cursor support is a real feature rather than a stub.
+- **Folding** - six members. Nothing is displayed, so nothing is folded.
+- **Selection and mode transitions** - `exitInsertMode`, `exitSelectModeNative`,
+  `vimSetSystemBlockSelectionSilently`, `vimLastSelectionType`.
+- **Display measurements** - `getLastVisualLineColumnNumber`, `getScrollingModel`, `createLiveMarker`.
+- **Document and indent** - `document`, `indentConfig`, `createIndentBySize`, `lfMakesNewLine`.
+
+None of that blocks what this phase set out to prove. All of it is what a VS Code host would supply
+for real rather than stub, which is the point: the line between "engine" and "host" is now drawn by
+what the engine actually asked for, not by guesswork.

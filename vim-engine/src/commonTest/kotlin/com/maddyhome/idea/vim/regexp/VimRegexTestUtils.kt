@@ -9,6 +9,8 @@
 package com.maddyhome.idea.vim.regexp
 
 import com.maddyhome.idea.vim.api.BufferPosition
+import com.maddyhome.idea.vim.host.TestVimCaret
+import com.maddyhome.idea.vim.host.TestVimEditor
 import com.maddyhome.idea.vim.api.LocalMarkStorage
 import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor

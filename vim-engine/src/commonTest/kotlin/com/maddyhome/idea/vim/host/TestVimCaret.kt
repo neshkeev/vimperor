@@ -6,7 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.regexp
+package com.maddyhome.idea.vim.host
 
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.LocalMarkStorage
@@ -96,8 +96,8 @@ class TestVimCaret(
    */
   override fun removeSelection() {}
 
-  override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("TestVimCaret.moveToVisualPosition is not needed by the regex tests")
-  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("TestVimCaret.setVimLastColumnAndGetCaret is not needed by the regex tests")
+  override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("TestVimCaret.moveToVisualPosition is not implemented yet")
+  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("TestVimCaret.setVimLastColumnAndGetCaret is not implemented yet")
   /**
    * The column `j` and `k` try to return to. Vim remembers it across vertical motions so that
    * moving through a short line and out the other side lands back where you started.
@@ -107,15 +107,15 @@ class TestVimCaret(
   override var vimSelectionStart: Int = 0
 
   override var vimInsertStart: LiveRange
-    get() = TODO("TestVimCaret.vimInsertStart is not needed by the regex tests")
-    set(_) = TODO("TestVimCaret.vimInsertStart is not needed by the regex tests")
+    get() = TODO("TestVimCaret.vimInsertStart is not implemented yet")
+    set(_) = TODO("TestVimCaret.vimInsertStart is not implemented yet")
   override var vimLastVisualOperatorRange: VisualChange?
-    get() = TODO("TestVimCaret.vimLastVisualOperatorRange is not needed by the regex tests")
-    set(_) = TODO("TestVimCaret.vimLastVisualOperatorRange is not needed by the regex tests")
+    get() = TODO("TestVimCaret.vimLastVisualOperatorRange is not implemented yet")
+    set(_) = TODO("TestVimCaret.vimLastVisualOperatorRange is not implemented yet")
   /** The caret's offset as a line and column, which only the editor can work out. */
   override fun getBufferPosition(): BufferPosition = editor.offsetToBufferPosition(offset)
 
-  override fun getVisualPosition(): VimVisualPosition = TODO("TestVimCaret.getVisualPosition is not needed by the regex tests")
+  override fun getVisualPosition(): VimVisualPosition = TODO("TestVimCaret.getVisualPosition is not implemented yet")
   override fun getLine(): Int = getBufferPosition().line
 
   /** A selection exists when the two ends were given, which is how the regex tests build one. */
@@ -125,11 +125,11 @@ class TestVimCaret(
   /** Always. A caret becomes invalid when its editor closes, and this one never closes. */
   override val isValid: Boolean get() = true
 
-  override val vimLine: Int get() = TODO("TestVimCaret.vimLine is not needed by the regex tests")
-  override val visualLineStart: Int get() = TODO("TestVimCaret.visualLineStart is not needed by the regex tests")
+  override val vimLine: Int get() = TODO("TestVimCaret.vimLine is not implemented yet")
+  override val visualLineStart: Int get() = TODO("TestVimCaret.visualLineStart is not implemented yet")
   override var lastSelectionInfo: SelectionInfo
-    get() = TODO("TestVimCaret.lastSelectionInfo is not needed by the regex tests")
-    set(_) = TODO("TestVimCaret.lastSelectionInfo is not needed by the regex tests")
+    get() = TODO("TestVimCaret.lastSelectionInfo is not implemented yet")
+    set(_) = TODO("TestVimCaret.lastSelectionInfo is not implemented yet")
   /**
    * Per-caret registers, which is what multiple cursors need: each caret yanks into its own copy so
    * that `"ayiw` on three carets does not have them overwrite each other.

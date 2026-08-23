@@ -6,7 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.regexp
+package com.maddyhome.idea.vim.host
 
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.VimCaret
@@ -127,7 +127,7 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
 
   // ---- Not reached by the regex engine. Each names itself if that ever changes.
 
-  override fun getLineRange(line: Int): Pair<Int, Int> = TODO("TestVimEditor.getLineRange is not needed by the regex tests")
+  override fun getLineRange(line: Int): Pair<Int, Int> = TODO("TestVimEditor.getLineRange is not implemented yet")
   override fun forEachCaret(action: (VimCaret) -> Unit) {
     inForEachCaret = true
     try {
@@ -201,16 +201,16 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
     replaceString(range.startOffset, range.endOffset, "")
   }
 
-  override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not needed by the regex tests")
-  override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not needed by the regex tests")
-  override fun addCaret(offset: Int): VimCaret? = TODO("TestVimEditor.addCaret is not needed by the regex tests")
-  override fun removeSecondaryCarets(): Unit = TODO("TestVimEditor.removeSecondaryCarets is not needed by the regex tests")
-  override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition): Unit = TODO("TestVimEditor.vimSetSystemBlockSelectionSilently is not needed by the regex tests")
-  override fun addCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.addCaretListener is not needed by the regex tests")
-  override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.removeCaretListener is not needed by the regex tests")
+  override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not implemented yet")
+  override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not implemented yet")
+  override fun addCaret(offset: Int): VimCaret? = TODO("TestVimEditor.addCaret is not implemented yet")
+  override fun removeSecondaryCarets(): Unit = TODO("TestVimEditor.removeSecondaryCarets is not implemented yet")
+  override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition): Unit = TODO("TestVimEditor.vimSetSystemBlockSelectionSilently is not implemented yet")
+  override fun addCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.addCaretListener is not implemented yet")
+  override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.removeCaretListener is not implemented yet")
   override fun isDisposed(): Boolean = false
 
-  override fun removeSelection(): Unit = TODO("TestVimEditor.removeSelection is not needed by the regex tests")
+  override fun removeSelection(): Unit = TODO("TestVimEditor.removeSelection is not implemented yet")
   /**
    * A stable name, because local marks are keyed by it.
    *
@@ -221,9 +221,9 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
    * likely, has to arrive here.
    */
   override fun getPath(): String = "headless://buffer"
-  override fun extractProtocol(): String? = TODO("TestVimEditor.extractProtocol is not needed by the regex tests")
-  override fun exitInsertMode(context: ExecutionContext): Unit = TODO("TestVimEditor.exitInsertMode is not needed by the regex tests")
-  override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("TestVimEditor.exitSelectModeNative is not needed by the regex tests")
+  override fun extractProtocol(): String? = TODO("TestVimEditor.extractProtocol is not implemented yet")
+  override fun exitInsertMode(context: ExecutionContext): Unit = TODO("TestVimEditor.exitInsertMode is not implemented yet")
+  override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("TestVimEditor.exitSelectModeNative is not implemented yet")
   /** No live templates without an IDE that has them. */
   override fun isTemplateActive(): Boolean = false
 
@@ -233,24 +233,24 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
 
   override fun hasUnsavedChanges(): Boolean = false
 
-  override fun getLastVisualLineColumnNumber(line: Int): Int = TODO("TestVimEditor.getLastVisualLineColumnNumber is not needed by the regex tests")
-  override fun createLiveMarker(start: Int, end: Int): LiveRange = TODO("TestVimEditor.createLiveMarker is not needed by the regex tests")
-  override fun createIndentBySize(size: Int): String = TODO("TestVimEditor.createIndentBySize is not needed by the regex tests")
+  override fun getLastVisualLineColumnNumber(line: Int): Int = TODO("TestVimEditor.getLastVisualLineColumnNumber is not implemented yet")
+  override fun createLiveMarker(start: Int, end: Int): LiveRange = TODO("TestVimEditor.createLiveMarker is not implemented yet")
+  override fun createIndentBySize(size: Int): String = TODO("TestVimEditor.createIndentBySize is not implemented yet")
   override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? = null
 
   override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> = emptyList()
 
-  override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("TestVimEditor.getFoldRegionAtLine is not needed by the regex tests")
+  override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("TestVimEditor.getFoldRegionAtLine is not implemented yet")
   /** Nothing is folded, because nothing is displayed. */
   override fun getCollapsedFoldRegionAtVisualStartLine(line: Int): VimFoldRegion? = null
 
   override fun getAllFoldRegions(): List<VimFoldRegion> = emptyList()
 
-  override fun applyFoldLevel(foldLevel: Int): Unit = TODO("TestVimEditor.applyFoldLevel is not needed by the regex tests")
-  override fun getMaxFoldDepth(): Int = TODO("TestVimEditor.getMaxFoldDepth is not needed by the regex tests")
-  override fun createFoldRegion(startOffset: Int, endOffset: Int, collapse: Boolean): VimFoldRegion? = TODO("TestVimEditor.createFoldRegion is not needed by the regex tests")
-  override fun deleteFoldRegionAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionAtOffset is not needed by the regex tests")
-  override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionsRecursivelyAtOffset is not needed by the regex tests")
+  override fun applyFoldLevel(foldLevel: Int): Unit = TODO("TestVimEditor.applyFoldLevel is not implemented yet")
+  override fun getMaxFoldDepth(): Int = TODO("TestVimEditor.getMaxFoldDepth is not implemented yet")
+  override fun createFoldRegion(startOffset: Int, endOffset: Int, collapse: Boolean): VimFoldRegion? = TODO("TestVimEditor.createFoldRegion is not implemented yet")
+  override fun deleteFoldRegionAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionAtOffset is not implemented yet")
+  override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = TODO("TestVimEditor.deleteFoldRegionsRecursivelyAtOffset is not implemented yet")
   /**
    * The caret itself. IntelliJ replaces caret objects as the document changes, so the engine asks
    * for the current version of one it is holding; this caret is mutable and never replaced.
@@ -266,14 +266,14 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   /** True between `r` and the character that replaces; the editor owns it because `R` is a mode. */
   override var isReplaceCharacter: Boolean = false
 
-  override val lfMakesNewLine: Boolean get() = TODO("TestVimEditor.lfMakesNewLine is not needed by the regex tests")
+  override val lfMakesNewLine: Boolean get() = TODO("TestVimEditor.lfMakesNewLine is not implemented yet")
   /** Where to go after a change finishes - insert after `cw`, normal after `x`. */
   override var vimChangeActionSwitchMode: Mode? = null
 
-  override val indentConfig: VimIndentConfig get() = TODO("TestVimEditor.indentConfig is not needed by the regex tests")
+  override val indentConfig: VimIndentConfig get() = TODO("TestVimEditor.indentConfig is not implemented yet")
   override var replaceMask: VimEditorReplaceMask?
-    get() = TODO("TestVimEditor.replaceMask is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.replaceMask is not needed by the regex tests")
+    get() = TODO("TestVimEditor.replaceMask is not implemented yet")
+    set(_) = TODO("TestVimEditor.replaceMask is not implemented yet")
   /**
    * One project, one id. The jump list is keyed by it, because IntelliJ keeps a separate jump list
    * per project window.
@@ -281,11 +281,11 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override val projectId: String get() = "headless"
 
   override var vimLastSelectionType: SelectionType?
-    get() = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")
-    set(_) = TODO("TestVimEditor.vimLastSelectionType is not needed by the regex tests")
+    get() = TODO("TestVimEditor.vimLastSelectionType is not implemented yet")
+    set(_) = TODO("TestVimEditor.vimLastSelectionType is not implemented yet")
   override var insertMode: Boolean = false
 
-  override val document: VimDocument get() = TODO("TestVimEditor.document is not needed by the regex tests")
+  override val document: VimDocument get() = TODO("TestVimEditor.document is not implemented yet")
 }
 
 /** The one buffer a headless test has, named so that marks can be keyed by it. */
