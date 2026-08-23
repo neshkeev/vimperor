@@ -30,6 +30,7 @@ plugins {
 rootProject.name = "IdeaVIM"
 
 include("vim-engine")
+include("vscode-extension")
 include("scripts")
 include("annotation-processors")
 include("vim-annotations")

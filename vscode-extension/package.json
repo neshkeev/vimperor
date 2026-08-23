@@ -1,0 +1,27 @@
+{
+  "name": "ideavim-vscode",
+  "displayName": "IdeaVim",
+  "description": "Vim emulation for VS Code, powered by the IdeaVim engine.",
+  "version": "0.0.1",
+  "publisher": "IdeaVim",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Keymaps",
+    "Other"
+  ],
+  "main": "./build/compileSync/js/main/productionExecutable/kotlin/IdeaVIM-vscode-extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "ideavim.checkPattern",
+        "title": "IdeaVim: Check Vim Pattern"
+      }
+    ]
+  }
+}
