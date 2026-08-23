@@ -1430,3 +1430,59 @@ will hit. But every available fix changes behaviour for real users on scratch bu
 identity for an unidentified buffer, or making marks throw - to solve what is really "a host must
 give buffers identity". That is a documentation problem, and it is documented. Changing engine
 semantics to make a test host's life easier would be the wrong trade.
+
+---
+
+# The JS library exported nothing, and nothing could have noticed
+
+Building the VS Code extension starts by asking what JavaScript can see of the engine. The answer
+was **nothing**. `IdeaVIM-vim-engine.js` was 561 bytes, and `require`ing it from Node returned `{}`.
+
+Kotlin/JS with the IR backend eliminates everything not reachable from an exported root, and only
+`@JsExport` creates a root. The engine had no `@JsExport` anywhere, so the entire 836-file
+`commonMain` - parser, regex engine, command registry - was stripped from the artifact.
+
+| | bytes |
+|---|---:|
+| test bundle (`IdeaVIM-vim-engine-test.js`) | 994,383 |
+| library, no exports | 561 |
+| library, **one** exported function | 580,178 |
+
+## Why twelve green gates missed it
+
+The Kotlin/JS *tests* compile **with** the engine, so test code is itself a reachable root and the
+engine is always retained for them. The tests and the library have **different reachability roots**,
+so 420 passing Node assertions were structurally incapable of detecting an empty library.
+
+This is a sharper version of the "green because it wasn't doing the work" failures earlier in this
+port. Those were builds skipping work. This was a build doing its work correctly and emitting a
+useless artifact, with a passing suite that could not see it.
+
+The reason it survived every gate is that **the gates asserted test counts**. That is a strong
+signal for correctness and no signal at all about packaging: the artifact was built at every gate
+and inspected at none. The general form: *assert the property you care about, on the artifact you
+care about.* Counting tests proves tests ran.
+
+**A correction to earlier notes in this document.** They describe the engine as producing a JS
+library, and cite that as evidence of progress. It produced a library file; that file exported
+nothing. The behavioural results stand - dead-code elimination happens after compilation, so what
+the Node tests proved about correctness is unaffected - but the artifact was never usable.
+
+## The guard
+
+`checkJsLibraryIsNotEmpty` fails the build if the library drops below 100 KB, a threshold far under
+the real size and far over an empty shell: it distinguishes "everything" from "nothing" rather than
+policing growth. It is wired into `test`, and it was verified the only way that counts - by deleting
+the export, watching it fail with the right byte count and cause, and restoring.
+
+## The decision this forces
+
+`EngineExports.kt` exports a single function deliberately. Designing the API a VS Code extension
+should be handed is a real decision, and there are two shapes:
+
+- **A curated facade**: `@JsExport` a small API over the injector, editor and key handling, and
+  write the extension in TypeScript with normal tooling and typings.
+- **A Kotlin/JS extension**: nothing needs exporting but VS Code's `activate`/`deactivate`, because
+  the extension compiles with the engine and *is* the reachable root. One language throughout, and
+  no facade to maintain against 836 common files - at the cost of writing VS Code API bindings in
+  Kotlin.

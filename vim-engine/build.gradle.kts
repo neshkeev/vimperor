@@ -355,6 +355,32 @@ val generateAsciiArt by tasks.registering {
 }
 
 
+// A JS library with no `@JsExport` compiles to a shell that exports nothing: Kotlin/JS eliminates
+// everything not reachable from an exported root, and only `@JsExport` creates one. That failure is
+// silent - the build succeeds, and the Kotlin/JS tests keep passing, because test code is itself a
+// root compiled alongside the engine. It went unnoticed until something tried to `require` the
+// library from JavaScript and got `{}`.
+//
+// This asserts the artifact still carries the engine. The threshold is deliberately far below the
+// real size (~580 KB with a single export) and far above an empty shell (561 bytes): it is here to
+// catch the difference between "everything" and "nothing", not to police growth.
+val checkJsLibraryIsNotEmpty by tasks.registering {
+  val library = layout.buildDirectory.file("dist/js/productionLibrary/IdeaVIM-vim-engine.js")
+  dependsOn("jsNodeProductionLibraryDistribution")
+  inputs.file(library)
+  outputs.upToDateWhen { false }
+  doLast {
+    val file = library.get().asFile
+    val size = file.length()
+    check(size > 100_000) {
+      "The JS library is $size bytes, which means dead-code elimination stripped the engine: " +
+        "nothing is reachable from an `@JsExport` declaration. See EngineExports.kt. " +
+        "A JavaScript consumer would import an empty object."
+    }
+  }
+}
+
+
 kotlin {
   jvm()
   js(IR) {
@@ -507,4 +533,7 @@ artifacts.add(sourcesJarArtifacts.name, tasks.named("jvmSourcesJar"))
 tasks.register("test") {
   dependsOn("jvmTest")
   dependsOn("jsNodeTest")
+  // Neither test task can see this: they compile *with* the engine, so the engine is always
+  // reachable for them and always stripped from the library. Only building the library finds it.
+  dependsOn(checkJsLibraryIsNotEmpty)
 }
