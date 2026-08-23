@@ -37,6 +37,17 @@ kotlin {
         implementation(project(":vim-engine"))
       }
     }
+
+    val jsTest by getting {
+      dependencies {
+        implementation(kotlin("test"))
+        // `vscode` is injected by the extension host and has no published package, so the external
+        // declarations resolve to nothing under Node and every test that touches them fails at
+        // load. Pointing the name at a local stub lets the VS Code-facing code be tested as
+        // ordinary Kotlin instead of through a JavaScript harness.
+        implementation(npm("vscode", File(projectDir, "src/jsTest/vscode-stub")))
+      }
+    }
   }
 }
 
@@ -90,5 +101,6 @@ tasks.named("check") {
 // without this alias the gate documented in CLAUDE.md walks straight past this module, greenly.
 // The same omission hid vim-engine's JS tests for a while; see the note on its `test` task.
 tasks.register("test") {
+  dependsOn("jsNodeTest")
   dependsOn(runInStubHost)
 }

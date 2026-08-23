@@ -46,10 +46,75 @@ external interface OutputChannel : Disposable {
 }
 
 external object window {
+  val activeTextEditor: TextEditor?
   fun createOutputChannel(name: String): OutputChannel
   fun showInformationMessage(message: String): dynamic
 }
 
 external object commands {
   fun registerCommand(command: String, callback: (dynamic) -> Unit): Disposable
+}
+
+/**
+ * A position in a document. VS Code is line/character throughout; the engine is offset-first, and
+ * [TextDocument.offsetAt] and [TextDocument.positionAt] are the only bridge between them.
+ */
+external class Position(line: Int, character: Int) {
+  val line: Int
+  val character: Int
+}
+
+external class Range(start: Position, end: Position) {
+  val start: Position
+  val end: Position
+}
+
+/**
+ * The document's text is readable synchronously, which is what makes the engine's contracts
+ * possible at all - only writes go through [TextEditor.edit], and only they are asynchronous.
+ */
+external interface TextDocument {
+  val uri: Uri
+  val fileName: String
+  val lineCount: Int
+  val isUntitled: Boolean
+  val version: Int
+  fun getText(range: Range? = definedExternally): String
+  fun offsetAt(position: Position): Int
+  fun positionAt(offset: Int): Position
+}
+
+external interface Uri {
+  val scheme: String
+  val path: String
+  val fsPath: String
+}
+
+/** The builder VS Code hands to [TextEditor.edit]; its ranges are resolved against the document as it was when the edit began. */
+external interface TextEditorEdit {
+  fun replace(location: Range, value: String)
+  fun insert(location: Position, value: String)
+  fun delete(location: Range)
+}
+
+external interface Selection {
+  val anchor: Position
+  val active: Position
+}
+
+external interface TextEditor {
+  val document: TextDocument
+  var selection: Selection
+  var selections: Array<Selection>
+
+  /**
+   * Applies edits and resolves with whether they landed. The callback's edits are all resolved
+   * against the pre-edit document, so two edits cannot be chained inside one call.
+   */
+  fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean>
+}
+
+/** VS Code's promise type. Named as VS Code names it. */
+external interface Thenable<T> {
+  fun then(onFulfilled: (T) -> Unit): Thenable<T>
 }
