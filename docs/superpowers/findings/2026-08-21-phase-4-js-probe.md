@@ -1379,3 +1379,33 @@ they group cleanly:
 None of that blocks what this phase set out to prove. All of it is what a VS Code host would supply
 for real rather than stub, which is the point: the line between "engine" and "host" is now drawn by
 what the engine actually asked for, not by guesswork.
+
+## Registers, yank and put on Node
+
+`x` filling the unnamed register, `"ax` filling `a` and leaving the unnamed one alone, `yw` yanking
+without touching the buffer, and consecutive deletes shifting correctly. On both targets.
+
+Two things this increment taught:
+
+**One missing service made an unrelated assertion lie.** `yank` was absent, so the whole class failed
+at the first test that reached it - and `"ax` reported a null register for reasons that had nothing
+to do with named registers. With a shared setup, an early missing service makes later assertions
+report nonsense; read the *first* failure, not the tidiest one.
+
+**`YankGroupBase` is `open class`, not abstract** - already concrete, needing only instantiation.
+That makes three services the engine ships whole, with `VimStateMachineImpl` and
+`VimListenersNotifier` reaching hosts through `VimInjectorBase`.
+
+## A correction about sharing host code
+
+An earlier note here proposed moving the trivial `object : XBase() {}` services into
+`VimInjectorBase` so hosts would not repeat them, on the belief that `IjVimInjector` writes the same
+wrappers. **It does not.** IntelliJ resolves every service through its DI container -
+`get() = service()` - and the classes registered there are IJ-specific subclasses, not the engine
+bases.
+
+So there is no duplication to remove today, and moving defaults into the base would serve exactly
+one consumer: the test host. That is speculative generality, and the same reasoning applies to
+moving `HeadlessInjector` out of `commonTest` - **there is no second host yet.** When the VS Code
+host exists, what is genuinely shared will be visible from having both in front of us rather than
+guessed at now.

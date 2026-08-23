@@ -33,6 +33,8 @@ import com.maddyhome.idea.vim.api.EngineEditorHelperBase
 import com.maddyhome.idea.vim.api.VimRangeMarker
 import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.api.NativeAction
+import com.maddyhome.idea.vim.yank.VimYankGroup
+import com.maddyhome.idea.vim.yank.YankGroupBase
 import com.maddyhome.idea.vim.common.VimListenersNotifier
 import com.maddyhome.idea.vim.undo.LineChange
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
@@ -474,6 +476,9 @@ class HeadlessInjector : HeadlessInjectorBase() {
         TODO("headless host has no range markers that follow edits")
     }
   }
+
+  /** `YankGroupBase` is concrete already - yanking is reading a range and storing it. */
+  override val yank: VimYankGroup by lazy { YankGroupBase() }
 
   /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
