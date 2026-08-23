@@ -1237,3 +1237,40 @@ test: a receiver is evaluated before its arguments, so
 `injector.searchHelper.findNextWord(buildEditor(), ...)` reads `injector` *before* `buildEditor()`
 installs it. It fails with the same `lateinit property injector has not been initialized` as the
 constructor-order problem and has nothing to do with it.
+
+## The engine edits a buffer on Node, and the marks contract surfaces
+
+`insertText` and `replaceText` are the primitives every editing command reaches eventually, and
+each does three things: hand the edit to the editor inside a write action, move the caret, and set
+the change marks. All three now run on both targets, against a mutable `TestVimEditor` and a caret
+that moves.
+
+Writing the editor and caret was as cheap as the interfaces suggested - `MutableVimEditor` is three
+methods, and the caret needed a mutable offset. What cost the time was a chain of **undocumented
+preconditions** that only appear at runtime:
+
+**A buffer with no file has no marks at all.** `VimMarkServiceBase.createMark` returns null outright
+when `getVirtualFile()` is null, so `'[`, `']` and every lowercase mark silently do not exist - no
+error, just nothing. And `setMark` stores under `mark.filepath` while `getLocalMark` reads under
+`editor.getPath()`, so those two have to agree or a mark disappears between writing and reading.
+
+**This is the first constraint a VS Code host meets.** Whatever it uses for buffer identity has to
+reach the engine, and an untitled buffer with no URI would lose marks entirely.
+
+**Change marks live on the mark service, not on the caret**, and the service only answers for a
+primary caret. `TestVimCaret` reported `isPrimary = false`, which is right for the regex tests -
+they run with no injector - so it is now a constructor parameter: false by default, true where a
+host is installed.
+
+Neither contract is written down anywhere, and no compile check would find either.
+
+## What this says about the remaining cost
+
+The increment took roughly a dozen build-and-run cycles, and almost none were about the code the
+work set out to write. Each failure named its cause clearly - the `TODO`-per-member shape doing its
+job - but discovering a precondition still costs a full cycle.
+
+So the cost of phase 2 is not implementing services. It is discovering the contracts *between*
+them. Estimates here have now been wrong in both directions - too pessimistic about how many
+services a behaviour needs, too optimistic about how long each one takes - and the only reliable way
+to size the next increment is to attempt it.

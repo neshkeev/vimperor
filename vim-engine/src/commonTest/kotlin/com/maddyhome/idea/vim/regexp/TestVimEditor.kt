@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.regexp
 
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.VimCaret
+import com.maddyhome.idea.vim.api.MutableVimEditor
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.LineDeleteShift
 import com.maddyhome.idea.vim.api.VimVisualPosition
@@ -39,13 +40,48 @@ import com.maddyhome.idea.vim.api.VimDocument
  * that starts depending on more of the editor says which member it needs instead of matching against
  * a silent default.
  */
-class TestVimEditor(private val text: String, private val carets: List<VimCaret>) : VimEditor {
+class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableVimEditor {
+
+  /**
+   * The buffer. Mutable because editing changes it, and rebuilt line starts with it - the offsets
+   * are what turns an offset into a line and column, so they cannot go stale.
+   */
+  var text: String = text
+    private set
 
   /** Line start offsets, plus a final entry at the end of the text. */
-  private val lineStarts: IntArray = buildList {
+  private var lineStarts: IntArray = lineStartsOf(text)
+
+  private fun lineStartsOf(text: String): IntArray = buildList {
     add(0)
     text.forEachIndexed { index, c -> if (c == '\n') add(index + 1) }
   }.toIntArray()
+
+  private fun setText(newText: String) {
+    text = newText
+    lineStarts = lineStartsOf(newText)
+  }
+
+  override fun insertText(caret: VimCaret, atPosition: Int, text: CharSequence) {
+    val at = atPosition.coerceIn(0, this.text.length)
+    setText(this.text.substring(0, at) + text + this.text.substring(at))
+  }
+
+  override fun replaceString(start: Int, end: Int, newString: String) {
+    val from = start.coerceIn(0, text.length)
+    val to = end.coerceIn(from, text.length)
+    setText(text.substring(0, from) + newString + text.substring(to))
+  }
+
+  /**
+   * Appends a line, returning the offset of its start. Vim's `addLine` is used for `o` and `O`; a
+   * host with a real document would insert into it, and here the buffer is the document.
+   */
+  override fun addLine(atPosition: Int): Int {
+    val insertAt = getLineStartOffset(atPosition)
+    setText(text.substring(0, insertAt) + "\n" + text.substring(insertAt))
+    return insertAt
+  }
 
   override fun text(): CharSequence = text
 
@@ -103,7 +139,18 @@ class TestVimEditor(private val text: String, private val carets: List<VimCaret>
   override fun visualPositionToOffset(position: VimVisualPosition): Int = TODO("TestVimEditor.visualPositionToOffset is not needed by the regex tests")
   override fun visualPositionToBufferPosition(position: VimVisualPosition): BufferPosition = TODO("TestVimEditor.visualPositionToBufferPosition is not needed by the regex tests")
   override fun bufferPositionToVisualPosition(position: BufferPosition): VimVisualPosition = TODO("TestVimEditor.bufferPositionToVisualPosition is not needed by the regex tests")
-  override fun getVirtualFile(): VimVirtualFile? = TODO("TestVimEditor.getVirtualFile is not needed by the regex tests")
+  /**
+   * A file, because marks require one.
+   *
+   * `VimMarkServiceBase.createMark` returns null outright when `getVirtualFile()` is null, so a
+   * buffer with no file has no marks at all - not `'[`, not `']`, not a single lowercase mark, and
+   * silently rather than with an error. Its `path` has to agree with [getPath], since marks are
+   * stored under the file's path and read back under the editor's.
+   *
+   * This is the constraint a VS Code host meets first: whatever it uses for buffer identity has to
+   * arrive here, and an untitled buffer with no URI would lose marks.
+   */
+  override fun getVirtualFile(): VimVirtualFile = TestVirtualFile
   override fun deleteString(range: TextRange): Unit = TODO("TestVimEditor.deleteString is not needed by the regex tests")
   override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not needed by the regex tests")
   override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not needed by the regex tests")
@@ -114,7 +161,16 @@ class TestVimEditor(private val text: String, private val carets: List<VimCaret>
   override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.removeCaretListener is not needed by the regex tests")
   override fun isDisposed(): Boolean = TODO("TestVimEditor.isDisposed is not needed by the regex tests")
   override fun removeSelection(): Unit = TODO("TestVimEditor.removeSelection is not needed by the regex tests")
-  override fun getPath(): String? = TODO("TestVimEditor.getPath is not needed by the regex tests")
+  /**
+   * A stable name, because local marks are keyed by it.
+   *
+   * `VimMarkServiceBase.getLocalMark` returns null outright when the editor has no path, so a
+   * buffer without one silently has no marks - `'[`, `']` and every lowercase mark included. That
+   * is real engine behaviour rather than a gap in this fake, and it is worth knowing before a host
+   * hands the engine a scratch buffer: whatever a VS Code host uses for identity, a URI most
+   * likely, has to arrive here.
+   */
+  override fun getPath(): String = "headless://buffer"
   override fun extractProtocol(): String? = TODO("TestVimEditor.extractProtocol is not needed by the regex tests")
   override fun exitInsertMode(context: ExecutionContext): Unit = TODO("TestVimEditor.exitInsertMode is not needed by the regex tests")
   override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("TestVimEditor.exitSelectModeNative is not needed by the regex tests")
@@ -158,4 +214,11 @@ class TestVimEditor(private val text: String, private val carets: List<VimCaret>
     get() = TODO("TestVimEditor.insertMode is not needed by the regex tests")
     set(_) = TODO("TestVimEditor.insertMode is not needed by the regex tests")
   override val document: VimDocument get() = TODO("TestVimEditor.document is not needed by the regex tests")
+}
+
+/** The one buffer a headless test has, named so that marks can be keyed by it. */
+internal object TestVirtualFile : VimVirtualFile {
+  override val path: String = "headless://buffer"
+  override val protocol: String = "headless"
+  override val extension: String? = null
 }

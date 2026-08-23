@@ -20,10 +20,17 @@ import com.maddyhome.idea.vim.api.VimScriptFunctionServiceBase
 import com.maddyhome.idea.vim.api.SystemInfoService
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimSearchHelper
+import com.maddyhome.idea.vim.api.VimCaret
+import com.maddyhome.idea.vim.api.VimChangeGroup
+import com.maddyhome.idea.vim.api.VimChangeGroupBase
+import com.maddyhome.idea.vim.api.VimMarkService
+import com.maddyhome.idea.vim.api.VimMarkServiceBase
 import com.maddyhome.idea.vim.api.VimSearchHelperBase
 import com.maddyhome.idea.vim.api.VimStatistics
 import com.maddyhome.idea.vim.api.VimStorageService
+import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.Key
+import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.api.VimscriptFunctionService
 import com.maddyhome.idea.vim.api.VimscriptParser
 import com.maddyhome.idea.vim.api.VimscriptParserBase
@@ -124,6 +131,38 @@ class HeadlessInjector : HeadlessInjectorBase() {
         TODO("headless host has no spellchecker")
     }
   }
+
+  /**
+   * The change group is entirely common except for `reformatCode`, which is an IDE feature: Vim's
+   * `=` asks the editor to re-indent, and a buffer with no language attached cannot.
+   */
+  override val changeGroup: VimChangeGroup by lazy {
+    object : VimChangeGroupBase() {
+      override fun reformatCode(editor: VimEditor, start: Int, end: Int) =
+        TODO("headless host cannot reformat code")
+
+      // The typing path: these hand a character to the editor so it can run its own
+      // auto-indent, bracket matching and completion. There is no such editor here.
+      override fun processBackspace(editor: VimEditor, context: ExecutionContext) =
+        TODO("headless host has no typing path")
+
+      override fun autoIndentRange(
+        editor: VimEditor,
+        context: ExecutionContext,
+        ranges: List<TextRange>,
+        carets: List<VimCaret>,
+      ) = TODO("headless host cannot auto-indent")
+
+      override fun type(vimEditor: VimEditor, context: ExecutionContext, key: Char) =
+        TODO("headless host has no typing path")
+
+      override fun type(vimEditor: VimEditor, context: ExecutionContext, string: String) =
+        TODO("headless host has no typing path")
+    }
+  }
+
+  /** `VimMarkServiceBase` leaves nothing abstract; marks are offsets in a buffer. */
+  override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
 
   /** `VimVariableServiceBase` leaves nothing abstract; variables are a map. */
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
