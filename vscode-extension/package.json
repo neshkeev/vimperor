@@ -17,10 +17,61 @@
     "onStartupFinished"
   ],
   "contributes": {
-    "commands": [
+    "commands": [],
+    "keybindings": [
       {
-        "command": "ideavim.checkPattern",
-        "title": "IdeaVim: Check Vim Pattern"
+        "key": "escape",
+        "command": "ideavim.key",
+        "args": "<Esc>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "backspace",
+        "command": "ideavim.key",
+        "args": "<BS>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "delete",
+        "command": "ideavim.key",
+        "args": "<Del>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "enter",
+        "command": "ideavim.key",
+        "args": "<CR>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "tab",
+        "command": "ideavim.key",
+        "args": "<Tab>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "up",
+        "command": "ideavim.key",
+        "args": "<Up>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "down",
+        "command": "ideavim.key",
+        "args": "<Down>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "left",
+        "command": "ideavim.key",
+        "args": "<Left>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "right",
+        "command": "ideavim.key",
+        "args": "<Right>",
+        "when": "editorTextFocus"
       }
     ]
   }

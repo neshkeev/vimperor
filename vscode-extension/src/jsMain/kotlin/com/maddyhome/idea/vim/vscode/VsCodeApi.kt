@@ -47,12 +47,55 @@ external interface OutputChannel : Disposable {
 
 external object window {
   val activeTextEditor: TextEditor?
+  val visibleTextEditors: Array<TextEditor>
   fun createOutputChannel(name: String): OutputChannel
   fun showInformationMessage(message: String): dynamic
+  fun createStatusBarItem(alignment: Int = definedExternally, priority: Int = definedExternally): StatusBarItem
+
+  /**
+   * VS Code's events are functions: calling one with a listener subscribes and hands back the
+   * disposable that unsubscribes. Declared as function-typed properties because that is what they
+   * are - there is no `addListener` to call.
+   */
+  val onDidChangeActiveTextEditor: (listener: (TextEditor?) -> Unit) -> Disposable
+  val onDidChangeTextEditorSelection: (listener: (TextEditorSelectionChangeEvent) -> Unit) -> Disposable
+}
+
+external interface TextEditorSelectionChangeEvent {
+  val textEditor: TextEditor
+  val selections: Array<Selection>
+}
+
+external interface StatusBarItem : Disposable {
+  var text: String
+  var tooltip: String
+  fun show()
+  fun hide()
+}
+
+/** Where a status bar item sits. VS Code's `StatusBarAlignment`: Left is 1, Right is 2. */
+external object StatusBarAlignment {
+  val Left: Int
+  val Right: Int
 }
 
 external object commands {
   fun registerCommand(command: String, callback: (dynamic) -> Unit): Disposable
+
+  /**
+   * Registers a handler for a command VS Code already has, which is how an extension takes over
+   * typing: `type` is a built-in, and registering it intercepts every printable character before
+   * the editor sees it.
+   */
+  fun executeCommand(command: String, vararg args: dynamic): Thenable<dynamic>
+}
+
+external object workspace {
+  val onDidChangeTextDocument: (listener: (TextDocumentChangeEvent) -> Unit) -> Disposable
+}
+
+external interface TextDocumentChangeEvent {
+  val document: TextDocument
 }
 
 /**

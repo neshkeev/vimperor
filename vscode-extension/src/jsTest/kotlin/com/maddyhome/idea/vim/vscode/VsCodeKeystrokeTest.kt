@@ -108,12 +108,3 @@ class VsCodeKeystrokeTest {
     assertEquals(1, session.fake.recordedEdits.size)
   }
 }
-
-/**
- * Nothing to carry. `ExecutionContext` is how IntelliJ threads its `DataContext` through the
- * engine; VS Code has no such object, and the engine reaches for it only when handing control back
- * to the host.
- */
-internal object VsCodeExecutionContext : ExecutionContext {
-  override val context: Any get() = TODO("VS Code host has no execution context")
-}

@@ -40,6 +40,10 @@ const TextEditorRevealType = {
 
 const window = {
   activeTextEditor: undefined,
+  visibleTextEditors: [],
+  createStatusBarItem: () => ({ text: '', tooltip: '', show() {}, hide() {}, dispose() {} }),
+  onDidChangeActiveTextEditor: () => ({ dispose() {} }),
+  onDidChangeTextEditorSelection: () => ({ dispose() {} }),
   createOutputChannel: (name) => ({
     name,
     appendLine() {},
@@ -51,6 +55,13 @@ const window = {
 
 const commands = {
   registerCommand: () => ({ dispose() {} }),
+  executeCommand: () => ({ then: () => {} }),
 }
 
-module.exports = { Position, Range, TextEditorRevealType, window, commands }
+const workspace = {
+  onDidChangeTextDocument: () => ({ dispose() {} }),
+}
+
+const StatusBarAlignment = { Left: 1, Right: 2 }
+
+module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, window, commands, workspace }

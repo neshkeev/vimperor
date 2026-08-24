@@ -10,9 +10,14 @@
 
 // No `package` declaration, deliberately - see the note below.
 
-import com.maddyhome.idea.vim.regexp.VimRegex
+import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
+import com.maddyhome.idea.vim.vscode.MessageSink
 import com.maddyhome.idea.vim.vscode.OutputChannel
+import com.maddyhome.idea.vim.vscode.StatusBarAlignment
+import com.maddyhome.idea.vim.vscode.StatusBarItem
+import com.maddyhome.idea.vim.vscode.TextEditor
+import com.maddyhome.idea.vim.vscode.VimHost
 import com.maddyhome.idea.vim.vscode.commands
 import com.maddyhome.idea.vim.vscode.window
 
@@ -33,41 +38,105 @@ import com.maddyhome.idea.vim.vscode.window
  */
 
 private var channel: OutputChannel? = null
+private var statusBar: StatusBarItem? = null
+private var host: VimHost? = null
 
 @JsExport
 fun activate(context: ExtensionContext) {
   val output = window.createOutputChannel("IdeaVim")
   channel = output
-  context.subscriptions.push(output)
 
-  // Proof the engine is live inside the extension host rather than merely bundled with it:
-  // compiling a Vim pattern runs the ANTLR-generated parser and builds an NFA.
-  //
-  // Note this goes through `VimRegex`, the engine's *public* API. The parser behind it is
-  // `internal`, and a separate Gradle module cannot see internals - so choosing Kotlin over
-  // TypeScript removes the `@JsExport` facade, but the engine's public surface still bounds what
-  // an extension can reach.
-  output.appendLine("IdeaVim engine loaded. Vim pattern compiled: ${describe("\\(foo\\)\\+")}")
+  val status = window.createStatusBarItem(StatusBarAlignment.Left, 100)
+  statusBar = status
+  status.show()
 
-  val command = commands.registerCommand("ideavim.checkPattern") { argument ->
-    val pattern = argument as? String ?: "\\(foo\\)\\+"
-    output.appendLine("$pattern is ${describe(pattern)}")
-    output.show(preserveFocus = true)
+  val vim = VimHost(OutputAndStatusBar(output, status))
+  vim.start()
+  host = vim
+
+  fun refreshMode() {
+    status.text = "-- ${vim.modeName()} --"
   }
-  context.subscriptions.push(command)
+  refreshMode()
+
+  /**
+   * Taking over typing.
+   *
+   * `type` is one of VS Code's own commands - the one the editor runs for every printable
+   * character - and registering a handler for it intercepts each one before the editor inserts it.
+   * There is no other way for an extension to see ordinary typing: keybindings cover named keys,
+   * not letters. Nothing else may claim it, so this is also why two Vim extensions cannot both be
+   * enabled.
+   */
+  val typing = commands.registerCommand("type") { arguments ->
+    val editor = window.activeTextEditor
+    val text = arguments?.text as? String
+    if (editor == null || text == null) {
+      // No editor to type into, or an argument shaped differently than expected. Handing the key
+      // back to VS Code is better than swallowing it.
+      commands.executeCommand("default:type", arguments)
+    } else {
+      vim.type(editor, text)
+      refreshMode()
+    }
+  }
+
+  // Named keys, which arrive as commands because a keybinding cannot produce a character. Each one
+  // carries the Vim notation for the key it stands for, so the manifest and the engine agree
+  // without a table in between.
+  val namedKey = commands.registerCommand("ideavim.key") { arguments ->
+    val editor = window.activeTextEditor
+    val notation = arguments as? String ?: arguments?.key as? String
+    if (editor != null && notation != null) {
+      vim.key(editor, notation)
+      refreshMode()
+    }
+  }
+
+  val activeEditorChanged = window.onDidChangeActiveTextEditor { editor ->
+    if (editor != null) vim.editorFor(editor)
+    refreshMode()
+  }
+
+  val selectionChanged = window.onDidChangeTextEditorSelection { event ->
+    vim.selectionChanged(event.textEditor)
+  }
+
+  window.activeTextEditor?.let { vim.editorFor(it) }
+
+  output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
+
+  val subscriptions = context.subscriptions
+  for (registration in listOf<Disposable>(output, status, typing, namedKey, activeEditorChanged, selectionChanged)) {
+    subscriptions.push(registration)
+  }
 }
 
 @JsExport
 fun deactivate() {
   channel?.appendLine("IdeaVim deactivated.")
   channel = null
+  statusBar = null
+  host = null
 }
 
-/** Whether the engine can compile [pattern] as a Vim regex. */
-private fun describe(pattern: String): String =
-  try {
-    VimRegex(pattern)
-    "valid"
-  } catch (e: Throwable) {
-    "not valid (${e.message})"
+/** Vim's messages, to the output channel and the status bar - which is where Vim puts them. */
+private class OutputAndStatusBar(
+  private val output: OutputChannel,
+  private val status: StatusBarItem,
+) : MessageSink {
+  override fun message(text: String?) {
+    text?.let { output.appendLine(it) }
   }
+
+  override fun error(text: String?) {
+    text?.let {
+      output.appendLine(it)
+      output.show(preserveFocus = true)
+    }
+  }
+
+  override fun status(text: String?) {
+    status.tooltip = text ?: ""
+  }
+}

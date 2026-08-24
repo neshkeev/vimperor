@@ -44,6 +44,21 @@ class DocumentBuffer(private val editor: TextEditor) {
   var revision: Int = 0
     private set
 
+  /**
+   * Whether the document has been changed by something other than the engine, and takes its version
+   * if so.
+   *
+   * Reads during a command go to the buffer, so a document that moved between commands would be
+   * read as if it had not - the engine would compute offsets against text that is no longer there.
+   * Checked before a key is handled rather than subscribed to, because a change event says a change
+   * happened, not whether the engine caused it.
+   */
+  fun syncIfDocumentMoved(): Boolean {
+    if (editor.document.getText() == flushed) return false
+    reseed()
+    return true
+  }
+
   /** Takes the document's current text, discarding anything not yet flushed. */
   fun reseed() {
     val before = text

@@ -234,7 +234,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   // ---- Carets. VS Code calls them selections; a collapsed selection is a plain caret.
 
-  private fun syncCaretsFromEditor() {
+  fun syncCaretsFromEditor() {
     val selections = nativeEditor.selections
     vimCarets.clear()
     selections.forEachIndexed { index, selection ->

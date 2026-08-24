@@ -10,8 +10,24 @@ code --extensionDevelopmentPath="$PWD/vscode-extension"
 ```
 
 `package.json` points `main` directly at the build output, so there is no packaging step: build,
-then reload the extension host window. The extension writes to an *IdeaVim* output channel on
-activation, and contributes **IdeaVim: Check Vim Pattern** to the command palette.
+then reload the extension host window. Type in any editor and Vim's mode appears in the status bar.
+
+The extension takes over VS Code's `type` command, which is the only way for an extension to see
+ordinary typing - keybindings cover named keys, not letters. That also means no other Vim extension
+can be enabled at the same time: `type` has one owner.
+
+Named keys arrive as keybindings instead, each carrying the Vim notation it stands for, so the
+manifest and the engine agree without a lookup table in between. Escape, backspace, delete, enter,
+tab and the arrows are bound; enter, tab and the vertical arrows step aside while the suggest widget
+is up, because accepting a completion is what those keys mean there. Control keys are not bound
+yet - each one takes a shortcut away from VS Code, and that is a decision per key rather than a
+sweep.
+
+## What works
+
+Normal-mode editing and insert mode: motions, `x`, `d` with a motion, `c`, `i`/`a`/`I`/`A`,
+`o`/`O`, counts, registers, and `:s` when driven directly. Undo, the command-line prompt, visual
+mode, search highlighting and the system clipboard are not wired up; each names itself if reached.
 
 ## Checking it
 
@@ -19,9 +35,11 @@ activation, and contributes **IdeaVim: Check Vim Pattern** to the command palett
 ./gradlew :vscode-extension:runInStubHost
 ```
 
-This loads the built bundle in Node with `vscode` stubbed and asks the engine to compile Vim
-patterns, which is the only check that distinguishes an engine that is live inside the extension
-from one that is merely bundled beside it. `./gradlew test` runs it too.
+This activates the built bundle in Node with `vscode` stubbed, takes the `type` handler the
+extension registered, and types. It is the only check that covers the wiring in `activate`, which
+no unit test can see - and the only one that distinguishes an engine that is live inside the
+extension from one that is merely bundled beside it. `./gradlew test` runs it, along with the
+Kotlin tests.
 
 ## Why Kotlin and not TypeScript
 
