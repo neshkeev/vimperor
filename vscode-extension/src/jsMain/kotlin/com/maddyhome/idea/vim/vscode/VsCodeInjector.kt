@@ -36,6 +36,11 @@ import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvide
 import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.vimscript.services.VimVariableServiceBase
+import com.maddyhome.idea.vim.put.PutData
+import com.maddyhome.idea.vim.put.ProcessedTextData
+import com.maddyhome.idea.vim.put.VimPasteProvider
+import com.maddyhome.idea.vim.put.VimPut
+import com.maddyhome.idea.vim.put.VimPutBase
 import com.maddyhome.idea.vim.yank.VimYankGroup
 import com.maddyhome.idea.vim.yank.YankGroupBase
 import kotlin.reflect.KClass
@@ -81,6 +86,37 @@ class VsCodeInjector(
   override val registerGroupIfCreated: VimRegisterGroup? get() = registerGroup
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
   override val yank: VimYankGroup by lazy { YankGroupBase() }
+
+  /**
+   * Putting is reading a register and inserting its text, which `VimPutBase` does entirely.
+   *
+   * What it leaves open is IdeaVim's `ideaput`: pasting through the *IDE's* paste action so that
+   * imports get added and the result is reindented. That is an IntelliJ feature with no VS Code
+   * equivalent - its paste is a command, and asynchronous - so there is no provider to hand back
+   * and the engine does the plain Vim paste, which is the behaviour Vim itself has.
+   */
+  override val put: VimPut by lazy {
+    object : VimPutBase() {
+      override fun getProviderForPasteViaIde(
+        editor: VimEditor,
+        typeInRegister: SelectionType,
+        data: PutData,
+      ): VimPasteProvider? = null
+
+      override fun putTextViaIde(
+        pasteProvider: VimPasteProvider,
+        vimEditor: VimEditor,
+        vimContext: ExecutionContext,
+        text: ProcessedTextData,
+        selectionType: SelectionType,
+        data: PutData,
+        additionalData: Map<String, Any>,
+      ) = TODO("VS Code host: there is no IDE paste to put through")
+
+      /** IdeaVim tells the user that `ideaput` is available. There is nothing to suggest here. */
+      override fun notifyAboutIdeaPut(editor: VimEditor?) {}
+    }
+  }
   override val listenersNotifier: VimListenersNotifier by lazy { VimListenersNotifier() }
   override val optionGroup: VimOptionGroup by lazy {
     object : VimOptionGroupBase() {}.also { it.initialiseOptions() }
@@ -289,6 +325,13 @@ class VsCodeInjector(
       override fun getChar(editor: VimEditor): Char? = null
     }
   }
+
+  /**
+   * `VimVisualMotionGroupBase` leaves nothing abstract: what a selection covers is arithmetic over
+   * offsets, and `'selection'` decides whether its end is inclusive. Making it *visible* is the
+   * host's job, and that happens in the editor's flush rather than here.
+   */
+  override val visualMotionGroup: VimVisualMotionGroup by lazy { object : VimVisualMotionGroupBase() {} }
 
   override val jumpService: VimJumpService by lazy {
     object : VimJumpServiceBase() {

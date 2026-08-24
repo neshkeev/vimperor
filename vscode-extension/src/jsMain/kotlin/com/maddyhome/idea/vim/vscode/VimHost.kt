@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
+import com.maddyhome.idea.vim.state.mode.SelectionType
 
 /**
  * The running extension: keys in, edits out.
@@ -158,18 +159,37 @@ class VimHost(
   fun selectionChanged(textEditor: TextEditor) {
     val editor = editors[identityOf(textEditor)] ?: return
     if (editor.nativeEditor !== textEditor) return
+    if (pending > 0) return
     editor.syncCaretsFromEditor()
+    if (editor.followSelectionIntoMode()) {
+      // The mode changed without a key causing it, and `KeyHandler` is holding state that assumed
+      // the old one - a partial command, a pending count. Entering visual mode behind its back and
+      // then pressing `d` makes it try to go operator-pending *from* visual, which the engine
+      // rejects outright.
+      KeyHandler.getInstance().reset(editor)
+    }
   }
 
-  /** Vim's mode, as a word for the status bar. */
-  fun modeName(): String = when (injector.vimState.mode) {
-    is Mode.INSERT -> "INSERT"
-    is Mode.REPLACE -> "REPLACE"
-    is Mode.VISUAL -> "VISUAL"
-    is Mode.SELECT -> "SELECT"
-    is Mode.OP_PENDING -> "OP PENDING"
-    is Mode.CMD_LINE -> "COMMAND"
-    is Mode.NORMAL -> "NORMAL"
+  /** Vim's mode, named the way Vim names it on the last line. */
+  fun modeName(): String {
+    val mode = injector.vimState.mode
+    return when (mode) {
+      is Mode.INSERT -> "INSERT"
+      is Mode.REPLACE -> "REPLACE"
+      // Vim distinguishes the three visual kinds on screen, and they behave differently enough
+      // that a user needs to see which one they are in.
+      is Mode.VISUAL -> "VISUAL${suffixFor(mode.selectionType)}"
+      is Mode.SELECT -> "SELECT${suffixFor(mode.selectionType)}"
+      is Mode.OP_PENDING -> "OP PENDING"
+      is Mode.CMD_LINE -> "COMMAND"
+      is Mode.NORMAL -> "NORMAL"
+    }
+  }
+
+  private fun suffixFor(selectionType: SelectionType): String = when (selectionType) {
+    SelectionType.CHARACTER_WISE -> ""
+    SelectionType.LINE_WISE -> " LINE"
+    SelectionType.BLOCK_WISE -> " BLOCK"
   }
 }
 

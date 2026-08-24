@@ -29,9 +29,10 @@ rather than as a sweep.
 ## What works
 
 Normal-mode editing and insert mode: motions, `x`, `d` with a motion, `c`, `i`/`a`/`I`/`A`,
-`o`/`O`, counts, registers, `u` and `<C-R>`, and `:s` when driven directly. The command-line prompt,
-visual mode, search highlighting and the system clipboard are not wired up; each names itself if
-reached.
+`o`/`O`, counts, registers, `u` and `<C-R>`, and `:s` when driven directly. Visual mode works in
+both directions: `v`, `V` and motions drive VS Code's selection, and dragging with the mouse enters
+visual mode, because in Vim a selection *is* a mode. The command-line prompt, search highlighting
+and the system clipboard are not wired up; each names itself if reached.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
 command: it resolves a promise and reports nothing about what it did, while the engine needs a

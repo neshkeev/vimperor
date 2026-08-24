@@ -234,24 +234,82 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   // ---- Carets. VS Code calls them selections; a collapsed selection is a plain caret.
 
+  /**
+   * What was last pushed to VS Code, so that the event it fires in response is not read back.
+   *
+   * Setting selections makes VS Code report a selection change, and it reports it later rather than
+   * during the call - so a flag around the flush would not cover it. Comparing what arrived with
+   * what was sent does: an event carrying exactly what this editor asked for is its own echo.
+   */
+  private var pushedSelections: List<Pair<Int, Int>> = emptyList()
+
   fun syncCaretsFromEditor() {
     val selections = nativeEditor.selections
+    val document = nativeEditor.document
+    val incoming = selections.map { document.offsetAt(it.anchor) to document.offsetAt(it.active) }
+    if (incoming == pushedSelections) return
+
     vimCarets.clear()
-    selections.forEachIndexed { index, selection ->
-      val offset = nativeEditor.document.offsetAt(selection.active)
-      vimCarets += VsCodeCaret(this, offset, isPrimary = index == 0)
+    incoming.forEachIndexed { index, (anchor, active) ->
+      val caret = VsCodeCaret(this, active, isPrimary = index == 0)
+      if (anchor != active) {
+        caret.setSelection(minOf(anchor, active), maxOf(anchor, active))
+        caret.vimSelectionStart = anchor
+      }
+      vimCarets += caret
     }
     if (vimCarets.isEmpty()) vimCarets += VsCodeCaret(this, 0, isPrimary = true)
+    pushedSelections = incoming
   }
 
+  /**
+   * Follows VS Code into and out of visual mode when the user works with the mouse.
+   *
+   * Dragging a selection in Vim *is* visual mode, so a host that left the mode alone would show a
+   * selection that the next keystroke did not know about - `d` would delete a character instead of
+   * the selection. Clicking to collapse it leaves visual mode for the same reason.
+   */
+  fun followSelectionIntoMode(): Boolean {
+    val hasSelection = vimCarets.any { it.hasSelection() }
+    val inVisual = mode is Mode.VISUAL
+    return when {
+      hasSelection && !inVisual -> {
+        injector.visualMotionGroup.enterVisualMode(this, SelectionType.CHARACTER_WISE)
+        true
+      }
+
+      !hasSelection && inVisual -> {
+        mode = Mode.NORMAL()
+        true
+      }
+
+      else -> false
+    }
+  }
+
+  /**
+   * Pushes the carets - and their selections - back to VS Code.
+   *
+   * A caret with a selection becomes a VS Code selection with the same two offsets: the engine
+   * already speaks the editor's convention, with the end exclusive, which is why IntelliJ's host
+   * passes them straight through as well. Vim's own inclusive end is converted inside the engine,
+   * not here.
+   */
   private fun flushCarets() {
     val document = nativeEditor.document
     val selections = vimCarets.map { caret ->
-      val position = document.positionAt(caret.offset)
-      FlushedSelection(position, position)
+      if (caret.hasSelection()) {
+        FlushedSelection(document.positionAt(caret.selectionStart), document.positionAt(caret.selectionEnd))
+      } else {
+        val position = document.positionAt(caret.offset)
+        FlushedSelection(position, position)
+      }
     }
     nativeEditor.selections = selections.toTypedArray()
     selections.firstOrNull()?.let { nativeEditor.selection = it }
+    pushedSelections = selections.map {
+      document.offsetAt(it.anchor) to document.offsetAt(it.active)
+    }
   }
 
   /**
@@ -395,9 +453,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * replace mode is per window; the engine builds and clears it.
    */
   override var replaceMask: VimEditorReplaceMask? = null
-  override var vimLastSelectionType: SelectionType?
-    get() = TODO("VsCodeEditor.vimLastSelectionType")
-    set(_) = TODO("VsCodeEditor.vimLastSelectionType")
+  /** What the last visual selection was, which is what `gv` restores and `p` consults. */
+  override var vimLastSelectionType: SelectionType? = null
   /** Markers and change notifications, both of which the buffer is the only exact source for. */
   override fun createLiveMarker(start: Int, end: Int): LiveRange = buffer.createMarker(start, end)
 

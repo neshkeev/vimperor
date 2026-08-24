@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.api.LocalMarkStorage
 import com.maddyhome.idea.vim.api.CaretRegisterStorage
 import com.maddyhome.idea.vim.api.CaretRegisterStorageBase
 import com.maddyhome.idea.vim.api.SelectionInfo
+import com.maddyhome.idea.vim.state.mode.SelectionType
 
 /**
  * One of VS Code's cursors, as the engine sees it.
@@ -114,7 +115,11 @@ class VsCodeCaret(
   // ---- Not reached yet. Each names itself if that changes.
 
   override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("VsCodeCaret.moveToVisualPosition")
-  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("VsCodeCaret.setVimLastColumnAndGetCaret")
+  /** Sets the remembered column and hands the caret back, since this one is never replaced. */
+  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret {
+    vimLastColumn = col
+    return this
+  }
   /** Visual position is buffer position until folding and soft wrap are wired up. */
   override fun getVisualPosition(): VimVisualPosition {
     val position = getBufferPosition()
@@ -128,14 +133,20 @@ class VsCodeCaret(
    * only works if the start moved as characters went in ahead of it.
    */
   override var vimInsertStart: LiveRange = vimEditor.createLiveMarker(offset, offset)
-  override var vimLastVisualOperatorRange: VisualChange?
-    get() = TODO("VsCodeCaret.vimLastVisualOperatorRange")
-    set(_) = TODO("VsCodeCaret.vimLastVisualOperatorRange")
+  /**
+   * The shape of the last visual operation - how many lines, how many columns, which kind - so that
+   * `.` can repeat it on a different piece of text. Stored per caret because each one repeats its
+   * own.
+   */
+  override var vimLastVisualOperatorRange: VisualChange? = null
   override val vimLine: Int get() = TODO("VsCodeCaret.vimLine")
   override val visualLineStart: Int get() = TODO("VsCodeCaret.visualLineStart")
-  override var lastSelectionInfo: SelectionInfo
-    get() = TODO("VsCodeCaret.lastSelectionInfo")
-    set(_) = TODO("VsCodeCaret.lastSelectionInfo")
+  /**
+   * The selection this caret last had, which is what `gv` restores. Per caret rather than per
+   * editor, because multiple cursors each had their own.
+   */
+  override var lastSelectionInfo: SelectionInfo =
+    SelectionInfo(null, null, SelectionType.CHARACTER_WISE)
 
   private companion object {
     /** Carets are compared by id, so two in the same buffer must not share one. */
