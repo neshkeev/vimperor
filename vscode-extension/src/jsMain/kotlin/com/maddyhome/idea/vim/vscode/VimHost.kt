@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
@@ -50,6 +51,32 @@ class VimHost(
     // recognises nothing, and every keystroke is silently discarded.
     engineCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
     vimInjector.functionService.registerHandlers()
+  }
+
+  /**
+   * Runs the user's `.ideavimrc`, if there is one.
+   *
+   * After [start] and before any key, because the file is where mappings and options come from and
+   * a key handled before it would use the defaults. Bracketed by `startInitVimRc`/`endInitVimRc`
+   * so the option group can tell "the user set this in their config" from "the user set this
+   * later" - `:set` reports the difference, and some options only take effect at startup.
+   *
+   * Returns the path that was run, or null if there was no file to run.
+   */
+  fun loadVimRc(editor: VimEditor, environment: (String) -> String? = ::environmentVariable): String? {
+    val files = NodeFileSystem()
+    val path = findVimRc(files, environment) ?: return null
+    vimInjector.optionGroup.startInitVimRc()
+    try {
+      injector.vimscriptExecutor.executeFile(path, editor, fileIsIdeaVimRcConfig = true)
+    } catch (e: Throwable) {
+      // A broken config must not stop the extension from working. Vim itself carries on after an
+      // error in the vimrc, and a user with a typo in one line still wants the other twenty.
+      sink.error("IdeaVim: " + path + " could not be run: " + e.message)
+    } finally {
+      vimInjector.optionGroup.endInitVimRc()
+    }
+    return path
   }
 
   /** The Vim editor for [textEditor], created on first sight and reused after. */
@@ -194,6 +221,9 @@ class VimHost(
     SelectionType.BLOCK_WISE -> " BLOCK"
   }
 }
+
+/** Node's environment, which is the user's - `HOME`, `XDG_CONFIG_HOME` and the rest. */
+private fun environmentVariable(name: String): String? = injector.systemInfoService.getenv(name)
 
 /** For a host that has nowhere to draw a command line yet. */
 internal object NoCommandLineDisplay : CommandLineDisplay {

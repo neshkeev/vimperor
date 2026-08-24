@@ -27,6 +27,9 @@ class FakeDocument(text: String) : TextDocument {
   override val uri: Uri = FakeUri("file", "/test/buffer.txt")
   override val fileName: String get() = uri.fsPath
   override val isUntitled: Boolean = false
+
+  /** Set by a test that wants to model an editor with unsaved changes. */
+  override var isDirty: Boolean = false
   override val lineCount: Int get() = content.count { it == '\n' } + 1
 
   /** VS Code bumps this on every applied edit, and refuses edits made against an older one. */

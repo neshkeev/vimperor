@@ -22,7 +22,26 @@
 
 const assert = require('assert')
 const path = require('path')
+const fs = require('fs')
+const os = require('os')
 const Module = require('module')
+
+/*
+ * A home directory of this test's own.
+ *
+ * The extension reads the user's `.ideavimrc` at activation, so without this the test would load
+ * whatever config the machine running it happens to have - passing here, failing on a laptop whose
+ * owner remapped one of the keys below. It also lets the config path be tested rather than merely
+ * survived: the file written here has a mapping that the assertions look for.
+ */
+const home = path.join(os.tmpdir(), 'ideavim-stub-host')
+fs.rmSync(home, { recursive: true, force: true })
+fs.mkdirSync(home, { recursive: true })
+fs.writeFileSync(path.join(home, '.ideavimrc'), 'nnoremap Q db\n')
+process.env.HOME = home
+process.env.USERPROFILE = home
+process.env.XDG_CONFIG_HOME = path.join(home, 'config')
+delete process.env.IDEA_VIM_CUSTOM_VIMRC
 
 const extensionRoot = path.resolve(__dirname, '..', '..')
 const manifest = require(path.join(extensionRoot, 'package.json'))
@@ -158,6 +177,20 @@ for (const binding of manifest.contributes.keybindings) {
 const type = (text) => registeredCommands.get('type')({ text })
 const press = (notation) => registeredCommands.get('ideavim.key')(notation)
 
+/*
+ * Empties the document between scenarios.
+ *
+ * Twice now an assertion here has been written against a fresh buffer while the previous scenario's
+ * text was still in it - and both times the code was right and the expectation was wrong, which is
+ * the expensive way round. Each scenario starts from a known state instead.
+ */
+const reset = () => {
+  editor.document._text = ''
+  editor.selections = [{ anchor: new Position(0, 0), active: new Position(0, 0) }]
+  editor.selection = editor.selections[0]
+  press('<Esc>')
+}
+
 // A user typing: insert, some text, escape, then a normal-mode command.
 type('i')
 for (const character of 'hello') type(character)
@@ -174,8 +207,26 @@ type('d')
 type('b')
 assert.strictEqual(editor.document._text, 'l', `db did not delete backwards a word. Got: ${editor.document._text}`)
 
+// The mapping from the `.ideavimrc` written above: `Q` is a Vim command of its own, and the config
+// remapped it. This is the only check that the configuration path runs at activation.
+assert.ok(
+  output.some((line) => line.includes('.ideavimrc')),
+  `the extension did not report loading a config. Output was:\n${output.join('\n')}`,
+)
+
+reset()
+type('i')
+for (const character of 'alpha beta') type(character)
+press('<Esc>')
+type('Q')
+assert.strictEqual(
+  editor.document._text,
+  'alpha a',
+  `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
+)
+
 // And through the `:` prompt, which is where a user reaches everything that is not a keystroke.
-// The `l` left over from `db` is still there, so the substitution has to leave it alone.
+reset()
 type('i')
 for (const character of 'one two one') type(character)
 press('<Esc>')
@@ -185,7 +236,7 @@ press('<CR>')
 
 assert.strictEqual(
   editor.document._text,
-  'ONE two ONEl',
+  'ONE two ONE',
   `a substitution typed at the prompt did not run. Got: ${editor.document._text}`,
 )
 

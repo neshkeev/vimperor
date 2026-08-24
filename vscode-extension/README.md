@@ -39,6 +39,17 @@ collects a string - it is a text buffer the engine owns keystroke by keystroke, 
 and history, so the host supplies a string and somewhere to draw it. Both are synchronous. It is
 drawn on the status bar, next to the mode.
 
+Your `~/.ideavimrc` is read at startup, so mappings and options come from the file you already have.
+The search order is IdeaVim's: `IDEA_VIM_CUSTOM_VIMRC`, then `~/.ideavimrc` and `~/_ideavimrc`, then
+`$XDG_CONFIG_HOME/ideavim/ideavimrc`. A line that fails does not stop the rest, the way Vim carries
+on after an error in a vimrc.
+
+Files are read through Node's `fs` rather than VS Code's `workspace.fs`, for the same reason the
+command line does not use `showInputBox`: `readFileSync` returns the contents and `workspace.fs`
+returns a promise, and `:source` has to return with the file. That holds over SSH and in dev
+containers, where the extension host runs on the remote machine and reads the config that is
+actually there. A web-only workspace has no Node and will need an asynchronous load at startup.
+
 Search highlighting, the output panel (`:registers`, `:marks`), the system clipboard and IdeaVim's
 bundled extensions are not wired up; each names itself if reached.
 

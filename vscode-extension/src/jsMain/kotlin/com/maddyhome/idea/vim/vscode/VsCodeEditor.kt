@@ -388,7 +388,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   /** IntelliJ's live templates. VS Code's snippets are its own feature and are not wired up. */
   override fun isTemplateActive(): Boolean = false
 
-  override fun hasUnsavedChanges(): Boolean = nativeEditor.document.isUntitled
+  override fun hasUnsavedChanges(): Boolean = nativeEditor.document.isDirty
 
   /** IntelliJ's guarded blocks; VS Code has no equivalent, so there is nothing to check. */
   override fun startGuardedBlockChecking() {}

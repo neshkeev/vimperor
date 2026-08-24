@@ -113,7 +113,13 @@ fun activate(context: ExtensionContext) {
     vim.selectionChanged(event.textEditor)
   }
 
-  window.activeTextEditor?.let { vim.editorFor(it) }
+  // Before any key reaches the engine: the config is where mappings and options come from, and a
+  // key handled ahead of it would use the defaults.
+  window.activeTextEditor?.let { editor ->
+    val vimEditor = vim.editorFor(editor)
+    val loaded = vim.loadVimRc(vimEditor)
+    output.appendLine(if (loaded != null) "Loaded " + loaded else "No .ideavimrc found.")
+  }
 
   output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
 

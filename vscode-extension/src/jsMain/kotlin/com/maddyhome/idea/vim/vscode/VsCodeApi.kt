@@ -121,6 +121,9 @@ external interface TextDocument {
   val fileName: String
   val lineCount: Int
   val isUntitled: Boolean
+
+  /** Whether the document has changes that are not on disk. */
+  val isDirty: Boolean
   val version: Int
   fun getText(range: Range? = definedExternally): String
   fun offsetAt(position: Position): Int

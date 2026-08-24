@@ -94,8 +94,23 @@ class VsCodeInjector(
    */
   override val vimscriptExecutor: VimscriptExecutor by lazy {
     object : VimScriptExecutorBase() {
-      override fun ensureFileIsSaved(path: String) =
-        TODO("VS Code host: saving before sourcing is an asynchronous command")
+      /**
+       * Sourcing reads the file from disk, so an open copy with unsaved changes would be missed.
+       *
+       * IntelliJ saves the document first, which it can do synchronously. VS Code's `save` returns
+       * a promise, and this is called *during* `:source` - so the choice is between sourcing what
+       * is on disk and not sourcing at all. It sources what is on disk and says so, which matters
+       * for exactly one case: `:source %` on a vimrc being edited right now.
+       *
+       * Every other path through here - the `.ideavimrc` at startup, `:source` of a file nobody has
+       * open - has nothing to save and reaches none of this.
+       */
+      override fun ensureFileIsSaved(path: String) {
+        val unsaved = editorGroup.getEditors().any { it.getPath()?.endsWith(path) == true && it.hasUnsavedChanges() }
+        if (unsaved) {
+          messages.showStatusBarMessage(null, "IdeaVim: sourcing $path from disk; it has unsaved changes")
+        }
+      }
     }
   }
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
@@ -268,6 +283,39 @@ class VsCodeInjector(
   override val vimStorageService: VimStorageService by lazy { EditorKeyedStorage() }
 
   override val timerService: VimTimerService by lazy { NodeTimerService }
+
+  /** Files, for `:source` and for the `.ideavimrc` read at startup. */
+  override val fileSystem: VimFileSystem by lazy { NodeFileSystem() }
+
+  /**
+   * Which file was loaded as the `.ideavimrc`, so `:source` can tell it apart from any other file.
+   *
+   * Compared as strings, which is right only because the host chose the path itself and hands the
+   * same one back. A symlink or a relative path naming the same file would not match - a filesystem
+   * question this does not yet ask.
+   */
+  override val vimrcFileState: VimrcFileState by lazy {
+    object : VimrcFileState {
+      override var filePath: String? = null
+
+      override fun saveFileState(filePath: String) {
+        this.filePath = filePath
+      }
+
+      override fun isVimRcFile(path: String): Boolean = path == filePath
+    }
+  }
+
+  /**
+   * How the engine gets a context to run something in when it was not handed one - sourcing a file
+   * at startup, most of all. VS Code has no `DataContext` equivalent, so there is one context and
+   * it carries nothing.
+   */
+  override val executionContextManager: ExecutionContextManager by lazy {
+    object : ExecutionContextManager {
+      override fun getEditorExecutionContext(editor: VimEditor): ExecutionContext = VsCodeExecutionContext
+    }
+  }
 
   override val messages: VimMessages by lazy { VsCodeMessages(messageSink) }
 
