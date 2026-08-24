@@ -174,6 +174,21 @@ type('d')
 type('b')
 assert.strictEqual(editor.document._text, 'l', `db did not delete backwards a word. Got: ${editor.document._text}`)
 
+// And through the `:` prompt, which is where a user reaches everything that is not a keystroke.
+// The `l` left over from `db` is still there, so the substitution has to leave it alone.
+type('i')
+for (const character of 'one two one') type(character)
+press('<Esc>')
+type(':')
+for (const character of 's/one/ONE/g') type(character)
+press('<CR>')
+
+assert.strictEqual(
+  editor.document._text,
+  'ONE two ONEl',
+  `a substitution typed at the prompt did not run. Got: ${editor.document._text}`,
+)
+
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
 extension.deactivate()

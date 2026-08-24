@@ -10,6 +10,7 @@
 
 // No `package` declaration, deliberately - see the note below.
 
+import com.maddyhome.idea.vim.vscode.CommandLineDisplay
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.MessageSink
@@ -39,6 +40,7 @@ import com.maddyhome.idea.vim.vscode.window
 
 private var channel: OutputChannel? = null
 private var statusBar: StatusBarItem? = null
+private var commandLineBar: StatusBarItem? = null
 private var host: VimHost? = null
 
 @JsExport
@@ -50,7 +52,16 @@ fun activate(context: ExtensionContext) {
   statusBar = status
   status.show()
 
-  val vim = VimHost(OutputAndStatusBar(output, status))
+  // Vim puts the mode and the command line on the same last row, with the command line taking it
+  // over while one is open. Two items side by side is the closest a status bar gets, and it lets
+  // the mode stay visible while a command is being typed.
+  val commandLine = window.createStatusBarItem(StatusBarAlignment.Left, 99)
+  commandLineBar = commandLine
+
+  val vim = VimHost(
+    sink = OutputAndStatusBar(output, status),
+    commandLineDisplay = StatusBarPrompt(commandLine),
+  )
   vim.start()
   host = vim
 
@@ -107,7 +118,7 @@ fun activate(context: ExtensionContext) {
   output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
 
   val subscriptions = context.subscriptions
-  for (registration in listOf<Disposable>(output, status, typing, namedKey, activeEditorChanged, selectionChanged)) {
+  for (registration in listOf<Disposable>(output, status, commandLine, typing, namedKey, activeEditorChanged, selectionChanged)) {
     subscriptions.push(registration)
   }
 }
@@ -117,7 +128,21 @@ fun deactivate() {
   channel?.appendLine("IdeaVim deactivated.")
   channel = null
   statusBar = null
+  commandLineBar = null
   host = null
+}
+
+/** The `:` and `/` prompts, on the status bar - the closest thing VS Code has to Vim's last line. */
+private class StatusBarPrompt(private val item: StatusBarItem) : CommandLineDisplay {
+  override fun show(text: String) {
+    item.text = text
+    item.show()
+  }
+
+  override fun hide() {
+    item.text = ""
+    item.hide()
+  }
 }
 
 /** Vim's messages, to the output channel and the status bar - which is where Vim puts them. */

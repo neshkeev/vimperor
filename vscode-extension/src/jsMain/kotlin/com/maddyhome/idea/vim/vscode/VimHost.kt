@@ -29,9 +29,11 @@ class VimHost(
    * a real extension host - the default is the real thing.
    */
   private val runCommand: (String, () -> Unit) -> Unit = ::executeVsCodeCommand,
+  /** Where the `:` and `/` prompts are drawn. The status bar, in a real window. */
+  commandLineDisplay: CommandLineDisplay = NoCommandLineDisplay,
 ) : HostCommandRunner {
 
-  private val vimInjector = VsCodeInjector(sink, this)
+  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay)
 
   /**
    * Editors by buffer identity rather than by object.
@@ -191,6 +193,12 @@ class VimHost(
     SelectionType.LINE_WISE -> " LINE"
     SelectionType.BLOCK_WISE -> " BLOCK"
   }
+}
+
+/** For a host that has nowhere to draw a command line yet. */
+internal object NoCommandLineDisplay : CommandLineDisplay {
+  override fun show(text: String) {}
+  override fun hide() {}
 }
 
 /**

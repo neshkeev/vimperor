@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.vscode
 
+import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.*
@@ -24,6 +25,8 @@ import com.maddyhome.idea.vim.history.VimHistoryBase
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.macro.VimMacro
+import com.maddyhome.idea.vim.macro.VimMacroBase
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.register.VimRegisterGroup
 import com.maddyhome.idea.vim.register.VimRegisterGroupBase
@@ -62,6 +65,7 @@ import kotlin.reflect.KClass
 class VsCodeInjector(
   private val messageSink: MessageSink = MessageSink.Discarding,
   private val hostCommands: HostCommandRunner = HostCommandRunner.None,
+  private val commandLineDisplay: CommandLineDisplay = NoDisplay,
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -79,12 +83,86 @@ class VsCodeInjector(
 
   override val parser: VimStringParser by lazy { object : VimStringParserBase() {} }
   override val vimscriptParser: VimscriptParser by lazy { object : VimscriptParserBase() {} }
+
+  /**
+   * Running vimscript, which is what a `:` command *is* once it has been typed.
+   *
+   * `VimScriptExecutorBase` leaves one thing to a host: writing an open file to disk before it is
+   * sourced, so `:source %` picks up what is on screen rather than what was last saved. VS Code can
+   * do it - `workbench.action.files.save` - but it is a command and asynchronous, and nothing
+   * sources a file yet.
+   */
+  override val vimscriptExecutor: VimscriptExecutor by lazy {
+    object : VimScriptExecutorBase() {
+      override fun ensureFileIsSaved(path: String) =
+        TODO("VS Code host: saving before sourcing is an asynchronous command")
+    }
+  }
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
   override val vimState: VimStateMachine by lazy { VimStateMachineImpl() }
   override val historyGroup: VimHistory by lazy { object : VimHistoryBase() {} }
   override val registerGroup: VimRegisterGroup by lazy { object : VimRegisterGroupBase() {} }
   override val registerGroupIfCreated: VimRegisterGroup? get() = registerGroup
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
+
+  /**
+   * IdeaVim's bundled extensions - `surround`, `easymotion`, `commentary` - none of which are
+   * ported. `set surround` therefore reports an unknown option rather than silently doing nothing,
+   * which is the honest answer while the extensions do not exist here.
+   */
+  override val extensionRegistrator: VimExtensionRegistrator by lazy {
+    object : VimExtensionRegistrator {
+      override fun setOptionByPluginAlias(alias: String): Boolean = false
+      override fun getExtensionNameByAlias(alias: String): String? = null
+    }
+  }
+
+  /** `:abbreviate`, which is a map from a trigger to its expansion and nothing host-shaped. */
+  override val abbreviationGroup: VimAbbreviationGroup by lazy { VimAbbreviationGroupBase() }
+
+  /**
+   * Recording and replaying keystrokes, which is engine work - `q` collects keys and `@` feeds them
+   * back through the same handler they came from. Reached here because the command line records
+   * what was typed at it.
+   */
+  override val macro: VimMacro by lazy {
+    object : VimMacroBase() {
+      /**
+       * Feeds the recorded keys back through the handler they came from, [total] times.
+       *
+       * IntelliJ's version of this is mostly a progress dialog: macros there can run long enough to
+       * need cancelling, and it also follows the user if the macro opens another file. Neither
+       * applies yet - there is no progress UI to show, and a macro that switches editors is a
+       * feature this host does not have. What is left is the loop, which is the whole of what a
+       * macro is.
+       *
+       * Stops on an error, the way Vim does: `@q` that hits E486 halfway through does not keep
+       * going and does not repeat.
+       */
+      override fun playbackKeys(editor: VimEditor, context: ExecutionContext, total: Int) {
+        val handler = KeyHandler.getInstance()
+        val keyStack = handler.keyStack
+        if (!keyStack.hasStroke()) {
+          keyStack.removeFirst()
+          return
+        }
+        try {
+          repeat(total) {
+            try {
+              while (keyStack.hasStroke()) {
+                handler.handleKey(editor, keyStack.feedStroke(), context, handler.keyHandlerState)
+                if (injector.messages.isError()) return
+              }
+            } finally {
+              keyStack.resetFirst()
+            }
+          }
+        } finally {
+          keyStack.removeFirst()
+        }
+      }
+    }
+  }
   override val yank: VimYankGroup by lazy { YankGroupBase() }
 
   /**
@@ -480,39 +558,27 @@ class VsCodeInjector(
   }
 
   /**
-   * The `:` and `/` prompts, likewise asked about on every keystroke and likewise not built.
+   * The `:` and `/` prompts.
    *
-   * This does not stop `:` *commands* running - those are parsed and executed directly. What is
-   * missing is the prompt, not the command.
+   * Not an input dialog: Vim's command line is a text buffer the engine drives keystroke by
+   * keystroke, so a host supplies a string and somewhere to draw it. See [StatusBarCommandLine] -
+   * the asynchronous `showInputBox` was the wrong shape for this, not a hard version of the right
+   * one.
    */
-  override val commandLine: VimCommandLineService by lazy {
-    object : VimCommandLineService {
-      override fun isCommandLineSupported(editor: VimEditor): Boolean = false
-      override fun getActiveCommandLine(): VimCommandLine? = null
-      override fun getActiveCommandLineHeight(): Int = 0
-      override fun fullReset() {}
+  override val commandLine: VimCommandLineService by lazy { VsCodeCommandLineService(commandLineDisplay) }
 
-      override fun readInputAndProcess(
-        vimEditor: VimEditor,
-        context: ExecutionContext,
-        prompt: String,
-        finishOn: Char?,
-        processing: (String) -> Unit,
-      ) = TODO("VS Code host: there is no command line to type into yet")
-
-      override fun createSearchPrompt(
-        editor: VimEditor,
-        context: ExecutionContext,
-        label: String,
-        initialText: String,
-      ): VimCommandLine = TODO("VS Code host: there is no command line to open yet")
-
-      override fun createCommandPrompt(
-        editor: VimEditor,
-        context: ExecutionContext,
-        count0: Int,
-        initialText: String,
-      ): VimCommandLine = TODO("VS Code host: there is no command line to open yet")
+  /**
+   * Nothing to redraw on demand.
+   *
+   * VS Code repaints itself; an extension never asks it to. This exists because Vim's screen model
+   * has a moment where everything is drawn again - `:redraw`, and entering command-line mode - and
+   * a host with a retained-mode UI has no such moment. Each piece here updates when it changes
+   * instead: the command line on every keystroke, the mode in the status bar when it moves.
+   */
+  override val redrawService: VimRedrawService by lazy {
+    object : VimRedrawService {
+      override fun redraw() {}
+      override fun redrawStatusLine() {}
     }
   }
 
@@ -911,6 +977,12 @@ private object RevealingScrollGroup : VimScrollGroup {
 
   override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean =
     TODO("VS Code host: horizontal scrolling needs visibleRanges")
+}
+
+/** For a host with nowhere to draw a command line. The text still exists; nobody sees it. */
+private object NoDisplay : CommandLineDisplay {
+  override fun show(text: String) {}
+  override fun hide() {}
 }
 
 /** Pressing Enter, which `o` and `O` reach for through the host rather than doing themselves. */

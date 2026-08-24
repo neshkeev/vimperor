@@ -29,10 +29,18 @@ rather than as a sweep.
 ## What works
 
 Normal-mode editing and insert mode: motions, `x`, `d` with a motion, `c`, `i`/`a`/`I`/`A`,
-`o`/`O`, counts, registers, `u` and `<C-R>`, and `:s` when driven directly. Visual mode works in
-both directions: `v`, `V` and motions drive VS Code's selection, and dragging with the mouse enters
-visual mode, because in Vim a selection *is* a mode. The command-line prompt, search highlighting
-and the system clipboard are not wired up; each names itself if reached.
+`o`/`O`, counts, registers, `u` and `<C-R>`. Visual mode works in both directions: `v`, `V` and
+motions drive VS Code's selection, and dragging with the mouse enters visual mode, because in Vim a
+selection *is* a mode. The `:` and `/` prompts work, with history, so `:s`, ranges and search are
+all reachable the way a user reaches them.
+
+Vim's command line turned out not to need VS Code's `showInputBox` at all. It is not a dialog that
+collects a string - it is a text buffer the engine owns keystroke by keystroke, with its own caret
+and history, so the host supplies a string and somewhere to draw it. Both are synchronous. It is
+drawn on the status bar, next to the mode.
+
+Search highlighting, the output panel (`:registers`, `:marks`), the system clipboard and IdeaVim's
+bundled extensions are not wired up; each names itself if reached.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
 command: it resolves a promise and reports nothing about what it did, while the engine needs a
