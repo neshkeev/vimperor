@@ -1,0 +1,135 @@
+/*
+ * Copyright 2003-2026 The IdeaVim authors
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE.txt file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+package com.maddyhome.idea.vim.vscode
+
+import com.maddyhome.idea.vim.api.BufferPosition
+import com.maddyhome.idea.vim.api.VimCaret
+import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimVisualPosition
+import com.maddyhome.idea.vim.common.LiveRange
+import com.maddyhome.idea.vim.group.visual.VisualChange
+import com.maddyhome.idea.vim.api.LocalMarkStorage
+import com.maddyhome.idea.vim.api.CaretRegisterStorage
+import com.maddyhome.idea.vim.api.CaretRegisterStorageBase
+import com.maddyhome.idea.vim.api.SelectionInfo
+
+/**
+ * One of VS Code's cursors, as the engine sees it.
+ *
+ * VS Code has no separate notion of a caret: it has selections, and a caret is one whose two ends
+ * coincide. The offset lives here rather than in VS Code because the engine moves carets against
+ * text VS Code has not been told about yet - [VsCodeEditor.flush] pushes both across together, text
+ * first.
+ */
+class VsCodeCaret(
+  private val vimEditor: VsCodeEditor,
+  offset: Int,
+  override val isPrimary: Boolean,
+) : VimCaret {
+
+  /** Mutable, because editing and motion both move it, and this caret is never replaced. */
+  override var offset: Int = offset
+    private set
+
+  override val editor: VimEditor get() = vimEditor
+
+  override fun moveToOffsetNative(offset: Int) {
+    this.offset = offset
+  }
+
+  /**
+   * IntelliJ's inlays are inline hints that occupy visual columns; VS Code's decorations do not
+   * take part in offsets at all, so this is a plain move. The interface returns a caret because an
+   * implementation may be immutable - this one moves itself and hands itself back.
+   */
+  override fun moveToInlayAwareOffset(newOffset: Int): VimCaret {
+    offset = newOffset
+    return this
+  }
+
+  override fun moveToBufferPosition(position: BufferPosition) {
+    offset = vimEditor.bufferPositionToOffset(position)
+  }
+
+  override fun getBufferPosition(): BufferPosition = vimEditor.offsetToBufferPosition(offset)
+
+  override fun getLine(): Int = getBufferPosition().line
+
+  // Lazy, both of them: they read the global `injector` while constructing, so a caret built
+  // before a host is installed - or by code that only wants offsets - would fail on a service it
+  // never asked for. The headless host defers its own services for the same reason.
+  override val markStorage: LocalMarkStorage by lazy { LocalMarkStorage(this) }
+
+  /**
+   * Per-caret registers, which is what multiple cursors need: each caret yanks into its own copy so
+   * that `"ayiw` with three carets does not have them overwrite each other.
+   */
+  override val registerStorage: CaretRegisterStorage by lazy { CaretRegisterStorageBase(this) }
+
+  /** The column `j` and `k` return to, so passing through a short line does not lose the column. */
+  override var vimLastColumn: Int = 0
+
+  override fun resetLastColumn() {
+    vimLastColumn = getBufferPosition().column
+  }
+
+  // ---- Selection. Not wired to VS Code's selections yet: visual mode is its own piece of work,
+  // and a caret that reported a selection nobody set would be worse than one that reports none.
+
+  private var selectionStartOffset: Int = -1
+  private var selectionEndOffset: Int = -1
+
+  override val selectionStart: Int get() = selectionStartOffset
+  override val selectionEnd: Int get() = selectionEndOffset
+
+  override fun setSelection(start: Int, end: Int) {
+    selectionStartOffset = start
+    selectionEndOffset = end
+  }
+
+  override fun removeSelection() {
+    selectionStartOffset = -1
+    selectionEndOffset = -1
+  }
+
+  override fun hasSelection(): Boolean = selectionStartOffset >= 0 && selectionEndOffset >= 0
+
+  override var vimSelectionStart: Int = 0
+
+  override fun vimSelectionStartClear() {
+    vimSelectionStart = offset
+  }
+
+  override val id: String = "vscode-caret-${nextId++}"
+
+  /** A caret becomes invalid when its editor closes; the editor object goes with it. */
+  override val isValid: Boolean get() = !vimEditor.isDisposed()
+
+  // ---- Not reached yet. Each names itself if that changes.
+
+  override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("VsCodeCaret.moveToVisualPosition")
+  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("VsCodeCaret.setVimLastColumnAndGetCaret")
+  override fun getVisualPosition(): VimVisualPosition = TODO("VsCodeCaret.getVisualPosition")
+  override var vimInsertStart: LiveRange
+    get() = TODO("VsCodeCaret.vimInsertStart")
+    set(_) = TODO("VsCodeCaret.vimInsertStart")
+  override var vimLastVisualOperatorRange: VisualChange?
+    get() = TODO("VsCodeCaret.vimLastVisualOperatorRange")
+    set(_) = TODO("VsCodeCaret.vimLastVisualOperatorRange")
+  override val vimLine: Int get() = TODO("VsCodeCaret.vimLine")
+  override val visualLineStart: Int get() = TODO("VsCodeCaret.visualLineStart")
+  override var lastSelectionInfo: SelectionInfo
+    get() = TODO("VsCodeCaret.lastSelectionInfo")
+    set(_) = TODO("VsCodeCaret.lastSelectionInfo")
+
+  private companion object {
+    /** Carets are compared by id, so two in the same buffer must not share one. */
+    var nextId: Int = 0
+  }
+}

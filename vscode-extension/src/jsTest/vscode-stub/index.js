@@ -31,6 +31,13 @@ class Range {
   }
 }
 
+const TextEditorRevealType = {
+  Default: 0,
+  InCenter: 1,
+  InCenterIfOutsideViewport: 2,
+  AtTop: 3,
+}
+
 const window = {
   activeTextEditor: undefined,
   createOutputChannel: (name) => ({
@@ -46,4 +53,4 @@ const commands = {
   registerCommand: () => ({ dispose() {} }),
 }
 
-module.exports = { Position, Range, window, commands }
+module.exports = { Position, Range, TextEditorRevealType, window, commands }

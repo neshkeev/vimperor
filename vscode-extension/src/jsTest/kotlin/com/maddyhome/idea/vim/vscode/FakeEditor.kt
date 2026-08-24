@@ -76,6 +76,14 @@ class FakeEditor(text: String) : TextEditor {
 
   val recordedEdits: MutableList<RecordedEdit> = mutableListOf()
 
+  /** What the editor was asked to scroll to, so a test can see that it was asked at all. */
+  val revealedRanges: MutableList<Range> = mutableListOf()
+
+  @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+  override fun revealRange(range: Range, revealType: Int) {
+    revealedRanges += range
+  }
+
   /** Set to refuse the next edit, the way VS Code does when the document has moved on. */
   var refuseEdits: Boolean = false
 

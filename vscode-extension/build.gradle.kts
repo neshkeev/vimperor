@@ -97,6 +97,24 @@ tasks.named("check") {
   dependsOn(runInStubHost)
 }
 
+/**
+ * Puts the `vscode` stub where Node will find it, every time, rather than when yarn feels like it.
+ *
+ * The stub is declared as a local npm dependency so the module resolves, and yarn *copies* a
+ * `file:` dependency at install time - then considers itself up to date, so an edit to the stub is
+ * invisible until `node_modules` is deleted by hand. The failure that produces is a `TypeError` on
+ * a property that plainly exists in the source, which is a bad hour for whoever meets it.
+ */
+val syncVsCodeStub by tasks.registering(Sync::class) {
+  from(layout.projectDirectory.dir("src/jsTest/vscode-stub"))
+  into(rootProject.layout.buildDirectory.dir("js/node_modules/vscode"))
+  mustRunAfter(rootProject.tasks.named("kotlinNpmInstall"))
+}
+
+tasks.named("jsNodeTest") {
+  dependsOn(syncVsCodeStub)
+}
+
 // `./gradlew test` matches by task NAME across projects, and a KMP module has no `test` task - so
 // without this alias the gate documented in CLAUDE.md walks straight past this module, greenly.
 // The same omission hid vim-engine's JS tests for a while; see the note on its `test` task.

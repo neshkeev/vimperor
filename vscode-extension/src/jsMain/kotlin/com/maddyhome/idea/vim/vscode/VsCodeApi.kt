@@ -112,6 +112,17 @@ external interface TextEditor {
    * against the pre-edit document, so two edits cannot be chained inside one call.
    */
   fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean>
+
+  /** Scrolls so that [range] is on screen. VS Code's only scrolling API for an extension. */
+  fun revealRange(range: Range, revealType: Int = definedExternally)
+}
+
+/** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */
+external object TextEditorRevealType {
+  val Default: Int
+  val InCenter: Int
+  val InCenterIfOutsideViewport: Int
+  val AtTop: Int
 }
 
 /** VS Code's promise type. Named as VS Code names it. */

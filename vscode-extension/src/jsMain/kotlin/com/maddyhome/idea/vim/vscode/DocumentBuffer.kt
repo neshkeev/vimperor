@@ -34,21 +34,31 @@ class DocumentBuffer(private val editor: TextEditor) {
   /** The document as it was when this buffer last agreed with it, and what [flush] diffs against. */
   private var flushed: String = text
 
+  /**
+   * Bumped whenever [text] changes, so anything derived from it - line offsets, most of all - can
+   * tell that its cache is stale without comparing the whole buffer.
+   */
+  var revision: Int = 0
+    private set
+
   /** Takes the document's current text, discarding anything not yet flushed. */
   fun reseed() {
     text = editor.document.getText()
     flushed = text
+    revision++
   }
 
   fun replace(start: Int, end: Int, newText: String) {
     val from = start.coerceIn(0, text.length)
     val to = end.coerceIn(from, text.length)
     text = text.substring(0, from) + newText + text.substring(to)
+    revision++
   }
 
   fun insert(offset: Int, newText: String) {
     val at = offset.coerceIn(0, text.length)
     text = text.substring(0, at) + newText + text.substring(at)
+    revision++
   }
 
   /**
