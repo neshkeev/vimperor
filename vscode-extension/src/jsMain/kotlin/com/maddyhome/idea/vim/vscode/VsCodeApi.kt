@@ -51,6 +51,7 @@ external object window {
   fun createOutputChannel(name: String): OutputChannel
   fun showInformationMessage(message: String): dynamic
   fun createStatusBarItem(alignment: Int = definedExternally, priority: Int = definedExternally): StatusBarItem
+  fun createTextEditorDecorationType(options: dynamic): TextEditorDecorationType
 
   /**
    * VS Code's events are functions: calling one with a listener subscribes and hands back the
@@ -161,7 +162,26 @@ external interface TextEditor {
 
   /** Scrolls so that [range] is on screen. VS Code's only scrolling API for an extension. */
   fun revealRange(range: Range, revealType: Int = definedExternally)
+
+  /**
+   * Paints [ranges] with [decorationType], replacing whatever that type painted before.
+   *
+   * Replacing rather than adding is the whole model: there is no way to remove one decoration, so
+   * clearing a highlight means setting its ranges to none.
+   */
+  fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>)
 }
+
+/** A style that can be painted over ranges. Created once and reused; disposing it unpaints it. */
+external interface TextEditorDecorationType : Disposable
+
+/**
+ * A colour from the user's theme, by the id VS Code gives it.
+ *
+ * Used rather than a literal so that search highlights match what the editor's own find does, in
+ * whatever theme the user has - a hardcoded yellow is unreadable in half of them.
+ */
+external class ThemeColor(id: String)
 
 /** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */
 external object TextEditorRevealType {

@@ -42,6 +42,7 @@ const window = {
   activeTextEditor: undefined,
   visibleTextEditors: [],
   createStatusBarItem: () => ({ text: '', tooltip: '', show() {}, hide() {}, dispose() {} }),
+  createTextEditorDecorationType: (options) => ({ options, dispose() {} }),
   onDidChangeActiveTextEditor: () => ({ dispose() {} }),
   onDidChangeTextEditorSelection: () => ({ dispose() {} }),
   createOutputChannel: (name) => ({
@@ -64,4 +65,10 @@ const workspace = {
 
 const StatusBarAlignment = { Left: 1, Right: 2 }
 
-module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, window, commands, workspace }
+class ThemeColor {
+  constructor(id) {
+    this.id = id
+  }
+}
+
+module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace }

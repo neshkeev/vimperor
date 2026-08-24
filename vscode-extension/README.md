@@ -50,8 +50,13 @@ returns a promise, and `:source` has to return with the file. That holds over SS
 containers, where the extension host runs on the remote machine and reads the config that is
 actually there. A web-only workspace has no Node and will need an asynchronous load at startup.
 
-Search highlighting, the output panel (`:registers`, `:marks`), the system clipboard and IdeaVim's
-bundled extensions are not wired up; each names itself if reached.
+`'hlsearch'` paints every match, in the editor's own find colours so it looks right in whatever
+theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` does not: the preview
+needs the pattern as typed so far, which arrives on the command line rather than through the search
+group, and a preview that lags the typing by a keystroke is worse than none.
+
+The output panel (`:registers`, `:marks`, `:!` output), the system clipboard and IdeaVim's bundled
+extensions are not wired up; each names itself if reached.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
 command: it resolves a promise and reports nothing about what it did, while the engine needs a

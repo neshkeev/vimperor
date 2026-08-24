@@ -32,9 +32,11 @@ class VimHost(
   private val runCommand: (String, () -> Unit) -> Unit = ::executeVsCodeCommand,
   /** Where the `:` and `/` prompts are drawn. The status bar, in a real window. */
   commandLineDisplay: CommandLineDisplay = NoCommandLineDisplay,
+  /** Where search matches are painted. Decorations, in a real window. */
+  highlighter: Highlighter = Highlighter.None,
 ) : HostCommandRunner {
 
-  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay)
+  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay, highlighter)
 
   /**
    * Editors by buffer identity rather than by object.
@@ -83,7 +85,12 @@ class VimHost(
   fun editorFor(textEditor: TextEditor): VsCodeEditor {
     val identity = identityOf(textEditor)
     val existing = editors[identity]
-    if (existing != null && existing.nativeEditor === textEditor) return existing
+    if (existing != null && existing.nativeEditor === textEditor) {
+      // Re-registering marks it as the one with focus, which is the point: whichever editor a key
+      // was typed into is the one the user is looking at.
+      vimInjector.register(existing)
+      return existing
+    }
 
     // Same document, different `TextEditor` object: the old wrapper points at an editor VS Code is
     // no longer using, so it is replaced rather than repaired. Mode and caret state go with it,

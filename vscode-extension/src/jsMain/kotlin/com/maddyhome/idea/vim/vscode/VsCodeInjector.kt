@@ -66,17 +66,29 @@ class VsCodeInjector(
   private val messageSink: MessageSink = MessageSink.Discarding,
   private val hostCommands: HostCommandRunner = HostCommandRunner.None,
   private val commandLineDisplay: CommandLineDisplay = NoDisplay,
+  private val highlighter: Highlighter = Highlighter.None,
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
   private val openEditors: MutableList<VsCodeEditor> = mutableListOf()
 
+  /**
+   * The one with focus, which several services need and none can work out for themselves.
+   *
+   * Search highlighting is the reason this is not just "the first one open": `'hlsearch'` paints
+   * the editor the user is looking at, and with two files open, whichever happened to be
+   * registered first is not it.
+   */
+  private var activeEditor: VsCodeEditor? = null
+
   fun register(editor: VsCodeEditor) {
     if (openEditors.none { it === editor }) openEditors += editor
+    activeEditor = editor
   }
 
   fun unregister(editor: VsCodeEditor) {
     openEditors.removeAll { it === editor }
+    if (activeEditor === editor) activeEditor = openEditors.lastOrNull()
   }
 
   // ---- Pure engine. Nothing about a host in any of these; the `*Base` classes are complete.
@@ -260,7 +272,7 @@ class VsCodeInjector(
       override fun getEditors(buffer: VimDocument): Collection<VimEditor> = openEditors.toList()
 
       /** VS Code's active editor, as this host's wrapper for it. */
-      override fun getFocusedEditor(): VimEditor? = openEditors.firstOrNull()
+      override fun getFocusedEditor(): VimEditor? = activeEditor ?: openEditors.lastOrNull()
       override fun getSelectedEditor(): VimEditor? = getFocusedEditor()
       override fun getSelectedEditor(projectId: String): VimEditor? = getFocusedEditor()
 
@@ -382,24 +394,90 @@ class VsCodeInjector(
 
   override val searchGroup: VimSearchGroup by lazy {
     object : VimSearchGroupBase() {
-      // Everything open here is about what the user *sees*: `'hlsearch'`, the `'incsearch'`
-      // preview, the "3 of 12" count, the `:s///c` confirmation highlight. VS Code draws all of it
-      // with `setDecorations`, which is real work and not yet done - and searching itself does not
-      // need any of it, which is why the substitution is common code.
-      override fun isSomeTextHighlighted(): Boolean = false
-      override fun getCurrentIncsearchResultRange(editor: VimEditor): TextRange? = null
-      override fun highlightSearchLines(editor: VimEditor, startLine: Int, endLine: Int) {}
-      override fun updateSearchHighlights(force: Boolean) {}
-      override fun updateSearchCount(matchOffset: Int) {}
-      override fun resetIncsearchHighlights() {}
-      override fun setShouldShowSearchHighlights() {}
-      override fun clearSearchHighlight() {}
+      /**
+       * `'hlsearch'`: every match of the last pattern, painted.
+       *
+       * The base finds nothing for us - it hands over the pattern and the host does the searching,
+       * which is how IntelliJ's does it too. That is the right split: *which* ranges to paint is a
+       * screen question, and only the host knows which lines are worth searching.
+       */
+      override fun updateSearchHighlights(force: Boolean) {
+        val editor = editorGroup.getFocusedEditor() as? VsCodeEditor ?: return
+        val pattern = getLastUsedPattern()
+        if (pattern == null || !shouldShowHighlights) {
+          highlighter.clear(editor)
+          return
+        }
+        val matches = searchHelper.findAll(editor, pattern, 0, -1, shouldIgnoreCase(pattern))
+        highlighter.showMatches(editor, matches)
+      }
 
+      /** Whether `:nohlsearch` has anything to clear, and whether `n` should repaint. */
+      override fun isSomeTextHighlighted(): Boolean = highlighter.isShowingAnything()
+
+      override fun highlightSearchLines(editor: VimEditor, startLine: Int, endLine: Int) {
+        val vsCode = editor as? VsCodeEditor ?: return
+        val pattern = getLastUsedPattern() ?: return
+        highlighter.showMatches(vsCode, searchHelper.findAll(editor, pattern, startLine, endLine, shouldIgnoreCase(pattern)))
+      }
+
+      override fun clearSearchHighlight() {
+        shouldShowHighlights = false
+        val editor = editorGroup.getFocusedEditor() as? VsCodeEditor ?: return
+        highlighter.clear(editor)
+      }
+
+      override fun setShouldShowSearchHighlights() {
+        shouldShowHighlights = true
+      }
+
+      override fun resetIncsearchHighlights() {
+        updateSearchHighlights(true)
+      }
+
+      /**
+       * The one range `:s///c` is asking about, painted while it waits for an answer.
+       *
+       * The handle unpaints it: VS Code has no way to remove a single decoration, so this sets the
+       * confirmation style's ranges back to none.
+       */
       override fun addSubstitutionConfirmationHighlight(
         editor: VimEditor,
         startOffset: Int,
         endOffset: Int,
-      ): SearchHighlight = TODO("VS Code host: decorations are not wired up")
+      ): SearchHighlight {
+        val vsCode = editor as? VsCodeEditor ?: return NoHighlight
+        val remove = highlighter.showConfirmation(vsCode, TextRange(startOffset, endOffset))
+        return object : SearchHighlight() {
+          override fun remove() = remove()
+        }
+      }
+
+      /**
+       * `'incsearch'`: the match under the caret while a search is still being typed.
+       *
+       * Not painted yet. It needs the pattern *as typed so far*, which arrives on the command line
+       * rather than through the search group, and drawing a preview that lags the typing by a
+       * keystroke is worse than not drawing one.
+       */
+      override fun getCurrentIncsearchResultRange(editor: VimEditor): TextRange? = null
+
+      /** Vim's "3 of 12" on the right of the command line, which needs the output panel. */
+      override fun updateSearchCount(matchOffset: Int) {}
+
+      private var shouldShowHighlights: Boolean = false
+
+      /** `'ignorecase'`, softened by `'smartcase'` when the pattern has an uppercase letter. */
+      private fun shouldIgnoreCase(pattern: String): Boolean {
+        val options = globalOptions()
+        if (!options.ignorecase) return false
+        if (options.smartcase && pattern.any { it.isUpperCase() }) return false
+        return true
+      }
+
+      private val NoHighlight = object : SearchHighlight() {
+        override fun remove() {}
+      }
     }
   }
 

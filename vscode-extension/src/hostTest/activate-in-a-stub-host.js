@@ -94,6 +94,10 @@ function makeEditor(text) {
     selection: { anchor: new Position(0, 0), active: new Position(0, 0) },
     selections: [{ anchor: new Position(0, 0), active: new Position(0, 0) }],
     revealRange() {},
+    decorations: new Map(),
+    setDecorations(type, ranges) {
+      this.decorations.set(type, ranges)
+    },
     edit(callback) {
       const edits = []
       callback({
@@ -118,6 +122,13 @@ const vscode = {
   Position,
   Range,
   StatusBarAlignment: { Left: 1, Right: 2 },
+  // VS Code constructs these with `new`, so a plain object here would pass the call and fail the
+  // construction - which is exactly how this was found.
+  ThemeColor: class ThemeColor {
+    constructor(id) {
+      this.id = id
+    }
+  },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,
@@ -127,6 +138,7 @@ const vscode = {
       return { ...disposable(), appendLine: (line) => output.push(line), show() {} }
     },
     createStatusBarItem: () => ({ ...disposable(), text: '', tooltip: '', show() {}, hide() {} }),
+    createTextEditorDecorationType: (options) => ({ ...disposable(), options }),
     showInformationMessage: () => undefined,
     onDidChangeActiveTextEditor: () => disposable(),
     onDidChangeTextEditorSelection: () => disposable(),

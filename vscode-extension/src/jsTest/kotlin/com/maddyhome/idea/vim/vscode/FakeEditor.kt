@@ -87,6 +87,13 @@ class FakeEditor(text: String) : TextEditor {
     revealedRanges += range
   }
 
+  /** What each decoration type currently paints, which is what VS Code's replace-not-add model is. */
+  val decorations: MutableMap<TextEditorDecorationType, List<Range>> = mutableMapOf()
+
+  override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {
+    decorations[decorationType] = ranges.toList()
+  }
+
   /** Set to refuse the next edit, the way VS Code does when the document has moved on. */
   var refuseEdits: Boolean = false
 

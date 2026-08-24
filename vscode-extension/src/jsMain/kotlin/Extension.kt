@@ -11,6 +11,7 @@
 // No `package` declaration, deliberately - see the note below.
 
 import com.maddyhome.idea.vim.vscode.CommandLineDisplay
+import com.maddyhome.idea.vim.vscode.DecorationHighlighter
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.MessageSink
@@ -61,6 +62,7 @@ fun activate(context: ExtensionContext) {
   val vim = VimHost(
     sink = OutputAndStatusBar(output, status),
     commandLineDisplay = StatusBarPrompt(commandLine),
+    highlighter = DecorationHighlighter(),
   )
   vim.start()
   host = vim
