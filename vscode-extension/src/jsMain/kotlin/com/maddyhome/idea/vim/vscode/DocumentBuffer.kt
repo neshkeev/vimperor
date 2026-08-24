@@ -8,6 +8,9 @@
 
 package com.maddyhome.idea.vim.vscode
 
+import com.maddyhome.idea.vim.common.ChangesListener
+import com.maddyhome.idea.vim.common.LiveRange
+
 /**
  * The engine's synchronous view of an asynchronous document.
  *
@@ -43,22 +46,84 @@ class DocumentBuffer(private val editor: TextEditor) {
 
   /** Takes the document's current text, discarding anything not yet flushed. */
   fun reseed() {
+    val before = text
     text = editor.document.getText()
     flushed = text
     revision++
+    // The whole buffer was replaced by something the engine did not do, so every marker in it is
+    // about text that may no longer be there.
+    onChanged(0, before.length, text, before)
   }
 
   fun replace(start: Int, end: Int, newText: String) {
     val from = start.coerceIn(0, text.length)
     val to = end.coerceIn(from, text.length)
+    val replaced = text.substring(from, to)
     text = text.substring(0, from) + newText + text.substring(to)
     revision++
+    onChanged(from, to, newText, replaced)
   }
 
   fun insert(offset: Int, newText: String) {
     val at = offset.coerceIn(0, text.length)
     text = text.substring(0, at) + newText + text.substring(at)
     revision++
+    onChanged(at, at, newText, "")
+  }
+
+  // ---- Everything that has to move when the text does.
+  //
+  // This is what IntelliJ's range markers are, and the engine needs them before anything else does:
+  // insert mode records where the insertion began and asks later how much was typed, which is only
+  // answerable if the mark moved with the text. Every mutation goes through this class, so tracking
+  // them here is exact - unlike deriving them from VS Code's change events, which arrive after the
+  // fact and describe a document the engine has already moved past.
+
+  private val markers: MutableList<TrackedRange> = mutableListOf()
+  private val listeners: MutableList<ChangesListener> = mutableListOf()
+
+  fun createMarker(start: Int, end: Int): LiveRange = TrackedRange(start, end).also { markers += it }
+
+  fun addChangeListener(listener: ChangesListener) {
+    listeners += listener
+  }
+
+  fun removeChangeListener(listener: ChangesListener) {
+    listeners.remove(listener)
+  }
+
+  private fun onChanged(start: Int, end: Int, newText: String, replaced: String) {
+    val delta = newText.length - (end - start)
+    for (marker in markers) marker.adjust(start, end, delta)
+    if (listeners.isNotEmpty()) {
+      val change = ChangesListener.Change(replaced, newText, start)
+      listeners.toList().forEach { it.documentChanged(change) }
+    }
+  }
+
+  /**
+   * An offset pair that follows edits.
+   *
+   * An offset before the change does not move; one after it shifts by the change's size. An offset
+   * *inside* what was replaced has nowhere of its own to be, so it collapses to the start - the
+   * same choice IntelliJ makes, and the reason a marker can end up empty rather than wrong.
+   */
+  private class TrackedRange(start: Int, end: Int) : LiveRange {
+    override var startOffset: Int = start
+      private set
+    override var endOffset: Int = end
+      private set
+
+    fun adjust(changeStart: Int, changeEnd: Int, delta: Int) {
+      startOffset = adjustOffset(startOffset, changeStart, changeEnd, delta)
+      endOffset = adjustOffset(endOffset, changeStart, changeEnd, delta).coerceAtLeast(startOffset)
+    }
+
+    private fun adjustOffset(offset: Int, changeStart: Int, changeEnd: Int, delta: Int): Int = when {
+      offset <= changeStart -> offset
+      offset >= changeEnd -> offset + delta
+      else -> changeStart
+    }
   }
 
   /**

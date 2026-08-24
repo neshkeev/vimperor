@@ -17,11 +17,15 @@ import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimCaretListener
 import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimEditorBase
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.api.VimFoldRegion
 import com.maddyhome.idea.vim.api.VimIndentConfig
 import com.maddyhome.idea.vim.api.VimScrollingModel
 import com.maddyhome.idea.vim.api.VimVirtualFile
 import com.maddyhome.idea.vim.api.VimVisualPosition
+import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.common.VimEditorReplaceMask
@@ -40,7 +44,7 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
  * knowable by reading the code, and a member that quietly returns zero is a bug that surfaces
  * somewhere else.
  */
-class VsCodeEditor(val nativeEditor: TextEditor) : MutableVimEditor {
+class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEditor {
 
   val buffer: DocumentBuffer = DocumentBuffer(nativeEditor)
 
@@ -176,6 +180,38 @@ class VsCodeEditor(val nativeEditor: TextEditor) : MutableVimEditor {
     buffer.replace(range.startOffset, range.endOffset, "")
   }
 
+  /**
+   * Inserts [text] at every caret and leaves each one after what it typed.
+   *
+   * Done here rather than caret by caret because the offsets move as it goes: inserting from the
+   * end backwards keeps the earlier ones valid, and a caret then shifts by one insertion for each
+   * caret at or before it - its own included.
+   */
+  fun typeAtCarets(text: String) {
+    if (text.isEmpty()) return
+    val sorted = vimCarets.sortedBy { it.offset }
+    for (index in sorted.indices.reversed()) {
+      buffer.insert(sorted[index].offset, text)
+    }
+    sorted.forEachIndexed { index, caret ->
+      caret.moveToOffsetNative(caret.offset + text.length * (index + 1))
+    }
+  }
+
+  /** Deletes the character before every caret, which is what backspace does in insert mode. */
+  fun deleteBeforeCarets() {
+    val sorted = vimCarets.sortedBy { it.offset }
+    for (index in sorted.indices.reversed()) {
+      val caret = sorted[index]
+      if (caret.offset > 0) buffer.replace(caret.offset - 1, caret.offset, "")
+    }
+    sorted.forEachIndexed { index, caret ->
+      // One character goes for each caret at or before this one that had something to delete.
+      val deletionsBefore = sorted.take(index + 1).count { it.offset > 0 }
+      caret.moveToOffsetNative((caret.offset - deletionsBefore).coerceAtLeast(0))
+    }
+  }
+
   /** `o` and `O`. Vim's `addLine` opens a line before [atPosition] and answers where it starts. */
   override fun addLine(atPosition: Int): Int {
     val insertAt = getLineStartOffset(atPosition)
@@ -263,8 +299,24 @@ class VsCodeEditor(val nativeEditor: TextEditor) : MutableVimEditor {
 
   // ---- Editor state the engine keeps here because it is per-window.
 
-  override var mode: Mode = Mode.NORMAL()
-  override var isReplaceCharacter: Boolean = false
+  /**
+   * Mode lives in the state machine, not here.
+   *
+   * `VimEditorBase` reads and writes `injector.vimState`, and notifies the mode listeners on the
+   * way - which is what makes a mode change visible to the key handler at all. An editor that
+   * stored the mode in a field of its own would set it successfully and change nothing: the next
+   * keystroke would still be interpreted in normal mode, and `iX` would run `X` as a command.
+   */
+  // The cast is what IntelliJ's host does too: `VimStateMachine` exposes the mode read-only, and
+  // only the implementation the host installed can set it.
+  override fun updateMode(mode: Mode) {
+    (injector.vimState as VimStateMachineImpl).mode = mode
+  }
+
+  override fun updateIsReplaceCharacter(isReplaceCharacter: Boolean) {
+    (injector.vimState as VimStateMachineImpl).isReplaceCharacter = isReplaceCharacter
+  }
+
   override var vimChangeActionSwitchMode: Mode? = null
   override var insertMode: Boolean = false
 
@@ -314,10 +366,19 @@ class VsCodeEditor(val nativeEditor: TextEditor) : MutableVimEditor {
     TODO("VsCodeEditor.vimSetSystemBlockSelectionSilently")
   override fun addCaretListener(listener: VimCaretListener): Unit = TODO("VsCodeEditor.addCaretListener")
   override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("VsCodeEditor.removeCaretListener")
-  override fun exitInsertMode(context: ExecutionContext): Unit = TODO("VsCodeEditor.exitInsertMode")
+  /**
+   * Leaving insert mode, which the engine asks the *editor* to do because a host may have its own
+   * insert state to unwind - IntelliJ drops a pending visual-mode timer here. VS Code has no such
+   * state, so this is the engine's own `processEscape`, which is what IntelliJ ends up calling too:
+   * it steps the caret back one and closes out the insert session.
+   */
+  override fun exitInsertMode(context: ExecutionContext) {
+    injector.changeGroup.processEscape(this, context)
+  }
   override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("VsCodeEditor.exitSelectModeNative")
-  override fun getLastVisualLineColumnNumber(line: Int): Int = TODO("VsCodeEditor.getLastVisualLineColumnNumber")
-  override fun createLiveMarker(start: Int, end: Int): LiveRange = TODO("VsCodeEditor.createLiveMarker")
+  /** The last column on a line, which is its length while a visual line is a buffer line. */
+  override fun getLastVisualLineColumnNumber(line: Int): Int =
+    getLineEndOffset(line) - getLineStartOffset(line)
   override fun createIndentBySize(size: Int): String = TODO("VsCodeEditor.createIndentBySize")
   override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("VsCodeEditor.getFoldRegionAtLine")
   override fun applyFoldLevel(foldLevel: Int): Unit = TODO("VsCodeEditor.applyFoldLevel")
@@ -329,13 +390,25 @@ class VsCodeEditor(val nativeEditor: TextEditor) : MutableVimEditor {
     TODO("VsCodeEditor.deleteFoldRegionsRecursivelyAtOffset")
   override val lfMakesNewLine: Boolean get() = TODO("VsCodeEditor.lfMakesNewLine")
   override val indentConfig: VimIndentConfig get() = TODO("VsCodeEditor.indentConfig")
-  override var replaceMask: VimEditorReplaceMask?
-    get() = TODO("VsCodeEditor.replaceMask")
-    set(_) = TODO("VsCodeEditor.replaceMask")
+  /**
+   * What `R` overwrote, so that backspace in replace mode puts it back. Held per editor because
+   * replace mode is per window; the engine builds and clears it.
+   */
+  override var replaceMask: VimEditorReplaceMask? = null
   override var vimLastSelectionType: SelectionType?
     get() = TODO("VsCodeEditor.vimLastSelectionType")
     set(_) = TODO("VsCodeEditor.vimLastSelectionType")
-  override val document: VimDocument get() = TODO("VsCodeEditor.document")
+  /** Markers and change notifications, both of which the buffer is the only exact source for. */
+  override fun createLiveMarker(start: Int, end: Int): LiveRange = buffer.createMarker(start, end)
+
+  override val document: VimDocument = object : VimDocument {
+    override fun addChangeListener(listener: ChangesListener) = buffer.addChangeListener(listener)
+    override fun removeChangeListener(listener: ChangesListener) = buffer.removeChangeListener(listener)
+
+    /** IntelliJ's read-only fragments, which VS Code has no equivalent of. */
+    override fun getOffsetGuard(offset: Int): LiveRange? = null
+    override fun getRangeGuard(start: Int, end: Int): LiveRange? = null
+  }
 }
 
 /** A collapsed selection to hand back to VS Code, which has no separate notion of a caret. */

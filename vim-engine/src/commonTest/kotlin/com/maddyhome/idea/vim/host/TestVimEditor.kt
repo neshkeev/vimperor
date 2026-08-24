@@ -12,6 +12,9 @@ import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.MutableVimEditor
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimEditorBase
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.api.LineDeleteShift
 import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.api.VimVirtualFile
@@ -40,7 +43,7 @@ import com.maddyhome.idea.vim.api.VimDocument
  * that starts depending on more of the editor says which member it needs instead of matching against
  * a silent default.
  */
-class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableVimEditor {
+class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEditorBase(), MutableVimEditor {
 
   /**
    * The buffer. Mutable because editing changes it, and rebuilt line starts with it - the offsets
@@ -258,13 +261,19 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : MutableV
   override fun <T : ImmutableVimCaret> findLastVersionOfCaret(caret: T): T = caret
 
   /**
-   * Normal, and settable. The mode belongs to the editor rather than to the engine, because each
-   * window is in its own mode; `:s` reads it to decide whether it is operating on a visual
-   * selection.
+   * The mode lives in the state machine, and `VimEditorBase` is what reads and writes it there.
+   *
+   * An editor that kept the mode in a field of its own would set it successfully and change
+   * nothing: `KeyHandler` asks the state machine, so `i` would appear to work and the next key
+   * would still be read as a normal-mode command.
    */
-  override var mode: Mode = Mode.NORMAL()
-  /** True between `r` and the character that replaces; the editor owns it because `R` is a mode. */
-  override var isReplaceCharacter: Boolean = false
+  override fun updateMode(mode: Mode) {
+    (injector.vimState as VimStateMachineImpl).mode = mode
+  }
+
+  override fun updateIsReplaceCharacter(isReplaceCharacter: Boolean) {
+    (injector.vimState as VimStateMachineImpl).isReplaceCharacter = isReplaceCharacter
+  }
 
   override val lfMakesNewLine: Boolean get() = TODO("TestVimEditor.lfMakesNewLine is not implemented yet")
   /** Where to go after a change finishes - insert after `cw`, normal after `x`. */

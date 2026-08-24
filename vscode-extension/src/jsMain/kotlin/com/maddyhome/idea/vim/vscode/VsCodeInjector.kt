@@ -177,12 +177,6 @@ class VsCodeInjector(private val messageSink: MessageSink = MessageSink.Discardi
       override fun reformatCode(editor: VimEditor, start: Int, end: Int) =
         TODO("VS Code host: reformatCode is an asynchronous command")
 
-      // The typing path: these hand a character to the editor so its own auto-indent, bracket
-      // matching and completion run. VS Code's equivalent is `default:type`, a command - so insert
-      // mode is where the asynchronous half of this port has to be solved rather than deferred.
-      override fun processBackspace(editor: VimEditor, context: ExecutionContext) =
-        TODO("VS Code host: the typing path is not wired up")
-
       override fun autoIndentRange(
         editor: VimEditor,
         context: ExecutionContext,
@@ -190,11 +184,34 @@ class VsCodeInjector(private val messageSink: MessageSink = MessageSink.Discardi
         carets: List<VimCaret>,
       ) = TODO("VS Code host: autoIndentRange is an asynchronous command")
 
-      override fun type(vimEditor: VimEditor, context: ExecutionContext, key: Char) =
-        TODO("VS Code host: the typing path is not wired up")
+      /**
+       * Typed characters go straight into the buffer.
+       *
+       * IdeaVim hands each one to IntelliJ's own typed-action handler - what would have happened
+       * with no Vim installed - so that auto-indent, bracket closing and completion all run. That
+       * is a deliberate IdeaVim choice rather than Vim behaviour: Vim itself inserts the character
+       * and nothing else, which is exactly what this does.
+       *
+       * VS Code's equivalent handler is the `default:type` command, and it is asynchronous - so
+       * delegating would mean VS Code changing the document underneath the buffer mid-command, and
+       * an insert-mode key path that cannot answer synchronously. Wiring it up is how the editor's
+       * own typing features arrive later; it is a decision about the key handler, and it is not
+       * needed for Vim's own behaviour.
+       */
+      override fun type(vimEditor: VimEditor, context: ExecutionContext, key: Char) {
+        // Vim's `:abbreviate`, which fires on a non-keyword character. Engine behaviour, and the
+        // IntelliJ host calls it from the same place.
+        tryExpandAbbreviation(vimEditor, key)
+        (vimEditor as VsCodeEditor).typeAtCarets(key.toString())
+      }
 
-      override fun type(vimEditor: VimEditor, context: ExecutionContext, string: String) =
-        TODO("VS Code host: the typing path is not wired up")
+      override fun type(vimEditor: VimEditor, context: ExecutionContext, string: String) {
+        (vimEditor as VsCodeEditor).typeAtCarets(string)
+      }
+
+      override fun processBackspace(editor: VimEditor, context: ExecutionContext) {
+        (editor as VsCodeEditor).deleteBeforeCarets()
+      }
     }
   }
 
@@ -433,6 +450,61 @@ class VsCodeInjector(private val messageSink: MessageSink = MessageSink.Discardi
         count0: Int,
         initialText: String,
       ): VimCommandLine = TODO("VS Code host: there is no command line to open yet")
+    }
+  }
+
+  /**
+   * The host's own actions, all nullable - but one of them is not optional in practice.
+   *
+   * Null means "this host has no such action", and for most of them the engine then does the work
+   * itself. `enterAction` is the exception: `o` and `O` do not insert their newline directly, they
+   * move to the end of the line, enter insert mode, and *run the host's Enter*. With null there,
+   * both commands enter insert mode on an unbroken line, so `otwo` on `one` gives `onetwo` - no
+   * error, no missing member, just a missing newline. Worth knowing before writing a host, because
+   * nothing about the interface says this one carries behaviour the engine relies on.
+   *
+   * The others stay null. VS Code has commands for several - `editor.action.joinLines` among them -
+   * but commands are asynchronous, and the engine's own `J` is synchronous and already correct.
+   */
+  override val nativeActionManager: NativeActionManager by lazy {
+    object : NativeActionManager {
+      override val enterAction: NativeAction = InsertNewLineAction
+      override val createLineAboveCaret: NativeAction? = null
+      override val joinLines: NativeAction? = null
+      override val indentLines: NativeAction? = null
+      override val saveAll: NativeAction? = null
+      override val saveCurrent: NativeAction? = null
+      override val deleteAction: NativeAction? = null
+    }
+  }
+
+  /**
+   * Where `:registers`, `:marks` and `:!` output would go, asked about on the key path.
+   *
+   * The engine checks whether a panel is open while interpreting keys - a panel takes keys of its
+   * own - so "none is open" has to be answerable even though opening one is not built. VS Code's
+   * candidates are a webview or the output channel, and choosing between them is a design decision
+   * rather than a wiring one.
+   */
+  override val outputPanel: VimOutputPanelService by lazy {
+    object : VimOutputPanelService {
+      override fun getCurrentOutputPanel(): VimOutputPanel? = null
+      override fun getActiveOutputPanelHeight(): Int? = null
+
+      override fun create(editor: VimEditor, context: ExecutionContext): VimOutputPanel =
+        TODO("VS Code host: there is no output panel yet")
+
+      override fun getOrCreate(editor: VimEditor, context: ExecutionContext): VimOutputPanel =
+        TODO("VS Code host: there is no output panel yet")
+
+      override fun output(
+        editor: VimEditor,
+        context: ExecutionContext,
+        text: String,
+        messageType: MessageType,
+      ) = TODO("VS Code host: there is no output panel yet")
+
+      override fun clear(editor: VimEditor, context: ExecutionContext) {}
     }
   }
 
@@ -696,16 +768,36 @@ private object VimOnlyActionExecutor : VimActionExecutor {
   override fun executeCommand(editor: VimEditor?, runnable: () -> Unit, name: String?, groupId: Any?) = runnable()
 
   override fun executeAction(editor: VimEditor?, action: NativeAction, context: ExecutionContext): Boolean =
-    TODO("VS Code host: running its commands is asynchronous")
+    executeAction(editor, action)
 
-  override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean =
-    TODO("VS Code host: running its commands is asynchronous")
+  /**
+   * The host's own actions, of which this host has exactly one - see
+   * [VsCodeInjector.nativeActionManager] for why Enter has to be one of them.
+   */
+  override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean {
+    val vsCode = editor as? VsCodeEditor ?: return false
+    return when (action) {
+      is InsertNewLineAction -> {
+        // Vim's own `o` would indent the new line to match; `'autoindent'` is not wired up yet, so
+        // this is the newline and nothing else.
+        vsCode.typeAtCarets("\n")
+        true
+      }
+
+      else -> false
+    }
+  }
 
   override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean =
     TODO("VS Code host: running its commands is asynchronous")
 
-  override fun executeEsc(editor: VimEditor, context: ExecutionContext): Boolean =
-    TODO("VS Code host: running its commands is asynchronous")
+  /**
+   * Whether the *host* consumed Escape. IntelliJ runs its own Escape action first, so that closing
+   * a completion popup does not also leave insert mode. VS Code settles that with `when` clauses in
+   * its keybindings rather than by asking an extension, so nothing is consumed here and the engine
+   * goes on to treat Escape as Vim's.
+   */
+  override fun executeEsc(editor: VimEditor, context: ExecutionContext): Boolean = false
 
   override fun getAction(actionId: String): NativeAction? = null
   override fun getActionIdList(idPrefix: String): List<String> = emptyList()
@@ -756,6 +848,11 @@ private object RevealingScrollGroup : VimScrollGroup {
 
   override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean =
     TODO("VS Code host: horizontal scrolling needs visibleRanges")
+}
+
+/** Pressing Enter, which `o` and `O` reach for through the host rather than doing themselves. */
+private object InsertNewLineAction : NativeAction {
+  override val action: Any = "ideavim.insertNewLine"
 }
 
 private object SilentLogger : VimLogger {

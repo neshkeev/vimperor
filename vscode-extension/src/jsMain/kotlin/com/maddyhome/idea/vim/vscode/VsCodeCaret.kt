@@ -115,10 +115,19 @@ class VsCodeCaret(
 
   override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("VsCodeCaret.moveToVisualPosition")
   override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("VsCodeCaret.setVimLastColumnAndGetCaret")
-  override fun getVisualPosition(): VimVisualPosition = TODO("VsCodeCaret.getVisualPosition")
-  override var vimInsertStart: LiveRange
-    get() = TODO("VsCodeCaret.vimInsertStart")
-    set(_) = TODO("VsCodeCaret.vimInsertStart")
+  /** Visual position is buffer position until folding and soft wrap are wired up. */
+  override fun getVisualPosition(): VimVisualPosition {
+    val position = getBufferPosition()
+    return VimVisualPosition(position.line, position.column)
+  }
+  /**
+   * Where this caret's insertion began, as a marker that moves with the text.
+   *
+   * `.` repeats an insertion by replaying what was typed, and `u` undoes one as a unit, so the
+   * engine has to be able to ask afterwards how much of the buffer the session produced - which
+   * only works if the start moved as characters went in ahead of it.
+   */
+  override var vimInsertStart: LiveRange = vimEditor.createLiveMarker(offset, offset)
   override var vimLastVisualOperatorRange: VisualChange?
     get() = TODO("VsCodeCaret.vimLastVisualOperatorRange")
     set(_) = TODO("VsCodeCaret.vimLastVisualOperatorRange")
