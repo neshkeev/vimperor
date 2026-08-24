@@ -87,6 +87,16 @@ class FakeEditor(text: String) : TextEditor {
   /** Set to refuse the next edit, the way VS Code does when the document has moved on. */
   var refuseEdits: Boolean = false
 
+  /** Previous contents, so the fake can undo the way VS Code's `undo` command does. */
+  private val history: MutableList<String> = mutableListOf()
+
+  /** VS Code's undo, as a command would perform it: the document changes, nothing is reported. */
+  fun undo() {
+    val previous = history.removeLastOrNull() ?: return
+    document.content = previous
+    document.version++
+  }
+
   override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
     val builder = FakeEditBuilder(document)
     callback(builder)
@@ -95,6 +105,7 @@ class FakeEditor(text: String) : TextEditor {
     // Applied back to front so that earlier offsets are still valid as later edits land - which is
     // what VS Code's "resolved against the pre-edit document" guarantee amounts to.
     val edits = builder.edits.sortedByDescending { it.start }
+    if (edits.isNotEmpty()) history += document.content
     for (edit in edits) {
       document.content = document.content.substring(0, edit.start) + edit.text +
         document.content.substring(edit.end)

@@ -19,15 +19,25 @@ can be enabled at the same time: `type` has one owner.
 Named keys arrive as keybindings instead, each carrying the Vim notation it stands for, so the
 manifest and the engine agree without a lookup table in between. Escape, backspace, delete, enter,
 tab and the arrows are bound; enter, tab and the vertical arrows step aside while the suggest widget
-is up, because accepting a completion is what those keys mean there. Control keys are not bound
-yet - each one takes a shortcut away from VS Code, and that is a decision per key rather than a
-sweep.
+is up, because accepting a completion is what those keys mean there.
+
+`ctrl+r` is the one control key bound, and it takes *Open Recent* away from an editor with focus.
+It is here because it is Vim's redo and there is otherwise no way to reach redo at all - the `:`
+prompt is not built. Every other control key is a decision of the same kind, made one at a time
+rather than as a sweep.
 
 ## What works
 
 Normal-mode editing and insert mode: motions, `x`, `d` with a motion, `c`, `i`/`a`/`I`/`A`,
-`o`/`O`, counts, registers, and `:s` when driven directly. Undo, the command-line prompt, visual
-mode, search highlighting and the system clipboard are not wired up; each names itself if reached.
+`o`/`O`, counts, registers, `u` and `<C-R>`, and `:s` when driven directly. The command-line prompt,
+visual mode, search highlighting and the system clipboard are not wired up; each names itself if
+reached.
+
+Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
+command: it resolves a promise and reports nothing about what it did, while the engine needs a
+boolean now. So `u` says it worked - which is wrong only when there was nothing left to undo, where
+Vim would say "Already at oldest change". Keys pressed while the command is in flight wait for it
+rather than racing it, so the guess affects the message and not what happens next.
 
 ## Checking it
 

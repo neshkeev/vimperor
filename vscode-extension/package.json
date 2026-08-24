@@ -72,6 +72,12 @@
         "command": "ideavim.key",
         "args": "<Right>",
         "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+r",
+        "command": "ideavim.key",
+        "args": "<C-R>",
+        "when": "editorTextFocus"
       }
     ]
   }

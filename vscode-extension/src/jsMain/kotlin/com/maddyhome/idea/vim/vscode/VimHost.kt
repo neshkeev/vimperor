@@ -21,9 +21,16 @@ import com.maddyhome.idea.vim.state.mode.Mode
  * buffer is written back - and it is deliberately thin, because the engine already knows what to do
  * with a keystroke.
  */
-class VimHost(private val sink: MessageSink = MessageSink.Discarding) {
+class VimHost(
+  private val sink: MessageSink = MessageSink.Discarding,
+  /**
+   * How a VS Code command is run. Injectable so that tests can drive the asynchronous path without
+   * a real extension host - the default is the real thing.
+   */
+  private val runCommand: (String, () -> Unit) -> Unit = ::executeVsCodeCommand,
+) : HostCommandRunner {
 
-  private val vimInjector = VsCodeInjector(sink)
+  private val vimInjector = VsCodeInjector(sink, this)
 
   /**
    * Editors by buffer identity rather than by object.
@@ -83,10 +90,18 @@ class VimHost(private val sink: MessageSink = MessageSink.Discarding) {
   }
 
   private fun handle(textEditor: TextEditor, keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>) {
+    if (pending > 0) {
+      // A VS Code command the engine asked for has not finished. Running these keys now would
+      // compute them against text the command is about to change, and the command would then land
+      // on top - so they wait, in order, rather than racing it.
+      queued += { handle(textEditor, keys) }
+      return
+    }
+
     val editor = editorFor(textEditor)
     // Someone else may have edited the document since the last command - the user with a mouse, a
     // formatter, a language server. The engine reads the buffer, so it has to be told first.
-    editor.buffer.syncIfDocumentMoved()
+    if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
 
     val handler = KeyHandler.getInstance()
     val state = handler.keyHandlerState
@@ -100,6 +115,38 @@ class VimHost(private val sink: MessageSink = MessageSink.Discarding) {
         sink.error("IdeaVim: the document changed while a command was running, so it was not applied.")
       }
     }
+  }
+
+  // ---- Commands that only VS Code can run.
+  //
+  // Undo is the first of these and the reason the queue exists. VS Code's `undo` is a command, it
+  // resolves a promise, and there is no way to ask what it did - so the engine's `u` cannot be
+  // answered from what the host knows now. What it *can* do is stop pretending the next keystroke
+  // is independent of it.
+
+  private var pending: Int = 0
+  private val queued: MutableList<() -> Unit> = mutableListOf()
+
+  /** Whether a host command is in flight, so keys are waiting rather than running. */
+  val isWaitingOnHost: Boolean get() = pending > 0
+
+  override fun run(command: String) {
+    pending++
+    runCommand(command) {
+      pending--
+      if (pending == 0) hostCommandsFinished()
+    }
+  }
+
+  private fun hostCommandsFinished() {
+    // The command changed the document, and it changed it without going through the buffer - so
+    // every editor has to be re-read before anything else looks at one.
+    for (editor in editors.values) {
+      if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
+    }
+    val waiting = queued.toList()
+    queued.clear()
+    waiting.forEach { it() }
   }
 
   /**
@@ -124,6 +171,16 @@ class VimHost(private val sink: MessageSink = MessageSink.Discarding) {
     is Mode.CMD_LINE -> "COMMAND"
     is Mode.NORMAL -> "NORMAL"
   }
+}
+
+/**
+ * Runs a VS Code command through the real extension host.
+ *
+ * `executeCommand` resolves with whatever the command returned, which for `undo` is nothing useful
+ * - the callback is about *when*, not about what.
+ */
+private fun executeVsCodeCommand(command: String, onDone: () -> Unit) {
+  commands.executeCommand(command).then { onDone() }
 }
 
 /**

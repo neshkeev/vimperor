@@ -54,7 +54,10 @@ import kotlin.reflect.KClass
  * synchronous/asynchronous problem and it has no `DocumentBuffer`-shaped escape: buffering a write
  * works, inventing the result of a read does not.
  */
-class VsCodeInjector(private val messageSink: MessageSink = MessageSink.Discarding) : VsCodeInjectorBase() {
+class VsCodeInjector(
+  private val messageSink: MessageSink = MessageSink.Discarding,
+  private val hostCommands: HostCommandRunner = HostCommandRunner.None,
+) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
   private val openEditors: MutableList<VsCodeEditor> = mutableListOf()
@@ -380,11 +383,28 @@ class VsCodeInjector(private val messageSink: MessageSink = MessageSink.Discardi
     // `VimUndoRedo` is sealed: a host picks key-based undo - IntelliJ's, where a keystroke group is
     // one document command - or timestamp-based. Key-based is the simpler contract.
     object : VimKeyBasedUndoService {
-      override fun undo(editor: VimEditor, context: ExecutionContext): Boolean =
-        TODO("VS Code host: undo is an asynchronous command")
+      /**
+       * Dispatches VS Code's undo and says it worked.
+       *
+       * This is the one place where the answer is a guess. `undo` is a command: it resolves a
+       * promise, it reports nothing about what it did, and the engine needs a boolean now. Vim uses
+       * it to decide whether to beep and whether `3u` should keep going - so `false` on a
+       * successful undo would be worse than `true` on an empty one, which is the case this gets
+       * wrong: undoing with nothing left to undo is silent here where Vim says "Already at oldest
+       * change".
+       *
+       * The keystroke after this one waits for the command to land - see [VimHost] - so the guess
+       * is about the message, not about correctness of what follows.
+       */
+      override fun undo(editor: VimEditor, context: ExecutionContext): Boolean {
+        hostCommands.run("undo")
+        return true
+      }
 
-      override fun redo(editor: VimEditor, context: ExecutionContext): Boolean =
-        TODO("VS Code host: redo is an asynchronous command")
+      override fun redo(editor: VimEditor, context: ExecutionContext): Boolean {
+        hostCommands.run("redo")
+        return true
+      }
 
       override fun setMergeUndoKey() {}
       override fun updateNonMergeUndoKey() {}
@@ -871,3 +891,20 @@ private object SilentLogger : VimLogger {
 private external val process: dynamic
 private external fun setTimeout(handler: () -> Unit, timeout: Int): Int
 private external fun clearTimeout(handle: Int)
+
+/**
+ * How the engine asks VS Code to do something only VS Code can do.
+ *
+ * Every one of these is asynchronous - `undo`, `redo`, reformatting, running a command by name -
+ * and none of them can report a result in time for the engine's synchronous contract. What a host
+ * *can* do is hold the next keystroke until the command has landed, which is why this exists rather
+ * than each service calling `executeCommand` on its own.
+ */
+interface HostCommandRunner {
+  fun run(command: String)
+
+  /** For a host that has no VS Code to run commands in. Nothing happens, and nothing pretends to. */
+  object None : HostCommandRunner {
+    override fun run(command: String) {}
+  }
+}
