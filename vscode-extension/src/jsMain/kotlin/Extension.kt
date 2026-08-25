@@ -16,6 +16,7 @@ import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.MessageSink
 import com.maddyhome.idea.vim.vscode.OutputChannel
+import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
 import com.maddyhome.idea.vim.vscode.StatusBarAlignment
 import com.maddyhome.idea.vim.vscode.StatusBarItem
 import com.maddyhome.idea.vim.vscode.TextEditor
@@ -65,6 +66,7 @@ fun activate(context: ExtensionContext) {
     commandLineDisplay = StatusBarPrompt(commandLine),
     highlighter = DecorationHighlighter(),
     clipboard = VsCodeClipboard(),
+    outputPanel = OutputChannelPanelService(output),
   )
   vim.start()
   host = vim

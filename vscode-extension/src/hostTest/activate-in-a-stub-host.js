@@ -281,6 +281,22 @@ assert.strictEqual(
   `a substitution typed at the prompt did not run. Got: ${editor.document._text}`,
 )
 
+// `:registers` prints to the IdeaVim output channel, which is the only place output goes.
+reset()
+type('i')
+for (const character of 'yanked') type(character)
+press('<Esc>')
+type('0')
+for (const character of '"ay$') type(character)
+type(':')
+for (const character of 'registers') type(character)
+press('<CR>')
+
+assert.ok(
+  output.some((line) => line.includes('yanked')),
+  `:registers printed nothing to the output channel. Output was:\n${output.join('\n')}`,
+)
+
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
 extension.deactivate()

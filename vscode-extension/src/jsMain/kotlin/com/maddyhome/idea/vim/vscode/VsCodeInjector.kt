@@ -68,6 +68,7 @@ class VsCodeInjector(
   private val commandLineDisplay: CommandLineDisplay = NoDisplay,
   private val highlighter: Highlighter = Highlighter.None,
   private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
+  private val outputPanelService: VimOutputPanelService = DiscardingOutputPanel,
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -730,34 +731,12 @@ class VsCodeInjector(
   }
 
   /**
-   * Where `:registers`, `:marks` and `:!` output would go, asked about on the key path.
+   * Where `:registers`, `:marks` and `:!` output go - an output channel, when the host gives one.
    *
-   * The engine checks whether a panel is open while interpreting keys - a panel takes keys of its
-   * own - so "none is open" has to be answerable even though opening one is not built. VS Code's
-   * candidates are a webview or the output channel, and choosing between them is a design decision
-   * rather than a wiring one.
+   * See [OutputChannelPanel] for why the panel never holds keys, which is the deliberate difference
+   * from Vim.
    */
-  override val outputPanel: VimOutputPanelService by lazy {
-    object : VimOutputPanelService {
-      override fun getCurrentOutputPanel(): VimOutputPanel? = null
-      override fun getActiveOutputPanelHeight(): Int? = null
-
-      override fun create(editor: VimEditor, context: ExecutionContext): VimOutputPanel =
-        TODO("VS Code host: there is no output panel yet")
-
-      override fun getOrCreate(editor: VimEditor, context: ExecutionContext): VimOutputPanel =
-        TODO("VS Code host: there is no output panel yet")
-
-      override fun output(
-        editor: VimEditor,
-        context: ExecutionContext,
-        text: String,
-        messageType: MessageType,
-      ) = TODO("VS Code host: there is no output panel yet")
-
-      override fun clear(editor: VimEditor, context: ExecutionContext) {}
-    }
-  }
+  override val outputPanel: VimOutputPanelService by lazy { outputPanelService }
 
   /** Silent. A host that wants the log can send it to the output channel. */
   override fun <T : Any> getLogger(clazz: KClass<T>): VimLogger = SilentLogger
@@ -1107,6 +1086,35 @@ private object RevealingScrollGroup : VimScrollGroup {
 
   override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean =
     TODO("VS Code host: horizontal scrolling needs visibleRanges")
+}
+
+/**
+ * For a host with nowhere to put output.
+ *
+ * `:registers` produces its text and it goes nowhere, which is what a host without a panel can
+ * honestly do - the alternative is throwing, and losing the output of an informational command is
+ * not worth stopping a session for.
+ */
+internal object DiscardingOutputPanel : VimOutputPanelService {
+  override fun create(editor: VimEditor, context: ExecutionContext): VimOutputPanel = DiscardingPanel
+  override fun getOrCreate(editor: VimEditor, context: ExecutionContext): VimOutputPanel = DiscardingPanel
+  override fun getCurrentOutputPanel(): VimOutputPanel? = null
+  override fun getActiveOutputPanelHeight(): Int? = null
+  override fun output(editor: VimEditor, context: ExecutionContext, text: String, messageType: MessageType) {}
+  override fun clear(editor: VimEditor, context: ExecutionContext) {}
+}
+
+private object DiscardingPanel : VimOutputPanel {
+  private val content = StringBuilder()
+  override val text: String get() = content.toString()
+  override var statusText: String = ""
+  override fun addText(text: String, isNewLine: Boolean, messageType: MessageType) {
+    if (isNewLine && content.isNotEmpty()) content.append('\n')
+    content.append(text)
+  }
+  override fun show(requireHitEnter: Boolean) { content.clear() }
+  override fun close() { content.clear() }
+  override fun clearText() { content.clear() }
 }
 
 /** For a host with nowhere to draw a command line. The text still exists; nobody sees it. */

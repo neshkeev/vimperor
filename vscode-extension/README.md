@@ -64,7 +64,12 @@ that stays wrong; fixing it means making paste asynchronous, which is a change t
 On macOS and Windows `"*` and `"+` are the same clipboard, as they are in Vim. Under X11 `"*` is the
 primary selection and is kept separate.
 
-The output panel (`:registers`, `:marks`, `:!` output) and IdeaVim's bundled extensions are not
+`:registers` and `:marks` print to the *IdeaVim* output channel. Vim's output panel takes over the
+screen and then takes keys - space pages, `q` closes - and VS Code has no equivalent that does not
+fight the editor for focus, so this prints and gets out of the way. Typing carries on working while
+the output is showing, which is a deliberate difference from Vim.
+
+`'incsearch'` and IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not
 wired up; each names itself if reached.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a

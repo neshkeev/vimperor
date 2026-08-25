@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
@@ -36,9 +37,12 @@ class VimHost(
   highlighter: Highlighter = Highlighter.None,
   /** Vim's `"+` register. In-memory unless a real one is supplied. */
   private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
+  /** Where `:registers` and `:marks` print. An output channel, in a real window. */
+  outputPanel: VimOutputPanelService = DiscardingOutputPanel,
 ) : HostCommandRunner {
 
-  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard)
+  private val vimInjector =
+    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel)
 
   /**
    * Editors by buffer identity rather than by object.
