@@ -46,6 +46,9 @@ kotlin {
         // load. Pointing the name at a local stub lets the VS Code-facing code be tested as
         // ordinary Kotlin instead of through a JavaScript harness.
         implementation(npm("vscode", File(projectDir, "src/jsTest/vscode-stub")))
+        // The real API, for `checkVsCodeApiDeclarations` to check the external declarations
+        // against. A type definition rather than code - nothing imports it.
+        implementation(npm("@types/vscode", "1.85.0"))
       }
     }
   }
@@ -98,6 +101,72 @@ tasks.named("check") {
 }
 
 /**
+ * That every `external` declaration exists in the real VS Code API.
+ *
+ * These declarations are the one part of this module the compiler cannot check: nothing is compiled
+ * against `vscode`, because the extension host injects it at runtime. A wrong shape fails when a
+ * user presses a key, and the stub the tests run against is written from the same reading of the
+ * documentation that the declarations are - so it agrees with them whether or not they are right.
+ *
+ * `@types/vscode` is the actual API surface, published by the VS Code team. Checking against it
+ * turned up `ThemeColor` being a constructor rather than a value, which nothing else would have
+ * found until a real window ran it.
+ *
+ * Names, not signatures: a full TypeScript parse is a different project. It catches the member that
+ * does not exist, which is the mistake that actually gets made.
+ */
+val checkVsCodeApiDeclarations by tasks.registering {
+  description = "Checks every `external` VS Code declaration against @types/vscode."
+  group = LifecycleBasePlugin.VERIFICATION_GROUP
+
+  dependsOn(rootProject.tasks.named("kotlinNpmInstall"))
+  val declarations = layout.projectDirectory.file("src/jsMain/kotlin/com/maddyhome/idea/vim/vscode/VsCodeApi.kt")
+  val typings = rootProject.layout.buildDirectory.file("js/node_modules/@types/vscode/index.d.ts")
+  inputs.file(declarations)
+  outputs.upToDateWhen { false }
+
+  doLast {
+    val api = typings.get().asFile
+    check(api.isFile) { "No @types/vscode at $api - the npm dependency did not install." }
+    val realApi = api.readText()
+
+    // Split on top-level `external` so a body-less declaration cannot swallow the next one's members.
+    val ours = declarations.asFile.readText()
+      .split(Regex("^external ", RegexOption.MULTILINE))
+      .drop(1)
+      .flatMap { part ->
+        val owner = Regex("^(?:interface|object|class) (\\w+)").find(part)?.groupValues?.get(1)
+          ?: return@flatMap emptyList()
+        val body = part.substringBefore("\n}")
+        Regex("^  (?:val|var|fun) (\\w+)", RegexOption.MULTILINE).findAll(body)
+          .map { owner to it.groupValues[1] }
+          .toList()
+      }
+
+    // Declared here rather than by VS Code: `subscriptions` is a plain array in the real API, so
+    // `push` comes from JavaScript; `Thenable` is a global interface outside the `vscode` namespace.
+    val notInTheNamespace = setOf("Subscriptions", "Thenable")
+
+    val missing = ours.filter { (owner, member) ->
+      if (owner in notInTheNamespace) return@filter false
+      val block = Regex("export (?:interface|class|namespace|enum) $owner\\b.*?\\n\\t?\\}", RegexOption.DOT_MATCHES_ALL)
+        .find(realApi)?.value
+      block != null && !Regex("\\b${Regex.escape(member)}\\b").containsMatchIn(block)
+    }
+
+    check(missing.isEmpty()) {
+      "These are declared as VS Code API but are not in @types/vscode:\n" +
+        missing.joinToString("\n") { (owner, member) -> "  $owner.$member" }
+    }
+    logger.lifecycle("Checked ${ours.size} VS Code API declarations against the real API.")
+  }
+}
+
+tasks.named("check") {
+  dependsOn(checkVsCodeApiDeclarations)
+}
+
+/**
  * Puts the `vscode` stub where Node will find it, every time, rather than when yarn feels like it.
  *
  * The stub is declared as a local npm dependency so the module resolves, and yarn *copies* a
@@ -121,4 +190,5 @@ tasks.named("jsNodeTest") {
 tasks.register("test") {
   dependsOn("jsNodeTest")
   dependsOn(runInStubHost)
+  dependsOn(checkVsCodeApiDeclarations)
 }

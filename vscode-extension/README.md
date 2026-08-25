@@ -90,6 +90,21 @@ no unit test can see - and the only one that distinguishes an engine that is liv
 extension from one that is merely bundled beside it. `./gradlew test` runs it, along with the
 Kotlin tests.
 
+## What is not checked, and what now is
+
+Nothing here is compiled against `vscode`: the extension host injects it at runtime, so the
+`external` declarations are the one part of this module the Kotlin compiler cannot verify. A wrong
+shape fails when a user presses a key. Worse, the stub the tests run against was written from the
+same reading of the documentation as the declarations, so it agrees with them whether or not they
+are right - a matched pair of identical mistakes passes every test.
+
+`checkVsCodeApiDeclarations` compares every declaration against `@types/vscode`, which is the real
+API surface published by the VS Code team. It runs as part of `./gradlew test`.
+
+It checks that members exist, not that signatures match - a full TypeScript parse is a different
+project - and it says nothing about *behaviour*. The extension has still never run in a real VS Code
+window, which remains the largest untested assumption in this module.
+
 ## Why Kotlin and not TypeScript
 
 Kotlin/JS strips everything not reachable from an exported root. A TypeScript extension would have

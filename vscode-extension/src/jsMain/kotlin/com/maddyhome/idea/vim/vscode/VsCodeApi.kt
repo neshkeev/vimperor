@@ -72,7 +72,9 @@ external interface TextEditorSelectionChangeEvent {
 
 external interface StatusBarItem : Disposable {
   var text: String
-  var tooltip: String
+
+  /** VS Code's type is `string | MarkdownString | undefined`; only the string half is used here. */
+  var tooltip: String?
   fun show()
   fun hide()
 }
