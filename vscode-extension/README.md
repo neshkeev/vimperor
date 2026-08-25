@@ -55,8 +55,17 @@ theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` do
 needs the pattern as typed so far, which arrives on the command line rather than through the search
 group, and a preview that lags the typing by a keystroke is worse than none.
 
-The output panel (`:registers`, `:marks`, `:!` output), the system clipboard and IdeaVim's bundled
-extensions are not wired up; each names itself if reached.
+`"+y` and `"+p` use the system clipboard. VS Code will only talk about it in promises, and `"+p` is
+a register read in the middle of a command, so it answers with what the clipboard last said and
+re-reads whenever the window regains focus - which is what a user copying in a browser and switching
+back does. Copying elsewhere *while* VS Code has focus and pasting without clicking away is the case
+that stays wrong; fixing it means making paste asynchronous, which is a change to the key path.
+
+On macOS and Windows `"*` and `"+` are the same clipboard, as they are in Vim. Under X11 `"*` is the
+primary selection and is kept separate.
+
+The output panel (`:registers`, `:marks`, `:!` output) and IdeaVim's bundled extensions are not
+wired up; each names itself if reached.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
 command: it resolves a promise and reports nothing about what it did, while the engine needs a

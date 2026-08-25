@@ -34,9 +34,11 @@ class VimHost(
   commandLineDisplay: CommandLineDisplay = NoCommandLineDisplay,
   /** Where search matches are painted. Decorations, in a real window. */
   highlighter: Highlighter = Highlighter.None,
+  /** Vim's `"+` register. In-memory unless a real one is supplied. */
+  private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
 ) : HostCommandRunner {
 
-  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay, highlighter)
+  private val vimInjector = VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard)
 
   /**
    * Editors by buffer identity rather than by object.
@@ -204,6 +206,17 @@ class VimHost(
       // rejects outright.
       KeyHandler.getInstance().reset(editor)
     }
+  }
+
+  /**
+   * Re-reads the system clipboard, which is worth doing whenever it may have changed elsewhere.
+   *
+   * The window regaining focus is the moment that matters: a user copying in a browser and coming
+   * back is the case `"+p` has to get right, and by the time they press the key the answer has
+   * arrived.
+   */
+  fun refreshClipboard() {
+    clipboard.refresh()
   }
 
   /** Vim's mode, named the way Vim names it on the last line. */

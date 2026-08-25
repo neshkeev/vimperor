@@ -67,6 +67,7 @@ class VsCodeInjector(
   private val hostCommands: HostCommandRunner = HostCommandRunner.None,
   private val commandLineDisplay: CommandLineDisplay = NoDisplay,
   private val highlighter: Highlighter = Highlighter.None,
+  private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -590,19 +591,14 @@ class VsCodeInjector(
   // ---- Reachable only asynchronously, and therefore not yet reachable at all.
 
   /**
-   * An in-memory clipboard, and a known lie about one register.
+   * Vim's `"*` and `"+` registers, which *are* the selection and the clipboard.
    *
-   * This cannot be deferred the way the other asynchronous services can: Vim's registers and the
-   * system clipboard are one mechanism, so the register group reaches here while `x` is deleting a
-   * single character. Refusing to answer means nothing works at all.
-   *
-   * VS Code's `env.clipboard` is promise-only in *both* directions, and a read that must answer now
-   * cannot wait for one. So `"*` and `"+` read this copy rather than the system clipboard, which
-   * means text copied in another application is not visible to them. Writes are the tractable half
-   * and can be mirrored outwards once the paste path is wired up; making reads correct means making
-   * paste asynchronous, which is a decision about the key handler rather than about the clipboard.
+   * This is why the clipboard could not be deferred the way the other asynchronous services were:
+   * the register group reaches here while `x` is deleting a single character, so refusing to answer
+   * means nothing works at all. See [SystemClipboard] for how a promise-only clipboard is made to
+   * answer a synchronous question, and what is still wrong about it.
    */
-  override val clipboardManager: VimClipboardManager by lazy { InMemoryClipboard() }
+  override val clipboardManager: VimClipboardManager by lazy { RegisterBackedClipboard(clipboard) }
 
   /**
    * Keeping the caret on screen, which is the one every command reaches after moving one.
@@ -836,20 +832,28 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessages {
  * "Transferable data" is IntelliJ's rich payload travelling with a copy - syntax-highlighted text,
  * imports to add on paste. VS Code copies plain text, so there is none.
  */
-private class InMemoryClipboard : VimClipboardManager {
-  private var clipboard: VimCopiedText? = null
+private class RegisterBackedClipboard(private val clipboard: SystemClipboard) : VimClipboardManager {
+
+  /**
+   * X11's primary selection - the one that middle-click pastes - which Vim exposes as `"*`.
+   *
+   * Kept separate and in memory. VS Code has one clipboard and no notion of a primary selection, so
+   * a host that mapped `"*` onto it would make `"*` and `"+` the same register on every platform,
+   * including the one where users rely on them differing.
+   */
   private var primary: VimCopiedText? = null
 
   override fun getPrimaryContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? = primary
 
-  override fun getClipboardContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? = clipboard
+  override fun getClipboardContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? =
+    clipboard.read()?.let { PlainCopiedText(it) }
 
   override fun setClipboardContent(
     editor: VimEditor,
     context: ExecutionContext,
     textData: VimCopiedText,
   ): Boolean {
-    clipboard = textData
+    clipboard.write(textData.text)
     return true
   }
 
@@ -864,7 +868,7 @@ private class InMemoryClipboard : VimClipboardManager {
   }
 
   override fun setClipboardText(text: String, rawText: String, transferableData: List<Any>): Any? {
-    clipboard = PlainCopiedText(text)
+    clipboard.write(text)
     return null
   }
 

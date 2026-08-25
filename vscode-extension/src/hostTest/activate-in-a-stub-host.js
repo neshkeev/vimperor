@@ -142,6 +142,7 @@ const vscode = {
     showInformationMessage: () => undefined,
     onDidChangeActiveTextEditor: () => disposable(),
     onDidChangeTextEditorSelection: () => disposable(),
+    onDidChangeWindowState: () => disposable(),
   },
   commands: {
     registerCommand(command, callback) {
@@ -149,6 +150,19 @@ const vscode = {
       return disposable()
     },
     executeCommand: () => ({ then: () => {} }),
+  },
+  env: {
+    clipboard: {
+      text: '',
+      readText() {
+        const text = this.text
+        return { then: (onFulfilled) => (onFulfilled(text), { then: () => {} }) }
+      },
+      writeText(value) {
+        this.text = value
+        return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+      },
+    },
   },
   workspace: {
     onDidChangeTextDocument: () => disposable(),
@@ -235,6 +249,21 @@ assert.strictEqual(
   editor.document._text,
   'alpha a',
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
+)
+
+// The system clipboard, which is what `"+` is. Yanking has to reach it, since that is how text
+// leaves the editor for the rest of the machine.
+reset()
+type('i')
+for (const character of 'copied text') type(character)
+press('<Esc>')
+type('0')
+for (const character of '"+y$') type(character)
+
+assert.strictEqual(
+  vscode.env.clipboard.text,
+  'copied text',
+  `a yank to "+ did not reach the system clipboard. Got: ${vscode.env.clipboard.text}`,
 )
 
 // And through the `:` prompt, which is where a user reaches everything that is not a keystroke.

@@ -20,6 +20,7 @@ import com.maddyhome.idea.vim.vscode.StatusBarAlignment
 import com.maddyhome.idea.vim.vscode.StatusBarItem
 import com.maddyhome.idea.vim.vscode.TextEditor
 import com.maddyhome.idea.vim.vscode.VimHost
+import com.maddyhome.idea.vim.vscode.VsCodeClipboard
 import com.maddyhome.idea.vim.vscode.commands
 import com.maddyhome.idea.vim.vscode.window
 
@@ -63,6 +64,7 @@ fun activate(context: ExtensionContext) {
     sink = OutputAndStatusBar(output, status),
     commandLineDisplay = StatusBarPrompt(commandLine),
     highlighter = DecorationHighlighter(),
+    clipboard = VsCodeClipboard(),
   )
   vim.start()
   host = vim
@@ -115,6 +117,13 @@ fun activate(context: ExtensionContext) {
     vim.selectionChanged(event.textEditor)
   }
 
+  // The clipboard can change while VS Code is not looking, and this is when it finds out: a user
+  // copying in a browser and switching back is exactly the case `"+p` has to get right.
+  val windowStateChanged = window.onDidChangeWindowState { state ->
+    if (state.focused) vim.refreshClipboard()
+  }
+  vim.refreshClipboard()
+
   // Before any key reaches the engine: the config is where mappings and options come from, and a
   // key handled ahead of it would use the defaults.
   window.activeTextEditor?.let { editor ->
@@ -126,7 +135,9 @@ fun activate(context: ExtensionContext) {
   output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
 
   val subscriptions = context.subscriptions
-  for (registration in listOf<Disposable>(output, status, commandLine, typing, namedKey, activeEditorChanged, selectionChanged)) {
+  for (registration in listOf<Disposable>(
+    output, status, commandLine, typing, namedKey, activeEditorChanged, selectionChanged, windowStateChanged,
+  )) {
     subscriptions.push(registration)
   }
 }

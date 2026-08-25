@@ -60,6 +60,9 @@ external object window {
    */
   val onDidChangeActiveTextEditor: (listener: (TextEditor?) -> Unit) -> Disposable
   val onDidChangeTextEditorSelection: (listener: (TextEditorSelectionChangeEvent) -> Unit) -> Disposable
+
+  /** Fires when the window gains or loses focus, which is when the clipboard may have changed. */
+  val onDidChangeWindowState: (listener: (WindowState) -> Unit) -> Disposable
 }
 
 external interface TextEditorSelectionChangeEvent {
@@ -89,6 +92,21 @@ external object commands {
    * the editor sees it.
    */
   fun executeCommand(command: String, vararg args: dynamic): Thenable<dynamic>
+}
+
+external object env {
+  val clipboard: Clipboard
+}
+
+/** The system clipboard, which VS Code exposes only through promises in both directions. */
+external interface Clipboard {
+  fun readText(): Thenable<String>
+  fun writeText(value: String): Thenable<Unit>
+}
+
+external interface WindowState {
+  /** Whether the VS Code window has focus. False means the user is somewhere else. */
+  val focused: Boolean
 }
 
 external object workspace {

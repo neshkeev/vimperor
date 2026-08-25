@@ -45,6 +45,7 @@ const window = {
   createTextEditorDecorationType: (options) => ({ options, dispose() {} }),
   onDidChangeActiveTextEditor: () => ({ dispose() {} }),
   onDidChangeTextEditorSelection: () => ({ dispose() {} }),
+  onDidChangeWindowState: () => ({ dispose() {} }),
   createOutputChannel: (name) => ({
     name,
     appendLine() {},
@@ -59,6 +60,20 @@ const commands = {
   executeCommand: () => ({ then: () => {} }),
 }
 
+const env = {
+  clipboard: {
+    _text: '',
+    readText() {
+      const text = this._text
+      return { then: (onFulfilled) => (onFulfilled(text), { then: () => {} }) }
+    },
+    writeText(value) {
+      this._text = value
+      return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+    },
+  },
+}
+
 const workspace = {
   onDidChangeTextDocument: () => ({ dispose() {} }),
 }
@@ -71,4 +86,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace }
+module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
