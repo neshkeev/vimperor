@@ -47,7 +47,7 @@
         "key": "tab",
         "command": "ideavim.key",
         "args": "<Tab>",
-        "when": "editorTextFocus && !suggestWidgetVisible"
+        "when": "editorTextFocus && !suggestWidgetVisible && !inlineSuggestionVisible && !inlineEditIsVisible"
       },
       {
         "key": "up",

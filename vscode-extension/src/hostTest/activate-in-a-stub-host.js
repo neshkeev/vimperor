@@ -200,6 +200,18 @@ for (const binding of manifest.contributes.keybindings) {
   )
 }
 
+// Tab has to yield to ghost text, or Copilot cannot be accepted with it: a key this extension
+// claims never reaches VS Code, and the extension cannot hand it back at runtime because context
+// keys are write-only. This is a check on the manifest, not on behaviour - only VS Code evaluates
+// a `when` clause - but the guard going missing is the failure that would be silent.
+const tab = manifest.contributes.keybindings.find((binding) => binding.key === 'tab')
+for (const contextKey of ['inlineSuggestionVisible', 'inlineEditIsVisible']) {
+  assert.ok(
+    tab.when.includes(`!${contextKey}`),
+    `tab claims the key while ${contextKey} is set, so a suggestion cannot be accepted with it. when: ${tab.when}`,
+  )
+}
+
 const type = (text) => registeredCommands.get('type')({ text })
 const press = (notation) => registeredCommands.get('ideavim.key')(notation)
 

@@ -21,6 +21,15 @@ manifest and the engine agree without a lookup table in between. Escape, backspa
 tab and the arrows are bound; enter, tab and the vertical arrows step aside while the suggest widget
 is up, because accepting a completion is what those keys mean there.
 
+Tab also steps aside for ghost text - Copilot's inline suggestions and inline edits - so that Tab
+accepts a suggestion when one is showing and is Vim's otherwise. A `when` clause is the only way to
+do this: context keys are write-only for an extension, so the extension cannot ask whether a
+suggestion is up, and VS Code has to decide before the key is dispatched. Handing the key back
+rather than reimplementing the decision also inherits VS Code's own rule about indentation, which
+is that Tab indents instead of accepting when the suggestion is indented further than a tab stop.
+
+Escape is *not* guarded this way, so dismissing ghost text with Escape also leaves Insert mode.
+
 `ctrl+r` is the one control key bound, and it takes *Open Recent* away from an editor with focus.
 It is here because it is Vim's redo and there is otherwise no way to reach redo at all - the `:`
 prompt is not built. Every other control key is a decision of the same kind, made one at a time
