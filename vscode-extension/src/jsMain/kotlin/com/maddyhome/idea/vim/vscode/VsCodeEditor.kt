@@ -139,10 +139,21 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     return BufferPosition(line, offset - starts[line])
   }
 
+  /**
+   * A line and a column, as an offset.
+   *
+   * The column is clamped to the line, which is the whole of the difference between this and adding
+   * the column to the line's start: a column past the end of a short line has to come back as that
+   * line's end, not as a position on the line below. `j` and `k` are built on exactly that - they
+   * ask for the column they are aiming for on the next line and let the answer be shorter - so
+   * without the clamp a `j` from column 3 onto a one-character line silently skipped it and landed
+   * on the line after.
+   */
   override fun bufferPositionToOffset(position: BufferPosition): Int {
     val starts = starts()
     val line = position.line.coerceIn(0, starts.size - 1)
-    return (starts[line] + position.column).coerceIn(0, buffer.text.length)
+    val column = position.column.coerceAtLeast(0)
+    return (starts[line] + column).coerceIn(0, getLineEndOffset(line))
   }
 
   /**

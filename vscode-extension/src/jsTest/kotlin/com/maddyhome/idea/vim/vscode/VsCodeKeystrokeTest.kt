@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
@@ -107,5 +108,57 @@ class VsCodeKeystrokeTest {
 
     assertEquals("cdef", session.fake.document.content)
     assertEquals(1, session.fake.recordedEdits.size)
+  }
+
+  /**
+   * The column `j` and `k` come back to.
+   *
+   * Vim remembers the column you were aiming for, so travelling down through a short line and out
+   * the other side puts you back where you started rather than at the short line's end. IntelliJ's
+   * caret keeps that value itself and IdeaVim only overrides it; this host has to keep it, and for
+   * a while kept it badly - the remembered column was whatever the last vertical motion had left
+   * there, so the first `k` after any other movement went to column zero. See
+   * [VsCodeCaret.vimLastColumn].
+   */
+  @Test
+  fun `test k keeps the column when nothing has moved vertically yet`() {
+    val session = Session("one\ntwo", 5)
+    session.type("k")
+    assertEquals(1, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test k after a horizontal motion uses the new column`() {
+    val session = Session("abcd\nefgh", 5)
+    session.type("llk")
+    assertEquals(2, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test a short line does not shorten the remembered column`() {
+    // Down onto `x`, which has no column 3, and down again - Vim comes back to column 3.
+    val session = Session("abcd\nx\nefgh", 3)
+    session.type("j")
+    assertEquals(5, session.editor.primaryCaret().offset)
+    session.type("j")
+    assertEquals(10, session.editor.primaryCaret().offset)
+  }
+
+  /**
+   * A column past the end of a line, which is how `j` asks for the column it is aiming for.
+   *
+   * The conversion used to add the column to the line's start and clamp only to the end of the
+   * *file*, so a column that overshot a short line came back as an offset on the line below - and
+   * `j` skipped the short line entirely rather than landing on it. See
+   * [VsCodeEditor.bufferPositionToOffset].
+   */
+  @Test
+  fun `test a column past the end of a line clamps to that line`() {
+    val session = Session("abcd\nx\nefgh", 0)
+    val editor = session.editor
+    assertEquals(6, editor.bufferPositionToOffset(BufferPosition(1, 3)))
+    assertEquals(6, editor.bufferPositionToOffset(BufferPosition(1, 1)))
+    assertEquals(5, editor.bufferPositionToOffset(BufferPosition(1, 0)))
+    assertEquals(11, editor.bufferPositionToOffset(BufferPosition(2, 99)))
   }
 }

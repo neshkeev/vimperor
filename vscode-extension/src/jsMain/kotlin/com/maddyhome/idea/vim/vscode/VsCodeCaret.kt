@@ -73,8 +73,30 @@ class VsCodeCaret(
    */
   override val registerStorage: CaretRegisterStorage by lazy { CaretRegisterStorageBase(this) }
 
-  /** The column `j` and `k` return to, so passing through a short line does not lose the column. */
-  override var vimLastColumn: Int = 0
+  /**
+   * The column `j` and `k` return to, so passing through a short line does not lose the column.
+   *
+   * A remembered column is only meaningful until something else moves the caret: click somewhere
+   * else, press `w`, and the column to come back to is wherever you now are. IntelliJ's caret
+   * reports its own last column and IdeaVim only overrides it, but nothing here is keeping track,
+   * so the position it was remembered at is stored alongside it and a read that finds the caret
+   * somewhere else answers with the caret's actual column instead.
+   *
+   * Without this the field is whatever the last vertical motion left in it - which for a caret that
+   * has never made one is zero, so the first `k` after a click went to the start of the line.
+   */
+  private var lastColumn: Int = 0
+  private var lastColumnSetAt: Int = -1
+
+  override var vimLastColumn: Int
+    get() {
+      if (offset != lastColumnSetAt) vimLastColumn = getBufferPosition().column
+      return lastColumn
+    }
+    set(value) {
+      lastColumn = value
+      lastColumnSetAt = offset
+    }
 
   override fun resetLastColumn() {
     vimLastColumn = getBufferPosition().column

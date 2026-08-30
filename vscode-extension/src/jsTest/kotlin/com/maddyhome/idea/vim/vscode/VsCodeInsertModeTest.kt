@@ -145,4 +145,54 @@ class VsCodeInsertModeTest {
   fun `test Enter opens a line when the caret is at the end`() {
     assertEquals("ab\n", type("ab", "A<CR><Esc>"))
   }
+
+  /**
+   * The rest of the keys `package.json` sends to the engine.
+   *
+   * The extension binds Escape, Backspace, Delete, Enter, Tab, the four arrows and `<C-R>`, because
+   * a key VS Code handles itself never reaches Vim. Binding a key the engine has no Insert-mode
+   * action for is worse than not binding it: VS Code's own handler is suppressed and Vim's does not
+   * exist, so the key does nothing whatsoever. Backspace, the left and right arrows and `<C-R>` are
+   * the engine's; Delete, Tab and the vertical arrows are IntelliJ's, and so were nobody's here.
+   */
+  @Test
+  fun `test Delete in insert mode removes the character under the caret`() {
+    assertEquals("ac", type("abc", "li<Del><Esc>"))
+  }
+
+  @Test
+  fun `test Delete at the end of a line joins the next one`() {
+    assertEquals("abcd", type("ab\ncd", "A<Del><Esc>"))
+  }
+
+  @Test
+  fun `test Delete at the end of the file does nothing`() {
+    assertEquals("ab", type("ab", "A<Del><Esc>"))
+  }
+
+  @Test
+  fun `test Up in insert mode moves the caret up a line`() {
+    val session = Session("one\ntwo", 5)
+    session.type("i<Up>")
+    assertEquals(1, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test Down in insert mode moves the caret down a line`() {
+    val session = Session("one\ntwo", 1)
+    session.type("i<Down>")
+    assertEquals(5, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test Up on the first line stays put`() {
+    val session = Session("one\ntwo", 1)
+    session.type("i<Up>")
+    assertEquals(1, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test Up keeps typing where it lands`() {
+    assertEquals("oXne\ntwo", type("one\ntwo", "i<Up>X<Esc>", caretOffset = 5))
+  }
 }

@@ -17,13 +17,17 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.Command
+import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
+import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.handler.VisualOperatorActionHandler
+import com.maddyhome.idea.vim.helper.enumSetOf
 
 /**
  * The Vim commands that vim-engine does not declare.
@@ -52,6 +56,12 @@ object VsCodeCommandProvider : CommandProvider {
     command("gJ", MappingMode.NORMAL, "DeleteJoinLinesAction") { DeleteJoinLinesAction() },
     command("gJ", MappingMode.VISUAL, "DeleteJoinVisualLinesAction") { DeleteJoinVisualLinesAction() },
     command(".", MappingMode.NORMAL, "RepeatChangeAction") { RepeatChangeAction() },
+    command("<Del>", MappingMode.INSERT, "VimEditorDelete") { VimEditorDelete() },
+    command("<Tab>", MappingMode.INSERT, "VimEditorTab") { VimEditorTab() },
+    command("<Up>", MappingMode.INSERT, "VimEditorUp") { VimEditorUp() },
+    command("<kUp>", MappingMode.INSERT, "VimEditorUp") { VimEditorUp() },
+    command("<Down>", MappingMode.INSERT, "VimEditorDown") { VimEditorDown() },
+    command("<kDown>", MappingMode.INSERT, "VimEditorDown") { VimEditorDown() },
   )
 
   private fun command(
@@ -60,6 +70,119 @@ object VsCodeCommandProvider : CommandProvider {
     className: String,
     factory: () -> EditorActionHandlerBase,
   ) = LazyVimCommand(setOf(injector.parser.parseKeys(keys)), setOf(mode), className, factory)
+}
+
+/**
+ * Insert mode's remaining keys.
+ *
+ * `package.json` binds Escape, Backspace, Delete, Enter, Tab, the four arrows and `<C-R>`, because
+ * a key VS Code handles itself never reaches the engine. That makes an unbound-in-Vim key worse
+ * than an unbound-in-VS-Code one: the extension has taken the key away from VS Code and has nothing
+ * to do with it, so it does nothing at all. Backspace, the horizontal arrows and `<C-R>` are the
+ * engine's. Delete, Tab and the vertical arrows were IntelliJ's, and so were nobody's here.
+ *
+ * IdeaVim hands all three to the IDE - `EditorDelete`, `EditorTab`, `EditorMoveCaretUp` - which is
+ * how Tab picks up the project's indent settings and how Up leaves a live template alone. Every
+ * VS Code equivalent is an asynchronous command, and these are keys pressed in the middle of
+ * typing, so they are done here instead, in the buffer, synchronously.
+ *
+ * The cost is Tab: Vim's own default is a literal tab character and that is what this inserts,
+ * where VS Code's `tab` command would have used the file's own indentation - and would also have
+ * expanded a snippet or accepted a suggestion. The better answer is not to route Tab through the
+ * engine at all but to publish the mode as a VS Code context key and let `package.json` stop
+ * claiming Tab in Insert mode. That needs a context key, and there is not one yet.
+ */
+internal class VimEditorDelete : ChangeEditorActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.DELETE
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    argument: Argument?,
+    operatorArguments: OperatorArguments,
+  ): Boolean {
+    var deleted = false
+    editor.nativeCarets().sortedByDescending { it.offset }.forEach { caret ->
+      val offset = caret.offset
+      // Deleting the line break is how Vim's Insert-mode Delete joins the next line onto this one,
+      // so this deliberately does not stop at the end of a line - only at the end of the file.
+      if (offset < editor.fileSize().toInt()) {
+        editor.deleteString(TextRange(offset, offset + 1))
+        deleted = true
+      }
+    }
+    return deleted
+  }
+}
+
+/**
+ * `<Tab>` in Insert mode: a tab character.
+ *
+ * Vim's default is `'noexpandtab'`, so this is what Vim does. See [VimEditorDelete] for why it is
+ * not VS Code's `tab` command, and what that costs.
+ */
+internal class VimEditorTab : ChangeEditorActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.INSERT
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    argument: Argument?,
+    operatorArguments: OperatorArguments,
+  ): Boolean {
+    injector.changeGroup.type(editor, context, "\t")
+    return true
+  }
+}
+
+/** `<Up>` in Insert mode. */
+internal class VimEditorUp : ChangeEditorActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.MOTION
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    argument: Argument?,
+    operatorArguments: OperatorArguments,
+  ): Boolean = moveVertically(editor, -operatorArguments.count1)
+}
+
+/** `<Down>` in Insert mode. */
+internal class VimEditorDown : ChangeEditorActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.MOTION
+  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_CLEAR_STROKES)
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    argument: Argument?,
+    operatorArguments: OperatorArguments,
+  ): Boolean = moveVertically(editor, operatorArguments.count1)
+}
+
+/**
+ * A line up or down, keeping the column.
+ *
+ * `getVerticalMotionOffset` is the same call `j` and `k` make, and it answers with the column the
+ * caret was *aiming* for as well as the offset it could actually reach - which is what makes a run
+ * of `<Down>` through a short line come back out at the original column rather than at the short
+ * line's end.
+ */
+private fun moveVertically(editor: VimEditor, count: Int): Boolean {
+  editor.nativeCarets().forEach { caret ->
+    when (val motion = injector.motion.getVerticalMotionOffset(editor, caret, count)) {
+      is Motion.AdjustedOffset -> {
+        caret.vimLastColumn = motion.intendedColumn
+        caret.moveToOffset(motion.offset)
+      }
+
+      is Motion.AbsoluteOffset -> caret.moveToOffset(motion.offset)
+      else -> {}
+    }
+  }
+  return true
 }
 
 /**
