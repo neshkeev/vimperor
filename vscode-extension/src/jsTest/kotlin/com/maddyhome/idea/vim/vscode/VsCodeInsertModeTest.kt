@@ -32,6 +32,7 @@ class VsCodeInsertModeTest {
     init {
       injector = VsCodeInjector().also { it.register(VsCodeEditor(fake)) }
       engineCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+      VsCodeCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
       injector.functionService.registerHandlers()
       editor = injector.editorGroup.getEditors().first() as VsCodeEditor
       editor.primaryCaret().moveToOffsetNative(caretOffset)
@@ -119,5 +120,29 @@ class VsCodeInsertModeTest {
 
     assertEquals("abc", session.fake.document.content)
     assertEquals(2, session.editor.primaryCaret().offset)
+  }
+
+  /**
+   * `<CR>` in Insert mode, which for a long time did nothing at all here.
+   *
+   * The engine does not insert the newline itself: [VimChangeGroupBase.processEnter] asks the key
+   * group what the host has bound to Enter and runs that, because IntelliJ's Enter knows about
+   * indenting and brace matching and Vim would rather defer to it. This host answered "nothing",
+   * so Insert mode could type every character except a line break - and every test here typed on
+   * one line, so nothing noticed.
+   */
+  @Test
+  fun `test Enter in insert mode inserts a line break`() {
+    assertEquals("one\ntwo", type("", "ione<CR>two<Esc>"))
+  }
+
+  @Test
+  fun `test Enter splits the line at the caret`() {
+    assertEquals("ab\ncd", type("abcd", "lli<CR><Esc>"))
+  }
+
+  @Test
+  fun `test Enter opens a line when the caret is at the end`() {
+    assertEquals("ab\n", type("ab", "A<CR><Esc>"))
   }
 }

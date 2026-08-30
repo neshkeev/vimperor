@@ -297,6 +297,38 @@ assert.ok(
   `:registers printed nothing to the output channel. Output was:\n${output.join('\n')}`,
 )
 
+// `.` and `J`, which the engine does not declare - they are the host's own commands, registered
+// alongside the generated ones. Nothing but this test runs them through the real bundle.
+reset()
+type('i')
+for (const character of 'one two three') type(character)
+press('<Esc>')
+type('0')
+for (const character of 'dw') type(character)
+type('.')
+
+assert.strictEqual(
+  editor.document._text,
+  'three',
+  `dot did not repeat the last change. Got: ${editor.document._text}`,
+)
+
+reset()
+type('i')
+for (const character of 'one') type(character)
+press('<CR>')
+for (const character of '    two') type(character)
+press('<Esc>')
+type('g')
+type('g')
+type('J')
+
+assert.strictEqual(
+  editor.document._text,
+  'one two',
+  `J did not join the two lines. Got: ${editor.document._text}`,
+)
+
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
 extension.deactivate()

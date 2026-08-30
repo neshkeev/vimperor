@@ -58,6 +58,8 @@ class VimHost(
     // The engine owns the builtin command trie but does not fill it. Without this the key handler
     // recognises nothing, and every keystroke is silently discarded.
     engineCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
+    // ...and the handful of Vim commands the engine leaves to its host. See [VsCodeCommandProvider].
+    VsCodeCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
     vimInjector.functionService.registerHandlers()
   }
 

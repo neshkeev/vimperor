@@ -24,6 +24,7 @@ import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.history.VimHistoryBase
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
+import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
@@ -518,11 +519,18 @@ class VsCodeInjector(
 
   override val keyGroup: VimKeyGroup by lazy {
     object : VimKeyGroupBase() {
-      // These four are about VS Code's own keybindings: which of them a key is bound to, and which
+      // These are about VS Code's own keybindings: which of them a key is bound to, and which
       // conflict with Vim's. VS Code does not expose its resolved keymap to an extension at all -
       // `when` clauses and `vim.mode` contexts are how the conflict is actually settled there - so
       // "no conflicts" is closer to true than any list this could return.
-      override fun getActions(editor: VimEditor, keyStroke: VimKeyStroke): List<NativeAction> = emptyList()
+      //
+      // Enter is the exception, and it is not really a question about keymaps. `processEnter` -
+      // which is how `<CR>` in Insert mode reaches the document - asks this function what the host
+      // has bound to Enter and runs the first answer, because in IntelliJ that is the IDE's smart
+      // Enter with its indenting and its brace handling. Answering "nothing" there means Insert
+      // mode cannot type a newline at all, which is what it meant here until this test caught it.
+      override fun getActions(editor: VimEditor, keyStroke: VimKeyStroke): List<NativeAction> =
+        if (keyStroke.keyCode == VimKeyCodes.VK_ENTER) listOf(InsertNewLineAction) else emptyList()
       override fun getKeymapConflicts(keyStroke: VimKeyStroke): List<NativeAction> = emptyList()
       override fun updateShortcutKeysRegistration() {}
       override val shortcutConflicts: MutableMap<VimKeyStroke, ShortcutOwnerInfo> get() = myShortcutConflicts

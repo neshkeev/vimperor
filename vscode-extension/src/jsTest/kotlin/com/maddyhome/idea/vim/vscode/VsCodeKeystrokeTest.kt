@@ -35,6 +35,7 @@ class VsCodeKeystrokeTest {
       // The engine owns the builtin command trie but does not fill it; without this the key
       // handler recognises nothing. See `VsCodeInjector.keyGroup`.
       engineCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+      VsCodeCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
       injector.functionService.registerHandlers()
 
       editor = injector.editorGroup.getEditors().first() as VsCodeEditor
