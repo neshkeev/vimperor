@@ -8,19 +8,24 @@
 
 package com.maddyhome.idea.vim.vscode
 
+import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.CommandProvider
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.action.change.VimRepeater
 import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.api.setChangeMarks
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.common.argumentCaptured
+import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
@@ -28,6 +33,12 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.handler.VisualOperatorActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
+import com.maddyhome.idea.vim.helper.inRepeatMode
+import com.maddyhome.idea.vim.options.OptionAccessScope
+import com.maddyhome.idea.vim.state.mode.SelectionType
+import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
+import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
+import com.maddyhome.idea.vim.vimscript.model.functions.toVimFuncref
 
 /**
  * The Vim commands that vim-engine does not declare.
@@ -46,8 +57,8 @@ import com.maddyhome.idea.vim.helper.enumSetOf
  * wrong - `ideajoin` is a real feature and belongs where it is. The two hosts genuinely want
  * different code, so they get different code, and each keeps the action id that IdeaVim gave it.
  *
- * `g@` is the fourth, and it is not here: it needs a motion range computed the way the IntelliJ
- * `MotionGroup` computes it, and nothing asks for `g@` until an extension does.
+ * `g@` is the fourth, and it is here for a different reason: IdeaVim's version reaches for the IDE
+ * only to compute the motion's range, and the engine can compute that itself.
  */
 object VsCodeCommandProvider : CommandProvider {
   override fun getCommands(): Collection<LazyVimCommand> = listOf(
@@ -56,6 +67,8 @@ object VsCodeCommandProvider : CommandProvider {
     command("gJ", MappingMode.NORMAL, "DeleteJoinLinesAction") { DeleteJoinLinesAction() },
     command("gJ", MappingMode.VISUAL, "DeleteJoinVisualLinesAction") { DeleteJoinVisualLinesAction() },
     command(".", MappingMode.NORMAL, "RepeatChangeAction") { RepeatChangeAction() },
+    command("g@", MappingMode.NORMAL, "OperatorAction") { OperatorAction() },
+    command("g@", MappingMode.VISUAL, "VisualOperatorAction") { VisualOperatorAction() },
     command("<Del>", MappingMode.INSERT, "VimEditorDelete") { VimEditorDelete() },
     command("<Tab>", MappingMode.INSERT, "VimEditorTab") { VimEditorTab() },
     command("<Up>", MappingMode.INSERT, "VimEditorUp") { VimEditorUp() },
@@ -343,5 +356,106 @@ internal class RepeatChangeAction : VimActionHandler.SingleExecution() {
       injector.registerGroup.selectRegister(reg)
     }
     return true
+  }
+}
+
+/**
+ * `g@` - run the function named by 'operatorfunc' over the text a motion covers.
+ *
+ * Every other operator in Vim is a fixed pairing of a verb and a range. `g@` unbundles them: the
+ * plugin supplies the verb, and Vim's own motions, text objects, counts and `.` supply everything
+ * else. It is what every operator-pending plugin is built on, and it costs this host almost
+ * nothing, because 'operatorfunc' is an engine option and the function it names is run by the
+ * engine's own Vimscript interpreter. The only thing IdeaVim reaches into IntelliJ for is the
+ * range - and the engine can work that out too.
+ *
+ * Which is the one place this deliberately parts company with IdeaVim. IdeaVim computes the range
+ * with `MotionGroup.getMotionRange2`, a near-copy of the engine's [VimMotionGroup.getMotionRange]
+ * that leaves out the linewise normalisation, so that after `g@j` the mark `'[` keeps the caret's
+ * original column instead of moving to the start of the line. That is done for the sake of where
+ * Commentary leaves the caret; Vim itself puts `'[` in column 1 for a linewise operator. This host
+ * has no Commentary to keep happy, so it follows Vim and uses the engine's range unchanged.
+ */
+private fun doOperatorAction(
+  editor: VimEditor,
+  context: ExecutionContext,
+  textRange: TextRange,
+  motionType: SelectionType,
+): Boolean {
+  val operatorfunc = injector.optionGroup.getOptionValue(Options.operatorfunc, OptionAccessScope.GLOBAL(editor))
+  if (operatorfunc.value.isEmpty()) {
+    injector.messages.showErrorMessage(editor, injector.messages.message("E774"))
+    return false
+  }
+
+  val scriptContext = CommandLineVimLContext
+
+  return try {
+    val funcref = operatorfunc.toVimFuncref(editor, context, scriptContext)
+
+    val arg = when (motionType) {
+      SelectionType.LINE_WISE -> "line"
+      SelectionType.CHARACTER_WISE -> "char"
+      SelectionType.BLOCK_WISE -> "block"
+    }
+
+    // The function is free to make a change of its own, and a change made inside it must not be
+    // mistaken for the `g@` itself when `.` comes looking for something to repeat.
+    val savedRepeatHandler = VimRepeater.repeatHandler
+    injector.markService.setChangeMarks(editor.primaryCaret(), textRange)
+    // The operator has finished; anything still pending belongs to whatever the function types.
+    KeyHandler.getInstance().reset(editor)
+
+    funcref.execute(listOf(SimpleExpression(arg)), range = null, editor, context, scriptContext)
+
+    VimRepeater.repeatHandler = savedRepeatHandler
+    true
+  } catch (e: ExException) {
+    injector.messages.showErrorMessage(editor, e.message)
+    false
+  }
+}
+
+internal class OperatorAction : VimActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.OTHER_SELF_SYNCHRONIZED
+
+  override val argumentType: Argument.Type = Argument.Type.MOTION
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    cmd: Command,
+    operatorArguments: OperatorArguments,
+  ): Boolean {
+    val argument = cmd.argument as? Argument.Motion ?: return false
+    // `.` replays the motion rather than re-reading it, so the captured argument is what makes
+    // `g@` repeatable at all - but a replay must not overwrite the argument it is replaying.
+    if (!editor.inRepeatMode) {
+      argumentCaptured = argument
+    }
+    val range = injector.motion.getMotionRange(
+      editor,
+      editor.primaryCaret(),
+      context,
+      argument,
+      operatorArguments,
+      expandCollapsedFolds = false,
+    ) ?: return false
+    return doOperatorAction(editor, context, range, argument.getMotionType())
+  }
+}
+
+internal class VisualOperatorAction : VisualOperatorActionHandler.ForEachCaret() {
+  override val type: Command.Type = Command.Type.OTHER_SELF_SYNCHRONIZED
+
+  override fun executeAction(
+    editor: VimEditor,
+    caret: VimCaret,
+    context: ExecutionContext,
+    cmd: Command,
+    range: VimSelection,
+    operatorArguments: OperatorArguments,
+  ): Boolean {
+    return doOperatorAction(editor, context, range.toVimTextRange(), range.type)
   }
 }

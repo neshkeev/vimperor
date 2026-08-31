@@ -37,7 +37,20 @@ const Module = require('module')
 const home = path.join(os.tmpdir(), 'ideavim-stub-host')
 fs.rmSync(home, { recursive: true, force: true })
 fs.mkdirSync(home, { recursive: true })
-fs.writeFileSync(path.join(home, '.ideavimrc'), 'nnoremap Q db\n')
+fs.writeFileSync(
+  path.join(home, '.ideavimrc'),
+  [
+    'nnoremap Q db',
+    // An 'operatorfunc' for the `g@` scenario below. Defining it here rather than in the test is
+    // the point: it makes the config path carry a function declaration and an option, not just a
+    // mapping, and it is the only place a Vimscript function is defined the way a user would.
+    'function! Cut(type)',
+    "  '[,']d",
+    'endfunction',
+    'set operatorfunc=Cut',
+    '',
+  ].join('\n'),
+)
 process.env.HOME = home
 process.env.USERPROFILE = home
 process.env.XDG_CONFIG_HOME = path.join(home, 'config')
@@ -261,6 +274,25 @@ assert.strictEqual(
   editor.document._text,
   'alpha a',
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
+)
+
+// `g@` - the operator that is not an operator, handing a motion's range to the function named by
+// 'operatorfunc'. Everything a plugin needs is in this one scenario: the config defined `Cut` and
+// set the option at activation, `g@` worked out what `l` covered, set `'[` and `']` around it, and
+// called the function, whose `:'[,']d` read those marks back. The motion is charwise and on the
+// first line, so only the first line goes.
+reset()
+type('i')
+for (const character of 'alpha') type(character)
+press('<CR>')
+for (const character of 'beta') type(character)
+press('<Esc>')
+for (const character of 'ggg@l') type(character)
+
+assert.strictEqual(
+  editor.document._text,
+  'beta',
+  `g@ did not run the .ideavimrc's operatorfunc over the first line. Got: ${editor.document._text}`,
 )
 
 // The system clipboard, which is what `"+` is. Yanking has to reach it, since that is how text
