@@ -78,6 +78,15 @@ screen and then takes keys - space pages, `q` closes - and VS Code has no equiva
 fight the editor for focus, so this prints and gets out of the way. Typing carries on working while
 the output is showing, which is a deliberate difference from Vim.
 
+`%`, `di(` and the rest of the bracket text objects need to know whether a bracket is code or is
+written inside a string or a comment, or they land on the wrong pair. IdeaVim asks IntelliJ's syntax
+tree. VS Code has the same knowledge and will not part with it synchronously - semantic tokens
+arrive over a promise, and the question is asked once per character in the middle of a keystroke -
+so this host answers from the text. It counts quotes along the line, which is what the engine
+already does for `i"`, and gets `f("(", x)` right. It says nothing at all about comments, because a
+comment is `//` in one language and `#` in another and guessing from the file extension would be a
+table of lies; a bracket inside a comment is counted, which is what Vim does with syntax off.
+
 `'incsearch'` and IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not
 wired up; each names itself if reached.
 

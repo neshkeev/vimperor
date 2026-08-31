@@ -276,6 +276,21 @@ assert.strictEqual(
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
 )
 
+// A bracket text object, which is the one text object that has to know what it is looking at. The
+// bracket inside the string is not a bracket, so `di(` takes the call's arguments and not the two
+// characters between the string's own parenthesis and the closing one.
+reset()
+type('i')
+for (const character of 'f("(", x)') type(character)
+press('<Esc>')
+for (const character of '0fxdi(') type(character)
+
+assert.strictEqual(
+  editor.document._text,
+  'f()',
+  `di( did not skip the parenthesis inside the string. Got: ${editor.document._text}`,
+)
+
 // `g@` - the operator that is not an operator, handing a motion's range to the function named by
 // 'operatorfunc'. Everything a plugin needs is in this one scenario: the config defined `Cut` and
 // set the option at activation, `g@` worked out what `l` covered, set `'[` and `']` around it, and

@@ -128,6 +128,7 @@ class VsCodeInjector(
       }
     }
   }
+  override val psiService: VimPsiService by lazy { TextOnlyPsiService }
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
   override val vimState: VimStateMachine by lazy { VimStateMachineImpl() }
   override val historyGroup: VimHistory by lazy { object : VimHistoryBase() {} }
