@@ -161,4 +161,29 @@ class VsCodeKeystrokeTest {
     assertEquals(5, editor.bufferPositionToOffset(BufferPosition(1, 0)))
     assertEquals(11, editor.bufferPositionToOffset(BufferPosition(2, 99)))
   }
+
+  // Enter, in Normal mode: down a line, to the first non-blank. Before the host could answer "no
+  // live template is running" this key threw, which made an ordinary keypress take the plugin down.
+
+  @Test
+  fun `test Enter moves down to the first non-blank`() {
+    val session = Session("one\n    two\nthree", 0)
+    session.type("<CR>")
+    assertEquals(8, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test Enter with a count moves that many lines`() {
+    val session = Session("one\n    two\n  three", 0)
+    session.type("2<CR>")
+    // Two lines down is "  three", whose first non-blank is the `t` at 14.
+    assertEquals(14, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test Enter on the last line stays put`() {
+    val session = Session("one\ntwo", 4)
+    session.type("<CR>")
+    assertEquals(4, session.editor.primaryCaret().offset)
+  }
 }

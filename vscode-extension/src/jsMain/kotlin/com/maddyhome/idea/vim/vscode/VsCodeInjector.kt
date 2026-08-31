@@ -148,6 +148,55 @@ class VsCodeInjector(
     }
   }
 
+  /**
+   * "Is a live template running?" - to which the answer here is no, and always will be.
+   *
+   * The engine asks before `<CR>` moves down a line and before an insert is recorded for `.`,
+   * because in IntelliJ Enter inside a live template jumps to the next placeholder and belongs to
+   * the template, not to Vim. VS Code has snippets, and its snippet session is not something an
+   * extension can ask about synchronously - `editor.insertSnippet` returns a promise and there is
+   * no "is a snippet active" to read.
+   *
+   * Answering null is not a placeholder for a better answer; it is the answer. Vim's `<CR>` moves
+   * down a line, which is what a user pressing it expects. Before this it threw, which made Enter
+   * in Normal mode - an ordinary key, pressed by accident constantly - take the whole plugin down.
+   */
+  override val templateManager: VimTemplateManager by lazy {
+    object : VimTemplateManager {
+      override fun getTemplateState(editor: VimEditor): VimTemplateState? = null
+    }
+  }
+
+  /**
+   * "Is the completion popup open?" - the same shape of question, with the same answer.
+   *
+   * IdeaVim asks so that `<C-N>`, `<C-P>`, `j` and `k` can drive IntelliJ's lookup when it is
+   * showing instead of moving the caret. VS Code's suggest widget is not readable from an
+   * extension either - `suggestWidgetVisible` is a context key, and context keys are write-only for
+   * extensions, the same wall that made Tab's `when` clause the only way to yield to Copilot.
+   *
+   * That is why `package.json` guards Enter, Up and Down with `!suggestWidgetVisible`: those keys
+   * are kept away from the engine while the widget is up, so the engine never needs to know. The
+   * arrangement is the answer, and this reports it honestly rather than pretending a lookup exists.
+   */
+  override val lookupManager: VimLookupManager by lazy {
+    object : VimLookupManager {
+      override fun getActiveLookup(editor: VimEditor): IdeLookup? = null
+
+      // `<C-X><C-L>` and `<C-X><C-F>` ask for a list to be shown and picked from, which needs a
+      // widget rather than an answer. Saying so beats a crash and beats silence.
+      override fun showCustomLookup(editor: VimEditor, values: List<String>, prefix: String) {
+        injector.messages.showErrorMessage(editor, "IdeaVim: this completion needs a lookup, which this host does not have")
+      }
+    }
+  }
+
+  /**
+   * `<C-K>` and `ga` - Vim's digraphs, which are a table and a bit of arithmetic. The engine
+   * carries the whole table, so this is the engine's own implementation, unchanged.
+   */
+  override val digraphGroup: VimDigraphGroup by lazy { VimDigraphGroupBase() }
+
   /** `:abbreviate`, which is a map from a trigger to its expansion and nothing host-shaped. */
   override val abbreviationGroup: VimAbbreviationGroup by lazy { VimAbbreviationGroupBase() }
 

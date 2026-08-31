@@ -276,6 +276,25 @@ assert.strictEqual(
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
 )
 
+// Enter, in Normal mode. An ordinary key, and until the host could answer "no, there is no live
+// template running" it threw and took the plugin down with it. Vim moves down a line to the first
+// non-blank, so the `x` lands on the `t` and not on the indent.
+reset()
+type('i')
+for (const character of 'one') type(character)
+press('<CR>')
+for (const character of '  two') type(character)
+press('<Esc>')
+for (const character of 'gg') type(character)
+press('<CR>')
+type('x')
+
+assert.strictEqual(
+  editor.document._text,
+  'one\n  wo',
+  `Enter in Normal mode did not move to the first non-blank below. Got: ${editor.document._text}`,
+)
+
 // A bracket text object, which is the one text object that has to know what it is looking at. The
 // bracket inside the string is not a bracket, so `di(` takes the call's arguments and not the two
 // characters between the string's own parenthesis and the closing one.

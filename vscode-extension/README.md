@@ -78,6 +78,15 @@ screen and then takes keys - space pages, `q` closes - and VS Code has no equiva
 fight the editor for focus, so this prints and gets out of the way. Typing carries on working while
 the output is showing, which is a deliberate difference from Vim.
 
+What is not built yet is written down rather than left to be discovered. `VsCodeUnimplementedTest`
+presses every key the engine registers and asserts the list of the ones that land on a host service
+this port has not written; implementing a service shrinks the list, and a key that starts or stops
+reaching one shows up as a diff. That list is the honest map of the gap. The largest entries are
+scrolling and the `H`/`M`/`L` motions, which need `TextEditor.visibleRanges`; blockwise Visual,
+which needs multiple carets; and `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS
+Code command and a way to wait for it. `[m` and `]s` need a language server and a spellchecker, and
+will most likely stay on the list.
+
 `%`, `di(` and the rest of the bracket text objects need to know whether a bracket is code or is
 written inside a string or a comment, or they land on the wrong pair. IdeaVim asks IntelliJ's syntax
 tree. VS Code has the same knowledge and will not part with it synchronously - semantic tokens

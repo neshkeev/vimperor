@@ -195,4 +195,17 @@ class VsCodeInsertModeTest {
   fun `test Up keeps typing where it lands`() {
     assertEquals("oXne\ntwo", type("one\ntwo", "i<Up>X<Esc>", caretOffset = 5))
   }
+
+  // Digraphs. `<C-K>` and the two-character name of a character that is not on the keyboard - a
+  // table and a lookup, which the engine carries whole, so the host only has to hand it over.
+
+  @Test
+  fun `test a digraph inserts the character it names`() {
+    assertEquals("\u00eb", type("", "i<C-K>e:<Esc>"))
+  }
+
+  @Test
+  fun `test a digraph in the middle of typing`() {
+    assertEquals("na\u00efve", type("", "ina<C-K>i:ve<Esc>"))
+  }
 }
