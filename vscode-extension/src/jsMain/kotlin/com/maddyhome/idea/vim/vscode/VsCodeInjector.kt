@@ -648,12 +648,12 @@ open class VsCodeInjector(
        * the one in the editor the key was pressed in.
        */
       override fun moveCaretGotoNextTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int {
-        repeat(maxOf(1, rawCount)) { hostCommands.run("workbench.action.nextEditor", waitForIt = false) }
+        repeat(maxOf(1, rawCount)) { hostCommands.run(VsCodeCommands.NEXT_EDITOR, waitForIt = false) }
         return editor.currentCaret().offset
       }
 
       override fun moveCaretGotoPreviousTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int {
-        repeat(maxOf(1, rawCount)) { hostCommands.run("workbench.action.previousEditor", waitForIt = false) }
+        repeat(maxOf(1, rawCount)) { hostCommands.run(VsCodeCommands.PREVIOUS_EDITOR, waitForIt = false) }
         return editor.currentCaret().offset
       }
     }
@@ -794,12 +794,12 @@ open class VsCodeInjector(
        * is about the message, not about correctness of what follows.
        */
       override fun undo(editor: VimEditor, context: ExecutionContext): Boolean {
-        hostCommands.run("undo")
+        hostCommands.run(VsCodeCommands.UNDO)
         return true
       }
 
       override fun redo(editor: VimEditor, context: ExecutionContext): Boolean {
-        hostCommands.run("redo")
+        hostCommands.run(VsCodeCommands.REDO)
         return true
       }
 
@@ -1134,16 +1134,16 @@ private class NodeTimer(override var delayMillis: Int) : VimTimer {
  */
 private class VimOnlyActionExecutor(private val host: HostCommandRunner) : VimActionExecutor {
   override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
-  override val ACTION_COLLAPSE_ALL_REGIONS: String = "editor.foldAll"
-  override val ACTION_COLLAPSE_REGION: String = "editor.fold"
-  override val ACTION_COLLAPSE_REGION_RECURSIVELY: String = "editor.foldRecursively"
-  override val ACTION_EXPAND_ALL_REGIONS: String = "editor.unfoldAll"
-  override val ACTION_EXPAND_REGION: String = "editor.unfold"
-  override val ACTION_EXPAND_REGION_RECURSIVELY: String = "editor.unfoldRecursively"
-  override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = "editor.toggleFold"
-  override val ACTION_UNDO: String = "undo"
-  override val ACTION_REDO: String = "redo"
-  override val ACTION_GOTO_DECLARATION: String = "editor.action.revealDefinition"
+  override val ACTION_COLLAPSE_ALL_REGIONS: String = VsCodeCommands.FOLD_ALL
+  override val ACTION_COLLAPSE_REGION: String = VsCodeCommands.FOLD
+  override val ACTION_COLLAPSE_REGION_RECURSIVELY: String = VsCodeCommands.FOLD_RECURSIVELY
+  override val ACTION_EXPAND_ALL_REGIONS: String = VsCodeCommands.UNFOLD_ALL
+  override val ACTION_EXPAND_REGION: String = VsCodeCommands.UNFOLD
+  override val ACTION_EXPAND_REGION_RECURSIVELY: String = VsCodeCommands.UNFOLD_RECURSIVELY
+  override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = VsCodeCommands.TOGGLE_FOLD
+  override val ACTION_UNDO: String = VsCodeCommands.UNDO
+  override val ACTION_REDO: String = VsCodeCommands.REDO
+  override val ACTION_GOTO_DECLARATION: String = VsCodeCommands.REVEAL_DEFINITION
 
   override fun executeVimAction(
     editor: VimEditor,

@@ -103,6 +103,13 @@ external object commands {
    * the editor sees it.
    */
   fun executeCommand(command: String, vararg args: dynamic): Thenable<dynamic>
+
+  /**
+   * Every command this VS Code has, which is the only list of them that exists - there is no
+   * published set of ids to check against at build time. `filterInternal` drops the ones VS Code
+   * uses for itself and does not intend anyone to call.
+   */
+  fun getCommands(filterInternal: Boolean): Thenable<Array<String>>
 }
 
 external object env {

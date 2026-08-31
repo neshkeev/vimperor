@@ -209,6 +209,22 @@ It checks that members exist, not that signatures match - a full TypeScript pars
 project - and it says nothing about *behaviour*. The extension has still never run in a real VS Code
 window, which remains the largest untested assumption in this module.
 
+Command ids are worse off than declarations, because there is nothing to check them against. `@types/vscode`
+describes the API and publishes no list of command ids, so nothing offline can say whether
+`workbench.action.focusBelowGroup` is a command VS Code has - and a test asserting that string is
+asserting that the test and the code were written by the same hand, which they were. Every id in
+this module was typed from the documentation.
+
+The only list that exists is `getCommands`, so the extension asks for it at activation and writes
+what it did not find to the output channel. That is worth what `VsCodeCommands.all` is complete, and
+a hand-maintained list loses completeness quietly - so no id lives anywhere else, and
+`checkVsCodeCommandIds` fails the build on a `workbench.` or `editor.` literal outside that file, or
+on a constant in it that never made it into the list. The stub host checks the reporting end to end
+by answering with a list that is deliberately three commands long.
+
+None of that says the ids are right. It says the first run in a real window will name every one that
+is wrong, in one line, instead of one Vim command at a time.
+
 ## Why Kotlin and not TypeScript
 
 Kotlin/JS strips everything not reachable from an exported root. A TypeScript extension would have

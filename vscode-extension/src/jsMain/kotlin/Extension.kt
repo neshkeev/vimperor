@@ -22,6 +22,7 @@ import com.maddyhome.idea.vim.vscode.StatusBarItem
 import com.maddyhome.idea.vim.vscode.TextEditor
 import com.maddyhome.idea.vim.vscode.VimHost
 import com.maddyhome.idea.vim.vscode.VsCodeClipboard
+import com.maddyhome.idea.vim.vscode.VsCodeCommands
 import com.maddyhome.idea.vim.vscode.commands
 import com.maddyhome.idea.vim.vscode.window
 
@@ -135,6 +136,23 @@ fun activate(context: ExtensionContext) {
   }
 
   output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
+
+  // The one check that cannot be made anywhere but here. Every VS Code command this extension sends
+  // is a string written from the documentation, and nothing offline can say whether VS Code has it:
+  // the tests assert the string, and the stub answers to whatever the string says. This asks the
+  // real VS Code, and it is deliberately not fatal - a missing id costs one Vim command, and
+  // refusing to start over it would cost all of them.
+  commands.getCommands(filterInternal = true).then({ available ->
+    val missing = VsCodeCommands.missingFrom(available.toList())
+    if (missing.isEmpty()) {
+      output.appendLine("Checked ${VsCodeCommands.all.size} VS Code commands; this VS Code has all of them.")
+    } else {
+      output.appendLine(
+        "This VS Code does not have ${missing.size} of the ${VsCodeCommands.all.size} commands IdeaVim " +
+          "uses, so the Vim commands that need them will do nothing: " + missing.joinToString(", "),
+      )
+    }
+  })
 
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(

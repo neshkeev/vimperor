@@ -212,6 +212,14 @@ const vscode = {
       dispatchedCommands.push(command)
       return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
     },
+    // Deliberately short. This is the one list the extension cannot check anywhere but at runtime -
+    // every command id it sends is a string written from the documentation - so what is being tested
+    // here is that it asks, and that it reports what it did not find. A stub returning everything
+    // would only prove the reporting can stay silent.
+    getCommands() {
+      const known = ['undo', 'redo', 'workbench.action.files.save']
+      return { then: (onFulfilled) => (onFulfilled(known), { then: () => {} }) }
+    },
   },
   env: {
     clipboard: {
@@ -569,6 +577,18 @@ assert.strictEqual(
   editor.document._text,
   '    new\nrest',
   `S did not keep the line's indent. Got: ${JSON.stringify(editor.document._text)}`,
+)
+
+// The command-id check, which only exists because a command id cannot be checked at build time.
+const commandCheck = output.find((line) => line.includes('commands'))
+assert.ok(commandCheck, `the extension did not report on the commands it uses. Output:\n${output.join('\n')}`)
+assert.ok(
+  commandCheck.includes('editor.fold'),
+  `a command this stub does not have was not reported missing. Got: ${commandCheck}`,
+)
+assert.ok(
+  !commandCheck.includes('undo'),
+  `a command this stub does have was reported missing. Got: ${commandCheck}`,
 )
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')

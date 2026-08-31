@@ -167,6 +167,64 @@ tasks.named("check") {
 }
 
 /**
+ * That every VS Code command id this module sends is in `VsCodeCommands`, where it can be checked.
+ *
+ * A command id is the least verifiable thing here. `@types/vscode` describes the API but publishes
+ * no list of command ids, so nothing offline can say whether `workbench.action.focusBelowGroup` is
+ * a command VS Code has - and a test asserting that string is asserting that the test and the code
+ * agree, which they will however wrong the id is. The only list that exists is `getCommands`, and
+ * the extension asks for it at activation.
+ *
+ * That check is worth exactly as much as `VsCodeCommands.all` is complete, and completeness is the
+ * kind of thing a hand-maintained list quietly loses. So: no id lives anywhere else. This fails on
+ * a `workbench.` or `editor.` literal outside that file, and on a constant in it that never made it
+ * into `all`.
+ */
+val checkVsCodeCommandIds by tasks.registering {
+  description = "Checks that every VS Code command id lives in VsCodeCommands, and is listed in `all`."
+  group = LifecycleBasePlugin.VERIFICATION_GROUP
+
+  val sources = layout.projectDirectory.dir("src/jsMain/kotlin")
+  inputs.dir(sources)
+  outputs.upToDateWhen { false }
+
+  doLast {
+    val registryName = "VsCodeIds.kt"
+    val idLiteral = Regex("\"(workbench|editor)\\.[A-Za-z0-9.$'{}+ ]*\"")
+
+    val stray = sources.asFile.walkTopDown()
+      .filter { it.isFile && it.extension == "kt" && it.name != registryName }
+      .flatMap { file ->
+        idLiteral.findAll(file.readText()).map { "${file.name}: ${it.value}" }
+      }
+      .toList()
+
+    check(stray.isEmpty()) {
+      "VS Code ids belong in $registryName, where the activation check can see them:\n" +
+        stray.joinToString("\n") { "  $it" }
+    }
+
+    val registry = File(sources.asFile, "com/maddyhome/idea/vim/vscode/$registryName")
+    check(registry.isFile) { "No $registryName - the command registry has moved or gone." }
+    val text = registry.readText()
+    val commandsObject = text.substringAfter("internal object VsCodeCommands {").substringBefore("\n}")
+    val declared = Regex("const val (\\w+)").findAll(commandsObject).map { it.groupValues[1] }.toList()
+    val listed = commandsObject.substringAfter("val all: List<String> = listOf(").substringBefore(")")
+    val unlisted = declared.filterNot { Regex("\\b$it\\b").containsMatchIn(listed) }
+
+    check(unlisted.isEmpty()) {
+      "These commands are declared but not in `VsCodeCommands.all`, so nothing checks them against " +
+        "the real VS Code:\n" + unlisted.joinToString("\n") { "  $it" }
+    }
+    logger.lifecycle("Checked ${declared.size} VS Code command ids are registered for the runtime check.")
+  }
+}
+
+tasks.named("check") {
+  dependsOn(checkVsCodeCommandIds)
+}
+
+/**
  * Puts the `vscode` stub where Node will find it, every time, rather than when yarn feels like it.
  *
  * The stub is declared as a local npm dependency so the module resolves, and yarn *copies* a
@@ -191,4 +249,5 @@ tasks.register("test") {
   dependsOn("jsNodeTest")
   dependsOn(runInStubHost)
   dependsOn(checkVsCodeApiDeclarations)
+  dependsOn(checkVsCodeCommandIds)
 }

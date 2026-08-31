@@ -46,7 +46,7 @@ internal class VsCodeTabs(private val host: HostCommandRunner) : TabService {
    */
   override fun removeTabAt(indexToDelete: Int, indexToSelect: Int, context: ExecutionContext) {
     if (indexToDelete != getCurrentTabIndex(context)) selectTab(indexToDelete) ?: return
-    run("workbench.action.closeActiveEditor")
+    run(VsCodeCommands.CLOSE_ACTIVE_EDITOR)
     selectTab(if (indexToSelect > indexToDelete) indexToSelect - 1 else indexToSelect)
   }
 
@@ -60,16 +60,16 @@ internal class VsCodeTabs(private val host: HostCommandRunner) : TabService {
     val steps = index - getCurrentTabIndex(context)
     if (steps == 0) return
     val command =
-      if (steps > 0) "workbench.action.moveEditorRightInGroup" else "workbench.action.moveEditorLeftInGroup"
+      if (steps > 0) VsCodeCommands.MOVE_EDITOR_RIGHT_IN_GROUP else VsCodeCommands.MOVE_EDITOR_LEFT_IN_GROUP
     repeat(abs(steps)) { run(command) }
   }
 
-  override fun closeAllExceptCurrentTab(context: ExecutionContext) = run("workbench.action.closeOtherEditors")
+  override fun closeAllExceptCurrentTab(context: ExecutionContext) = run(VsCodeCommands.CLOSE_OTHER_EDITORS)
 
   /** VS Code names the first nine tabs with a command each and stops; past that there is nothing. */
   private fun selectTab(index: Int): Unit? {
     if (index < 0 || index > 8) return null
-    run("workbench.action.openEditorAtIndex${index + 1}")
+    run(VsCodeCommands.openEditorAtIndex(index))
     return Unit
   }
 }

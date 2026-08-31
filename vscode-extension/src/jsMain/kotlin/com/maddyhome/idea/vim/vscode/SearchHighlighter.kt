@@ -53,9 +53,9 @@ interface Highlighter {
  */
 class DecorationHighlighter : Highlighter {
 
-  private val matchStyle = decorationColoured("editor.findMatchHighlightBackground")
-  private val currentMatchStyle = decorationColoured("editor.findMatchBackground")
-  private val confirmationStyle = decorationColoured("editor.selectionHighlightBackground")
+  private val matchStyle = decorationColoured(VsCodeThemeColors.FIND_MATCH_HIGHLIGHT)
+  private val currentMatchStyle = decorationColoured(VsCodeThemeColors.FIND_MATCH)
+  private val confirmationStyle = decorationColoured(VsCodeThemeColors.SELECTION_HIGHLIGHT)
 
   private var painted = 0
 

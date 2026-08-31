@@ -39,35 +39,28 @@ internal class VsCodeWindowGroup(private val host: HostCommandRunner) : WindowGr
     // Positive is down when vertical and right when not - see the `<C-W>` actions, which negate the
     // count for `h` and `k` rather than passing a direction.
     val command = when {
-      vertical && relativePosition > 0 -> "workbench.action.focusBelowGroup"
-      vertical -> "workbench.action.focusAboveGroup"
-      relativePosition > 0 -> "workbench.action.focusRightGroup"
-      else -> "workbench.action.focusLeftGroup"
+      vertical && relativePosition > 0 -> VsCodeCommands.FOCUS_BELOW_GROUP
+      vertical -> VsCodeCommands.FOCUS_ABOVE_GROUP
+      relativePosition > 0 -> VsCodeCommands.FOCUS_RIGHT_GROUP
+      else -> VsCodeCommands.FOCUS_LEFT_GROUP
     }
     repeat(maxOf(1, abs(relativePosition))) { run(command) }
   }
 
-  override fun selectNextWindow(context: ExecutionContext) = run("workbench.action.focusNextGroup")
+  override fun selectNextWindow(context: ExecutionContext) = run(VsCodeCommands.FOCUS_NEXT_GROUP)
 
-  override fun selectPreviousWindow(context: ExecutionContext) = run("workbench.action.focusPreviousGroup")
+  override fun selectPreviousWindow(context: ExecutionContext) = run(VsCodeCommands.FOCUS_PREVIOUS_GROUP)
 
-  /**
-   * `<C-W>` with a count - go to window number N.
-   *
-   * VS Code numbers its groups with eight separate commands rather than one that takes an argument,
-   * because `executeCommand` here carries no arguments. Past the eighth there is nothing to call.
-   */
+  /** `<C-W>` with a count - go to window number N, of which VS Code has eight and then no more. */
   override fun selectWindow(context: ExecutionContext, index: Int) {
-    val ordinals = listOf("First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth")
-    val ordinal = ordinals.getOrNull(index - 1) ?: return
-    run("workbench.action.focus${ordinal}EditorGroup")
+    run(VsCodeCommands.focusEditorGroup(index) ?: return)
   }
 
   override fun splitWindowHorizontal(context: ExecutionContext, filename: String, focusNew: Boolean) =
-    split("workbench.action.splitEditorDown", filename)
+    split(VsCodeCommands.SPLIT_EDITOR_DOWN, filename)
 
   override fun splitWindowVertical(context: ExecutionContext, filename: String, focusNew: Boolean) =
-    split("workbench.action.splitEditorRight", filename)
+    split(VsCodeCommands.SPLIT_EDITOR_RIGHT, filename)
 
   private fun split(command: String, filename: String) {
     if (filename.isNotEmpty()) {
@@ -80,9 +73,9 @@ internal class VsCodeWindowGroup(private val host: HostCommandRunner) : WindowGr
     run(command)
   }
 
-  override fun closeCurrentWindow(context: ExecutionContext) = run("workbench.action.closeEditorsAndGroup")
+  override fun closeCurrentWindow(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_AND_GROUP)
 
-  override fun closeAllExceptCurrent(context: ExecutionContext) = run("workbench.action.closeEditorsInOtherGroups")
+  override fun closeAllExceptCurrent(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_IN_OTHER_GROUPS)
 
-  override fun closeAll(context: ExecutionContext) = run("workbench.action.closeAllGroups")
+  override fun closeAll(context: ExecutionContext) = run(VsCodeCommands.CLOSE_ALL_GROUPS)
 }

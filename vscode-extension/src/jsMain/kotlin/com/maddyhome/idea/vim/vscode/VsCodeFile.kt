@@ -49,13 +49,13 @@ internal class VsCodeFile(private val host: HostCommandRunner) : VimFileBase() {
   }
 
   override fun saveFile(editor: VimEditor, context: ExecutionContext) =
-    host.run("workbench.action.files.save")
+    host.run(VsCodeCommands.SAVE)
 
   override fun saveFiles(editor: VimEditor, context: ExecutionContext) =
-    host.run("workbench.action.files.saveAll")
+    host.run(VsCodeCommands.SAVE_ALL)
 
   override fun closeFile(editor: VimEditor, context: ExecutionContext) =
-    host.run("workbench.action.closeActiveEditor", waitForIt = false)
+    host.run(VsCodeCommands.CLOSE_ACTIVE_EDITOR, waitForIt = false)
 
   /**
    * `:bdelete N` - close the buffer with that number.
@@ -76,7 +76,7 @@ internal class VsCodeFile(private val host: HostCommandRunner) : VimFileBase() {
    * this key is nearly always used in.
    */
   override fun selectPreviousTab(context: ExecutionContext): Boolean {
-    host.run("workbench.action.openPreviousRecentlyUsedEditorInGroup", waitForIt = false)
+    host.run(VsCodeCommands.PREVIOUS_USED_EDITOR_IN_GROUP, waitForIt = false)
     return true
   }
 
@@ -88,18 +88,18 @@ internal class VsCodeFile(private val host: HostCommandRunner) : VimFileBase() {
    */
   override fun selectFile(count: Int, context: ExecutionContext): Boolean {
     if (count == VimFile.LAST_FILE_SENTINEL) {
-      host.run("workbench.action.lastEditorInGroup", waitForIt = false)
+      host.run(VsCodeCommands.LAST_EDITOR_IN_GROUP, waitForIt = false)
       return true
     }
     if (count < 0 || count > 8) return false
-    host.run("workbench.action.openEditorAtIndex${count + 1}", waitForIt = false)
+    host.run(VsCodeCommands.openEditorAtIndex(count), waitForIt = false)
     return true
   }
 
   /** `:bnext` and `:bprevious`, which VS Code calls the next and previous editor. */
   override fun selectNextFile(count: Int, context: ExecutionContext) {
     if (count == 0) return
-    val command = if (count > 0) "workbench.action.nextEditor" else "workbench.action.previousEditor"
+    val command = if (count > 0) VsCodeCommands.NEXT_EDITOR else VsCodeCommands.PREVIOUS_EDITOR
     repeat(kotlin.math.abs(count)) { host.run(command, waitForIt = false) }
   }
 
