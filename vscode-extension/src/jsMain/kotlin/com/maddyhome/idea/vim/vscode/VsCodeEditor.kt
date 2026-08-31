@@ -545,14 +545,39 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   override fun getLastVisualLineColumnNumber(line: Int): Int =
     getLineEndOffset(line) - getLineStartOffset(line)
   override fun createIndentBySize(size: Int): String = TODO("VsCodeEditor.createIndentBySize")
-  override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("VsCodeEditor.getFoldRegionAtLine")
-  override fun applyFoldLevel(foldLevel: Int): Unit = TODO("VsCodeEditor.applyFoldLevel")
-  override fun getMaxFoldDepth(): Int = TODO("VsCodeEditor.getMaxFoldDepth")
-  override fun createFoldRegion(startOffset: Int, endOffset: Int, collapse: Boolean): VimFoldRegion? =
-    TODO("VsCodeEditor.createFoldRegion")
-  override fun deleteFoldRegionAtOffset(offset: Int): Boolean = TODO("VsCodeEditor.deleteFoldRegionAtOffset")
-  override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean =
-    TODO("VsCodeEditor.deleteFoldRegionsRecursivelyAtOffset")
+  /**
+   * Folds, of which this host can *do* several and *know* none.
+   *
+   * `za`, `zo`, `zc` and the recursive pair are commands - the engine asks the host for their names
+   * and VS Code folds. The rest of Vim's fold vocabulary wants folds as data: which region is at
+   * this line, how deep the nesting goes, remove this one. VS Code will not say. Folding ranges
+   * come from a language server through `executeFoldingRangeProvider`, which is a promise, and
+   * these are asked in the middle of a keystroke.
+   *
+   * So the answers here are the truthful ones for an editor that can fold but cannot look: no
+   * region at any line, no nesting, and `zd`/`zD` report that they did nothing rather than claiming
+   * to have removed something.
+   */
+  override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = null
+
+  /**
+   * `zR` and `zM`, which the engine expresses as `'foldlevel'` rather than as a command.
+   *
+   * Level zero means every fold closed and anything above it means open, which - without knowing
+   * the nesting - is exactly the two commands VS Code has. Since [getMaxFoldDepth] answers zero,
+   * `zR` asks for level one and lands here as "open everything", which is what `zR` means.
+   */
+  override fun applyFoldLevel(foldLevel: Int) {
+    val executor = injector.actionExecutor
+    val action = if (foldLevel <= 0) executor.ACTION_COLLAPSE_ALL_REGIONS else executor.ACTION_EXPAND_ALL_REGIONS
+    executor.executeAction(this, action, VsCodeExecutionContext)
+  }
+
+  override fun getMaxFoldDepth(): Int = 0
+
+  override fun createFoldRegion(startOffset: Int, endOffset: Int, collapse: Boolean): VimFoldRegion? = null
+  override fun deleteFoldRegionAtOffset(offset: Int): Boolean = false
+  override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = false
   override val lfMakesNewLine: Boolean get() = TODO("VsCodeEditor.lfMakesNewLine")
   override val indentConfig: VimIndentConfig get() = TODO("VsCodeEditor.indentConfig")
   /**

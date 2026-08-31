@@ -58,6 +58,6 @@ class VsCodeClipboard : SystemClipboard {
   }
 
   override fun refresh() {
-    env.clipboard.readText().then { text -> mirror = text }
+    env.clipboard.readText().then({ text -> mirror = text })
   }
 }

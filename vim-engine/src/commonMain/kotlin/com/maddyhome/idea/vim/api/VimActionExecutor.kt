@@ -25,6 +25,15 @@ interface VimActionExecutor {
   val ACTION_REDO: String
 
   /**
+   * `gd` and `<C-]>`: go to the definition of whatever is under the caret.
+   *
+   * Named by the host rather than written into the action, for the same reason the fold actions
+   * are: the engine knows which *idea* it wants, and only the host knows what its own editor calls
+   * it. IntelliJ says `GotoDeclaration`; a different host will say something else.
+   */
+  val ACTION_GOTO_DECLARATION: String
+
+  /**
    * Execute an action
    *
    * @param action  The action to execute

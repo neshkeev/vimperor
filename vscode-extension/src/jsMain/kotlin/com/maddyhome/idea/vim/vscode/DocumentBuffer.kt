@@ -184,7 +184,7 @@ class DocumentBuffer(private val editor: TextEditor) {
     )
     val replacement = target.substring(start, target.length - end)
 
-    editor.edit { it.replace(range, replacement) }.then { applied ->
+    editor.edit { it.replace(range, replacement) }.then({ applied ->
       if (applied) {
         flushed = target
       } else {
@@ -193,7 +193,7 @@ class DocumentBuffer(private val editor: TextEditor) {
         reseed()
       }
       onResult(applied)
-    }
+    })
   }
 
   private fun commonPrefixLength(before: String, after: String): Int {

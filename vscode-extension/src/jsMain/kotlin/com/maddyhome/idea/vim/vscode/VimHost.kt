@@ -30,7 +30,7 @@ class VimHost(
    * How a VS Code command is run. Injectable so that tests can drive the asynchronous path without
    * a real extension host - the default is the real thing.
    */
-  private val runCommand: (String, () -> Unit) -> Unit = ::executeVsCodeCommand,
+  private val runCommand: (String, (Boolean) -> Unit) -> Unit = ::executeVsCodeCommand,
   /** Where the `:` and `/` prompts are drawn. The status bar, in a real window. */
   commandLineDisplay: CommandLineDisplay = NoCommandLineDisplay,
   /** Where search matches are painted. Decorations, in a real window. */
@@ -175,9 +175,30 @@ class VimHost(
   /** Whether a host command is in flight, so keys are waiting rather than running. */
   val isWaitingOnHost: Boolean get() = pending > 0
 
-  override fun run(command: String) {
+  /**
+   * Runs a VS Code command, and holds the user's keys until it lands if it might change the text.
+   *
+   * [waitForIt] is the whole of the decision. Undo, redo and reformatting rewrite the document
+   * behind the engine's back, so anything typed before they land would be computed against text
+   * that is about to be replaced - those wait. Folding, splitting a window, changing tab, jumping
+   * to a definition change what is on screen and not what is in the buffer, and holding the
+   * keyboard for them would only make the editor feel slow.
+   *
+   * The failure branch matters more than it looks. A command that does not exist rejects rather
+   * than resolving - one typo in an `<Action>` mapping - and a waiter that only listened for
+   * success would leave `pending` above zero and every later keystroke queued behind a command
+   * that is never coming back.
+   */
+  override fun run(command: String, waitForIt: Boolean) {
+    if (!waitForIt) {
+      runCommand(command) { succeeded ->
+        if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
+      }
+      return
+    }
     pending++
-    runCommand(command) {
+    runCommand(command) { succeeded ->
+      if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
       pending--
       if (pending == 0) hostCommandsFinished()
     }
@@ -263,8 +284,8 @@ internal object NoCommandLineDisplay : CommandLineDisplay {
  * `executeCommand` resolves with whatever the command returned, which for `undo` is nothing useful
  * - the callback is about *when*, not about what.
  */
-private fun executeVsCodeCommand(command: String, onDone: () -> Unit) {
-  commands.executeCommand(command).then { onDone() }
+private fun executeVsCodeCommand(command: String, onDone: (Boolean) -> Unit) {
+  commands.executeCommand(command).then({ onDone(true) }, { onDone(false) })
 }
 
 /**

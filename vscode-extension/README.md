@@ -85,6 +85,25 @@ reaching one shows up as a diff. That list is the honest map of the gap. What is
 `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
 it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
 
+Folds, `<C-W>` windows, `gt` tabs and `gd` are off it too, and all for the same reason: each of them
+is a VS Code command, and the queue that undo needed already knew how to wait for one. What is new
+is deciding *when* to wait. Undo, redo and reformatting rewrite the document behind the engine's
+back, so anything typed before they land would be computed against text that is about to be
+replaced - those hold the keyboard. Folding, splitting a window, changing editor and jumping to a
+definition change what is on screen and not what is in the buffer, so they do not.
+
+A command VS Code does not have rejects its promise rather than resolving it, and a runner that only
+listened for success would leave the queue waiting for something that is never coming back - one
+typo in an `<Action>` mapping and the keyboard would be gone until the window was reloaded. So both
+halves are handled, and an unknown command says so.
+
+`<C-W>` deserves a caveat. A Vim window is a view onto a buffer in a tree of splits; a VS Code
+editor group is a column of tabs with one of them visible. They are not the same thing. What they
+share is the part `<C-W>` is about - there is more than one place to be, they are arranged in two
+dimensions, and you can split, close and move between them - so the direction keys, `<C-W>s`,
+`<C-W>v`, `<C-W>c` and `<C-W>o` all land on the nearest true thing. `:split file` is where the model
+runs out, and it says so rather than opening the file in the wrong place.
+
 Blockwise Visual is off it, and it is the only Vim mode that needs the editor to have more than one
 caret. The engine's model came from IntelliJ: a block is N carets with N one-line selections, torn
 down and rebuilt on every motion, one of them primary and carrying the block's anchor. VS Code has

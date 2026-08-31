@@ -96,28 +96,14 @@ VS Code host: findMethodStart needs a language server
     [m ]m
 VS Code host: findMisspelledWord needs a spellchecker
     [s ]s
-VS Code host: running its commands is asynchronous
-    <C-]> gD gd zC zO za zc zo
-VS Code host: tab motions need the editor group API
-    <C-Pagedown> <C-Pageup> gT gt
 VsCodeEditor.createIndentBySize
     S
-VsCodeEditor.deleteFoldRegionAtOffset
-    zd
-VsCodeEditor.deleteFoldRegionsRecursivelyAtOffset
-    zD
-VsCodeEditor.getFoldRegionAtLine
-    zA
-VsCodeEditor.getMaxFoldDepth
-    zR
 the VS Code host does not provide file yet
     <C-6> <C-G> <C-G>u <C-S-6> <C-^> ZQ ZZ g8 g<C-G>
 the VS Code host does not provide searchWindowGroup yet
     q/ q: q?
 the VS Code host does not provide spellcheckerService yet
     z= zg zw
-the VS Code host does not provide window yet
-    <C-W><C-H> <C-W><C-J> <C-W><C-K> <C-W><C-L> <C-W><C-O> <C-W><C-S> <C-W><C-V> <C-W><C-W> <C-W><Down> <C-W><Left> <C-W><Right> <C-W><Up> <C-W>S <C-W>W <C-W>c <C-W>h <C-W>j <C-W>k <C-W>l <C-W>o <C-W>s <C-W>v <C-W>w
 """
   }
 }

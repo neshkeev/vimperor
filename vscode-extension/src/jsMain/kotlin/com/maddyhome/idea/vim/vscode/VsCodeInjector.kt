@@ -20,6 +20,7 @@ import com.maddyhome.idea.vim.diagnostic.VimLogger
 import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
 import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
+import com.maddyhome.idea.vim.group.VimWindowGroup
 import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.history.VimHistoryBase
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
@@ -89,6 +90,14 @@ class VsCodeInjector(
   fun register(editor: VsCodeEditor) {
     if (openEditors.none { it === editor }) openEditors += editor
     activeEditor = editor
+
+    // Local-to-window options exist per editor and start out unset, which is not the same as
+    // starting out at their default: an option that has never been stored has no previous value,
+    // and the overrides that watch for a *change* - `'foldlevel'` is the one that made this
+    // visible, since `zR` only sets it - see the first set as initialisation and skip it. IntelliJ
+    // does this when a window opens; this host has to do it when an editor is registered, which is
+    // the same moment.
+    optionGroup.initialiseLocalOptions(editor, null, LocalOptionInitialisationScenario.DEFAULTS)
   }
 
   fun unregister(editor: VsCodeEditor) {
@@ -131,6 +140,9 @@ class VsCodeInjector(
     }
   }
   override val psiService: VimPsiService by lazy { TextOnlyPsiService }
+  /** `<C-W>` - see [VsCodeWindowGroup], and the ways a VS Code editor group is not a Vim window. */
+  override val window: VimWindowGroup by lazy { VsCodeWindowGroup(hostCommands) }
+
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
   override val vimState: VimStateMachine by lazy { VimStateMachineImpl() }
   override val historyGroup: VimHistory by lazy { object : VimHistoryBase() {} }
@@ -279,7 +291,14 @@ class VsCodeInjector(
   }
   override val listenersNotifier: VimListenersNotifier by lazy { VimListenersNotifier() }
   override val optionGroup: VimOptionGroup by lazy {
-    object : VimOptionGroupBase() {}.also { it.initialiseOptions() }
+    object : VimOptionGroupBase() {
+      init {
+        // `zR` and `zM` do not run a command - they set `'foldlevel'`, and this is what makes that
+        // mean anything. The mapper is the engine's, shared with the IntelliJ host, because
+        // deciding that level zero closes everything is Vim's rule rather than an editor's.
+        addOptionValueOverride(Options.foldlevel, FoldLevelOptionMapper())
+      }
+    }.also { it.initialiseOptions() }
   }
 
   /**
@@ -590,11 +609,25 @@ class VsCodeInjector(
         return moveCaretToColumn(editor, caret, max(0, min(length - 1, width)), false)
       }
 
-      override fun moveCaretGotoNextTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int =
-        TODO("VS Code host: tab motions need the editor group API")
+      /**
+       * `gt` and `gT` - Vim's tabs, which are VS Code's editors within a group.
+       *
+       * A count in Vim means "go to tab number N" for `gt` and "back N tabs" for `gT`. VS Code has
+       * a command for each direction and none that takes a number, so a count repeats the step -
+       * right for `gT`, and for `gt` the nearest thing rather than the same thing.
+       *
+       * The caret does not move: this changes which editor is in front, and the offset returned is
+       * the one in the editor the key was pressed in.
+       */
+      override fun moveCaretGotoNextTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int {
+        repeat(maxOf(1, rawCount)) { hostCommands.run("workbench.action.nextEditor", waitForIt = false) }
+        return editor.currentCaret().offset
+      }
 
-      override fun moveCaretGotoPreviousTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int =
-        TODO("VS Code host: tab motions need the editor group API")
+      override fun moveCaretGotoPreviousTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int {
+        repeat(maxOf(1, rawCount)) { hostCommands.run("workbench.action.previousEditor", waitForIt = false) }
+        return editor.currentCaret().offset
+      }
     }
   }
 
@@ -679,7 +712,7 @@ class VsCodeInjector(
     }
   }
 
-  override val actionExecutor: VimActionExecutor by lazy { VimOnlyActionExecutor }
+  override val actionExecutor: VimActionExecutor by lazy { VimOnlyActionExecutor(hostCommands) }
 
   // ---- Reachable only asynchronously, and therefore not yet reachable at all.
 
@@ -1071,7 +1104,7 @@ private class NodeTimer(override var delayMillis: Int) : VimTimer {
  * `executeCommand` returns a promise, so whether one succeeded is not knowable in time to answer.
  * That is what `<Action>` mappings will have to solve.
  */
-private object VimOnlyActionExecutor : VimActionExecutor {
+private class VimOnlyActionExecutor(private val host: HostCommandRunner) : VimActionExecutor {
   override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
   override val ACTION_COLLAPSE_ALL_REGIONS: String = "editor.foldAll"
   override val ACTION_COLLAPSE_REGION: String = "editor.fold"
@@ -1082,6 +1115,7 @@ private object VimOnlyActionExecutor : VimActionExecutor {
   override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = "editor.toggleFold"
   override val ACTION_UNDO: String = "undo"
   override val ACTION_REDO: String = "redo"
+  override val ACTION_GOTO_DECLARATION: String = "editor.action.revealDefinition"
 
   override fun executeVimAction(
     editor: VimEditor,
@@ -1118,8 +1152,24 @@ private object VimOnlyActionExecutor : VimActionExecutor {
     }
   }
 
-  override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean =
-    TODO("VS Code host: running its commands is asynchronous")
+  /**
+   * A VS Code command, by name.
+   *
+   * The engine reaches this for the folds - `za`, `zo`, `zc`, `zR`, `zM` - for `gd` and `<C-]>`,
+   * and for whatever a user puts in an `<Action>` mapping. IdeaVim's names are IntelliJ action ids
+   * and this host's are VS Code command ids; the engine does not care which, because it asks the
+   * host for the names it uses by [ACTION_COLLAPSE_REGION] and the rest.
+   *
+   * It waits. The result cannot be reported either way - `executeCommand` resolves a promise long
+   * after this has had to answer - so `true` here means "dispatched" and nothing more, in the same
+   * way `u` reports success it cannot check. But an `<Action>` mapping can name anything, including
+   * a reformat, so the conservative half of the decision is the right one: hold the keys.
+   */
+  override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean {
+    if (name.isEmpty()) return false
+    host.run(name)
+    return true
+  }
 
   /**
    * Whether the *host* consumed Escape. IntelliJ runs its own Escape action first, so that closing
@@ -1207,10 +1257,15 @@ private external fun clearTimeout(handle: Int)
  * than each service calling `executeCommand` on its own.
  */
 interface HostCommandRunner {
-  fun run(command: String)
+  /**
+   * @param waitForIt whether the user's keys should be held until the command lands. True for
+   *   anything that rewrites the document behind the engine's back - undo, redo, reformatting -
+   *   and false for anything that only changes what is on screen.
+   */
+  fun run(command: String, waitForIt: Boolean = true)
 
   /** For a host that has no VS Code to run commands in. Nothing happens, and nothing pretends to. */
   object None : HostCommandRunner {
-    override fun run(command: String) {}
+    override fun run(command: String, waitForIt: Boolean) {}
   }
 }

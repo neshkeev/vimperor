@@ -59,6 +59,9 @@ class IjActionExecutor : VimActionExecutor {
   override val ACTION_REDO: String
     get() = IdeActions.ACTION_REDO
 
+  override val ACTION_GOTO_DECLARATION: String
+    get() = "GotoDeclaration"
+
   var isRunningActionFromVim: Boolean = false
 
   override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean {

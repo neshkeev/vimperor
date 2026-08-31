@@ -60,6 +60,7 @@ const extensionRoot = path.resolve(__dirname, '..', '..')
 const manifest = require(path.join(extensionRoot, 'package.json'))
 
 const output = []
+const dispatchedCommands = []
 const registeredCommands = new Map()
 const disposable = () => ({ dispose() {} })
 
@@ -188,7 +189,13 @@ const vscode = {
       registeredCommands.set(command, callback)
       return disposable()
     },
-    executeCommand: () => ({ then: () => {} }),
+    // Records what was asked for and resolves at once. Resolving matters: the extension holds the
+    // user's keys until a command it is waiting on lands, so a stub whose promise never settled
+    // would silently swallow every scenario after the first fold.
+    executeCommand(command) {
+      dispatchedCommands.push(command)
+      return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+    },
   },
   env: {
     clipboard: {
@@ -300,6 +307,21 @@ assert.strictEqual(
   editor.document._text,
   'alpha a',
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
+)
+
+// The commands only VS Code can run. Folding, changing editor and jumping to a definition are not
+// things this extension can do to a buffer - it asks VS Code by name, and the name is the whole of
+// the contract, since nothing here can check what VS Code then did.
+reset()
+dispatchedCommands.length = 0
+type('z')
+type('o')
+type('g')
+type('t')
+assert.deepStrictEqual(
+  dispatchedCommands,
+  ['editor.unfold', 'workbench.action.nextEditor'],
+  `the wrong commands went to VS Code: ${dispatchedCommands.join(', ')}`,
 )
 
 // Blockwise Visual, which is the only mode that needs the editor to have more than one caret. The

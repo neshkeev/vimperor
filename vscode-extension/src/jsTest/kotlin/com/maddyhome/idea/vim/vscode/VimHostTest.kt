@@ -26,9 +26,12 @@ class VimHostTest {
   /** A VS Code whose commands complete when a test says so, rather than immediately. */
   private class DeferredCommands {
     val dispatched: MutableList<String> = mutableListOf()
-    private val callbacks: MutableList<() -> Unit> = mutableListOf()
+    private val callbacks: MutableList<(Boolean) -> Unit> = mutableListOf()
 
-    fun run(command: String, onDone: () -> Unit) {
+    /** Set to make VS Code reject every command, the way it does for one that does not exist. */
+    var rejectEverything: Boolean = false
+
+    fun run(command: String, onDone: (Boolean) -> Unit) {
       dispatched += command
       callbacks += onDone
     }
@@ -40,7 +43,7 @@ class VimHostTest {
       dispatched.clear()
       callbacks.clear()
       commands.forEach(perform)
-      waiting.forEach { it() }
+      waiting.forEach { it(!rejectEverything) }
     }
   }
 
@@ -155,5 +158,127 @@ class VimHostTest {
 
     session.key("<Esc>")
     assertEquals("NORMAL", session.host.modeName())
+  }
+
+  // ---- The rest of what only VS Code can do: folds, definitions, windows, tabs.
+  //
+  // These reach the same runner undo does, and the point of each test is *which* command goes out.
+  // Nothing here can check what VS Code then did with it - `executeCommand` reports nothing useful
+  // and there is no real editor behind the stub - so the name is the contract.
+
+  @Test
+  fun `test zo asks VS Code to unfold`() {
+    val session = Session("one\ntwo")
+    session.type("zo")
+    assertEquals(listOf("editor.unfold"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test za asks VS Code to toggle the fold`() {
+    val session = Session("one\ntwo")
+    session.type("za")
+    assertEquals(listOf("editor.toggleFold"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test zR unfolds everything`() {
+    val session = Session("one\ntwo")
+    session.type("zR")
+    assertEquals(listOf("editor.unfoldAll"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test gd asks VS Code to reveal the definition`() {
+    val session = Session("one two")
+    session.type("gd")
+    // The engine used to write `GotoDeclaration` into the action itself, which is IntelliJ's name
+    // for it. It asks the host now, the way it already did for the folds.
+    assertEquals(listOf("editor.action.revealDefinition"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test C-W s splits the editor group downwards`() {
+    val session = Session("one two")
+    session.key("<C-W>")
+    session.type("s")
+    assertEquals(listOf("workbench.action.splitEditorDown"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test C-W l moves to the group on the right`() {
+    val session = Session("one two")
+    session.key("<C-W>")
+    session.type("l")
+    assertEquals(listOf("workbench.action.focusRightGroup"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test C-W k moves to the group above`() {
+    val session = Session("one two")
+    session.key("<C-W>")
+    session.type("k")
+    assertEquals(listOf("workbench.action.focusAboveGroup"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test C-W o closes the other groups`() {
+    val session = Session("one two")
+    session.key("<C-W>")
+    session.type("o")
+    assertEquals(listOf("workbench.action.closeEditorsInOtherGroups"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test gt goes to the next editor`() {
+    val session = Session("one two")
+    session.type("gt")
+    assertEquals(listOf("workbench.action.nextEditor"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test a count on gT steps back that many editors`() {
+    val session = Session("one two")
+    session.type("3gT")
+    assertEquals(List(3) { "workbench.action.previousEditor" }, session.commands.dispatched)
+  }
+
+  // Waiting, and not waiting. The difference is whether the command can change the text.
+
+  @Test
+  fun `test changing tab does not hold the keyboard`() {
+    val session = Session("one two")
+    session.type("gt")
+    assertFalse(session.host.isWaitingOnHost, "changing editor does not touch the buffer")
+    session.type("x")
+    assertEquals("ne two", session.content, "the key ran rather than queueing behind the command")
+  }
+
+  @Test
+  fun `test folding does hold the keyboard`() {
+    val session = Session("one two")
+    session.type("zo")
+    assertTrue(session.host.isWaitingOnHost, "a fold changes what visibleRanges says, so it waits")
+  }
+
+  /**
+   * The hazard the rejection branch exists for.
+   *
+   * A VS Code command that does not exist rejects its promise rather than resolving it. A runner
+   * that only listened for success would leave the count above zero and queue every later keystroke
+   * behind a command that is never coming back - one typo in an `<Action>` mapping, and the
+   * keyboard is gone until the window is reloaded.
+   */
+  @Test
+  fun `test a command that VS Code rejects does not take the keyboard with it`() {
+    val session = Session("one two")
+    session.commands.rejectEverything = true
+    session.type("zo")
+    assertTrue(session.host.isWaitingOnHost)
+
+    session.commands.complete { }
+    assertFalse(session.host.isWaitingOnHost, "a rejected command has to release the queue too")
+
+    session.type("x")
+    assertEquals("ne two", session.content)
   }
 }

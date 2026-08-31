@@ -225,5 +225,12 @@ external object TextEditorRevealType {
 
 /** VS Code's promise type. Named as VS Code names it. */
 external interface Thenable<T> {
-  fun then(onFulfilled: (T) -> Unit): Thenable<T>
+  /**
+   * The rejection half is not optional here.
+   *
+   * A VS Code command that does not exist rejects rather than resolving, and this host holds the
+   * user's keystrokes until a command it is waiting on comes back. Listening only for success means
+   * one typo in an `<Action>` mapping takes the keyboard with it, for good.
+   */
+  fun then(onFulfilled: (T) -> Unit, onRejected: (Any?) -> Unit = definedExternally): Thenable<T>
 }

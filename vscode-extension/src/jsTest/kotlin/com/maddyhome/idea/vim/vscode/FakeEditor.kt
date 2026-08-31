@@ -189,7 +189,8 @@ private class FakeEditBuilder(private val document: FakeDocument) : TextEditorEd
  * assert synchronously, and nothing in this code path defers.
  */
 private fun <T> resolved(value: T): Thenable<T> = object : Thenable<T> {
-  override fun then(onFulfilled: (T) -> Unit): Thenable<T> {
+  @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+  override fun then(onFulfilled: (T) -> Unit, onRejected: (Any?) -> Unit): Thenable<T> {
     onFulfilled(value)
     return this
   }

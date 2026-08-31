@@ -750,6 +750,7 @@ private object HeadlessActionExecutor : VimActionExecutor {
   override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = ""
   override val ACTION_UNDO: String = ""
   override val ACTION_REDO: String = ""
+  override val ACTION_GOTO_DECLARATION: String = ""
 
   /** The engine running its own handler - the only one of these that is not about the IDE. */
   override fun executeVimAction(
