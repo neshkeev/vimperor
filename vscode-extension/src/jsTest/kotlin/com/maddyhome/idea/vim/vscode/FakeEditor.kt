@@ -82,9 +82,47 @@ class FakeEditor(text: String) : TextEditor {
   /** What the editor was asked to scroll to, so a test can see that it was asked at all. */
   val revealedRanges: MutableList<Range> = mutableListOf()
 
+  /**
+   * A viewport, because scrolling cannot be tested without one.
+   *
+   * VS Code gives an extension half a conversation: `revealRange` moves the view and
+   * `visibleRanges` says where it ended up. A fake that recorded the reveal and left
+   * `visibleRanges` alone would let every scroll command pass while doing nothing, since each one
+   * reads the view back to work out where to go next. So this models the view the way the editor
+   * does - a window [viewportHeight] lines tall starting at [topLine], moved by a reveal according
+   * to the type it was given, and never scrolled above the first line.
+   *
+   * Folding is not modelled: `visibleRanges` is always one range. This host cannot fold anyway.
+   */
+  var viewportHeight: Int = 10
+  var topLine: Int = 0
+
+  private val lastLine: Int get() = document.lineCount - 1
+
+  override val visibleRanges: Array<Range>
+    get() {
+      val top = topLine.coerceIn(0, lastLine)
+      val bottom = (top + viewportHeight - 1).coerceIn(0, lastLine)
+      return arrayOf(Range(Position(top, 0), Position(bottom, 0)))
+    }
+
   @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
   override fun revealRange(range: Range, revealType: Int) {
     revealedRanges += range
+    val start = range.start.line
+    val end = range.end.line
+    topLine = when (revealType) {
+      TextEditorRevealType.AtTop -> start
+      TextEditorRevealType.InCenter -> start - (viewportHeight - 1) / 2
+      TextEditorRevealType.InCenterIfOutsideViewport ->
+        if (start < topLine || end > topLine + viewportHeight - 1) start - (viewportHeight - 1) / 2 else topLine
+      // Default: the smallest scroll that brings the range on screen.
+      else -> when {
+        start < topLine -> start
+        end > topLine + viewportHeight - 1 -> end - viewportHeight + 1
+        else -> topLine
+      }
+    }.coerceIn(0, lastLine)
   }
 
   /** What each decoration type currently paints, which is what VS Code's replace-not-add model is. */

@@ -106,7 +106,33 @@ function makeEditor(text) {
     document,
     selection: { anchor: new Position(0, 0), active: new Position(0, 0) },
     selections: [{ anchor: new Position(0, 0), active: new Position(0, 0) }],
-    revealRange() {},
+
+    // A viewport, ten lines tall, because `visibleRanges` is half of VS Code's scrolling API and
+    // the commands that use it read the view back to work out where to scroll next.
+    viewportHeight: 10,
+    topLine: 0,
+    get visibleRanges() {
+      const last = document.lineCount - 1
+      const top = Math.min(Math.max(this.topLine, 0), last)
+      const bottom = Math.min(Math.max(top + this.viewportHeight - 1, 0), last)
+      return [new Range(new Position(top, 0), new Position(bottom, 0))]
+    },
+    revealRange(range, revealType) {
+      const last = document.lineCount - 1
+      const start = range.start.line
+      const end = range.end.line
+      const middle = start - Math.floor((this.viewportHeight - 1) / 2)
+      let top
+      if (revealType === 3) top = start
+      else if (revealType === 1) top = middle
+      else if (revealType === 2) {
+        const outside = start < this.topLine || end > this.topLine + this.viewportHeight - 1
+        top = outside ? middle : this.topLine
+      } else if (start < this.topLine) top = start
+      else if (end > this.topLine + this.viewportHeight - 1) top = end - this.viewportHeight + 1
+      else top = this.topLine
+      this.topLine = Math.min(Math.max(top, 0), last)
+    },
     decorations: new Map(),
     setDecorations(type, ranges) {
       this.decorations.set(type, ranges)
@@ -274,6 +300,33 @@ assert.strictEqual(
   editor.document._text,
   'alpha a',
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
+)
+
+// Scrolling, which is the one thing in this file that needs the stub to have a viewport at all.
+// Vim moves the view and VS Code will only reveal a range, so every scroll command reads
+// `visibleRanges` back to work out where to reveal next - and a stub whose view never moved would
+// let all of them pass while doing nothing. Twenty lines, a ten-line window: `<C-E>` moves the view
+// down one and leaves the caret where it was, and `zt` puts the caret's line at the top.
+reset()
+type('i')
+for (let line = 0; line < 20; line++) {
+  if (line > 0) press('<CR>')
+  for (const character of `line ${line}`) type(character)
+}
+press('<Esc>')
+for (const character of 'gg') type(character)
+
+press('<C-E>')
+assert.strictEqual(editor.topLine, 1, `<C-E> did not scroll the view. Top line: ${editor.topLine}`)
+
+for (const character of '12G') type(character)
+for (const character of 'zt') type(character)
+assert.strictEqual(editor.topLine, 11, `zt did not put the caret's line at the top. Top line: ${editor.topLine}`)
+
+type('x')
+assert.ok(
+  editor.document._text.split('\n')[11] === 'ine 11',
+  `zt left the caret somewhere other than line 11. Got: ${editor.document._text.split('\n')[11]}`,
 )
 
 // Enter, in Normal mode. An ordinary key, and until the host could answer "no, there is no live

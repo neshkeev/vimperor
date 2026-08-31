@@ -38,6 +38,8 @@ import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimUndoRedo
 import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvider
 import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
+import kotlin.math.max
+import kotlin.math.min
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.vimscript.services.VimVariableServiceBase
 import com.maddyhome.idea.vim.put.PutData
@@ -536,28 +538,57 @@ class VsCodeInjector(
 
   override val motion: VimMotionGroup by lazy {
     object : VimMotionGroupBase() {
-      // Screen motions rather than buffer ones. VS Code can answer them - `visibleRanges` is the
-      // viewport - and nothing has needed them yet, so they name themselves rather than guess.
+      // `H`, `M` and `L`: the caret to the top, middle or bottom of what is on screen. See
+      // [displayLine], which does the arithmetic, and `'startofline'`, which decides the column.
+      // A count is a line in from the edge, so `1H` is `H` and the offset it names is one less.
       override fun moveCaretToFirstDisplayLine(editor: VimEditor, caret: ImmutableVimCaret, count: Int, normalizeToScreen: Boolean): Int =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        moveToDisplayLine(editor, caret, ScreenLocation.TOP, count - 1, normalizeToScreen)
 
       override fun moveCaretToMiddleDisplayLine(editor: VimEditor, caret: ImmutableVimCaret): Int =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        moveToDisplayLine(editor, caret, ScreenLocation.MIDDLE, 0, false)
 
       override fun moveCaretToLastDisplayLine(editor: VimEditor, caret: ImmutableVimCaret, count: Int, normalizeToScreen: Boolean): Int =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        moveToDisplayLine(editor, caret, ScreenLocation.BOTTOM, count - 1, normalizeToScreen)
 
+      private fun moveToDisplayLine(
+        editor: VimEditor,
+        caret: ImmutableVimCaret,
+        location: ScreenLocation,
+        lineOffset: Int,
+        normalizeToScreen: Boolean,
+      ): Int {
+        val vsCode = editor as? VsCodeEditor ?: return caret.offset
+        val line = vsCode.displayLine(location, lineOffset, normalizeToScreen)
+        return moveCaretToLineWithStartOfLineOption(editor, line, caret)
+      }
+
+      /**
+       * `g0`, `g^`, `g$` and `gm` - the same motions, but across the *screen* line.
+       *
+       * They differ from `0`, `^` and `$` only when a buffer line is shown as more than one screen
+       * line, or when the view has been scrolled sideways. `visibleRanges` carries no columns, so
+       * this host cannot see either, and answers as if the line starts at column 0 and ends where
+       * the buffer line ends - which is the right answer whenever the line fits on screen, and the
+       * same answer Vim gives with `'nowrap'` and no horizontal scroll.
+       *
+       * `gm` is the exception that can be done properly: it is defined in terms of the width of the
+       * window rather than of the line, and [EngineEditorHelper.getApproximateScreenWidth] is the
+       * same 80 columns Vim's own default assumes.
+       */
       override fun moveCaretToCurrentDisplayLineStart(editor: VimEditor, caret: ImmutableVimCaret): Motion =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        moveCaretToColumn(editor, caret, 0, false)
 
       override fun moveCaretToCurrentDisplayLineStartSkipLeading(editor: VimEditor, caret: ImmutableVimCaret): Int =
-        TODO("VS Code host: display-line motions need visibleRanges")
-
-      override fun moveCaretToCurrentDisplayLineMiddle(editor: VimEditor, caret: ImmutableVimCaret): Motion =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        editor.getLeadingCharacterOffset(caret.getLine(), 0)
 
       override fun moveCaretToCurrentDisplayLineEnd(editor: VimEditor, caret: ImmutableVimCaret, allowEnd: Boolean): Motion =
-        TODO("VS Code host: display-line motions need visibleRanges")
+        moveCaretToColumn(editor, caret, editor.lineLength(caret.getLine()) - 1, allowEnd)
+
+      override fun moveCaretToCurrentDisplayLineMiddle(editor: VimEditor, caret: ImmutableVimCaret): Motion {
+        val width = injector.engineEditorHelper.getApproximateScreenWidth(editor) / 2
+        val length = editor.lineLength(caret.getLine())
+        return moveCaretToColumn(editor, caret, max(0, min(length - 1, width)), false)
+      }
 
       override fun moveCaretGotoNextTab(editor: VimEditor, context: ExecutionContext, rawCount: Int): Int =
         TODO("VS Code host: tab motions need the editor group API")
@@ -613,10 +644,13 @@ class VsCodeInjector(
       override fun inlayAwareOffsetToVisualPosition(editor: VimEditor, offset: Int): VimVisualPosition =
         editor.offsetToVisualPosition(offset)
 
-      // The viewport. `visibleRanges` is the real answer and folding makes it necessary; until
-      // something needs it, the whole buffer is treated as on screen.
-      override fun getVisualLineAtTopOfScreen(editor: VimEditor): Int = 0
-      override fun getVisualLineAtBottomOfScreen(editor: VimEditor): Int = editor.lineCount() - 1
+      // The viewport, read from `visibleRanges`. Visual lines rather than buffer lines is a
+      // distinction this host does not yet have to make: it cannot fold, so they are the same.
+      override fun getVisualLineAtTopOfScreen(editor: VimEditor): Int =
+        (editor as? VsCodeEditor)?.screenTopLine ?: 0
+
+      override fun getVisualLineAtBottomOfScreen(editor: VimEditor): Int =
+        (editor as? VsCodeEditor)?.screenBottomLine ?: (editor.lineCount() - 1)
 
       /** `:registers` and `:marks` truncate to a width; 80 is the traditional answer. */
       override fun getApproximateScreenWidth(editor: VimEditor): Int = 80
@@ -1106,45 +1140,6 @@ private object VimOnlyActionExecutor : VimActionExecutor {
     findVimAction(id) ?: error("no Vim action with id $id")
 }
 
-private object RevealingScrollGroup : VimScrollGroup {
-  override fun scrollCaretIntoView(editor: VimEditor) {
-    val vsCode = editor as? VsCodeEditor ?: return
-    // From the buffer rather than from the document: this runs mid-command, before the flush, when
-    // the document still has the old text and `positionAt` would answer about that.
-    val position = vsCode.offsetToBufferPosition(vsCode.primaryCaret().offset)
-    val at = Position(position.line, position.column)
-    vsCode.nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
-  }
-
-  // Vim scrolls the view and lets the caret follow; VS Code only reveals a range. Working out where
-  // the view is now - which is what makes "down half a page" meaningful - needs `visibleRanges`.
-  override fun scrollFullPage(editor: VimEditor, caret: VimCaret, pages: Int): Boolean =
-    TODO("VS Code host: page scrolling needs visibleRanges")
-
-  override fun scrollHalfPage(editor: VimEditor, caret: VimCaret, rawCount: Int, down: Boolean): Boolean =
-    TODO("VS Code host: page scrolling needs visibleRanges")
-
-  override fun scrollLines(editor: VimEditor, lines: Int): Boolean =
-    TODO("VS Code host: line scrolling needs visibleRanges")
-
-  override fun scrollCurrentLineToDisplayTop(editor: VimEditor, rawCount: Int, start: Boolean): Boolean =
-    TODO("VS Code host: zt needs visibleRanges")
-
-  override fun scrollCurrentLineToDisplayMiddle(editor: VimEditor, rawCount: Int, start: Boolean): Boolean =
-    TODO("VS Code host: zz needs visibleRanges")
-
-  override fun scrollCurrentLineToDisplayBottom(editor: VimEditor, rawCount: Int, start: Boolean): Boolean =
-    TODO("VS Code host: zb needs visibleRanges")
-
-  override fun scrollColumns(editor: VimEditor, columns: Int): Boolean =
-    TODO("VS Code host: horizontal scrolling needs visibleRanges")
-
-  override fun scrollCaretColumnToDisplayLeftEdge(vimEditor: VimEditor): Boolean =
-    TODO("VS Code host: horizontal scrolling needs visibleRanges")
-
-  override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean =
-    TODO("VS Code host: horizontal scrolling needs visibleRanges")
-}
 
 /**
  * For a host with nowhere to put output.

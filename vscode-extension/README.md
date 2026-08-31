@@ -81,11 +81,20 @@ the output is showing, which is a deliberate difference from Vim.
 What is not built yet is written down rather than left to be discovered. `VsCodeUnimplementedTest`
 presses every key the engine registers and asserts the list of the ones that land on a host service
 this port has not written; implementing a service shrinks the list, and a key that starts or stops
-reaching one shows up as a diff. That list is the honest map of the gap. The largest entries are
-scrolling and the `H`/`M`/`L` motions, which need `TextEditor.visibleRanges`; blockwise Visual,
-which needs multiple carets; and `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS
-Code command and a way to wait for it. `[m` and `]s` need a language server and a spellchecker, and
-will most likely stay on the list.
+reaching one shows up as a diff. That list is the honest map of the gap. The largest entry left is
+blockwise Visual, which needs multiple carets; then `<C-W>` windows, `gt` tabs, folds and `ZZ`,
+which each need a VS Code command and a way to wait for it. `[m` and `]s` need a language server and
+a spellchecker, and will most likely stay on the list.
+
+Scrolling is off it. Vim moves the *view* - `<C-E>` by a line, `<C-D>` by half a window, `zt` to put
+the current line at the top - and lets the caret follow; VS Code's extension API has no verb for
+that, only `revealRange`. What makes them reconcilable is `visibleRanges`, which says where the view
+currently is: read it, do Vim's arithmetic in line numbers, and reveal the line that should end up
+at the top. `<C-E>`, `<C-Y>`, `<C-F>`, `<C-B>`, `<C-D>`, `<C-U>`, `zt`, `zz`, `zb` and `H`/`M`/`L`
+are all that one call. Sideways scrolling is not: `visibleRanges` carries no columns and nothing can
+scroll by one, so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` report failure, which is what Vim does when
+a scroll has nowhere to go. For the same reason `g0` and `g$` answer as if the line starts at column
+0 and ends where the buffer line ends - right whenever the line fits on screen.
 
 `%`, `di(` and the rest of the bracket text objects need to know whether a bracket is code or is
 written inside a string or a comment, or they land on the wrong pair. IdeaVim asks IntelliJ's syntax

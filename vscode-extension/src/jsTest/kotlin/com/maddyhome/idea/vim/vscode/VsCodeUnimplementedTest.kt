@@ -81,39 +81,25 @@ class VsCodeUnimplementedTest {
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
-     * Roughly in order of what they would cost: the scrolling group needs `TextEditor.visibleRanges`
-     * and is the biggest single win here, since `<C-D>`, `<C-U>`, `zz` and `H`/`M`/`L` are everyday
-     * keys. Blockwise Visual needs multiple carets. Folds, windows, tabs and `:w`/`:q` each need a
-     * VS Code command and a way to wait for it. A spellchecker and a language server this host does
-     * not have at all, and `[m`, `]s` and `z=` will most likely stay here.
+     * Roughly in order of what they would cost: blockwise Visual needs multiple carets, and is the
+     * biggest single win left. Folds, windows, tabs and `:w`/`:q` each need a VS Code command and a
+     * way to wait for it. `S` wants the file's indent settings, which means declaring
+     * `TextEditor.options`. A spellchecker and a language server this host does not have at all, so
+     * `[m`, `]s` and `z=` will most likely stay here.
      */
     const val EXPECTED = """
 VS Code host: U needs the same host history undo does
     U
-VS Code host: display-line motions need visibleRanges
-    H L M g$ g0 g<End> g<Home> g^ gm
 VS Code host: findMethodEnd needs a language server
     [M ]M
 VS Code host: findMethodStart needs a language server
     [m ]m
 VS Code host: findMisspelledWord needs a spellchecker
     [s ]s
-VS Code host: horizontal scrolling needs visibleRanges
-    z<Left> z<Right> zH zL ze zh zl zs
-VS Code host: line scrolling needs visibleRanges
-    <C-E> <C-Y>
-VS Code host: page scrolling needs visibleRanges
-    <C-B> <C-D> <C-F> <C-R><C-F> <C-R><C-O><C-F> <C-R><C-R><C-F> <C-U> <Pagedown> <Pageup> <S-CR> <S-Down> <S-Up>
 VS Code host: running its commands is asynchronous
     <C-]> gD gd zC zO za zc zo
 VS Code host: tab motions need the editor group API
     <C-Pagedown> <C-Pageup> gT gt
-VS Code host: zb needs visibleRanges
-    z- z^ zb
-VS Code host: zt needs visibleRanges
-    z+ z<CR> zt
-VS Code host: zz needs visibleRanges
-    z. zz
 VsCodeEditor.createIndentBySize
     S
 VsCodeEditor.deleteFoldRegionAtOffset

@@ -184,6 +184,18 @@ external interface TextEditor {
   fun revealRange(range: Range, revealType: Int = definedExternally)
 
   /**
+   * What is on screen, as line ranges, in order.
+   *
+   * The other half of scrolling: [revealRange] moves the view and this says where it now is. Vim's
+   * `<C-E>`, `<C-D>` and `zt` are all defined as moving the view relative to where it already is,
+   * so neither call is any use without the other.
+   *
+   * More than one range means something between them is folded. It can be empty for an editor that
+   * has not been laid out yet, which is a case worth handling rather than indexing into.
+   */
+  val visibleRanges: Array<Range>
+
+  /**
    * Paints [ranges] with [decorationType], replacing whatever that type painted before.
    *
    * Replacing rather than adding is the whole model: there is no way to remove one decoration, so
