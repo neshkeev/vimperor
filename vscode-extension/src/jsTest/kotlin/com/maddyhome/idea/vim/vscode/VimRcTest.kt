@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.command.MappingMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -133,6 +134,30 @@ class VimRcTest {
     session.type("Q")
 
     assertEquals("two", session.content, "the mapping after the broken line should still be set")
+  }
+
+  /**
+   * `:loadkeymap`, which is only legal in a sourced file - so this is the only place it can be
+   * tested from, and the reason it stayed on the unbuilt list after every key had been swept.
+   *
+   * Everything below the command is its argument, all the way to the end of the file. Each row
+   * becomes a language mapping, which is what `'keymap'` is built out of.
+   */
+  @Test
+  fun `test loadkeymap in the config registers language mappings`() {
+    val home = writing(
+      mapOf(
+        ".ideavimrc" to "loadkeymap\n\" a comment row\na b\nc d\n",
+      ),
+    )
+    val session = Session("one two", emptyMap())
+
+    session.load(mapOf("HOME" to home))
+
+    assertEquals(emptyList(), session.sink.errors, "the config should have run without complaint")
+    val mapping = injector.keyGroup.getKeyMapping(MappingMode.LANG)
+    assertTrue(mapping.hasmapto(injector.parser.parseKeys("b")), "`a` should map to `b`")
+    assertTrue(mapping.hasmapto(injector.parser.parseKeys("d")), "`c` should map to `d`")
   }
 }
 

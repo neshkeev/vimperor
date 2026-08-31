@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
+import com.maddyhome.idea.vim.api.VimCommandGroup
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,17 +88,27 @@ class VsCodeUnimplementedTest {
    * It found nothing, and a sweep that finds nothing is indistinguishable from a sweep that is not
    * looking - which is not a hypothetical: an earlier version of the ex-command sweep passed
    * silently while `:w` was broken, because it watched for a crash and the executor turns the crash
-   * into a message. So this points the same detector at a command that is known to be unbuilt, and
-   * at one that is known to work.
+   * into a message.
    *
-   * The command it names has to be one that is still unbuilt, so this test starts failing when
-   * that one is implemented - as `:tabclose` already did, one commit after it was written. The fix
-   * is to point it at whatever is still on the list, never to delete it.
+   * So the detector is pointed at the same command twice: once at this host, and once at a host
+   * with one service taken back out. Earlier versions of this test named a command that happened
+   * to be unbuilt, and both of them rotted - `:tabclose` one commit after it was written, and
+   * `:loadkeymap` the commit that emptied the list. A hole this test digs itself cannot be filled
+   * in by accident.
    */
   @Test
   fun `test the sweep can tell an unbuilt command from a working one`() {
-    assertTrue(apologises(":loadkeymap"), ":loadkeymap is on the list above, so the sweep must see it")
-    assertFalse(apologises(":set number?"), "an option that prints is a working command")
+    assertFalse(apologises(":comclear"), "`:comclear` works on this host")
+    assertTrue(
+      apologises(":comclear") { WithoutCommandGroup(it) },
+      "the same command must be caught when the service behind it is missing",
+    )
+  }
+
+  /** This host, minus one service, to prove the sweep would notice if a service went missing. */
+  private class WithoutCommandGroup(sink: MessageSink) : VsCodeInjector(messageSink = sink) {
+    override val commandGroup: VimCommandGroup
+      get() = TODO("the VS Code host does not provide commandGroup yet")
   }
 
   /** How many probes the sweep makes, so that an empty result cannot be an empty loop. */
@@ -117,7 +128,10 @@ class VsCodeUnimplementedTest {
   }
 
   /** Runs one `:` line and says whether the host admitted to not being built. */
-  private fun apologises(probe: String): Boolean {
+  private fun apologises(
+    probe: String,
+    host: (MessageSink) -> VsCodeInjector = { VsCodeInjector(messageSink = it) },
+  ): Boolean {
     val said = mutableListOf<String>()
     val sink = object : MessageSink {
       override fun message(text: String?) { said += text.orEmpty() }
@@ -126,7 +140,7 @@ class VsCodeUnimplementedTest {
     }
     try {
       val fake = FakeEditor("one two\nthree four")
-      injector = VsCodeInjector(messageSink = sink).also { it.register(VsCodeEditor(fake)) }
+      injector = host(sink).also { it.register(VsCodeEditor(fake)) }
       engineCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
       VsCodeCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
       injector.functionService.registerHandlers()
@@ -248,7 +262,6 @@ class VsCodeUnimplementedTest {
 """
 
     const val EXPECTED_EX = """
-:com :comc :loadk
 """
 
     const val EXPECTED = """

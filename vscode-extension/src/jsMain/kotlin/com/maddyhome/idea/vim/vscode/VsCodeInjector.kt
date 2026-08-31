@@ -67,7 +67,7 @@ import kotlin.reflect.KClass
  * synchronous/asynchronous problem and it has no `DocumentBuffer`-shaped escape: buffering a write
  * works, inventing the result of a read does not.
  */
-class VsCodeInjector(
+open class VsCodeInjector(
   private val messageSink: MessageSink = MessageSink.Discarding,
   private val hostCommands: HostCommandRunner = HostCommandRunner.None,
   private val commandLineDisplay: CommandLineDisplay = NoDisplay,
@@ -229,6 +229,18 @@ class VsCodeInjector(
 
   /** `:abbreviate`, which is a map from a trigger to its expansion and nothing host-shaped. */
   override val abbreviationGroup: VimAbbreviationGroup by lazy { VimAbbreviationGroupBase() }
+
+  /**
+   * `:command`, which is a name and the line it stands for. Engine work, like the digraph table:
+   * the aliases live in a map and expanding one is a string substitution.
+   */
+  override val commandGroup: VimCommandGroup by lazy { object : VimCommandGroupBase() {} }
+
+  /**
+   * `:loadkeymap`, which registers a table of `:lmap`s. Also engine work, and it took being asked
+   * for to notice - it had been sitting in the IntelliJ module with nothing IntelliJ-shaped in it.
+   */
+  override val keymapGroup: VimKeymapGroup by lazy { object : VimKeymapGroupBase() {} }
 
   /**
    * Recording and replaying keystrokes, which is engine work - `q` collects keys and `@` feeds them

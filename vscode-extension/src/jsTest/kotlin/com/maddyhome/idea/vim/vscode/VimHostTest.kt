@@ -295,6 +295,39 @@ class VimHostTest {
     assertEquals(listOf("workbench.action.files.save"), session.commands.dispatched)
   }
 
+  // ---- `:command`, the last thing behind a colon that was not built.
+  //
+  // Reached by the ex sweep and fixed the way the digraph table was: the alias map and the
+  // substitution that expands one are engine work, and the host only had to say so.
+
+  @Test
+  fun `test a command defined with colon command can then be run`() {
+    val session = Session("one two")
+    session.type(":command Save w")
+    session.key("<CR>")
+    session.type(":Save")
+    session.key("<CR>")
+
+    assertEquals(listOf("workbench.action.files.save"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test colon comclear forgets the commands that were defined`() {
+    val session = Session("one two")
+    session.type(":command Save w")
+    session.key("<CR>")
+    session.type(":comclear")
+    session.key("<CR>")
+    session.type(":Save")
+    session.key("<CR>")
+
+    assertEquals(
+      emptyList(),
+      session.commands.dispatched,
+      "the alias is gone, so `:Save` is an unknown command rather than a save",
+    )
+  }
+
   @Test
   fun `test colon q closes the editor`() {
     val session = Session("one two")

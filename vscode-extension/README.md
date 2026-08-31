@@ -85,11 +85,14 @@ reaching one shows up as a diff. That list is the honest map of the gap. What is
 `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
 it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
 
-There are four sweeps now, and the fourth one found nothing - which is the point of writing it down.
-Keys and ex commands each hid something; options and Vimscript functions turned out to be clean.
-That is only worth believing because the sweep is tested too: one case that is known to be unbuilt
-and one that is known to work, so an empty result cannot be an empty loop. The first version of the
-ex sweep passed while `:w` was broken, and nothing about it looked wrong.
+There are four sweeps now, and three of them find nothing. Keys and ex commands each hid something;
+options and Vimscript functions were clean from the start, and the ex list is empty as of
+`:command`. That is only worth believing because the sweep is tested too - and testing it turned
+out to be harder than writing it. The first two attempts named a command that happened to be
+unbuilt, and both rotted within a commit or two of being written, because the list they pointed
+into is the list this port is emptying. What the test does now is run the same command against this
+host and against this host with one service taken back out. A hole the test digs itself cannot be
+filled in by accident.
 
 `:w` and `:q` work, which they did not until recently, and the way that was found is worth writing
 down. The inventory presses keys, and everything behind a colon was invisible to it - so `:w`, `:q`,
@@ -98,6 +101,11 @@ commit and nothing had noticed. Worse, they were not even crashing: the Vimscrip
 `NotImplementedError` on purpose and turns it into that message, so an ex command standing on an
 unbuilt service apologises rather than failing. There is a second sweep now that types every
 registered ex command and watches the messages rather than the exceptions.
+
+`:command` and `:loadkeymap` were the last two, and both were the same discovery this port keeps
+making: the code was already written and living in the IntelliJ module with nothing IntelliJ-shaped
+in it. An alias is a name and the line it stands for; `:loadkeymap` is a table of `:lmap`s. Both
+moved into the engine, where IntelliJ now uses the same implementation this does.
 
 Two of them stop short of Vim. `:e file` and `:w file` need a path turned into a document, which is
 `showTextDocument` and `workspace.fs` rather than a command, and `:bdelete N` asks for a buffer
