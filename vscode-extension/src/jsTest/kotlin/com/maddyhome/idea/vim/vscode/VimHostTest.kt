@@ -281,4 +281,78 @@ class VimHostTest {
     session.type("x")
     assertEquals("ne two", session.content)
   }
+
+  // ---- `:w`, `:q` and the rest of what lives behind a colon.
+  //
+  // These were the largest hole in the port and nothing had found them, because the inventory that
+  // finds holes presses keys and every one of these is a name typed at a command line.
+
+  @Test
+  fun `test colon w asks VS Code to save`() {
+    val session = Session("one two")
+    session.type(":w")
+    session.key("<CR>")
+    assertEquals(listOf("workbench.action.files.save"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test colon q closes the editor`() {
+    val session = Session("one two")
+    session.type(":q")
+    session.key("<CR>")
+    assertEquals(listOf("workbench.action.closeActiveEditor"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test colon wq saves and then closes`() {
+    val session = Session("one two")
+    session.type(":wq")
+    session.key("<CR>")
+    assertEquals(
+      listOf("workbench.action.files.save", "workbench.action.closeActiveEditor"),
+      session.commands.dispatched,
+    )
+  }
+
+  @Test
+  fun `test ZZ is colon wq by another name`() {
+    val session = Session("one two")
+    session.type("ZZ")
+    assertEquals(
+      listOf("workbench.action.files.save", "workbench.action.closeActiveEditor"),
+      session.commands.dispatched,
+    )
+  }
+
+  @Test
+  fun `test ZQ closes without saving`() {
+    val session = Session("one two")
+    session.type("ZQ")
+    assertEquals(listOf("workbench.action.closeActiveEditor"), session.commands.dispatched)
+  }
+
+  @Test
+  fun `test colon bnext goes to the next editor`() {
+    val session = Session("one two")
+    session.type(":bn")
+    session.key("<CR>")
+    assertEquals(listOf("workbench.action.nextEditor"), session.commands.dispatched)
+  }
+
+  /**
+   * Saving waits, which is not obvious: it does not change the text by itself. Format-on-save does,
+   * and a keystroke computed against the pre-format text would land on top of the formatting.
+   */
+  @Test
+  fun `test saving holds the keyboard but closing does not`() {
+    val save = Session("one two")
+    save.type(":w")
+    save.key("<CR>")
+    assertTrue(save.host.isWaitingOnHost, "format-on-save can rewrite the document")
+
+    val close = Session("one two")
+    close.type(":q")
+    close.key("<CR>")
+    assertFalse(close.host.isWaitingOnHost, "closing an editor changes no text")
+  }
 }

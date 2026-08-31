@@ -85,6 +85,19 @@ reaching one shows up as a diff. That list is the honest map of the gap. What is
 `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
 it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
 
+`:w` and `:q` work, which they did not until recently, and the way that was found is worth writing
+down. The inventory presses keys, and everything behind a colon was invisible to it - so `:w`, `:q`,
+`:wq`, `:x`, `:bnext` and twenty more had been reporting "Not implemented yet :(" since the first
+commit and nothing had noticed. Worse, they were not even crashing: the Vimscript executor catches
+`NotImplementedError` on purpose and turns it into that message, so an ex command standing on an
+unbuilt service apologises rather than failing. There is a second sweep now that types every
+registered ex command and watches the messages rather than the exceptions.
+
+Two of them stop short of Vim. `:e file` and `:w file` need a path turned into a document, which is
+`showTextDocument` and `workspace.fs` rather than a command, and `:bdelete N` asks for a buffer
+number, which VS Code does not have - an editor has a position among the tabs and no identity beyond
+its file. Each says so instead of doing something close but wrong.
+
 Folds, `<C-W>` windows, `gt` tabs and `gd` are off it too, and all for the same reason: each of them
 is a VS Code command, and the queue that undo needed already knew how to wait for one. What is new
 is deciding *when* to wait. Undo, redo and reformatting rewrite the document behind the engine's

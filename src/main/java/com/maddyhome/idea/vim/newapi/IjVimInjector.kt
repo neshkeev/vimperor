@@ -233,7 +233,11 @@ internal class IjVimInjector : VimInjectorBase() {
   override val highlightingService: VimHighlightingService
     get() = service()
 
-  override val pathExpansion: VimPathExpansion = VimPathExpansionImpl()
+  // `user.home` rather than $HOME, which is what this host has always used and what the JVM
+  // resolves per platform; the engine's own default reads the environment, which a JavaScript
+  // runtime has and a JVM property is not.
+  override val pathExpansion: VimPathExpansion =
+    VimPathExpansionImpl(homeDirectory = { System.getProperty("user.home") })
 
   override val timerService: VimTimerService = IjVimTimerService()
 

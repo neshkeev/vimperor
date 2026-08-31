@@ -13,7 +13,12 @@ import kotlin.test.assertEquals
 
 class VimPathExpansionTest {
   // Reads the real process environment, as this test always has: it asserts against PATH and HOME.
-  private val pathExpansion = VimPathExpansionImpl { System.getenv(it) }
+  // Named, not a trailing lambda: `homeDirectory` is the last parameter now, and a trailing lambda
+  // would silently become that instead of `getenv`.
+  private val pathExpansion = VimPathExpansionImpl(
+    getenv = { System.getenv(it) },
+    homeDirectory = { System.getProperty("user.home") },
+  )
   private val home = System.getProperty("user.home")
 
   @Test

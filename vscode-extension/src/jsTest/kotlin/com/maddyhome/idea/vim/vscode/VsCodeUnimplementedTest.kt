@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,6 +39,72 @@ class VsCodeUnimplementedTest {
   fun `test the keys that reach an unbuilt part of the host are the ones listed here`() {
     assertEquals(EXPECTED.trim(), sweep().trim())
   }
+
+  /**
+   * The same question asked of the ex commands, which the key sweep cannot reach.
+   *
+   * It only presses keys, so everything behind `:` was invisible to it - and that blind spot hid
+   * `:w` and `:q`, which are not obscure. A colon command is a name rather than a key, so this
+   * types each registered one at the command line and watches for the same crash.
+   *
+   * Bare, with no arguments and no range. That is enough to find a missing *service*, which is what
+   * this is looking for; a command that needs an argument reports a Vim error rather than failing,
+   * and an error is a working command.
+   *
+   * It watches the messages rather than the exception, which is the whole reason this had to be
+   * written separately. The Vimscript executor catches `NotImplementedError` on purpose and turns
+   * it into "Not implemented yet :(" - so an ex command standing on an unbuilt service does not
+   * crash, it apologises. Nothing that looked for a crash would ever have found `:w`.
+   */
+  @Test
+  fun `test the ex commands that reach an unbuilt part of the host are the ones listed here`() {
+    assertEquals(EXPECTED_EX.trim(), sweepExCommands().trim())
+  }
+
+  private fun sweepExCommands(): String {
+    val unbuilt = mutableListOf<String>()
+    injector = VsCodeInjector().also { it.register(VsCodeEditor(FakeEditor(""))) }
+
+    // "w[rite]" names both `:w` and `:write`; the short form is the one to type.
+    val names = engineExCommandProvider.getCommands().keys
+      .map { it.substringBefore('[') }
+      .filter { it.isNotEmpty() && it.all { c -> c.isLetter() } }
+      .distinct()
+      .sorted()
+
+    for (name in names) {
+      val said = mutableListOf<String>()
+      val sink = object : MessageSink {
+        override fun message(text: String?) { said += text.orEmpty() }
+        override fun error(text: String?) { said += text.orEmpty() }
+        override fun status(text: String?) { said += text.orEmpty() }
+      }
+      try {
+        val fake = FakeEditor("one two\nthree four\nfive six")
+        injector = VsCodeInjector(messageSink = sink).also { it.register(VsCodeEditor(fake)) }
+        engineCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+        VsCodeCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+        injector.functionService.registerHandlers()
+        val editor = injector.editorGroup.getEditors().first() as VsCodeEditor
+        val handler = KeyHandler.getInstance()
+        handler.fullReset(editor)
+        for (stroke in injector.parser.parseKeys(":" + name + "<CR>")) {
+          handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+        }
+        editor.flush()
+      } catch (e: NotImplementedError) {
+        // Reached when the command throws outside the executor's own catch.
+        said += NOT_IMPLEMENTED
+      } catch (e: Throwable) {
+        // A Vim error, a bad argument, a command that needs a range - all of them are the command
+        // working. Only an unbuilt part of the host is being looked for here.
+      }
+      if (said.any { it.contains(NOT_IMPLEMENTED) }) unbuilt += ":" + name
+    }
+
+    return unbuilt.sorted().joinToString(" ")
+  }
+
 
   private fun sweep(): String {
     val found = mutableMapOf<String, MutableSet<String>>()
@@ -78,6 +145,9 @@ class VsCodeUnimplementedTest {
   }
 
   private companion object {
+    /** What the Vimscript executor says instead of letting a NotImplementedError out. */
+    const val NOT_IMPLEMENTED = "Not implemented yet"
+
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
@@ -87,6 +157,10 @@ class VsCodeUnimplementedTest {
      * history this host does not keep. A spellchecker and a language server it does not have at
      * all, so `[m`, `]s` and `z=` will most likely stay here.
      */
+    const val EXPECTED_EX = """
+:com :comc :loadk :tabc :tabm :tabo
+"""
+
     const val EXPECTED = """
 VS Code host: U needs the same host history undo does
     U
@@ -98,8 +172,6 @@ VS Code host: findMisspelledWord needs a spellchecker
     [s ]s
 VsCodeEditor.createIndentBySize
     S
-the VS Code host does not provide file yet
-    <C-6> <C-G> <C-G>u <C-S-6> <C-^> ZQ ZZ g8 g<C-G>
 the VS Code host does not provide searchWindowGroup yet
     q/ q: q?
 the VS Code host does not provide spellcheckerService yet

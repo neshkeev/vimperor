@@ -25,6 +25,15 @@ class VimPathExpansionImpl(
    * supply its own lookup.
    */
   private val getenv: (String) -> String? = { injector.systemInfoService.getenv(it) },
+
+  /**
+   * Where `~` points.
+   *
+   * A parameter for the same reason [getenv] is, and for one more: the JVM has
+   * `System.getProperty("user.home")` and a JavaScript runtime does not, so the two hosts answer
+   * this differently while everything else in this class is the same on both.
+   */
+  private val homeDirectory: () -> String? = { getenv("HOME") ?: getenv("USERPROFILE") },
 ) : VimPathExpansion {
 
   companion object {
@@ -74,7 +83,7 @@ class VimPathExpansionImpl(
    */
   private fun expandTilde(path: String): String {
     if (path == "~" || path.startsWith("~/") || path.startsWith("~\\")) {
-      val home = System.getProperty("user.home")
+      val home = homeDirectory()
       if (home != null) {
         return home + path.substring(1)
       }

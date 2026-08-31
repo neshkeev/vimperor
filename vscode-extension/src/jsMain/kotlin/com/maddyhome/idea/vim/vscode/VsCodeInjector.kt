@@ -140,6 +140,18 @@ class VsCodeInjector(
     }
   }
   override val psiService: VimPsiService by lazy { TextOnlyPsiService }
+  /**
+   * `~` and `$VAR` in a path, which `:sp`, `:e` and `:source` all hand to this first.
+   *
+   * The engine's own implementation, which used to live in the JVM source set for one line: it read
+   * `user.home` for the tilde. Reading the environment instead is what a JavaScript runtime can do,
+   * and is what Vim documents.
+   */
+  override val pathExpansion: VimPathExpansion by lazy { VimPathExpansionImpl() }
+
+  /** `:w`, `:q`, `<C-G>` - see [VsCodeFile], and the two of these that need more API than exists. */
+  override val file: VimFile by lazy { VsCodeFile(hostCommands) }
+
   /** `<C-W>` - see [VsCodeWindowGroup], and the ways a VS Code editor group is not a Vim window. */
   override val window: VimWindowGroup by lazy { VsCodeWindowGroup(hostCommands) }
 

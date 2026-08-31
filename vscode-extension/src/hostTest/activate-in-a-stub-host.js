@@ -309,6 +309,18 @@ assert.strictEqual(
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
 )
 
+// `:w` and `:q`, which were reporting "Not implemented yet :(" until now and which nothing had
+// noticed, because the sweep that finds holes presses keys and these are typed at a colon.
+reset()
+dispatchedCommands.length = 0
+for (const character of ':wq') type(character)
+press('<CR>')
+assert.deepStrictEqual(
+  dispatchedCommands,
+  ['workbench.action.files.save', 'workbench.action.closeActiveEditor'],
+  `:wq did not save and close. Got: ${dispatchedCommands.join(', ')}`,
+)
+
 // The commands only VS Code can run. Folding, changing editor and jumping to a definition are not
 // things this extension can do to a buffer - it asks VS Code by name, and the name is the whole of
 // the contract, since nothing here can check what VS Code then did.
