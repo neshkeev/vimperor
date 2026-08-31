@@ -147,9 +147,14 @@ val checkVsCodeApiDeclarations by tasks.registering {
     // `push` comes from JavaScript; `Thenable` is a global interface outside the `vscode` namespace.
     val notInTheNamespace = setOf("Subscriptions", "Thenable")
 
+    // Kotlin names that stand for a differently named thing in the API, because the API's own name
+    // is already taken here - `Uri` is one class in VS Code and an interface plus an object here.
+    val aliases = mapOf("UriFactory" to "Uri")
+
     val missing = ours.filter { (owner, member) ->
       if (owner in notInTheNamespace) return@filter false
-      val block = Regex("export (?:interface|class|namespace|enum) $owner\\b.*?\\n\\t?\\}", RegexOption.DOT_MATCHES_ALL)
+      val realName = aliases[owner] ?: owner
+      val block = Regex("export (?:interface|class|namespace|enum) $realName\\b.*?\\n\\t?\\}", RegexOption.DOT_MATCHES_ALL)
         .find(realApi)?.value
       block != null && !Regex("\\b${Regex.escape(member)}\\b").containsMatchIn(block)
     }
@@ -190,7 +195,7 @@ val checkVsCodeCommandIds by tasks.registering {
 
   doLast {
     val registryName = "VsCodeIds.kt"
-    val idLiteral = Regex("\"(workbench|editor)\\.[A-Za-z0-9.$'{}+ ]*\"")
+    val idLiteral = Regex("\"(workbench|editor|vscode)\\.[A-Za-z0-9.$'{}+ ]*\"")
 
     val stray = sources.asFile.walkTopDown()
       .filter { it.isFile && it.extension == "kt" && it.name != registryName }

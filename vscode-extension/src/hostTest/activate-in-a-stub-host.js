@@ -61,6 +61,7 @@ const manifest = require(path.join(extensionRoot, 'package.json'))
 
 const output = []
 const dispatchedCommands = []
+const dispatchedArguments = []
 const registeredCommands = new Map()
 const disposable = () => ({ dispose() {} })
 
@@ -208,8 +209,9 @@ const vscode = {
     // Records what was asked for and resolves at once. Resolving matters: the extension holds the
     // user's keys until a command it is waiting on lands, so a stub whose promise never settled
     // would silently swallow every scenario after the first fold.
-    executeCommand(command) {
+    executeCommand(command, ...args) {
       dispatchedCommands.push(command)
+      dispatchedArguments.push(args)
       return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
     },
     // Deliberately short. This is the one list the extension cannot check anywhere but at runtime -
@@ -236,6 +238,13 @@ const vscode = {
   },
   workspace: {
     onDidChangeTextDocument: () => disposable(),
+    // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
+    // temporary one, since these scenarios write real files.
+    workspaceFolders: [{ uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }],
+  },
+  Uri: {
+    file: (filePath) => ({ scheme: 'file', path: filePath, fsPath: filePath }),
+    parse: (value) => ({ scheme: value.split(':')[0], path: value, fsPath: value }),
   },
 }
 
@@ -589,6 +598,38 @@ assert.ok(
 assert.ok(
   !commandCheck.includes('undo'),
   `a command this stub does have was reported missing. Got: ${commandCheck}`,
+)
+
+// `:w file` and `:e file`, which are the only two Vim commands here that touch a real disk. They
+// come from opposite directions on purpose: the write never reaches VS Code, and the open never
+// reaches the disk beyond asking whether the file is there.
+reset()
+type('i')
+for (const character of 'written by vim') type(character)
+press('<Esc>')
+dispatchedCommands.length = 0
+type(':')
+for (const character of 'w out.txt') type(character)
+press('<CR>')
+
+assert.strictEqual(
+  fs.readFileSync(path.join(home, 'out.txt'), 'utf8'),
+  'written by vim',
+  ':w with a name did not write the buffer to that file',
+)
+assert.deepStrictEqual(dispatchedCommands, [], ':w to a named file should not need VS Code')
+
+dispatchedCommands.length = 0
+dispatchedArguments.length = 0
+type(':')
+for (const character of 'e out.txt') type(character)
+press('<CR>')
+
+assert.deepStrictEqual(dispatchedCommands, ['vscode.open'], `:e asked for ${dispatchedCommands}`)
+assert.strictEqual(
+  dispatchedArguments[0][0].fsPath,
+  path.join(home, 'out.txt'),
+  `:e resolved the relative path to ${JSON.stringify(dispatchedArguments[0][0])}`,
 )
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')

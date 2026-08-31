@@ -40,6 +40,9 @@ internal object VsCodeCommands {
 
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
+  /** `:e file`. One of the few built-ins that takes an argument, which is why the runner carries one. */
+  const val OPEN = "vscode.open"
+
   const val SAVE = "workbench.action.files.save"
   const val SAVE_ALL = "workbench.action.files.saveAll"
   const val CLOSE_ACTIVE_EDITOR = "workbench.action.closeActiveEditor"
@@ -86,7 +89,7 @@ internal object VsCodeCommands {
   val all: List<String> = listOf(
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
-    REVEAL_DEFINITION,
+    REVEAL_DEFINITION, OPEN,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, LAST_EDITOR_IN_GROUP, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

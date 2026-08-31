@@ -31,8 +31,12 @@ class VimHostTest {
     /** Set to make VS Code reject every command, the way it does for one that does not exist. */
     var rejectEverything: Boolean = false
 
-    fun run(command: String, onDone: (Boolean) -> Unit) {
+    /** What each command was given, for the one or two that take an argument. */
+    val arguments: MutableList<Array<Any?>> = mutableListOf()
+
+    fun run(command: String, args: Array<Any?>, onDone: (Boolean) -> Unit) {
       dispatched += command
+      arguments += args
       callbacks += onDone
     }
 
@@ -41,6 +45,7 @@ class VimHostTest {
       val commands = dispatched.toList()
       val waiting = callbacks.toList()
       dispatched.clear()
+      arguments.clear()
       callbacks.clear()
       commands.forEach(perform)
       waiting.forEach { it(!rejectEverything) }

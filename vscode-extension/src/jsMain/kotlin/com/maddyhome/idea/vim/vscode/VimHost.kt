@@ -30,7 +30,7 @@ class VimHost(
    * How a VS Code command is run. Injectable so that tests can drive the asynchronous path without
    * a real extension host - the default is the real thing.
    */
-  private val runCommand: (String, (Boolean) -> Unit) -> Unit = ::executeVsCodeCommand,
+  private val runCommand: (String, Array<Any?>, (Boolean) -> Unit) -> Unit = ::executeVsCodeCommand,
   /** Where the `:` and `/` prompts are drawn. The status bar, in a real window. */
   commandLineDisplay: CommandLineDisplay = NoCommandLineDisplay,
   /** Where search matches are painted. Decorations, in a real window. */
@@ -189,15 +189,15 @@ class VimHost(
    * success would leave `pending` above zero and every later keystroke queued behind a command
    * that is never coming back.
    */
-  override fun run(command: String, waitForIt: Boolean) {
+  override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {
     if (!waitForIt) {
-      runCommand(command) { succeeded ->
+      runCommand(command, arguments) { succeeded ->
         if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
       }
       return
     }
     pending++
-    runCommand(command) { succeeded ->
+    runCommand(command, arguments) { succeeded ->
       if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
       pending--
       if (pending == 0) hostCommandsFinished()
@@ -284,8 +284,8 @@ internal object NoCommandLineDisplay : CommandLineDisplay {
  * `executeCommand` resolves with whatever the command returned, which for `undo` is nothing useful
  * - the callback is about *when*, not about what.
  */
-private fun executeVsCodeCommand(command: String, onDone: (Boolean) -> Unit) {
-  commands.executeCommand(command).then({ onDone(true) }, { onDone(false) })
+private fun executeVsCodeCommand(command: String, arguments: Array<Any?>, onDone: (Boolean) -> Unit) {
+  commands.executeCommand(command, *arguments).then({ onDone(true) }, { onDone(false) })
 }
 
 /**

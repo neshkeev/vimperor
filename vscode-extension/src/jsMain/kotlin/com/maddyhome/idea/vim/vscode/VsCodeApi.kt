@@ -129,6 +129,19 @@ external interface WindowState {
 
 external object workspace {
   val onDidChangeTextDocument: (listener: (TextDocumentChangeEvent) -> Unit) -> Disposable
+
+  /**
+   * The folders open in this window, which is what a relative path in `:e` is relative to.
+   *
+   * Vim resolves against the current directory; a VS Code window has no current directory, it has a
+   * workspace. Null when nothing is open - a single loose file has an editor and no folder.
+   */
+  val workspaceFolders: Array<WorkspaceFolder>?
+}
+
+external interface WorkspaceFolder {
+  val uri: Uri
+  val name: String
 }
 
 external interface TextDocumentChangeEvent {
@@ -171,6 +184,19 @@ external interface Uri {
   val scheme: String
   val path: String
   val fsPath: String
+}
+
+/**
+ * `Uri`'s static side, which is how one is built from a path.
+ *
+ * Under its own name in JavaScript - `vscode.Uri` is a class with both halves, and Kotlin cannot
+ * have an interface and an object of the same name in one package. `checkVsCodeApiDeclarations`
+ * knows the alias so that `file` and `parse` are still checked against the real class.
+ */
+@JsName("Uri")
+external object UriFactory {
+  fun file(path: String): Uri
+  fun parse(value: String): Uri
 }
 
 /** The builder VS Code hands to [TextEditor.edit]; its ranges are resolved against the document as it was when the edit began. */

@@ -1290,10 +1290,20 @@ interface HostCommandRunner {
    *   anything that rewrites the document behind the engine's back - undo, redo, reformatting -
    *   and false for anything that only changes what is on screen.
    */
-  fun run(command: String, waitForIt: Boolean = true)
+  fun run(command: String, waitForIt: Boolean = true) = run(command, emptyArray(), waitForIt)
+
+  /**
+   * The same, for the few VS Code commands that take an argument.
+   *
+   * `vscode.open` is why this exists: opening a file by name is a command like the folds and the
+   * splits, except that the file has to be named in the call. Keeping it in this lane rather than
+   * calling `showTextDocument` directly means it inherits the queue, the rejection branch and the
+   * id check, none of which a second path would have.
+   */
+  fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean = true)
 
   /** For a host that has no VS Code to run commands in. Nothing happens, and nothing pretends to. */
   object None : HostCommandRunner {
-    override fun run(command: String, waitForIt: Boolean) {}
+    override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {}
   }
 }

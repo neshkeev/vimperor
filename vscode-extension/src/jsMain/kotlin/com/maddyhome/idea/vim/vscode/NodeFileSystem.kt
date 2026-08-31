@@ -38,6 +38,20 @@ class NodeFileSystem : VimFileSystem {
   } catch (e: Throwable) {
     false
   }
+
+  /**
+   * `:w file`, which writes a file that is not the one in the editor.
+   *
+   * Node again rather than `workspace.fs`, and here the reason is stronger than convenience: `:w`
+   * has to report `E212` when the write fails, and a promise cannot answer a command that has
+   * already returned. Returns the failure rather than throwing, because Vim prints it.
+   */
+  fun writeText(path: String, content: String): String? = try {
+    fs.writeFileSync(path, content)
+    null
+  } catch (e: Throwable) {
+    e.message ?: "write failed"
+  }
 }
 
 /**

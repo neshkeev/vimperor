@@ -25,11 +25,24 @@ import com.maddyhome.idea.vim.api.injector
  * saying out loud: it does not change the text by itself, but format-on-save does, and a keystroke
  * computed against the pre-format text would land on top of it.
  *
- * Opening a file by name is where this stops. `:e file` and `:w file` need a path turned into a
- * document, which is `showTextDocument` and `workspace.fs` rather than a command - a different
- * piece of API surface than this host has declared, and a promise besides. They say so.
+ * Opening and writing a *named* file is the other half, and the two halves come from opposite
+ * directions. `:w file` writes a path and never touches the editor, so it is Node's `fs` - and it
+ * has to be, because `:w` reports `E212` when the write fails and a promise cannot answer a command
+ * that has already returned. `:e file` is the reverse: nothing to read or write, only VS Code to
+ * ask, and `vscode.open` is a command like the folds and the splits once the runner can carry an
+ * argument. Keeping it in that lane means it inherits the queue, the rejection branch and the
+ * command-id check.
+ *
+ * A path here is Vim's, so `~` and `$VAR` are expanded, and a relative one is resolved against the
+ * workspace folder. Vim would resolve against the current directory; a VS Code window does not have
+ * one, it has a workspace, and that is the nearest true thing.
  */
-internal class VsCodeFile(private val host: HostCommandRunner) : VimFileBase() {
+internal class VsCodeFile(
+  private val host: HostCommandRunner,
+  private val files: NodeFileSystem = NodeFileSystem(),
+  /** The folder open in this window, if there is one. Injectable so tests are not run from one. */
+  private val workspaceRoot: () -> String? = { workspace.workspaceFolders?.firstOrNull()?.uri?.fsPath },
+) : VimFileBase() {
 
   /**
    * Vim's `<C-G>` line, built here because there is nobody to ask for it.
@@ -103,12 +116,60 @@ internal class VsCodeFile(private val host: HostCommandRunner) : VimFileBase() {
     repeat(kotlin.math.abs(count)) { host.run(command, waitForIt = false) }
   }
 
+  /**
+   * `:w file` and `:w! file`, which write the buffer somewhere it did not come from.
+   *
+   * Straight to disk, and deliberately not through VS Code: this writes a file that is not open in
+   * any editor, so there is nothing for `workbench.action.files.save` to save. Vim's own `:w file`
+   * does not open the file it wrote either, and neither does this.
+   */
   override fun createFile(filename: String, context: ExecutionContext, content: String?, editor: VimEditor) {
-    unsupported("writing to a named file")
+    val failure = files.writeText(absolute(filename), content.orEmpty())
+    if (failure != null) {
+      injector.messages.showErrorMessage(editor, "E212: Can't open file for writing: $failure")
+    }
   }
 
-  override fun openFile(filename: String, context: ExecutionContext, focusEditor: Boolean): String? =
-    "IdeaVim: opening a file by name is not supported yet."
+  /**
+   * `:e file`, which asks VS Code to open it.
+   *
+   * A file that is not there is where this stops short of Vim. `:e newfile` in Vim gives you an
+   * empty buffer with that name, waiting to be written; VS Code's nearest equivalent is an untitled
+   * document, which is not the same thing - it has no path until it is saved, and saving it asks
+   * where to put it. So this says the file is not there, which is at least true, rather than
+   * opening something that only looks like what was asked for.
+   */
+  override fun openFile(filename: String, context: ExecutionContext, focusEditor: Boolean): String? {
+    val path = absolute(filename)
+    if (!files.exists(path)) return "E447: Can't find file \"$filename\" in path"
+    host.run(VsCodeCommands.OPEN, arrayOf(UriFactory.file(path)))
+    return null
+  }
+
+  /**
+   * The path a Vim command names, as a path on disk.
+   *
+   * `findFile` is what `:w file` asks before refusing to overwrite, and what the engine uses to
+   * turn a name into a path. Only the workspace folder is searched, not IntelliJ's content roots
+   * and file index - VS Code has no equivalent of either, and a search that guessed would answer
+   * `:w` with the wrong file to overwrite.
+   */
+  override fun findFile(filename: String, context: ExecutionContext): String? =
+    absolute(filename).takeIf { files.exists(it) }
+
+  private fun absolute(filename: String): String {
+    val expanded = injector.pathExpansion.expandPath(filename.trim())
+    if (expanded.startsWith("/") || expanded.startsWith("\\\\") || DRIVE_LETTER.matches(expanded.take(2))) {
+      return expanded
+    }
+    val root = workspaceRoot() ?: return expanded
+    return "$root/$expanded"
+  }
+
+  private companion object {
+    /** `C:` and the rest, so a Windows path is not treated as relative to the workspace. */
+    val DRIVE_LETTER = Regex("[A-Za-z]:")
+  }
 
   /**
    * IntelliJ has projects and this host does not: a VS Code window is one workspace and the engine

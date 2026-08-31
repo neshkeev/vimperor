@@ -161,15 +161,15 @@ class VimRcTest {
   }
 }
 
-private val nodeFs: dynamic = requireModule("fs")
-private val nodeOs: dynamic = requireModule("os")
-private val nodePath: dynamic = requireModule("path")
+internal val nodeFs: dynamic = requireModule("fs")
+internal val nodeOs: dynamic = requireModule("os")
+internal val nodePath: dynamic = requireModule("path")
 
-private fun requireModule(module: String): dynamic = js("require")(module)
+internal fun requireModule(module: String): dynamic = js("require")(module)
 
-private var directoryCount = 0
+internal var directoryCount = 0
 
-private fun temporaryDirectory(): String {
+internal fun temporaryDirectory(): String {
   // Named by a counter rather than at random: workflow scripts aside, a test that picks a fresh
   // name each run leaves a trail of directories behind it.
   val base = nodePath.join(nodeOs.tmpdir(), "ideavim-vimrc-test-${directoryCount++}") as String
@@ -178,7 +178,7 @@ private fun temporaryDirectory(): String {
   return base
 }
 
-private fun writeFile(path: String, content: String) {
+internal fun writeFile(path: String, content: String) {
   nodeFs.mkdirSync(nodePath.dirname(path), js("({recursive: true})"))
   nodeFs.writeFileSync(path, content)
 }

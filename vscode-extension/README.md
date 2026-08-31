@@ -113,10 +113,24 @@ making: the code was already written and living in the IntelliJ module with noth
 in it. An alias is a name and the line it stands for; `:loadkeymap` is a table of `:lmap`s. Both
 moved into the engine, where IntelliJ now uses the same implementation this does.
 
-Two of them stop short of Vim. `:e file` and `:w file` need a path turned into a document, which is
-`showTextDocument` and `workspace.fs` rather than a command, and `:bdelete N` asks for a buffer
-number, which VS Code does not have - an editor has a position among the tabs and no identity beyond
-its file. Each says so instead of doing something close but wrong.
+`:e file` and `:w file` work, and they arrive from opposite directions. `:w file` writes a file that
+is not open in any editor, so there is nothing for VS Code to save - it goes to disk through Node,
+which it has to, because `:w` reports `E212` when a write fails and a promise cannot answer a command
+that has already returned. `:e file` is the reverse: nothing to read or write, only VS Code to ask,
+and `vscode.open` is a command like the folds once the runner can carry an argument. Keeping it in
+that lane rather than calling `showTextDocument` means it inherits the queue, the rejection branch
+and the command-id check.
+
+Paths are Vim's: `~` and `$VAR` are expanded, and a relative path resolves against the workspace
+folder. Vim would resolve against the current directory, and a VS Code window does not have one.
+
+`:e newfile` is where that stops. Vim gives you an empty buffer with that name, waiting to be
+written; VS Code's nearest equivalent is an untitled document, which has no path until it is saved
+and then asks where to put it. So this says the file is not there, which is at least true.
+
+`:bdelete N` asks for a buffer number, which VS Code does not have - an editor has a position among
+the tabs and no identity beyond its file - so it says so instead of closing whatever happens to be
+third.
 
 Folds, `<C-W>` windows, `gt` tabs and `gd` are off it too, and all for the same reason: each of them
 is a VS Code command, and the queue that undo needed already knew how to wait for one. What is new

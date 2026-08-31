@@ -96,6 +96,19 @@ const env = {
 
 const workspace = {
   onDidChangeTextDocument: () => ({ dispose() {} }),
+  // No folder open, which is a real state - a single loose file has an editor and no workspace -
+  // and the one that keeps `:e` tests honest: every path they use has to be absolute, so nothing
+  // passes because a stub happened to root it somewhere convenient.
+  workspaceFolders: undefined,
+}
+
+/*
+ * `Uri` is a class in VS Code with both an instance side and a static one. Only `file` and `parse`
+ * are used, and only to hand the result straight back to `vscode.open`.
+ */
+const Uri = {
+  file: (path) => ({ scheme: 'file', path, fsPath: path }),
+  parse: (value) => ({ scheme: value.split(':')[0], path: value, fsPath: value }),
 }
 
 const StatusBarAlignment = { Left: 1, Right: 2 }
@@ -106,4 +119,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Uri, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
