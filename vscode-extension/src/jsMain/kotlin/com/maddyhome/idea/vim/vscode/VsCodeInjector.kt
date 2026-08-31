@@ -21,6 +21,7 @@ import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
 import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
 import com.maddyhome.idea.vim.group.VimWindowGroup
+import com.maddyhome.idea.vim.group.TabService
 import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.history.VimHistoryBase
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
@@ -148,6 +149,9 @@ class VsCodeInjector(
    * and is what Vim documents.
    */
   override val pathExpansion: VimPathExpansion by lazy { VimPathExpansionImpl() }
+
+  /** `:tabclose`, `:tabonly`, `:tabmove` - see [VsCodeTabs]. */
+  override val tabService: TabService by lazy { VsCodeTabs(hostCommands) }
 
   /** `:w`, `:q`, `<C-G>` - see [VsCodeFile], and the two of these that need more API than exists. */
   override val file: VimFile by lazy { VsCodeFile(hostCommands) }

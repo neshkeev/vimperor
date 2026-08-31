@@ -173,6 +173,17 @@ const vscode = {
   window: {
     activeTextEditor: editor,
     visibleTextEditors: [editor],
+    // One tab, which is what a stub host has. `:tabclose` reads this before it decides what to do.
+    tabGroups: {
+      get all() {
+        return [this.activeTabGroup]
+      },
+      activeTabGroup: {
+        tabs: [{ label: 'buffer.txt', isActive: true }],
+        activeTab: { label: 'buffer.txt', isActive: true },
+        isActive: true,
+      },
+    },
     createOutputChannel(name) {
       assert.strictEqual(name, 'IdeaVim')
       return { ...disposable(), appendLine: (line) => output.push(line), show() {} }

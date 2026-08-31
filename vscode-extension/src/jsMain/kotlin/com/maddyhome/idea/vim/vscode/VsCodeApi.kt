@@ -48,6 +48,15 @@ external interface OutputChannel : Disposable {
 external object window {
   val activeTextEditor: TextEditor?
   val visibleTextEditors: Array<TextEditor>
+
+  /**
+   * The open tabs, which is the closest VS Code has to Vim's idea of a tab page.
+   *
+   * Readable synchronously, unlike almost everything else about the workbench, which is what makes
+   * `:tabclose` and `:tabmove` possible at all - both need to know how many tabs there are and
+   * which one is current before they can work out what to do.
+   */
+  val tabGroups: TabGroups
   fun createOutputChannel(name: String): OutputChannel
   fun showInformationMessage(message: String): dynamic
   fun createStatusBarItem(alignment: Int = definedExternally, priority: Int = definedExternally): StatusBarItem
@@ -214,6 +223,28 @@ external interface TextEditorDecorationType : Disposable
  * whatever theme the user has - a hardcoded yellow is unreadable in half of them.
  */
 external class ThemeColor(id: String)
+
+/**
+ * The tab bar, as VS Code models it: groups side by side, each holding tabs.
+ *
+ * Only the reading half is declared. Opening and closing tabs is done by command like everything
+ * else in the workbench; this is here because counting them cannot be.
+ */
+external interface TabGroups {
+  val all: Array<TabGroup>
+  val activeTabGroup: TabGroup
+}
+
+external interface TabGroup {
+  val tabs: Array<Tab>
+  val activeTab: Tab?
+  val isActive: Boolean
+}
+
+external interface Tab {
+  val label: String
+  val isActive: Boolean
+}
 
 /** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */
 external object TextEditorRevealType {

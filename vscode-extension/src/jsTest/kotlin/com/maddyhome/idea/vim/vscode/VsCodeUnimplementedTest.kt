@@ -11,9 +11,12 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
+import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /**
  * Every key the engine registers, pressed, to find out which ones land on a part of this host that
@@ -59,6 +62,90 @@ class VsCodeUnimplementedTest {
   @Test
   fun `test the ex commands that reach an unbuilt part of the host are the ones listed here`() {
     assertEquals(EXPECTED_EX.trim(), sweepExCommands().trim())
+  }
+
+  /**
+   * The same question again, of `:set` and of the Vimscript functions.
+   *
+   * Asked because the last time this file gained a sweep it was because the previous one had a
+   * blind spot the size of `:w`. Keys were swept, then colon commands; options and functions are
+   * the other two surfaces a user can reach, and assuming they are fine because nobody has
+   * complained is exactly the reasoning that hid `:w` for a dozen commits.
+   *
+   * `:set name?` for every registered option, `echo Name()` for every registered function. Neither
+   * needs to succeed - an option that will not print and a function called with no arguments both
+   * report a Vim error, and a Vim error is a working command. Only the apology counts.
+   */
+  @Test
+  fun `test no option or function reaches an unbuilt part of the host`() {
+    assertEquals(EXPECTED_SETTINGS.trim(), sweepOptionsAndFunctions().trim())
+  }
+
+  /**
+   * That the sweep above can fail.
+   *
+   * It found nothing, and a sweep that finds nothing is indistinguishable from a sweep that is not
+   * looking - which is not a hypothetical: an earlier version of the ex-command sweep passed
+   * silently while `:w` was broken, because it watched for a crash and the executor turns the crash
+   * into a message. So this points the same detector at a command that is known to be unbuilt, and
+   * at one that is known to work.
+   *
+   * The command it names has to be one that is still unbuilt, so this test starts failing when
+   * that one is implemented - as `:tabclose` already did, one commit after it was written. The fix
+   * is to point it at whatever is still on the list, never to delete it.
+   */
+  @Test
+  fun `test the sweep can tell an unbuilt command from a working one`() {
+    assertTrue(apologises(":loadkeymap"), ":loadkeymap is on the list above, so the sweep must see it")
+    assertFalse(apologises(":set number?"), "an option that prints is a working command")
+  }
+
+  /** How many probes the sweep makes, so that an empty result cannot be an empty loop. */
+  @Test
+  fun `test the sweep covers every option and every function`() {
+    injector = VsCodeInjector().also { it.register(VsCodeEditor(FakeEditor(""))) }
+    assertTrue(injector.optionGroup.getAllOptions().size > 50, "the option list looks too short")
+    assertTrue(engineFunctionProvider.getFunctions().size > 50, "the function list looks too short")
+  }
+
+  private fun sweepOptionsAndFunctions(): String {
+    injector = VsCodeInjector().also { it.register(VsCodeEditor(FakeEditor(""))) }
+    val probes = injector.optionGroup.getAllOptions().map { ":set ${it.name}?" } +
+      engineFunctionProvider.getFunctions().map { "echo ${it.name}()" }
+
+    return probes.sorted().filter { probe -> apologises(probe) }.joinToString(" ")
+  }
+
+  /** Runs one `:` line and says whether the host admitted to not being built. */
+  private fun apologises(probe: String): Boolean {
+    val said = mutableListOf<String>()
+    val sink = object : MessageSink {
+      override fun message(text: String?) { said += text.orEmpty() }
+      override fun error(text: String?) { said += text.orEmpty() }
+      override fun status(text: String?) { said += text.orEmpty() }
+    }
+    try {
+      val fake = FakeEditor("one two\nthree four")
+      injector = VsCodeInjector(messageSink = sink).also { it.register(VsCodeEditor(fake)) }
+      engineCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+      VsCodeCommandProvider.getCommands().forEach { injector.keyGroup.registerCommandAction(it) }
+      injector.functionService.registerHandlers()
+      val editor = injector.editorGroup.getEditors().first() as VsCodeEditor
+      val handler = KeyHandler.getInstance()
+      handler.fullReset(editor)
+      for (stroke in injector.parser.stringToKeys(":" + probe.removePrefix(":"))) {
+        handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+      }
+      for (stroke in injector.parser.parseKeys("<CR>")) {
+        handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+      }
+      editor.flush()
+    } catch (e: NotImplementedError) {
+      said += NOT_IMPLEMENTED
+    } catch (e: Throwable) {
+      // A Vim error is the option or function working.
+    }
+    return said.any { it.contains(NOT_IMPLEMENTED) }
   }
 
   private fun sweepExCommands(): String {
@@ -157,8 +244,11 @@ class VsCodeUnimplementedTest {
      * history this host does not keep. A spellchecker and a language server it does not have at
      * all, so `[m`, `]s` and `z=` will most likely stay here.
      */
+    const val EXPECTED_SETTINGS = """
+"""
+
     const val EXPECTED_EX = """
-:com :comc :loadk :tabc :tabm :tabo
+:com :comc :loadk
 """
 
     const val EXPECTED = """

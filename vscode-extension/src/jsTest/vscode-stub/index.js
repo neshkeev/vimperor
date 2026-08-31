@@ -38,9 +38,29 @@ const TextEditorRevealType = {
   AtTop: 3,
 }
 
+/*
+ * Tabs, which a test can arrange: `:tabclose` and `:tabmove` read how many there are and which one
+ * is current before they can work out what to tell VS Code to do, so a stub with no tabs would let
+ * both of them pass while doing nothing.
+ */
+const tabGroups = {
+  _tabs: [{ label: 'one', isActive: true }],
+  get all() {
+    return [this.activeTabGroup]
+  },
+  get activeTabGroup() {
+    return {
+      tabs: this._tabs,
+      activeTab: this._tabs.find((tab) => tab.isActive),
+      isActive: true,
+    }
+  },
+}
+
 const window = {
   activeTextEditor: undefined,
   visibleTextEditors: [],
+  tabGroups,
   createStatusBarItem: () => ({ text: '', tooltip: '', show() {}, hide() {}, dispose() {} }),
   createTextEditorDecorationType: (options) => ({ options, dispose() {} }),
   onDidChangeActiveTextEditor: () => ({ dispose() {} }),

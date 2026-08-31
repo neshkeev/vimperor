@@ -85,6 +85,12 @@ reaching one shows up as a diff. That list is the honest map of the gap. What is
 `<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
 it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
 
+There are four sweeps now, and the fourth one found nothing - which is the point of writing it down.
+Keys and ex commands each hid something; options and Vimscript functions turned out to be clean.
+That is only worth believing because the sweep is tested too: one case that is known to be unbuilt
+and one that is known to work, so an empty result cannot be an empty loop. The first version of the
+ex sweep passed while `:w` was broken, and nothing about it looked wrong.
+
 `:w` and `:q` work, which they did not until recently, and the way that was found is worth writing
 down. The inventory presses keys, and everything behind a colon was invisible to it - so `:w`, `:q`,
 `:wq`, `:x`, `:bnext` and twenty more had been reporting "Not implemented yet :(" since the first
