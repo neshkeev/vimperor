@@ -29,7 +29,11 @@ suggestion is up, and VS Code has to decide before the key is dispatched. Handin
 rather than reimplementing the decision also inherits VS Code's own rule about indentation, which
 is that Tab indents instead of accepting when the suggestion is indented further than a tab stop.
 
-Escape is *not* guarded this way, so dismissing ghost text with Escape also leaves Insert mode.
+Escape is *not* guarded this way, and that is a decision rather than an omission: dismissing ghost
+text with Escape also leaves Insert mode. Guarding it would mean Escape stops leaving Insert mode
+whenever a suggestion happens to be up, which is a worse trade - the suggestion goes away when
+Insert mode ends anyway, and a mode you cannot reliably leave is the one thing a Vim user cannot
+work around.
 
 `ctrl+r` is the one control key bound, and it takes *Open Recent* away from an editor with focus.
 It is here because it is Vim's redo and there is otherwise no way to reach redo at all - the `:`
@@ -116,10 +120,13 @@ its file. Each says so instead of doing something close but wrong.
 
 Folds, `<C-W>` windows, `gt` tabs and `gd` are off it too, and all for the same reason: each of them
 is a VS Code command, and the queue that undo needed already knew how to wait for one. What is new
-is deciding *when* to wait. Undo, redo and reformatting rewrite the document behind the engine's
-back, so anything typed before they land would be computed against text that is about to be
-replaced - those hold the keyboard. Folding, splitting a window, changing editor and jumping to a
-definition change what is on screen and not what is in the buffer, so they do not.
+is deciding *when* to wait, and the line does not fall where it first looks like it should. It is
+not about what the command does but about whether this host knows what the command is. Splitting a
+window, changing editor and closing one are dispatched by name from here, so it is known that they
+touch no text and they do not hold the keyboard. Folds and `gd` arrive the other way round: the
+engine asks for an action *by name* and the host runs it, and that same path is what an `<Action>`
+mapping in someone's `.ideavimrc` goes down. It can name a reformat. So it waits - the conservative
+half of a decision that cannot be made per command, since the host is not the one choosing them.
 
 A command VS Code does not have rejects its promise rather than resolving it, and a runner that only
 listened for success would leave the queue waiting for something that is never coming back - one
