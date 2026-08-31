@@ -65,9 +65,18 @@ containers, where the extension host runs on the remote machine and reads the co
 actually there. A web-only workspace has no Node and will need an asynchronous load at startup.
 
 `'hlsearch'` paints every match, in the editor's own find colours so it looks right in whatever
-theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` does not: the preview
-needs the pattern as typed so far, which arrives on the command line rather than through the search
-group, and a preview that lags the typing by a keystroke is worse than none.
+theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` works too, and it is
+worth saying why it was written off first: the preview needs the pattern as typed so far, and that
+arrives on the command line rather than through the search group. Both halves are true and the
+conclusion was wrong. That reasoning was about IntelliJ's command line, which is a text field with a
+document listener; this one is a buffer this module owns keystroke by keystroke, so the pattern as
+typed so far is a string it already has. The note was never revisited after the command line stopped
+being a widget.
+
+What is deliberately missing from it is Vim's cursor preview. Vim moves the caret to the match while
+you type and puts it back if you cancel; this scrolls the match into view and leaves the caret where
+it is. The caret is engine state, and a host that moved it would be lying to the engine about where
+the user is for as long as the prompt was open.
 
 `"+y` and `"+p` use the system clipboard. VS Code will only talk about it in promises, and `"+p` is
 a register read in the middle of a command, so it answers with what the clipboard last said and
@@ -182,8 +191,10 @@ already does for `i"`, and gets `f("(", x)` right. It says nothing at all about 
 comment is `//` in one language and `#` in another and guessing from the file extension would be a
 table of lies; a bracket inside a comment is counted, which is what Vim does with syntax off.
 
-`'incsearch'` and IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not
-wired up; each names itself if reached.
+IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not wired up. They are a
+separate port rather than a missing service: they live in the IntelliJ module, they are loaded
+through an extension point that has no Kotlin/JS equivalent, and `surround` needs `getchar()` -
+IntelliJ answers that by blocking on a modal input loop, which a JavaScript host cannot do at all.
 
 Indentation comes from `editor.options` rather than from a Vim option, and the reason is worth
 stating because it looks like a gap: the engine has no `'expandtab'` or `'shiftwidth'` at all.

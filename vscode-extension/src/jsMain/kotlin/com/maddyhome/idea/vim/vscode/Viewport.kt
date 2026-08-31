@@ -60,6 +60,18 @@ internal fun VsCodeEditor.scrollLineToTop(line: Int) {
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.AtTop)
 }
 
+/**
+ * Brings [line] onto the screen if it is not already, and leaves the view alone if it is.
+ *
+ * `InCenterIfOutsideViewport` is exactly Vim's behaviour for a search: typing a pattern does not
+ * scroll the window while the match you are heading for is already visible.
+ */
+internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
+  val target = line.coerceIn(0, max(0, lineCount() - 1))
+  val at = Position(target, 0)
+  nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenterIfOutsideViewport)
+}
+
 /** Scrolls so that [line] is the last line on screen. */
 internal fun VsCodeEditor.scrollLineToBottom(line: Int) = scrollLineToTop(line - screenHeight + 1)
 

@@ -118,6 +118,36 @@ class VsCodeCommandLineTest {
     assertEquals(":s", session.display.shown)
   }
 
+  /**
+   * Twice, which is not the same test as once: the engine's backspace deletes relative to the
+   * caret and does not move it, because IntelliJ's command line is a text field that moves its own.
+   * With the caret left past the end of the text, the second backspace threw.
+   */
+  @Test
+  fun `test backspace can be pressed more than once`() {
+    val session = Session("one")
+    session.type(":")
+    session.type("sxyz")
+    session.key("<BS>")
+    session.key("<BS>")
+    session.key("<BS>")
+
+    assertEquals(":s", session.display.shown)
+  }
+
+  /** And backspacing past the start cancels the prompt, the way Vim does. */
+  @Test
+  fun `test backspacing an empty command line closes it`() {
+    val session = Session("one")
+    session.type(":")
+    session.type("s")
+    session.key("<BS>")
+    session.key("<BS>")
+
+    assertNull(session.display.shown, "the prompt should be gone, not empty")
+    assertEquals("NORMAL", session.host.modeName())
+  }
+
   @Test
   fun `test a slash opens a search prompt with its own label`() {
     val session = Session("one two")

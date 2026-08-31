@@ -31,13 +31,15 @@ import com.maddyhome.idea.vim.key.VimKeyStroke
  * asynchronous API was never needed - it was the wrong shape for the problem, not a hard version of
  * the right one.
  */
-class StatusBarCommandLine(
+internal class StatusBarCommandLine(
   override val editor: VimEditor,
   private val label: String,
   initialText: String,
   override val inputProcessing: ((String) -> Unit)?,
   override val finishOn: Char?,
   private val display: CommandLineDisplay,
+  /** `'incsearch'`, which needs the pattern as typed so far - and this is what has it. */
+  private val preview: IncsearchPreview? = null,
 ) : VimCommandLine {
 
   private var content: StringBuilder = StringBuilder(initialText)
@@ -96,10 +98,19 @@ class StatusBarCommandLine(
     render()
   }
 
+  /**
+   * Removes text, and moves the caret with it if it was behind what went.
+   *
+   * The caret is the host's here. IntelliJ's command line is a text field, which moves its own
+   * caret when its document shrinks, so the engine's delete actions do not touch it - and this left
+   * the caret past the end of the text, where the *second* backspace in a row threw. One had been
+   * tested and two had not.
+   */
   override fun deleteText(offset: Int, length: Int) {
     val from = offset.coerceIn(0, content.length)
     val to = (from + length).coerceIn(from, content.length)
     content.deleteRange(from, to)
+    if (caret.offset > from) caret.offset = maxOf(from, caret.offset - (to - from))
     render()
   }
 
@@ -131,6 +142,9 @@ class StatusBarCommandLine(
   override val isAbbreviationInvalidated: Boolean get() = false
 
   override fun deactivate(refocusOwningEditor: Boolean, resetCaret: Boolean) {
+    // Before hiding, and whether the search ran or was cancelled: what should be on screen next is
+    // the search group's answer either way, and the preview is in the way of it.
+    preview?.finish(editor)
     display.hide()
   }
 
@@ -139,6 +153,7 @@ class StatusBarCommandLine(
 
   fun render() {
     display.show(getRenderedText())
+    preview?.update(editor, label, text)
   }
 
   private class Caret(offset: Int) : VimCommandLineCaret {
@@ -158,7 +173,10 @@ interface CommandLineDisplay {
  * `VimCommandLineServiceBase` does the rest - `:` and `/` both come through [createPanel], and the
  * difference between them is the label.
  */
-class VsCodeCommandLineService(private val display: CommandLineDisplay) : VimCommandLineServiceBase() {
+internal class VsCodeCommandLineService(
+  private val display: CommandLineDisplay,
+  private val highlighter: Highlighter = Highlighter.None,
+) : VimCommandLineServiceBase() {
 
   private var active: StatusBarCommandLine? = null
 
@@ -168,7 +186,7 @@ class VsCodeCommandLineService(private val display: CommandLineDisplay) : VimCom
     label: String,
     initText: String,
   ): VimCommandLine {
-    val commandLine = StatusBarCommandLine(editor, label, initText, null, null, ClosingDisplay())
+    val commandLine = StatusBarCommandLine(editor, label, initText, null, null, ClosingDisplay(), IncsearchPreview(highlighter))
     active = commandLine
     commandLine.render()
     return commandLine

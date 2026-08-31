@@ -600,6 +600,28 @@ assert.ok(
   `a command this stub does have was reported missing. Got: ${commandCheck}`,
 )
 
+// `'incsearch'`, which is painted from the command line rather than from the search group - the
+// pattern only exists as text in a prompt this module owns, so this is the one Vim feature here
+// that depends on the command line being the host's rather than a widget.
+reset()
+type('i')
+for (const character of 'one two one three') type(character)
+press('<Esc>')
+type(':')
+for (const character of 'set incsearch') type(character)
+press('<CR>')
+editor.decorations.clear()
+type('/')
+for (const character of 'one') type(character)
+
+const painted = [...editor.decorations.values()].flat()
+assert.ok(
+  painted.length > 0,
+  'nothing was painted while the search was still being typed, so incsearch did nothing',
+)
+
+press('<Esc>')
+
 // `:w file` and `:e file`, which are the only two Vim commands here that touch a real disk. They
 // come from opposite directions on purpose: the write never reaches VS Code, and the open never
 // reaches the disk beyond asking whether the file is there.

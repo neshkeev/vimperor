@@ -841,7 +841,7 @@ open class VsCodeInjector(
    * the asynchronous `showInputBox` was the wrong shape for this, not a hard version of the right
    * one.
    */
-  override val commandLine: VimCommandLineService by lazy { VsCodeCommandLineService(commandLineDisplay) }
+  override val commandLine: VimCommandLineService by lazy { VsCodeCommandLineService(commandLineDisplay, highlighter) }
 
   /**
    * Nothing to redraw on demand.
