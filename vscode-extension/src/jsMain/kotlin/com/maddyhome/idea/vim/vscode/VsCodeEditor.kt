@@ -308,7 +308,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   private fun flushCarets() {
     val document = nativeEditor.document
-    val selections = vimCarets.map { caret ->
+    // Primary first, because that is where VS Code takes its own primary from - `selections[0]`.
+    // With a block drawn downwards the primary is the *last* caret in the document, and pushing
+    // them in document order would leave the blinking caret at the top of the block.
+    val primary = primaryCaret()
+    val ordered = listOf(primary) + vimCarets.filter { it !== primary }
+    val selections = ordered.map { caret ->
       if (caret.hasSelection()) {
         FlushedSelection(document.positionAt(caret.selectionStart), document.positionAt(caret.selectionEnd))
       } else {
@@ -335,9 +340,20 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   override fun nativeCarets(): List<VimCaret> = vimCarets
 
-  override fun currentCaret(): VimCaret = vimCarets.first()
+  /**
+   * The caret the engine treats as *the* caret, which is not always the first one.
+   *
+   * With one caret this is that caret. With a block selection it is the corner the motion moved:
+   * a motion in block-visual mode runs on the primary caret alone, and the engine then rebuilds the
+   * whole block around where it ended up. After `<C-V>k` that corner is the *top* of the block, so
+   * anything that assumed the first caret in the document would drag the wrong corner.
+   *
+   * [vimCarets] stays in document order regardless, because every multi-caret edit depends on it -
+   * `forEachNativeCaret(reverse = true)` is how a delete keeps earlier offsets valid.
+   */
+  override fun currentCaret(): VimCaret = primaryCaret()
 
-  override fun primaryCaret(): VimCaret = vimCarets.first()
+  override fun primaryCaret(): VimCaret = vimCarets.firstOrNull { it.isPrimary } ?: vimCarets.first()
 
   private var inForEachCaret = false
 
@@ -428,13 +444,93 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   override fun getLineRange(line: Int): Pair<Int, Int> = TODO("VsCodeEditor.getLineRange")
   override fun getScrollingModel(): VimScrollingModel = TODO("VsCodeEditor.getScrollingModel")
-  override fun removeCaret(caret: VimCaret): Unit = TODO("VsCodeEditor.removeCaret")
-  override fun addCaret(offset: Int): VimCaret? = TODO("VsCodeEditor.addCaret")
-  override fun removeSecondaryCarets(): Unit = TODO("VsCodeEditor.removeSecondaryCarets")
-  override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition): Unit =
-    TODO("VsCodeEditor.vimSetSystemBlockSelectionSilently")
-  override fun addCaretListener(listener: VimCaretListener): Unit = TODO("VsCodeEditor.addCaretListener")
-  override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("VsCodeEditor.removeCaretListener")
+
+  // ---- More than one caret, which is Vim's blockwise Visual mode and nothing else here.
+
+  override fun removeCaret(caret: VimCaret) {
+    if (vimCarets.remove(caret)) caretListeners.forEach { it.caretRemoved(caret) }
+  }
+
+  override fun addCaret(offset: Int): VimCaret? {
+    val caret = VsCodeCaret(this, offset.coerceIn(0, fileSize().toInt()), isPrimary = false)
+    val at = vimCarets.indexOfFirst { it.offset > caret.offset }
+    if (at < 0) vimCarets += caret else vimCarets.add(at, caret)
+    return caret
+  }
+
+  /**
+   * Back to one caret, keeping the primary - which is the one carrying the block's anchor.
+   *
+   * The engine calls this before rebuilding a block and again on the way out of Visual mode, and
+   * both rely on the survivor being the same caret object each time: `vimSelectionStart` lives on
+   * the instance, so a survivor chosen by position would lose the anchor the moment the block was
+   * drawn upwards.
+   */
+  override fun removeSecondaryCarets() {
+    val primary = primaryCaret()
+    val removed = vimCarets.filter { it !== primary }
+    if (removed.isEmpty()) return
+    vimCarets.retainAll { it === primary }
+    caretListeners.forEach { listener -> removed.forEach { listener.caretRemoved(it) } }
+  }
+
+  /**
+   * A rectangle, as one caret per line each selecting that line's slice of it.
+   *
+   * This is IntelliJ's `setBlockSelection` and the engine is written to it: it clears the secondary
+   * carets, asks for the block, and then walks `nativeCarets()` adjusting each one - so the carets
+   * have to exist by the time it looks, and the primary has to be among them with its anchor
+   * intact. Hence the reuse: the caret that was primary going in is placed on its own line rather
+   * than replaced, which is the same trick IntelliJ's caret model plays when it reuses carets by
+   * insertion order.
+   *
+   * A line shorter than the block contributes what it has, down to nothing. Vim does the same;
+   * a rectangle over ragged text is not a rectangle.
+   */
+  override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition) {
+    val lastLine = (lineCount() - 1).coerceAtLeast(0)
+    val firstBlockLine = minOf(start.line, end.line).coerceIn(0, lastLine)
+    val lastBlockLine = maxOf(start.line, end.line).coerceIn(0, lastLine)
+    val leftColumn = minOf(start.column, end.column).coerceAtLeast(0)
+    val rightColumn = maxOf(start.column, end.column).coerceAtLeast(0)
+
+    val survivor = vimCarets.firstOrNull { it.isPrimary } ?: vimCarets.firstOrNull()
+    val survivorLine = survivor?.getBufferPosition()?.line?.coerceIn(firstBlockLine, lastBlockLine)
+
+    val rebuilt = (firstBlockLine..lastBlockLine).map { line ->
+      val lineStart = getLineStartOffset(line)
+      val lineEnd = getLineEndOffset(line)
+      val from = (lineStart + leftColumn).coerceAtMost(lineEnd)
+      val to = (lineStart + rightColumn).coerceAtMost(lineEnd)
+      val caret = if (survivor != null && line == survivorLine) survivor else VsCodeCaret(this, to, isPrimary = false)
+      caret.moveToOffsetNative(to)
+      caret.setSelection(from, to)
+      caret
+    }
+
+    val removed = vimCarets.filter { existing -> rebuilt.none { it === existing } }
+    vimCarets.clear()
+    vimCarets += rebuilt
+    caretListeners.forEach { listener -> removed.forEach { listener.caretRemoved(it) } }
+  }
+
+  /**
+   * Who wants to hear that a caret went away.
+   *
+   * The engine registers one while running a motion for each of several carets, so that two carets
+   * landing on the same place can be merged without the loop tripping over the one that vanished.
+   * Block selections take a different path - a motion there runs on the primary caret alone - so in
+   * practice this fires on the way out of a block, which is exactly when a listener wants to know.
+   */
+  private val caretListeners: MutableList<VimCaretListener> = mutableListOf()
+
+  override fun addCaretListener(listener: VimCaretListener) {
+    caretListeners += listener
+  }
+
+  override fun removeCaretListener(listener: VimCaretListener) {
+    caretListeners -= listener
+  }
   /**
    * Leaving insert mode, which the engine asks the *editor* to do because a host may have its own
    * insert state to unwind - IntelliJ drops a pending visual-mode timer here. VS Code has no such

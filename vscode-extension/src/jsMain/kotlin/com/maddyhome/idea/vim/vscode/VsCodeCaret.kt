@@ -136,7 +136,18 @@ class VsCodeCaret(
 
   // ---- Not reached yet. Each names itself if that changes.
 
-  override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("VsCodeCaret.moveToVisualPosition")
+  /**
+   * A visual position is IntelliJ's idea: a line and column as *displayed*, after folds and inline
+   * hints have shifted things about. This host has neither, so a visual position is a buffer
+   * position wearing a different name and this is a plain move.
+   *
+   * The engine reaches for it while laying out a block selection, to put a caret on the right side
+   * of a tab character - which is the one case where IntelliJ's columns and the buffer's disagree
+   * even without folds. Here a tab is one column like anything else.
+   */
+  override fun moveToVisualPosition(position: VimVisualPosition) {
+    offset = vimEditor.bufferPositionToOffset(BufferPosition(position.line, position.column))
+  }
   /** Sets the remembered column and hands the caret back, since this one is never replaced. */
   override fun setVimLastColumnAndGetCaret(col: Int): VimCaret {
     vimLastColumn = col
@@ -161,8 +172,11 @@ class VsCodeCaret(
    * own.
    */
   override var vimLastVisualOperatorRange: VisualChange? = null
-  override val vimLine: Int get() = TODO("VsCodeCaret.vimLine")
-  override val visualLineStart: Int get() = TODO("VsCodeCaret.visualLineStart")
+  /** The caret's line, 1-based, because that is what Vimscript's `line(".")` means by a line. */
+  override val vimLine: Int get() = getBufferPosition().line + 1
+
+  /** Where the caret's line begins. A visual line is a buffer line while nothing folds. */
+  override val visualLineStart: Int get() = vimEditor.getLineStartOffset(getBufferPosition().line)
   /**
    * The selection this caret last had, which is what `gv` restores. Per caret rather than per
    * editor, because multiple cursors each had their own.

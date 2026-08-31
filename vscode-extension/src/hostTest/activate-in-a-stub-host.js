@@ -302,6 +302,32 @@ assert.strictEqual(
   `Q was not remapped by the .ideavimrc. Got: ${editor.document._text}`,
 )
 
+// Blockwise Visual, which is the only mode that needs the editor to have more than one caret. The
+// block covers the first two columns of three lines; `d` takes that rectangle out of each of them,
+// and the editor is left with a single caret afterwards.
+reset()
+type('i')
+for (const character of 'one two') type(character)
+press('<CR>')
+for (const character of 'three four') type(character)
+press('<CR>')
+for (const character of 'five six') type(character)
+press('<Esc>')
+for (const character of 'gg') type(character)
+press('<C-V>')
+for (const character of 'jjld') type(character)
+
+assert.strictEqual(
+  editor.document._text,
+  'e two\nree four\nve six',
+  `<C-V> did not delete a rectangle. Got: ${editor.document._text}`,
+)
+assert.strictEqual(
+  editor.selections.length,
+  1,
+  `the block left ${editor.selections.length} carets behind after the delete`,
+)
+
 // Scrolling, which is the one thing in this file that needs the stub to have a viewport at all.
 // Vim moves the view and VS Code will only reveal a range, so every scroll command reads
 // `visibleRanges` back to work out where to reveal next - and a stub whose view never moved would

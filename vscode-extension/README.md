@@ -81,10 +81,18 @@ the output is showing, which is a deliberate difference from Vim.
 What is not built yet is written down rather than left to be discovered. `VsCodeUnimplementedTest`
 presses every key the engine registers and asserts the list of the ones that land on a host service
 this port has not written; implementing a service shrinks the list, and a key that starts or stops
-reaching one shows up as a diff. That list is the honest map of the gap. The largest entry left is
-blockwise Visual, which needs multiple carets; then `<C-W>` windows, `gt` tabs, folds and `ZZ`,
-which each need a VS Code command and a way to wait for it. `[m` and `]s` need a language server and
-a spellchecker, and will most likely stay on the list.
+reaching one shows up as a diff. That list is the honest map of the gap. What is left is mostly
+`<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
+it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
+
+Blockwise Visual is off it, and it is the only Vim mode that needs the editor to have more than one
+caret. The engine's model came from IntelliJ: a block is N carets with N one-line selections, torn
+down and rebuilt on every motion, one of them primary and carrying the block's anchor. VS Code has
+the same idea - `selections` is an array whose first entry is the primary - so the model ports
+directly. What does not port is the assumption that the primary caret is the first one in the
+document: after `<C-V>k` the moving corner is the *top* of the block, so the caret list stays in
+document order, the primary is found by its flag, and the flush puts it first because that is where
+VS Code looks for it.
 
 Scrolling is off it. Vim moves the *view* - `<C-E>` by a line, `<C-D>` by half a window, `zt` to put
 the current line at the top - and lets the caret follow; VS Code's extension API has no verb for

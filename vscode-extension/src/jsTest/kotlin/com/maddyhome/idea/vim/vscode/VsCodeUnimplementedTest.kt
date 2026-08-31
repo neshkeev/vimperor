@@ -81,11 +81,11 @@ class VsCodeUnimplementedTest {
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
-     * Roughly in order of what they would cost: blockwise Visual needs multiple carets, and is the
-     * biggest single win left. Folds, windows, tabs and `:w`/`:q` each need a VS Code command and a
-     * way to wait for it. `S` wants the file's indent settings, which means declaring
-     * `TextEditor.options`. A spellchecker and a language server this host does not have at all, so
-     * `[m`, `]s` and `z=` will most likely stay here.
+     * Roughly in order of what they would cost: folds, windows, tabs and `:w`/`:q` each need a VS
+     * Code command and a way to wait for it, and between them they are most of what is left. `S`
+     * wants the file's indent settings, which means declaring `TextEditor.options`. `U` needs a
+     * history this host does not keep. A spellchecker and a language server it does not have at
+     * all, so `[m`, `]s` and `z=` will most likely stay here.
      */
     const val EXPECTED = """
 VS Code host: U needs the same host history undo does
@@ -110,8 +110,6 @@ VsCodeEditor.getFoldRegionAtLine
     zA
 VsCodeEditor.getMaxFoldDepth
     zR
-VsCodeEditor.removeSecondaryCarets
-    <C-Q> <C-V> g<C-H> gN gi gn
 the VS Code host does not provide file yet
     <C-6> <C-G> <C-G>u <C-S-6> <C-^> ZQ ZZ g8 g<C-G>
 the VS Code host does not provide searchWindowGroup yet
