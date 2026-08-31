@@ -57,6 +57,25 @@ class ChangeMotionActionTest : VimTestCase() {
     )
   }
 
+  @Test
+  fun `test change line with indent on the first line`() {
+    // The first line has no line above to hang the new one off, so it is written at the start of
+    // this one instead - and the indent used to be written after the line break, which put it on
+    // the line being pushed down rather than on the new one.
+    doTest(
+      "cc",
+      """
+            ${c}bar
+        }
+      """.trimIndent(),
+      """
+        ....${c}
+        }
+      """.trimIndent().dotToSpace(),
+      Mode.INSERT,
+    )
+  }
+
   // VIM-536 |cc|
   @Test
   fun testChangeLineAtSecondLastLine() {

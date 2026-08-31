@@ -1279,16 +1279,17 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       updated.moveToOffset(injector.motion.moveCaretToCurrentLineEnd(editor, updated))
     }
     editor.vimChangeActionSwitchMode = Mode.INSERT
-    newCaret = insertText(
-      editor,
-      newCaret,
-      "\n${editor.createIndentBySize(col)}",
-    )
+    val indent = editor.createIndentBySize(col)
     if (firstLiner) {
-      // TODO: getVerticalMotionOffset returns a visual line, not the expected logical line
-      // Also address the unguarded upcast
-      val motion = injector.motion.getVerticalMotionOffset(editor, newCaret, -1)
-      newCaret.moveToOffset((motion as AbsoluteOffset).offset)
+      // Above the first line there is no previous line to write the break at the end of, so it has
+      // to be written at the start of this one - and then the indent has to come *before* the
+      // break, or it belongs to the line being pushed down instead of to the new one. `cc` on an
+      // indented first line used to lose its indent to the line below it for exactly that reason.
+      val lineStart = newCaret.offset
+      newCaret = insertText(editor, newCaret, "$indent\n")
+      newCaret.moveToOffset(lineStart + indent.length)
+    } else {
+      insertText(editor, newCaret, "\n$indent")
     }
   }
 

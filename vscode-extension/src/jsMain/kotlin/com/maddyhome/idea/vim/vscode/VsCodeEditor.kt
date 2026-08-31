@@ -544,7 +544,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   /** The last column on a line, which is its length while a visual line is a buffer line. */
   override fun getLastVisualLineColumnNumber(line: Int): Int =
     getLineEndOffset(line) - getLineStartOffset(line)
-  override fun createIndentBySize(size: Int): String = TODO("VsCodeEditor.createIndentBySize")
+  override fun createIndentBySize(size: Int): String = indentConfig.createIndentBySize(size)
   /**
    * Folds, of which this host can *do* several and *know* none.
    *
@@ -579,7 +579,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   override fun deleteFoldRegionAtOffset(offset: Int): Boolean = false
   override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = false
   override val lfMakesNewLine: Boolean get() = TODO("VsCodeEditor.lfMakesNewLine")
-  override val indentConfig: VimIndentConfig get() = TODO("VsCodeEditor.indentConfig")
+  override val indentConfig: VimIndentConfig = VsCodeIndentConfig { nativeEditor.options }
   /**
    * What `R` overwrote, so that backspace in replace mode puts it back. Held per editor because
    * replace mode is per window; the engine builds and clears it.

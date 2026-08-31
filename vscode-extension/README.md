@@ -22,7 +22,8 @@ tab and the arrows are bound; enter, tab and the vertical arrows step aside whil
 is up, because accepting a completion is what those keys mean there.
 
 Tab also steps aside for ghost text - Copilot's inline suggestions and inline edits - so that Tab
-accepts a suggestion when one is showing and is Vim's otherwise. A `when` clause is the only way to
+accepts a suggestion when one is showing and is Vim's otherwise. When it is Vim's, it indents the
+way the file does. A `when` clause is the only way to
 do this: context keys are write-only for an extension, so the extension cannot ask whether a
 suggestion is up, and VS Code has to decide before the key is dispatched. Handing the key back
 rather than reimplementing the decision also inherits VS Code's own rule about indentation, which
@@ -81,9 +82,10 @@ the output is showing, which is a deliberate difference from Vim.
 What is not built yet is written down rather than left to be discovered. `VsCodeUnimplementedTest`
 presses every key the engine registers and asserts the list of the ones that land on a host service
 this port has not written; implementing a service shrinks the list, and a key that starts or stops
-reaching one shows up as a diff. That list is the honest map of the gap. What is left is mostly
-`<C-W>` windows, `gt` tabs, folds and `ZZ`, which each need a VS Code command and a way to wait for
-it. `[m` and `]s` need a language server and a spellchecker, and will most likely stay on the list.
+reaching one shows up as a diff. That list is the honest map of the gap, and what is on it now is
+not a matter of writing more host: `U` needs a history VS Code owns and will not describe, `[m` and
+`]s` need a language server and a spellchecker, and `q:` is Vim's command-line window. The ordinary
+Vim keys came off the list with `S`.
 
 There are four sweeps now, and three of them find nothing. Keys and ex commands each hid something;
 options and Vimscript functions were clean from the start, and the ex list is empty as of
@@ -161,6 +163,18 @@ table of lies; a bracket inside a comment is counted, which is what Vim does wit
 
 `'incsearch'` and IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not
 wired up; each names itself if reached.
+
+Indentation comes from `editor.options` rather than from a Vim option, and the reason is worth
+stating because it looks like a gap: the engine has no `'expandtab'` or `'shiftwidth'` at all.
+IdeaVim asks IntelliJ's code style, so `createIndentBySize` is a host question by construction, and
+VS Code answers it - resolved for the file, its language and the user's settings, and detected from
+the file's own contents when `detectIndentation` is on. So `>>`, `S` and Tab in Insert mode all
+indent the way pressing Tab in the same file without Vim would. It is read on every keystroke
+rather than cached, because the indentation of an open file is a thing the status bar can change.
+
+Rebuilding an indent measures it in characters, so a line indented with two tabs comes back with two
+spaces. That is the engine's arithmetic and IdeaVim does the same; it is written down as a test
+rather than fixed, because fixing it means giving the engine a notion of display columns.
 
 Undo is the one place where a host answer is a guess. VS Code owns the history and `undo` is a
 command: it resolves a promise and reports nothing about what it did, while the engine needs a

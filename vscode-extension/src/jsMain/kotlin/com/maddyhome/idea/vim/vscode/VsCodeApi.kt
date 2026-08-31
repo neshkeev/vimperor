@@ -204,6 +204,9 @@ external interface TextEditor {
    */
   val visibleRanges: Array<Range>
 
+  /** How this editor indents: the resolved settings, not the raw configuration. */
+  val options: TextEditorOptions
+
   /**
    * Paints [ranges] with [decorationType], replacing whatever that type painted before.
    *
@@ -211,6 +214,23 @@ external interface TextEditor {
    * clearing a highlight means setting its ranges to none.
    */
   fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>)
+}
+
+/**
+ * An editor's indentation, as VS Code has already worked it out.
+ *
+ * This is the answer to the question Vim asks `'expandtab'` and `'tabstop'`, and the reason the
+ * engine has neither option: IdeaVim asks IntelliJ, so `createIndentBySize` is a host question by
+ * construction. VS Code resolves the user's settings, the language's override and - when
+ * `editor.detectIndentation` is on - what the file itself does, and reports the result here.
+ *
+ * Both are declared as `dynamic` because both are unions in the real API: they are a number and a
+ * boolean when read off an open editor, and may be the strings VS Code accepts when written. Only
+ * reading happens here, so the coercion is one-way.
+ */
+external interface TextEditorOptions {
+  val tabSize: dynamic
+  val insertSpaces: dynamic
 }
 
 /** A style that can be painted over ranges. Created once and reused; disposing it unpaints it. */

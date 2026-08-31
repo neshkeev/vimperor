@@ -99,11 +99,12 @@ object VsCodeCommandProvider : CommandProvider {
  * VS Code equivalent is an asynchronous command, and these are keys pressed in the middle of
  * typing, so they are done here instead, in the buffer, synchronously.
  *
- * The cost is Tab: Vim's own default is a literal tab character and that is what this inserts,
- * where VS Code's `tab` command would have used the file's own indentation - and would also have
- * expanded a snippet or accepted a suggestion. The better answer is not to route Tab through the
- * engine at all but to publish the mode as a VS Code context key and let `package.json` stop
- * claiming Tab in Insert mode. That needs a context key, and there is not one yet.
+ * Tab used to be the cost of that: it inserted a literal tab where VS Code's own `tab` command
+ * would have used the file's indentation. It reads `editor.options` now, so it indents the way the
+ * file does. What is still lost is what VS Code's command does *besides* indent - expanding a
+ * snippet, accepting a suggestion - and the answer to that is not to reimplement it but to publish
+ * the mode as a context key and let `package.json` stop claiming Tab in Insert mode, the way it
+ * already stops claiming it for ghost text.
  */
 internal class VimEditorDelete : ChangeEditorActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.DELETE
@@ -129,10 +130,18 @@ internal class VimEditorDelete : ChangeEditorActionHandler.SingleExecution() {
 }
 
 /**
- * `<Tab>` in Insert mode: a tab character.
+ * `<Tab>` in Insert mode: whitespace up to the next tab stop, the way this file writes it.
  *
- * Vim's default is `'noexpandtab'`, so this is what Vim does. See [VimEditorDelete] for why it is
- * not VS Code's `tab` command, and what that costs.
+ * Vim would consult `'expandtab'`, `'tabstop'` and `'softtabstop'`; the engine has none of those,
+ * because IdeaVim asks the IDE and so this asks VS Code. See [VimEditorDelete] for why it is not
+ * VS Code's own `tab` command.
+ *
+ * A tab stop is a column and not a width, so this fills the distance to the next one rather than
+ * inserting a fixed number of spaces - two characters into a four-wide file, Tab inserts two.
+ *
+ * The column is the primary caret's, and every caret gets the same string. That is right where
+ * more than one caret comes from, which here is only a blockwise insert: those carets are in the
+ * same column by construction.
  */
 internal class VimEditorTab : ChangeEditorActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.INSERT
@@ -144,7 +153,11 @@ internal class VimEditorTab : ChangeEditorActionHandler.SingleExecution() {
     argument: Argument?,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    injector.changeGroup.type(editor, context, "\t")
+    val indent = editor.indentConfig as VsCodeIndentConfig
+    val column = editor.offsetToBufferPosition(editor.primaryCaret().offset).column
+    // A tab character *is* the jump to the next stop, so it is one character however far it goes.
+    val text = if (indent.usesTabs) "\t" else " ".repeat(indent.toNextTabStop(column))
+    injector.changeGroup.type(editor, context, text)
     return true
   }
 }

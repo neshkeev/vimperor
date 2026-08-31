@@ -108,6 +108,11 @@ function makeEditor(text) {
     selection: { anchor: new Position(0, 0), active: new Position(0, 0) },
     selections: [{ anchor: new Position(0, 0), active: new Position(0, 0) }],
 
+    // How the file is indented, which VS Code resolves and Vim's Tab and `S` both ask for. Two
+    // spaces rather than VS Code's default four, so that a scenario asserting the indent is
+    // asserting that this was read and not that a constant happened to match.
+    options: { tabSize: 2, insertSpaces: true },
+
     // A viewport, ten lines tall, because `visibleRanges` is half of VS Code's scrolling API and
     // the commands that use it read the view back to work out where to scroll next.
     viewportHeight: 10,
@@ -529,6 +534,41 @@ assert.strictEqual(
   editor.document._text,
   'one two',
   `J did not join the two lines. Got: ${editor.document._text}`,
+)
+
+// Tab in insert mode, and `S`, which both take their indent from `editor.options` rather than from
+// a Vim option - the engine has none, because IdeaVim asks the IDE. The stub says two spaces, so
+// four would mean the setting was never read.
+reset()
+type('i')
+press('<Tab>')
+for (const character of 'x') type(character)
+press('<Esc>')
+
+assert.strictEqual(
+  editor.document._text,
+  '  x',
+  `Tab did not indent the way the editor is configured to. Got: ${JSON.stringify(editor.document._text)}`,
+)
+
+// Two lines, because `cc` on a file that is one line long empties the buffer and the engine starts
+// a fresh insert there rather than rebuilding an indent that has nothing to sit on.
+reset()
+type('i')
+for (const character of '    one two') type(character)
+press('<CR>')
+for (const character of 'rest') type(character)
+press('<Esc>')
+type('g')
+type('g')
+type('S')
+for (const character of 'new') type(character)
+press('<Esc>')
+
+assert.strictEqual(
+  editor.document._text,
+  '    new\nrest',
+  `S did not keep the line's indent. Got: ${JSON.stringify(editor.document._text)}`,
 )
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')

@@ -252,11 +252,10 @@ class VsCodeUnimplementedTest {
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
-     * Roughly in order of what they would cost: folds, windows, tabs and `:w`/`:q` each need a VS
-     * Code command and a way to wait for it, and between them they are most of what is left. `S`
-     * wants the file's indent settings, which means declaring `TextEditor.options`. `U` needs a
-     * history this host does not keep. A spellchecker and a language server it does not have at
-     * all, so `[m`, `]s` and `z=` will most likely stay here.
+     * What is left is no longer a matter of writing more host. `U` needs a history this host does
+     * not keep - VS Code owns the undo stack and will not say what is on it - and the rest need a
+     * spellchecker, a language server or Vim's command-line window, none of which VS Code has. The
+     * ordinary Vim keys are off this list as of `S`.
      */
     const val EXPECTED_SETTINGS = """
 """
@@ -273,8 +272,6 @@ VS Code host: findMethodStart needs a language server
     [m ]m
 VS Code host: findMisspelledWord needs a spellchecker
     [s ]s
-VsCodeEditor.createIndentBySize
-    S
 the VS Code host does not provide searchWindowGroup yet
     q/ q: q?
 the VS Code host does not provide spellcheckerService yet

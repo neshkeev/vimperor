@@ -97,6 +97,21 @@ class FakeEditor(text: String) : TextEditor {
   var viewportHeight: Int = 10
   var topLine: Int = 0
 
+  /**
+   * How this file is indented, which VS Code resolves and an extension only reads.
+   *
+   * Defaulted to VS Code's own defaults so that every other test keeps the behaviour it asserted
+   * before there was an answer here at all.
+   */
+  var indentWithSpaces: Boolean = true
+  var indentWidth: Int = 4
+
+  override val options: TextEditorOptions
+    get() = object : TextEditorOptions {
+      override val tabSize: dynamic get() = indentWidth
+      override val insertSpaces: dynamic get() = indentWithSpaces
+    }
+
   private val lastLine: Int get() = document.lineCount - 1
 
   override val visibleRanges: Array<Range>
