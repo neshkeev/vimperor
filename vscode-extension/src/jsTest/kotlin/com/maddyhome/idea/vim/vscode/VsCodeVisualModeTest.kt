@@ -221,4 +221,32 @@ class VsCodeVisualModeTest {
 
     assertEquals(2, session.editor.primaryCaret().offset, "the caret should be on the last character")
   }
+  /**
+   * Delete in Select mode, which the engine settles by asking the host.
+   *
+   * `SelectDeleteBackspaceActionBase` runs whatever the *host* has bound to Delete and only then
+   * leaves Select mode, on the grounds that a host might have something else to do with the key.
+   * This host had nothing bound, so Delete in Select mode deleted nothing at all - eight of
+   * IdeaVim's fixtures said so once the parser could read them.
+   */
+  @Test
+  fun `test delete in select mode removes the selection`() {
+    val session = Session("one two")
+    session.type("ve")
+    session.key("<C-G>")
+    session.key("<Del>")
+
+    assertEquals(" two", session.content)
+    assertEquals("NORMAL", session.host.modeName())
+  }
+
+  @Test
+  fun `test backspace in select mode removes the selection`() {
+    val session = Session("one two")
+    session.type("ve")
+    session.key("<C-G>")
+    session.key("<BS>")
+
+    assertEquals(" two", session.content)
+  }
 }

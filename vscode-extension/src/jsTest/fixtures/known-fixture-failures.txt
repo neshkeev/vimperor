@@ -5,26 +5,14 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 635 of the 642 harvested fixtures pass. These seven are grouped by what is actually wrong, which
-# is three things.
+# 952 of the 966 harvested fixtures pass. These fourteen are grouped by what is actually wrong,
+# which is seven things.
 #
-# The corpus doubled here: the extractor learned `exCommand("...")`, `//` comments between the
-# arguments, and IdeaVim's `${s}`/`${se}` selection markers - which appear in 462 `after`s and in
-# not one `before`, so each of those fixtures also says where the selection ended up and is now
-# checked for it. Not one of them failed on the selection, which is the first outside evidence that
-# Visual mode in this host lands where Vim lands.
-#
-# The four Select mode entries have gone: `exitSelectModeNative` was the one missing method, and
-# most of what IdeaVim does in it is IntelliJ bookkeeping this host does not need.
+# The corpus went 314 -> 642 -> 966 as the parser learned what these tests are written with. The
+# last step was `trimMargin`, which 318 of them use instead of `trimIndent`, plus `.repeat(n)`,
+# `"a" + "b"` concatenation and `\uXXXX`. "An argument this cannot evaluate" fell from 397 to 26.
 
-# --- Reindenting, which is a VS Code command and therefore asynchronous.
-#
-# `=` on a sentence object asks the host to reindent a range. VS Code's is a command that resolves a
-# promise, and the engine wants the text changed before it returns.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionOuterSentenceActionTest.kt:test on empty last line
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionSentenceActionTest.kt:test indent outer sentence on empty last line
-
-# --- `<Action>` in a mapping, typed rather than mapped.
+# --- `<Action>` and `<Plug>` in a mapping, typed rather than mapped.
 #
 # All four are about what happens to the *keys* of a half-typed `<Action>` or `<Plug>` mapping,
 # which this host replays as literal text instead of recognising.
@@ -33,7 +21,33 @@ src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapComman
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test abandoned Plug mapping replays all keys as text
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
 
-# --- One.
+# --- `:s///c`, the substitute that asks before each replacement.
 #
-# `ideajoin` is IntelliJ's smart join, which is a language feature this host cannot have.
+# The prompt takes `y`, `n`, `a`, `q` and `l` one key at a time while the command is still running.
+# Nothing here answers it, so every replacement is declined.
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm all replaces all in rest of range
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm options
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm options with quit
+
+# --- Reindenting, which is a VS Code command and therefore asynchronous.
+#
+# `=` on a sentence object asks the host to reindent a range. VS Code's is a command that resolves a
+# promise, and the engine wants the text changed before it returns.
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionOuterSentenceActionTest.kt:test on empty last line
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionSentenceActionTest.kt:test indent outer sentence on empty last line
+
+# --- `<expr>` mappings, whose right-hand side is a Vimscript expression.
+#
+# `:vmap <expr> q '<Esc>a - line(v)=='.line('v').'<Esc>'` types its own source here instead of being
+# evaluated.
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/functions/cursorFunctions/LineFunctionTest.kt:test line with reverse selection
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/functions/cursorFunctions/LineFunctionTest.kt:test line with selection
+
+# --- One each.
+#
+# `ideajoin` is IntelliJ's smart join, a language feature this host cannot have. The other two are
+# Select mode corners: block Select entered with `g<C-H>`, and where the caret lands when a search
+# is run from Select mode with `<C-O>`.
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionShiftLeftActionHandlerTest.kt:test multiline with empty line block mode
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchEntryFwdActionTest.kt:search in one time from select mode

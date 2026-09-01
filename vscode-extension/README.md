@@ -113,9 +113,9 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**635 of the 642 it harvests pass.** The seven that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is three
-things, not seven.
+**952 of the 966 it harvests pass.** The fourteen that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is seven
+things, not fourteen.
 
 It started at 294 of 314, and every bug it has found was one no sweep could have: the service
 existed, was reached, threw nothing, and was wrong. Seven fixtures were the empty line a trailing
@@ -133,21 +133,30 @@ never been built: `exitSelectModeNative` was the one missing method, and most of
 in it is IntelliJ bookkeeping this host has no equivalent of. Writing it turned up a second thing
 nothing in the engine says out loud - typing over a selection replaces it, which IntelliJ's typed
 action does on IdeaVim's behalf, so `gh` and then a letter left the letter *beside* the selection
-instead of in place of it. The build fails if that list changes in either direction: a new failure
-is a regression, and a fixture that starts passing has to be taken out of the list, which is how the
-number goes down.
+instead of in place of it. And eight were Delete and Backspace in Select mode, which the engine
+settles by asking the host what it has bound to those keys and running that - in IntelliJ the answer
+is `EditorDelete`, which deletes a selection because that is what Delete does anywhere; here the
+answer was nothing, so Delete in Select mode deleted nothing at all. The build fails if that list
+changes in either direction: a new failure is a regression, and a fixture that starts passing has to
+be taken out of the list, which is how the number goes down.
 
 The parser is deliberately narrow and refuses far more than it accepts, because a fixture read
 slightly wrong is worse than one skipped - it fails against a correct host and gets recorded as a
 bug in it. It also has tests of its own, for the same reason the sweeps do.
 
-The corpus doubled when the parser learned three more things IdeaVim's tests are written with:
-`exCommand("...")`, which is only string building; `//` comments between the arguments, which have to
-go before the arguments are split, because a comment with a comma in it otherwise tears the call
-into the wrong pieces; and the `${s}`/`${se}` selection markers. Those appear in 462 `after`s and in
-not one `before`, so each of those fixtures is an ordinary one that additionally says where the
-selection ended up - and the replay now checks it. Not one failed on the selection, which is the
+The corpus went 314 -> 642 -> 966 as the parser learned what these tests are actually written with.
+First `exCommand("...")`, which is only string building; `//` comments between the arguments, which
+have to go before the arguments are split, because a comment with a comma in it otherwise tears the
+call into the wrong pieces; and the `${s}`/`${se}` selection markers. Those appear in 462 `after`s
+and in not one `before`, so each of those fixtures is an ordinary one that additionally says where
+the selection ended up - and the replay now checks it. Not one failed on the selection, which is the
 first evidence from outside this repository that Visual mode here lands where Vim lands.
+
+Then `trimMargin`, which was the single largest thing it could not read: 318 fixtures are written
+with it rather than `trimIndent`, and it is a different rule - a line that does not carry the margin
+prefix is kept exactly as it was, which is why IdeaVim reaches for it when the text under test has
+indentation of its own. With `.repeat(n)`, `"a" + "b"` and `\uXXXX` alongside it, "an argument this
+cannot evaluate" fell from 397 to 26.
 
 Two things it does on purpose. Trailing whitespace is not compared, because IdeaVim does not compare
 it either - thirteen fixtures assert that `]}`, a motion, removed two spaces from a line. And the

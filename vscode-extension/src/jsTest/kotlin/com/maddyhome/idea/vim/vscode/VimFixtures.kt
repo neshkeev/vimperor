@@ -21,11 +21,12 @@ package com.maddyhome.idea.vim.vscode
  * finds the `doTest` calls it can evaluate without a Kotlin compiler, and hands back the triples.
  * [VimFixtureReplayTest] presses them against this host.
  *
- * The parsing is deliberately narrow. It understands ordinary and raw string literals, `trimIndent`,
- * `dotToSpace`, `dotToTab`, `listOf` of strings, the `exCommand`/`searchCommand` helpers that are
- * only string building, `//` comments between the arguments, and IdeaVim's `${'$'}{c}`, `${'$'}{s}`
- * and `${'$'}{se}` markers - and refuses everything else, because a fixture it half-understands is
- * worse than one it skips. What it refuses is counted, so the yield is visible rather than assumed;
+ * The parsing is deliberately narrow. It understands ordinary and raw string literals and the calls
+ * that follow them - `trimIndent`, `trimMargin`, `dotToSpace`, `dotToTab`, `repeat` - along with
+ * `listOf` of strings, `"a" + "b"`, the `exCommand`/`searchCommand` helpers that are only string
+ * building, `//` comments between the arguments, and IdeaVim's `${'$'}{c}`, `${'$'}{s}` and
+ * `${'$'}{se}` markers. It refuses everything else, because a fixture it half-understands is worse
+ * than one it skips. What it refuses is counted, so the yield is visible rather than assumed;
  * `VimFixtureReplayTest` writes those counts out with every run.
  */
 internal data class VimFixture(
@@ -178,8 +179,20 @@ internal object VimFixtures {
       if (parts.last().second + 1 != expression.length) return null
       return wrap(evaluate(expression.substring(parts[0].first, parts[0].second).trim()) ?: return null)
     }
-    val (value, end) = readString(expression, 0) ?: return null
-    return if (end == expression.length) value else null
+    // `"<a>\\n" + "  ${'$'}{c}<b>\\n" + ...`, which is how the tag-object fixtures are written -
+    // one literal per line of the document, because a raw string cannot carry the escapes they need.
+    val builder = StringBuilder()
+    var index = 0
+    while (true) {
+      val (value, end) = readString(expression, index) ?: return null
+      builder.append(value)
+      index = end
+      val rest = expression.substring(index).trimStart()
+      if (rest.isEmpty()) return builder.toString()
+      if (!rest.startsWith("+")) return null
+      index = expression.length - rest.length + 1
+      index += expression.substring(index).takeWhile { it.isWhitespace() }.length
+    }
   }
 
   /** A string literal and the `trimIndent`/`dotToSpace` calls that so often follow one. */
@@ -202,10 +215,14 @@ internal object VimFixtures {
             when (escaped) {
               'n' -> '\n'; 't' -> '\t'; 'r' -> '\r'
               '\\' -> '\\'; '"' -> '"'; '$' -> '$'; '\'' -> '\''
+              // `\u3002` is a full stop in Japanese, and a word-motion fixture turns on it being
+              // one character rather than six.
+              'u' -> text.substring(at + 2, minOf(at + 6, text.length))
+                .takeIf { it.length == 4 }?.toIntOrNull(16)?.toChar() ?: return null
               else -> return null
             },
           )
-          at += 2
+          at += if (escaped == 'u') 6 else 2
           continue
         }
         if (character == '"') { at++; break }
@@ -219,16 +236,27 @@ internal object VimFixtures {
     }
 
     while (true) {
-      val suffix = Regex("""^\s*\.(trimIndent|dotToSpace|dotToTab)\(\)""").find(text.substring(index)) ?: break
+      val suffix = SUFFIX.find(text.substring(index)) ?: break
       value = when (suffix.groupValues[1]) {
         "trimIndent" -> trimIndent(value)
+        "trimMargin" -> trimMargin(value, suffix.groupValues[2].ifEmpty { "|" })
         "dotToSpace" -> value.replace('.', ' ')
-        else -> value.replace('.', '\t')
+        "dotToTab" -> value.replace('.', '\t')
+        else -> value.repeat(suffix.groupValues[3].toInt())
       }
       index += suffix.value.length
     }
     return value to index
   }
+
+  /**
+   * The calls that so often follow a string literal in these tests, and what they take.
+   *
+   * `trimMargin` is worth more than the rest together: 318 of the fixtures are written with it
+   * rather than `trimIndent`, and it was the single largest thing this could not read.
+   */
+  private val SUFFIX =
+    Regex("""^\s*\.(trimIndent|trimMargin|dotToSpace|dotToTab|repeat)\((?:"([^"]*)"|(\d+))?\)""")
 
   private val HELPERS: List<Pair<String, (String) -> String>> = listOf(
     "exCommand" to { command: String -> ":$command<CR>" },
@@ -260,6 +288,27 @@ internal object VimFixtures {
       index++
     }
     return builder.toString()
+  }
+
+  /**
+   * Kotlin's own `trimMargin`, which is how 318 of these fixtures are written.
+   *
+   * Not the same rule as `trimIndent`, and the difference matters here: a line whose first
+   * non-blank run does not start with the margin prefix is kept exactly as it was, prefix and all.
+   * That is what makes it the one IdeaVim reaches for when the text under test has its own leading
+   * whitespace - which is most of the indentation fixtures.
+   */
+  private fun trimMargin(value: String, prefix: String): String {
+    val lines = value.split("\n")
+    return lines.mapIndexedNotNull { index, line ->
+      if ((index == 0 || index == lines.lastIndex) && line.isBlank()) return@mapIndexedNotNull null
+      val firstNonBlank = line.indexOfFirst { !it.isWhitespace() }
+      if (firstNonBlank >= 0 && line.startsWith(prefix, firstNonBlank)) {
+        line.substring(firstNonBlank + prefix.length)
+      } else {
+        line
+      }
+    }.joinToString("\n")
   }
 
   /** Kotlin's own `trimIndent`, over text this has read out of a source file rather than compiled. */

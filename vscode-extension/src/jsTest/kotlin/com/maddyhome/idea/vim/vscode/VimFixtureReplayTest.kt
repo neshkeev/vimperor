@@ -45,7 +45,7 @@ class VimFixtureReplayTest {
     // An empty corpus would make this test pass while checking nothing, which is the failure mode
     // the sweeps had to be given a gate of their own for.
     assertTrue(
-      fixtures.size > 600,
+      fixtures.size > 900,
       "only ${fixtures.size} fixtures were harvested, so the extractor has probably broken. " +
         "Skipped: ${VimFixtures.skipped}",
     )

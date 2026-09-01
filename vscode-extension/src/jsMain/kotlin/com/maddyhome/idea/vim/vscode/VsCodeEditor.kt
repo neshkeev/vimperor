@@ -245,6 +245,32 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     }
   }
 
+  /**
+   * Deletes what is selected at every caret, leaving each one where its selection began.
+   *
+   * This is Delete and Backspace in Select mode, and the engine reaches it the long way round: it
+   * asks the host what its *own* editor has bound to those keys and runs that, on the grounds that
+   * a host may have something else to do with them. In IntelliJ the answer is `EditorDelete`, which
+   * deletes a selection because that is what Delete does in any editor. VS Code's equivalent is a
+   * command and therefore asynchronous, so this is the same behaviour done here.
+   */
+  fun deleteSelections() {
+    val sorted = vimCarets.filter { it.hasSelection() }.sortedBy { it.selectionStart }
+    if (sorted.isEmpty()) return
+    val spans = sorted.map { it.selectionStart to it.selectionEnd }
+    for (index in sorted.indices.reversed()) {
+      val (from, to) = spans[index]
+      buffer.replace(from, to, "")
+    }
+    var deletedBefore = 0
+    sorted.forEachIndexed { index, caret ->
+      val (from, to) = spans[index]
+      caret.removeSelection()
+      caret.moveToOffsetNative(from - deletedBefore)
+      deletedBefore += to - from
+    }
+  }
+
   /** Deletes the character before every caret, which is what backspace does in insert mode. */
   fun deleteBeforeCarets() {
     val sorted = vimCarets.sortedBy { it.offset }

@@ -248,4 +248,73 @@ class VimFixturesTest {
     assertEquals(emptyList(), fixtures)
     assertTrue(VimFixtures.skipped.containsKey("more than one selection in the result"))
   }
+  /**
+   * `trimMargin` is what 318 of the fixtures are written with, and it is not `trimIndent`.
+   *
+   * The difference shows on a line that does not carry the margin prefix: `trimIndent` would take
+   * the common indent off it anyway, `trimMargin` leaves it exactly as it was. That is why IdeaVim
+   * reaches for it when the text under test has indentation of its own.
+   */
+  @Test
+  fun `test a margin string is trimmed the way Kotlin trims it`() {
+    val fixtures = harvest(
+      "class SampleTest {\n" +
+        "  fun `test margin`() {\n" +
+        "    doTest(\n" +
+        "      \"j\",\n" +
+        "      \"\"\"\n" +
+        "        |${'$'}{c}one\n" +
+        "        |    two\n" +
+        "      \"\"\".trimMargin(),\n" +
+        "      \"\"\"\n" +
+        "        |one\n" +
+        "        |    ${'$'}{c}two\n" +
+        "      \"\"\".trimMargin(),\n" +
+        "    )\n" +
+        "  }\n" +
+        "}\n",
+    )
+
+    assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
+    assertEquals("<caret>one\n    two", fixtures[0].before)
+  }
+
+  /** `"<C-H>".repeat(8)`, which is how the backspace fixtures say "eight times". */
+  @Test
+  fun `test repeat is applied`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test repeated`() {
+          doTest(listOf("R", "ab", "<C-H>".repeat(2)), "${'$'}{c}one", "${'$'}{c}one")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
+    assertEquals("Rab<C-H><C-H>", fixtures[0].keys)
+  }
+
+  /**
+   * `"a" + "b"`, which the tag-object fixtures are written with.
+   *
+   * They need `\n` escapes on every line, and a raw string cannot carry an escape - so they are one
+   * ordinary literal per line of the document, added together.
+   */
+  @Test
+  fun `test concatenated literals are joined`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test concatenated`() {
+          doTest("dat", "<a>\n" + "  ${'$'}{c}<b/>\n" + "</a>\n", "${'$'}{c}\n")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
+    assertEquals("<a>\n  <caret><b/>\n</a>\n", fixtures[0].before)
+  }
 }

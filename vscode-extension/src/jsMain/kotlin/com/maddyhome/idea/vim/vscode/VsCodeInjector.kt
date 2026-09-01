@@ -694,7 +694,13 @@ open class VsCodeInjector(
       // Enter with its indenting and its brace handling. Answering "nothing" there means Insert
       // mode cannot type a newline at all, which is what it meant here until this test caught it.
       override fun getActions(editor: VimEditor, keyStroke: VimKeyStroke): List<NativeAction> =
-        if (keyStroke.keyCode == VimKeyCodes.VK_ENTER) listOf(InsertNewLineAction) else emptyList()
+        when (keyStroke.keyCode) {
+          VimKeyCodes.VK_ENTER -> listOf(InsertNewLineAction)
+          // Delete and Backspace in Select mode, which the engine also settles by asking the host
+          // what it has bound to them - see [DeleteSelectionAction]. Nowhere else asks.
+          VimKeyCodes.VK_DELETE, VimKeyCodes.VK_BACK_SPACE -> listOf(DeleteSelectionAction)
+          else -> emptyList()
+        }
       override fun getKeymapConflicts(keyStroke: VimKeyStroke): List<NativeAction> = emptyList()
       override fun updateShortcutKeysRegistration() {}
       override val shortcutConflicts: MutableMap<VimKeyStroke, ShortcutOwnerInfo> get() = myShortcutConflicts
@@ -1198,6 +1204,11 @@ private class VimOnlyActionExecutor(private val host: HostCommandRunner) : VimAc
         true
       }
 
+      is DeleteSelectionAction -> {
+        vsCode.deleteSelections()
+        true
+      }
+
       else -> false
     }
   }
@@ -1279,6 +1290,17 @@ private object NoDisplay : CommandLineDisplay {
 /** Pressing Enter, which `o` and `O` reach for through the host rather than doing themselves. */
 private object InsertNewLineAction : NativeAction {
   override val action: Any = "ideavim.insertNewLine"
+}
+
+/**
+ * Pressing Delete or Backspace, which Select mode reaches for the same way.
+ *
+ * `SelectDeleteBackspaceActionBase` runs whatever the host has bound to the key and then leaves
+ * Select mode, rather than deleting the selection itself - because a host might have something else
+ * bound there. This host has not, so the action is the deletion.
+ */
+private object DeleteSelectionAction : NativeAction {
+  override val action: Any = "ideavim.deleteSelection"
 }
 
 private object SilentLogger : VimLogger {
