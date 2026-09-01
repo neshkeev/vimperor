@@ -100,6 +100,33 @@ not a matter of writing more host: `U` needs a history VS Code owns and will not
 `]s` need a language server and a spellchecker, and `q:` is Vim's command-line window. The ordinary
 Vim keys came off the list with `S`.
 
+## Checking it against somebody else's expectations
+
+Every test in this module was written by whoever wrote the code under it, and they all share that
+weakness: they encode what this port's author believed Vim does. The sweeps have the same blind spot
+from the other side - they find a service that is *missing* and are blind to one that exists and is
+wrong. `:` and `/` passed every sweep while the second backspace in a row threw.
+
+So IdeaVim's own tests are read as data. Most of its 7,499 are one call - `doTest(keys, before,
+after)` - with nothing IntelliJ-shaped in it: text in, keys, text out, argued over against real Vim
+for twenty years by people who were not thinking about VS Code. `VimFixtures` walks the IntelliJ
+module's test sources, evaluates the `doTest` calls it can read without a compiler, and
+`VimFixtureReplayTest` presses all of them against this host.
+
+**294 of the 314 it harvests pass.** The twenty that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
+things, not twenty. The build fails if that list changes in either direction: a new failure is a
+regression, and a fixture that starts passing has to be taken out of the list, which is how the
+number goes down.
+
+The parser is deliberately narrow and refuses far more than it accepts, because a fixture read
+slightly wrong is worse than one skipped - it fails against a correct host and gets recorded as a
+bug in it. It also has tests of its own, for the same reason the sweeps do.
+
+Two things it does on purpose. Trailing whitespace is not compared, because IdeaVim does not compare
+it either - thirteen fixtures assert that `]}`, a motion, removed two spaces from a line. And the
+mode afterwards is not compared yet, only the text and the caret.
+
 There are four sweeps now, and three of them find nothing. Keys and ex commands each hid something;
 options and Vimscript functions were clean from the start, and the ex list is empty as of
 `:command`. That is only worth believing because the sweep is tested too - and testing it turned

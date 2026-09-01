@@ -245,6 +245,13 @@ val syncVsCodeStub by tasks.registering(Sync::class) {
 
 tasks.named("jsNodeTest") {
   dependsOn(syncVsCodeStub)
+
+  // `VimFixtureReplayTest` reads IdeaVim's test sources and its own baseline off the disk rather
+  // than through the compiler, so Gradle cannot see them. Without this the harness is skipped as
+  // up to date when the only thing that changed is a fixture or the baseline - which it did, and
+  // the check that the baseline gate works passed by not running.
+  inputs.dir(rootProject.layout.projectDirectory.dir("src/test"))
+  inputs.dir(layout.projectDirectory.dir("src/jsTest/fixtures"))
 }
 
 // `./gradlew test` matches by task NAME across projects, and a KMP module has no `test` task - so
