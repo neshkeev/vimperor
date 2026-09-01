@@ -113,9 +113,18 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**294 of the 314 it harvests pass.** The twenty that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
-things, not twenty. The build fails if that list changes in either direction: a new failure is a
+**304 of the 314 it harvests pass.** The ten that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is five
+things, not ten.
+
+It started at twenty, and the ten that have gone were two bugs. Seven were the empty line a trailing
+newline opens: an editor buffer is not a file, and IntelliJ and VS Code both show that line and let
+a caret sit on it, but this host counted lines by counting newlines - so `cc` and `dd` on the last
+line took the range of the line above and `G` stopped short of the end. A unit test in this module
+asserted the wrong behaviour in as many words, which is the case for harvesting somebody else's
+tests in one line. The other three were replace mode: `R` did not overwrite at all, and backspace
+did not restore what it had overwritten, because the engine's replace stack is keyed by a live
+marker and this host's markers compared by identity. The build fails if that list changes in either direction: a new failure is a
 regression, and a fixture that starts passing has to be taken out of the list, which is how the
 number goes down.
 

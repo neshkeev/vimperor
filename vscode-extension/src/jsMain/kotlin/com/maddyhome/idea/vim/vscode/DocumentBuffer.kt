@@ -139,6 +139,20 @@ class DocumentBuffer(private val editor: TextEditor) {
       offset >= changeEnd -> offset + delta
       else -> changeStart
     }
+
+    /**
+     * Two markers over the same span are the same marker, which is not obvious and is load-bearing.
+     *
+     * Vim's replace stack is a map keyed by a marker, and it looks an entry up by *building a new
+     * marker* at the offset it wants. With identity equality that lookup never matches anything, so
+     * backspace in replace mode silently restored nothing. IntelliJ's `IjLiveRange` compares by
+     * offsets for exactly this reason; this had not, and nothing noticed because nothing in this
+     * module had pressed `R` and then backspace.
+     */
+    override fun equals(other: Any?): Boolean =
+      other is TrackedRange && other.startOffset == startOffset && other.endOffset == endOffset
+
+    override fun hashCode(): Int = 31 * startOffset + endOffset
   }
 
   /**

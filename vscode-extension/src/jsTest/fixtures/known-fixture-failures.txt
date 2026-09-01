@@ -4,31 +4,13 @@
 # build/fixture-failures.txt with the difference for each one. To update this file, read that one
 # and copy the names across - never edit a name by hand to make the build pass.
 #
-# 294 of the 314 harvested fixtures pass. These twenty are grouped by what is actually wrong, which
-# is far fewer than twenty things.
-
-# --- The last line of a buffer, and whether there is one after a trailing newline.
+# 304 of the 314 harvested fixtures pass. These ten are grouped by what is actually wrong, which is
+# five things.
 #
-# IntelliJ's document has a line after a trailing `\n` that you can put a caret on; this host counts
-# lines by counting newlines, so it does not. Everything below is that one difference: `cc` and `dd`
-# on the last line take the wrong range, `S` leaves an extra line behind, and `j` and `G` stop one
-# line short of where Vim puts them. The largest single finding in the corpus.
-src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeLineActionTest.kt:test on last line
-src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeLineActionTest.kt:test on last line with new line with S
-src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeLineActionTest.kt:test on last line with new line with cc
-src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeLineActionTest.kt:test on very last line with new line with S2
-src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test delete on last line
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionDownActionTest.kt:test motion to the last empty line
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionGotoLineLastActionTest.kt:test with last empty line
-
-# --- Replace mode.
-#
-# `R` past the end of a line should append rather than overwrite what follows, and backspace in
-# replace mode should put back the character that was overwritten. The mask this host keeps is
-# wrong in both directions. Nothing in this module had ever pressed `R` twice.
-src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeReplaceActionTest.kt:test replace mode past the end of the line appends instead of replacing the next line
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertBackspaceActionTest.kt:test replace mode backspace restores a character replaced at the start of the line
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertBackspaceActionTest.kt:test replace mode backspace restores a character replaced away from the start of the line
+# Ten of the twenty this list started with have gone, and they were two bugs. Seven were the empty
+# line that a trailing newline opens, which this host did not count - so `cc` and `dd` on the last
+# line took the range of the line above and `G` stopped short. Three were replace mode: nothing here
+# had pressed `R`, so it did not overwrite, and backspace did not put back what it had.
 
 # --- Select mode, which this host has not built at all.
 #

@@ -41,10 +41,21 @@ class VsCodeEditorTest {
     assertEquals(13, editor.getLineEndOffset(2))
   }
 
+  /**
+   * This test used to assert two, and it was wrong.
+   *
+   * A file ending in a newline is two lines; an editor *buffer* ending in one shows a third, empty,
+   * and lets a caret sit on it - IntelliJ and VS Code both. The engine is built on IntelliJ's
+   * document and expects that line to exist. Nothing here noticed until IdeaVim's own fixtures were
+   * replayed and seven of them disagreed at once, which is the whole reason for harvesting them:
+   * this test and the code it tested were written by the same hand and agreed with each other.
+   */
   @Test
-  fun `test a trailing newline does not open a line`() {
+  fun `test a trailing newline opens an empty last line`() {
     val (_, editor) = editorOver("one\ntwo\n")
-    assertEquals(2, editor.nativeLineCount())
+    assertEquals(3, editor.nativeLineCount())
+    assertEquals(8, editor.getLineStartOffset(2))
+    assertEquals(8, editor.getLineEndOffset(2))
   }
 
   /**

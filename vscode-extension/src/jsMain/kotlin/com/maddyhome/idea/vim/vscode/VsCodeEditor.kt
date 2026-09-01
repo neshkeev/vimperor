@@ -106,11 +106,17 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   override fun fileSize(): Long = buffer.text.length.toLong()
 
-  /** A trailing newline does not open a line, which is how both Vim and VS Code count them. */
-  override fun nativeLineCount(): Int {
-    val text = buffer.text
-    return if (text.isEmpty()) 0 else starts().size - (if (text.endsWith("\n")) 1 else 0)
-  }
+  /**
+   * A trailing newline *does* open a line, and this used to say the opposite.
+   *
+   * The comment that was here claimed a trailing newline opens no line and that Vim and VS Code
+   * agree about it. Neither half is true of the thing that matters: an editor buffer is not a file,
+   * and both IntelliJ and VS Code show a final empty line after a trailing newline and let a caret
+   * sit on it. The engine is built on IntelliJ's document, so it expects that line to exist - and
+   * without it `cc` and `dd` on the last line took the range of the line above, and `G` and `j`
+   * stopped one line short. Seven of IdeaVim's own fixtures say so.
+   */
+  override fun nativeLineCount(): Int = if (buffer.text.isEmpty()) 0 else starts().size
 
   override fun getLineStartOffset(line: Int): Int {
     val starts = starts()
@@ -198,14 +204,40 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * end backwards keeps the earlier ones valid, and a caret then shifts by one insertion for each
    * caret at or before it - its own included.
    */
+  /**
+   * Typed text, at every caret - overwriting rather than inserting when the editor is in replace
+   * mode.
+   *
+   * `insertMode` is the engine's own flag and it is the whole of the difference. IntelliJ does not
+   * need to be told what to do with it: its editor has an insert/overwrite mode of its own and the
+   * platform's typing honours it. VS Code has no such mode, so the overwrite is done here.
+   *
+   * Only up to the end of the line. Past that there is nothing to overwrite, and Vim appends rather
+   * than eating the line break and the line below - which is what `R` at the end of a short line
+   * does every time somebody types a long word.
+   *
+   * A line break never overwrites: Vim's Enter in replace mode opens a line like it does anywhere
+   * else, and the engine turns `insertMode` back on around it for the same reason.
+   */
   fun typeAtCarets(text: String) {
     if (text.isEmpty()) return
     val sorted = vimCarets.sortedBy { it.offset }
-    for (index in sorted.indices.reversed()) {
-      buffer.insert(sorted[index].offset, text)
+    val overwriting = !insertMode && !text.contains('\n')
+    val spans = sorted.map { caret ->
+      val from = caret.offset
+      val lineEnd = getLineEndOffset(offsetToBufferPosition(from).line)
+      val to = if (overwriting) minOf(from + text.length, lineEnd).coerceAtLeast(from) else from
+      from to to
     }
+    for (index in sorted.indices.reversed()) {
+      val (from, to) = spans[index]
+      if (to > from) buffer.replace(from, to, text) else buffer.insert(from, text)
+    }
+    var shift = 0
     sorted.forEachIndexed { index, caret ->
-      caret.moveToOffsetNative(caret.offset + text.length * (index + 1))
+      val (from, to) = spans[index]
+      caret.moveToOffsetNative(from + shift + text.length)
+      shift += text.length - (to - from)
     }
   }
 
@@ -403,7 +435,11 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   override var vimChangeActionSwitchMode: Mode? = null
-  override var insertMode: Boolean = false
+  /**
+   * Whether typing inserts or overwrites. True unless the engine puts the editor in replace mode -
+   * and true to begin with, because an editor that has never been in replace mode inserts.
+   */
+  override var insertMode: Boolean = true
 
   override fun isWritable(): Boolean = true
   override fun isDocumentWritable(): Boolean = true

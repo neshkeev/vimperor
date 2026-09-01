@@ -208,4 +208,40 @@ class VsCodeInsertModeTest {
   fun `test a digraph in the middle of typing`() {
     assertEquals("na\u00efve", type("", "ina<C-K>i:ve<Esc>"))
   }
+  // ---- Replace mode, which is Insert mode that overwrites.
+  //
+  // IntelliJ needs no host code for this: its editor has an insert/overwrite mode and the platform's
+  // typing honours it. VS Code has no such mode, so the overwrite happens in `typeAtCarets`. Both of
+  // these came from IdeaVim's own fixtures; nothing here had pressed `R`.
+
+  @Test
+  fun `test R overwrites what is under the caret`() {
+    val session = Session("grzyb\nnext", 0)
+    session.type("Rmush")
+
+    assertEquals("mushb\nnext", session.fake.document.content)
+  }
+
+  /** Past the end of the line there is nothing to overwrite, so Vim appends instead of eating it. */
+  @Test
+  fun `test R past the end of a line appends rather than swallowing the next one`() {
+    val session = Session("grzyb\nnext", 0)
+    session.type("Rmushroom")
+
+    assertEquals("mushroom\nnext", session.fake.document.content)
+  }
+
+  /**
+   * Backspace in replace mode puts back what was overwritten, which is a stack the engine keeps
+   * keyed by a live marker - and it looks entries up by building a *new* marker at the offset. Two
+   * markers over the same span have to be equal for that to find anything.
+   */
+  @Test
+  fun `test backspace in replace mode restores the character that was overwritten`() {
+    val session = Session("grzyb", 0)
+    session.type("Rm<C-H>")
+
+    assertEquals("grzyb", session.fake.document.content)
+  }
+
 }
