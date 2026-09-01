@@ -5,8 +5,8 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 952 of the 966 harvested fixtures pass. These fourteen are grouped by what is actually wrong,
-# which is seven things.
+# 955 of the 966 harvested fixtures pass. These eleven are grouped by what is actually wrong,
+# which is six things.
 #
 # The corpus went 314 -> 642 -> 966 as the parser learned what these tests are written with. The
 # last step was `trimMargin`, which 318 of them use instead of `trimIndent`, plus `.repeat(n)`,
@@ -20,14 +20,6 @@ src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapComman
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test abandoned Action mapping replays all keys as text 2
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test abandoned Plug mapping replays all keys as text
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
-
-# --- `:s///c`, the substitute that asks before each replacement.
-#
-# The prompt takes `y`, `n`, `a`, `q` and `l` one key at a time while the command is still running.
-# Nothing here answers it, so every replacement is declined.
-src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm all replaces all in rest of range
-src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm options
-src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/SubstituteCommandTest.kt:test confirm options with quit
 
 # --- Reindenting, which is a VS Code command and therefore asynchronous.
 #

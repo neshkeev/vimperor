@@ -53,6 +53,16 @@ collects a string - it is a text buffer the engine owns keystroke by keystroke, 
 and history, so the host supplies a string and somewhere to draw it. Both are synchronous. It is
 drawn on the status bar, next to the mode.
 
+`:s///c` - the substitute that asks before each replacement - had been written off for the same
+reason and turned out to be the same mistake. It is a *modal input* rather than a command line: no
+text buffer, and one keystroke is the whole answer. The engine asks on every keystroke whether a
+prompt is open and routes the key to its interceptor, so the host draws a label and remembers which
+prompt is up. `y`, `n`, `a`, `q` and `l` all work.
+
+What genuinely cannot be done is the other half of that interface. `activate` blocks on a modal
+event loop until a key arrives, which is what `getchar()` and IdeaVim's bundled extensions are built
+on, and JavaScript has one thread and no way to stop it.
+
 Your `~/.ideavimrc` is read at startup, so mappings and options come from the file you already have.
 The search order is IdeaVim's: `IDEA_VIM_CUSTOM_VIMRC`, then `~/.ideavimrc` and `~/_ideavimrc`, then
 `$XDG_CONFIG_HOME/ideavim/ideavimrc`. A line that fails does not stop the rest, the way Vim carries
@@ -113,9 +123,9 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**952 of the 966 it harvests pass.** The fourteen that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is seven
-things, not fourteen.
+**955 of the 966 it harvests pass.** The eleven that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
+things, not eleven.
 
 It started at 294 of 314, and every bug it has found was one no sweep could have: the service
 existed, was reached, threw nothing, and was wrong. Seven fixtures were the empty line a trailing

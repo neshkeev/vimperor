@@ -841,25 +841,14 @@ open class VsCodeInjector(
     get() = TODO("VS Code host: U needs the same host history undo does")
 
   /**
-   * No prompt is ever open, and none can be opened yet.
+   * Prompts that answer one keystroke at a time - `:s///c` is the one the engine opens.
    *
-   * The two halves are separate questions, and the engine asks the first on *every* keystroke -
-   * `r`, `f` and digraph entry are what put one up, and `KeyHandler` has to know whether one is
-   * waiting before it can interpret anything. "None is open" is simply true. Opening one is the
-   * part VS Code makes hard: `showInputBox` resolves a promise, and Vim's prompt is synchronous.
+   * See [StatusBarModalInput]. What is still missing is the *other* half of the interface,
+   * `activate`, which blocks on a modal event loop until a key arrives: that is what `getchar()`
+   * and IdeaVim's bundled extensions are built on, and JavaScript has one thread and no way to stop
+   * it. The default implementation does nothing, which is the honest answer.
    */
-  override val modalInput: VimModalInputService by lazy {
-    object : VimModalInputService {
-      override fun getCurrentModalInput(): VimModalInput? = null
-
-      override fun create(
-        editor: VimEditor,
-        context: ExecutionContext,
-        label: String,
-        inputInterceptor: VimInputInterceptor,
-      ): VimModalInput = TODO("VS Code host: showInputBox is asynchronous")
-    }
-  }
+  override val modalInput: VimModalInputService by lazy { VsCodeModalInputService(commandLineDisplay) }
 
   /**
    * The `:` and `/` prompts.

@@ -211,4 +211,53 @@ class VsCodeCommandLineTest {
     assertEquals("two\none\nthree\n", session.content)
     assertEquals(4, session.caretOffset)
   }
+  /**
+   * `:s///c`, which asks before each replacement.
+   *
+   * This is a modal input rather than a command line - no text buffer, one keystroke is the whole
+   * answer - and it had been a `TODO` reading "showInputBox is asynchronous" since the beginning.
+   * That was the same wrong guess the command line started from: the engine asks on every keystroke
+   * whether a prompt is open and routes the key to its interceptor, so a host only has to draw a
+   * label and remember which prompt is up. Three of IdeaVim's fixtures reach this.
+   */
+  @Test
+  fun `test the substitute prompt asks before each replacement`() {
+    val session = Session("one and two and three")
+    session.type(":%s/and/AND/gc")
+    session.key("<CR>")
+
+    assertEquals("Replace with AND (y/n/a/q/l)?", session.display.shown)
+
+    session.type("y")
+    assertEquals("one AND two and three", session.content)
+
+    session.type("n")
+    assertEquals("one AND two and three", session.content)
+    assertNull(session.display.shown, "the prompt should close once there is nothing left to ask")
+  }
+
+  /** `a` answers for every remaining match at once. */
+  @Test
+  fun `test a replaces the rest without asking again`() {
+    val session = Session("one and two and three and four")
+    session.type(":%s/and/AND/gc")
+    session.key("<CR>")
+    session.type("a")
+
+    assertEquals("one AND two AND three AND four", session.content)
+    assertNull(session.display.shown)
+  }
+
+  /** `q` stops, leaving what has already been replaced replaced. */
+  @Test
+  fun `test q stops the substitution`() {
+    val session = Session("one and two and three and four")
+    session.type(":%s/and/AND/gc")
+    session.key("<CR>")
+    session.type("y")
+    session.type("q")
+
+    assertEquals("one AND two and three and four", session.content)
+    assertNull(session.display.shown)
+  }
 }

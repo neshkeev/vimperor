@@ -21,6 +21,9 @@
  */
 
 const assert = require('assert')
+
+/** Every status bar item the extension made, so a scenario can read what is drawn on one. */
+const statusBarItems = []
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -194,7 +197,13 @@ const vscode = {
       assert.strictEqual(name, 'IdeaVim')
       return { ...disposable(), appendLine: (line) => output.push(line), show() {} }
     },
-    createStatusBarItem: () => ({ ...disposable(), text: '', tooltip: '', show() {}, hide() {} }),
+    // Recorded, because the command line and the `:s///c` prompt are drawn here and there is
+    // nowhere else to read them from.
+    createStatusBarItem: () => {
+      const item = { ...disposable(), text: '', tooltip: '', show() {}, hide() {} }
+      statusBarItems.push(item)
+      return item
+    },
     createTextEditorDecorationType: (options) => ({ ...disposable(), options }),
     showInformationMessage: () => undefined,
     onDidChangeActiveTextEditor: () => disposable(),
@@ -653,6 +662,29 @@ assert.strictEqual(
   path.join(home, 'out.txt'),
   `:e resolved the relative path to ${JSON.stringify(dispatchedArguments[0][0])}`,
 )
+
+// `:s///c`, which asks before each replacement. This is the only scenario that reads what is drawn
+// on the status bar, and it is the point of it: the prompt is a label plus an interceptor, and the
+// label has to actually reach a status bar item for a user to be able to answer it.
+reset()
+type('i')
+for (const character of 'one and two and three') type(character)
+press('<Esc>')
+type(':')
+for (const character of '%s/and/AND/gc') type(character)
+press('<CR>')
+
+const prompt = () => statusBarItems.map((item) => item.text).find((text) => text.startsWith('Replace with'))
+assert.ok(prompt(), `the substitute prompt was not drawn. Status bar: ${statusBarItems.map((i) => i.text)}`)
+
+type('y')
+type('a')
+assert.strictEqual(
+  editor.document._text,
+  'one AND two AND three',
+  `:s///c did not replace on y then a. Got: ${editor.document._text}`,
+)
+assert.ok(!prompt(), 'the substitute prompt was left on the status bar')
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
