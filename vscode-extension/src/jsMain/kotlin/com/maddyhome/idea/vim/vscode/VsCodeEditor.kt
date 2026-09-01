@@ -19,6 +19,7 @@ import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimEditorBase
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.api.VimFoldRegion
 import com.maddyhome.idea.vim.api.VimIndentConfig
@@ -198,44 +199,47 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   /**
-   * Inserts [text] at every caret and leaves each one after what it typed.
+   * Typed text, at every caret - replacing a selection, or overwriting in replace mode.
    *
-   * Done here rather than caret by caret because the offsets move as it goes: inserting from the
-   * end backwards keeps the earlier ones valid, and a caret then shifts by one insertion for each
-   * caret at or before it - its own included.
-   */
-  /**
-   * Typed text, at every caret - overwriting rather than inserting when the editor is in replace
-   * mode.
+   * Done here rather than caret by caret because the offsets move as it goes: writing from the end
+   * backwards keeps the earlier ones valid, and a caret then shifts by the length difference of
+   * every span at or before it - its own included.
    *
-   * `insertMode` is the engine's own flag and it is the whole of the difference. IntelliJ does not
-   * need to be told what to do with it: its editor has an insert/overwrite mode of its own and the
-   * platform's typing honours it. VS Code has no such mode, so the overwrite is done here.
+   * Three cases, and only the first is what an editor does without being asked. A caret with a
+   * selection replaces it, which is how typing works everywhere and is the whole of what Vim's
+   * Select mode is: `gh` and then a letter puts that letter where the selection was. IntelliJ's
+   * typed action does it without IdeaVim asking, which is why nothing in the engine says so.
    *
-   * Only up to the end of the line. Past that there is nothing to overwrite, and Vim appends rather
-   * than eating the line break and the line below - which is what `R` at the end of a short line
-   * does every time somebody types a long word.
-   *
-   * A line break never overwrites: Vim's Enter in replace mode opens a line like it does anywhere
-   * else, and the engine turns `insertMode` back on around it for the same reason.
+   * `insertMode` is the second. It is the engine's own flag, and IntelliJ does not need to be told
+   * about it either: its editor has an insert/overwrite mode of its own and the platform's typing
+   * honours it. VS Code has no such mode, so the overwrite is done here - and only up to the end of
+   * the line, because past that there is nothing to overwrite and Vim appends rather than eating
+   * the line break and the line below, which is what `R` at the end of a short line does every time
+   * somebody types a long word. A line break never overwrites: Vim's Enter in replace mode opens a
+   * line like it does anywhere else, and the engine turns `insertMode` back on around it for the
+   * same reason.
    */
   fun typeAtCarets(text: String) {
     if (text.isEmpty()) return
-    val sorted = vimCarets.sortedBy { it.offset }
     val overwriting = !insertMode && !text.contains('\n')
-    val spans = sorted.map { caret ->
-      val from = caret.offset
-      val lineEnd = getLineEndOffset(offsetToBufferPosition(from).line)
-      val to = if (overwriting) minOf(from + text.length, lineEnd).coerceAtLeast(from) else from
-      from to to
+    val spans = vimCarets.associateWith { caret ->
+      if (caret.hasSelection()) {
+        caret.selectionStart to caret.selectionEnd
+      } else {
+        val from = caret.offset
+        val lineEnd = getLineEndOffset(offsetToBufferPosition(from).line)
+        from to if (overwriting) minOf(from + text.length, lineEnd).coerceAtLeast(from) else from
+      }
     }
-    for (index in sorted.indices.reversed()) {
-      val (from, to) = spans[index]
+    val sorted = vimCarets.sortedBy { spans.getValue(it).first }
+    for (caret in sorted.reversed()) {
+      val (from, to) = spans.getValue(caret)
       if (to > from) buffer.replace(from, to, text) else buffer.insert(from, text)
     }
     var shift = 0
-    sorted.forEachIndexed { index, caret ->
-      val (from, to) = spans[index]
+    for (caret in sorted) {
+      val (from, to) = spans.getValue(caret)
+      caret.removeSelection()
       caret.moveToOffsetNative(from + shift + text.length)
       shift += text.length - (to - from)
     }
@@ -576,7 +580,32 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   override fun exitInsertMode(context: ExecutionContext) {
     injector.changeGroup.processEscape(this, context)
   }
-  override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("VsCodeEditor.exitSelectModeNative")
+  /**
+   * Leaving Select mode, which is Visual mode with the keyboard behaving as a normal editor's.
+   *
+   * IdeaVim's version of this is mostly IntelliJ bookkeeping - it drops a pending visual-mode timer
+   * and locks out its own selection listener while it clears the selections, because IntelliJ fires
+   * a selection change back at it. Neither applies here: this host has no timer, and it recognises
+   * its own selection events by comparing what arrives with what [flushCarets] pushed. What is left
+   * is the part that is Vim's rather than any editor's, and that is what this does.
+   *
+   * [adjustCaret] steps a caret sitting on the end of a line back onto its last character, because
+   * outside Insert and Visual mode Vim has nowhere to put a caret past the end.
+   */
+  override fun exitSelectModeNative(adjustCaret: Boolean) {
+    if (mode !is Mode.SELECT) return
+    mode = mode.returnTo
+    for (caret in carets()) {
+      caret.removeSelection()
+      caret.vimSelectionStartClear()
+      if (!adjustCaret || isEndAllowed) continue
+      val line = offsetToBufferPosition(caret.offset).line
+      val lineEnd = getLineEndOffset(line)
+      if (caret.offset == lineEnd && caret.offset != getLineStartOffset(line)) {
+        caret.moveToInlayAwareOffset(caret.offset - 1)
+      }
+    }
+  }
   /** The last column on a line, which is its length while a visual line is a buffer line. */
   override fun getLastVisualLineColumnNumber(line: Int): Int =
     getLineEndOffset(line) - getLineStartOffset(line)

@@ -113,9 +113,9 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**631 of the 642 it harvests pass.** The eleven that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is four
-things, not eleven.
+**635 of the 642 it harvests pass.** The seven that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is three
+things, not seven.
 
 It started at 294 of 314, and every bug it has found was one no sweep could have: the service
 existed, was reached, threw nothing, and was wrong. Seven fixtures were the empty line a trailing
@@ -128,9 +128,14 @@ restore what it had overwritten, because the engine's replace stack is keyed by 
 this host's markers compared by identity. Four more were `doIndent`, left as a `TODO` here because
 Vim reindents nothing and VS Code could not do it synchronously anyway - but the ex command executor
 catches `NotImplementedError` and turns it into a message, so `:copy` inserted its lines and then
-abandoned the command half way, leaving the caret past them. The build fails if that list changes in
-either direction: a new failure is a regression, and a fixture that starts passing has to be taken
-out of the list, which is how the number goes down.
+abandoned the command half way, leaving the caret past them. Four more were Select mode, which had
+never been built: `exitSelectModeNative` was the one missing method, and most of what IdeaVim does
+in it is IntelliJ bookkeeping this host has no equivalent of. Writing it turned up a second thing
+nothing in the engine says out loud - typing over a selection replaces it, which IntelliJ's typed
+action does on IdeaVim's behalf, so `gh` and then a letter left the letter *beside* the selection
+instead of in place of it. The build fails if that list changes in either direction: a new failure
+is a regression, and a fixture that starts passing has to be taken out of the list, which is how the
+number goes down.
 
 The parser is deliberately narrow and refuses far more than it accepts, because a fixture read
 slightly wrong is worse than one skipped - it fails against a correct host and gets recorded as a

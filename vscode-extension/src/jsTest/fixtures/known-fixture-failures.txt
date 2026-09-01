@@ -5,24 +5,17 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 631 of the 642 harvested fixtures pass. These eleven are grouped by what is actually wrong, which
-# is four things.
+# 635 of the 642 harvested fixtures pass. These seven are grouped by what is actually wrong, which
+# is three things.
 #
 # The corpus doubled here: the extractor learned `exCommand("...")`, `//` comments between the
 # arguments, and IdeaVim's `${s}`/`${se}` selection markers - which appear in 462 `after`s and in
 # not one `before`, so each of those fixtures also says where the selection ended up and is now
 # checked for it. Not one of them failed on the selection, which is the first outside evidence that
 # Visual mode in this host lands where Vim lands.
-
-# --- Select mode, which this host has not built at all.
 #
-# `exitSelectModeNative` is still a TODO. Vim's Select mode is the one where typing replaces the
-# selection, and it is reached from Visual mode with `<C-G>` or by IntelliJ's own idea of a
-# selection. Four fixtures, one missing method.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/motion/SelectMotionLeftActionTest.kt:test char select simple move
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/motion/SelectMotionRightActionTest.kt:test char select simple move
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionArrowDownActionTest.kt:test char select simple move
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionArrowUpActionTest.kt:test char select simple move
+# The four Select mode entries have gone: `exitSelectModeNative` was the one missing method, and
+# most of what IdeaVim does in it is IntelliJ bookkeeping this host does not need.
 
 # --- Reindenting, which is a VS Code command and therefore asynchronous.
 #

@@ -161,4 +161,64 @@ class VsCodeVisualModeTest {
 
     assertEquals("one twoone", session.content)
   }
+  /**
+   * Select mode, which is Visual mode with the keyboard behaving as an ordinary editor's.
+   *
+   * `gh` enters it, and Vim's rule there is that typing *replaces* what is selected rather than
+   * being read as a command. It is the mode IntelliJ's own selection puts IdeaVim into, which is
+   * why `exitSelectModeNative` is asked of the editor rather than done by the engine - and it was
+   * the last `TODO` any of IdeaVim's fixtures reached.
+   */
+  @Test
+  fun `test gh enters select mode with the character under the caret selected`() {
+    val session = Session("one two")
+    session.type("gh")
+
+    assertEquals("SELECT", session.host.modeName())
+    assertEquals(0 to 1, session.selection)
+  }
+
+  @Test
+  fun `test typing in select mode replaces the selection`() {
+    val session = Session("one two")
+    session.type("gh")
+    session.type("X")
+
+    assertEquals("Xne two", session.content)
+    assertEquals("INSERT", session.host.modeName())
+  }
+
+  /**
+   * `l` is not a motion in Select mode - it is a letter, and this is what tells the two apart.
+   *
+   * Select mode extends its selection with the arrow keys, the way any editor does; the ordinary
+   * Vim motions are typed text there. That is the entire point of the mode.
+   */
+  @Test
+  fun `test escape leaves select mode and clears the selection`() {
+    val session = Session("one two")
+    session.type("gh")
+    session.key("<S-Right>")
+    session.key("<Esc>")
+
+    assertEquals("NORMAL", session.host.modeName())
+    assertEquals("one two", session.content)
+    assertEquals(session.selection.first, session.selection.second, "the selection should be gone")
+  }
+
+  /**
+   * Leaving Select mode steps a caret off the end of a line, because Normal mode has nowhere there.
+   *
+   * This is the `adjustCaret` half of `exitSelectModeNative`, and the only part of it that changes
+   * anything a user can see.
+   */
+  @Test
+  fun `test leaving select mode pulls the caret back off the line end`() {
+    val session = Session("one\ntwo")
+    session.type("gh")
+    repeat(3) { session.key("<S-Right>") }
+    session.key("<Esc>")
+
+    assertEquals(2, session.editor.primaryCaret().offset, "the caret should be on the last character")
+  }
 }
