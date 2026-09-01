@@ -113,28 +113,41 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**304 of the 314 it harvests pass.** The ten that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is five
-things, not ten.
+**631 of the 642 it harvests pass.** The eleven that do not are listed in
+`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is four
+things, not eleven.
 
-It started at twenty, and the ten that have gone were two bugs. Seven were the empty line a trailing
-newline opens: an editor buffer is not a file, and IntelliJ and VS Code both show that line and let
-a caret sit on it, but this host counted lines by counting newlines - so `cc` and `dd` on the last
+It started at 294 of 314, and every bug it has found was one no sweep could have: the service
+existed, was reached, threw nothing, and was wrong. Seven fixtures were the empty line a trailing
+newline opens - an editor buffer is not a file, and IntelliJ and VS Code both show that line and let
+a caret sit on it, but this host counted lines by counting newlines, so `cc` and `dd` on the last
 line took the range of the line above and `G` stopped short of the end. A unit test in this module
 asserted the wrong behaviour in as many words, which is the case for harvesting somebody else's
-tests in one line. The other three were replace mode: `R` did not overwrite at all, and backspace
-did not restore what it had overwritten, because the engine's replace stack is keyed by a live
-marker and this host's markers compared by identity. The build fails if that list changes in either direction: a new failure is a
-regression, and a fixture that starts passing has to be taken out of the list, which is how the
-number goes down.
+tests in one line. Three were replace mode: `R` did not overwrite at all, and backspace did not
+restore what it had overwritten, because the engine's replace stack is keyed by a live marker and
+this host's markers compared by identity. Four more were `doIndent`, left as a `TODO` here because
+Vim reindents nothing and VS Code could not do it synchronously anyway - but the ex command executor
+catches `NotImplementedError` and turns it into a message, so `:copy` inserted its lines and then
+abandoned the command half way, leaving the caret past them. The build fails if that list changes in
+either direction: a new failure is a regression, and a fixture that starts passing has to be taken
+out of the list, which is how the number goes down.
 
 The parser is deliberately narrow and refuses far more than it accepts, because a fixture read
 slightly wrong is worse than one skipped - it fails against a correct host and gets recorded as a
 bug in it. It also has tests of its own, for the same reason the sweeps do.
 
+The corpus doubled when the parser learned three more things IdeaVim's tests are written with:
+`exCommand("...")`, which is only string building; `//` comments between the arguments, which have to
+go before the arguments are split, because a comment with a comma in it otherwise tears the call
+into the wrong pieces; and the `${s}`/`${se}` selection markers. Those appear in 462 `after`s and in
+not one `before`, so each of those fixtures is an ordinary one that additionally says where the
+selection ended up - and the replay now checks it. Not one failed on the selection, which is the
+first evidence from outside this repository that Visual mode here lands where Vim lands.
+
 Two things it does on purpose. Trailing whitespace is not compared, because IdeaVim does not compare
 it either - thirteen fixtures assert that `]}`, a motion, removed two spaces from a line. And the
-mode afterwards is not compared yet, only the text and the caret.
+mode afterwards is not compared yet, only the text, the caret, and the selection where a fixture
+marks one.
 
 There are four sweeps now, and three of them find nothing. Keys and ex commands each hid something;
 options and Vimscript functions were clean from the start, and the ex list is empty as of

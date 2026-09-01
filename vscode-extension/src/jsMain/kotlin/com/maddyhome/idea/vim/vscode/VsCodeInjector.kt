@@ -313,6 +313,28 @@ open class VsCodeInjector(
         additionalData: Map<String, Any>,
       ) = TODO("VS Code host: there is no IDE paste to put through")
 
+      /**
+       * Leaves the pasted lines exactly as they were, which is what Vim does.
+       *
+       * `:copy`, `:move` and `<C-R>` ask for the inserted range to be reindented. IdeaVim does it
+       * through IntelliJ's code style, because pasting in an IDE is expected to fix the indent;
+       * plain Vim reindents none of them, and IdeaVim itself skips this in Rider, CLion Nova and
+       * the JetBrains client. VS Code's reindent is a command and therefore asynchronous, so this
+       * host could not do it here even if it wanted to.
+       *
+       * The base class leaves this a `TODO`, and the ex command executor catches `NotImplementedError`
+       * and turns it into "Not implemented yet :(" - so `:copy` inserted the text and then abandoned
+       * the command half way, leaving the caret after the inserted lines instead of on them. Three
+       * of IdeaVim's own `:copy` fixtures said so.
+       */
+      override fun doIndent(
+        editor: VimEditor,
+        caret: VimCaret,
+        context: ExecutionContext,
+        startOffset: Int,
+        endOffset: Int,
+      ): Int = endOffset
+
       /** IdeaVim tells the user that `ideaput` is available. There is nothing to suggest here. */
       override fun notifyAboutIdeaPut(editor: VimEditor?) {}
     }

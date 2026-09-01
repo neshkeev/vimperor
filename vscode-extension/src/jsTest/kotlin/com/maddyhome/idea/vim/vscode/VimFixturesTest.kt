@@ -161,4 +161,91 @@ class VimFixturesTest {
 
     assertEquals(emptyList(), fixtures)
   }
+  /** `exCommand` and `searchCommand` are string building on `VimTestCase` and nothing else. */
+  @Test
+  fun `test the ex command helpers are expanded`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test copy`() {
+          doTest(exCommand("copy ."), "${'$'}{c}one", "one\n${'$'}{c}one")
+        }
+        fun `test search`() {
+          doTest(searchCommand("/two"), "${'$'}{c}one two", "one ${'$'}{c}two")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(2, fixtures.size, "expected two fixtures, got ${fixtures.map { it.source }}")
+    assertEquals(":copy .<CR>", fixtures.first { it.source.endsWith("test copy") }.keys)
+    assertEquals("/two<CR>", fixtures.first { it.source.endsWith("test search") }.keys)
+  }
+
+  /**
+   * A comment between the arguments has to go before they are split.
+   *
+   * Thirty-odd fixtures carry one, and several contain a comma - which is what splits the arguments
+   * from each other, so leaving the comment in tears the call into the wrong pieces rather than
+   * merely putting noise in front of an argument.
+   */
+  @Test
+  fun `test a comment between the arguments is removed before they are split`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test commented`() {
+          doTest(
+            "dw",
+            // `.` and `%` are read-only, so this deletes nothing
+            "${'$'}{c}one two",
+            "${'$'}{c}two",
+          )
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
+    assertEquals("<caret>one two", fixtures[0].before)
+  }
+
+  /** The selection markers are kept as markers; the replay reads the offsets back out of them. */
+  @Test
+  fun `test the selection markers are harvested`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test visual`() {
+          doTest("vl", "${'$'}{c}one", "${'$'}{s}o${'$'}{c}n${'$'}{se}e")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
+    assertEquals("<selection>o<caret>n</selection>e", fixtures[0].after)
+  }
+
+  /**
+   * Block Visual mode marks a selection on every line, and this compares one.
+   *
+   * Reading the first pair as the whole selection would be a wrong answer rather than a missing
+   * one, so a fixture with more than one pair is refused.
+   */
+  @Test
+  fun `test a result with more than one selection is refused`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test block`() {
+          doTest("<C-V>jl", "${'$'}{c}one\ntwo", "${'$'}{s}o${'$'}{se}ne\n${'$'}{s}t${'$'}{c}${'$'}{se}wo")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(emptyList(), fixtures)
+    assertTrue(VimFixtures.skipped.containsKey("more than one selection in the result"))
+  }
 }

@@ -27,7 +27,14 @@ kotlin {
   js(IR) {
     // VS Code loads extensions with `require`, so the output has to be CommonJS rather than ESM.
     useCommonJs()
-    nodejs()
+    nodejs {
+      testTask {
+        // The default is two seconds, and replaying six hundred of IdeaVim's fixtures takes longer
+        // than that on its own. A timeout that trips on corpus size rather than on a hang is a
+        // build that fails for the wrong reason every time the corpus grows.
+        useMocha { timeout = "60s" }
+      }
+    }
     binaries.executable()
   }
 

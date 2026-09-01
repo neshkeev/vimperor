@@ -37,6 +37,7 @@ class VimFixtureReplayTest {
 
   @Test
   fun `test the fixtures that this host does not yet match are the ones listed`() {
+    warmUp()
     val root = repositoryRoot()
     assertTrue(root != null, "could not find the repository root, so no fixtures could be read")
 
@@ -44,7 +45,7 @@ class VimFixtureReplayTest {
     // An empty corpus would make this test pass while checking nothing, which is the failure mode
     // the sweeps had to be given a gate of their own for.
     assertTrue(
-      fixtures.size > 280,
+      fixtures.size > 600,
       "only ${fixtures.size} fixtures were harvested, so the extractor has probably broken. " +
         "Skipped: ${VimFixtures.skipped}",
     )
@@ -57,8 +58,13 @@ class VimFixtureReplayTest {
     // transcription out of a failure message.
     writeTextTo(
       "$root/vscode-extension/build/fixture-failures.txt",
-      outcomes.entries.filter { it.value != null }.sortedBy { it.key.source }
-        .joinToString("\n") { (fixture, difference) -> fixture.source + "\n" + difference!!.prependIndent("# ") } +
+      "# ${fixtures.size - failing.size} of ${fixtures.size} harvested fixtures pass.\n" +
+        "#\n# What was not harvested, and why:\n" +
+        VimFixtures.skipped.entries.sortedByDescending { it.value }
+          .joinToString("\n") { (reason, count) -> "#   ${count.toString().padStart(5)}  $reason" } +
+        "\n\n" +
+        outcomes.entries.filter { it.value != null }.sortedBy { it.key.source }
+          .joinToString("\n") { (fixture, difference) -> fixture.source + "\n" + difference!!.prependIndent("# ") } +
         "\n",
     )
 
@@ -102,20 +108,23 @@ class VimFixtureReplayTest {
      * do: a fixture's keys are already a list of strokes, and turning them back into notation to
      * feed the host would be testing the notation round trip as much as the fixture.
      *
-     * Only the text and the caret are compared. IdeaVim's `doTest` also asserts the mode afterwards,
-     * and that is left out on purpose for now - a mode mismatch on top of matching text is a
-     * different and much smaller bug than the text being wrong, and mixing the two would make the
-     * baseline hard to read.
+     * The text, the caret, and the selection where the fixture marks one, are compared. IdeaVim's
+     * `doTest` also asserts the mode afterwards, and that is left out on purpose for now - a mode
+     * mismatch on top of matching text is a different and much smaller bug than the text being
+     * wrong, and mixing the two would make the baseline hard to read.
      */
     fun replay(fixture: VimFixture): String? {
-      val caretAt = fixture.before.indexOf(VimFixtures.CARET)
-      val text = fixture.before.replace(VimFixtures.CARET, "")
-      val expectedText = fixture.after.replace(VimFixtures.CARET, "")
-      val expectedCaret = fixture.after.indexOf(VimFixtures.CARET).takeIf { it >= 0 }
+      val start = Marked(fixture.before)
+      val expected = Marked(fixture.after)
+      val text = start.text
+      val caretAt = start.caret ?: 0
+      val expectedText = expected.text
+      val expectedCaret = expected.caret
 
       val fake = FakeEditor(text)
       val actualText: String
       val actualCaret: Int
+      val actualSelection: Pair<Int, Int>?
       try {
         val host = VimHost().also { it.start() }
         val editor = host.editorFor(fake)
@@ -133,7 +142,9 @@ class VimFixtureReplayTest {
         }
         editor.flush()
         actualText = fake.document.content
-        actualCaret = editor.primaryCaret().offset
+        val caret = editor.primaryCaret()
+        actualCaret = caret.offset
+        actualSelection = if (caret.hasSelection()) caret.selectionStart to caret.selectionEnd else null
       } catch (e: Throwable) {
         return "    threw ${e::class.simpleName}: ${e.message?.take(120)}"
       }
@@ -144,13 +155,68 @@ class VimFixtureReplayTest {
       // The caret has to be compared in the same coordinates as the text, and the text is compared
       // with trailing spaces removed - so an offset counted in a line with two trailing spaces is
       // two larger than the same place counted without them.
-      val comparableCaret = withoutTrailingSpaces(actualText, upTo = actualCaret).length
-      if (expectedCaret != null && comparableCaret != withoutTrailingSpaces(expectedText, upTo = expectedCaret).length) {
+      fun actualAt(offset: Int) = withoutTrailingSpaces(actualText, upTo = offset).length
+      fun expectedAt(offset: Int) = withoutTrailingSpaces(expectedText, upTo = offset).length
+
+      if (expectedCaret != null && actualAt(actualCaret) != expectedAt(expectedCaret)) {
         return "    keys ${fixture.keys}${fixture.setup.joinToString("") { " after :" + it }}\n" +
           "    caret expected $expectedCaret, actual $actualCaret in ${show(actualText)}"
       }
+      // Only when the fixture says where the selection is. A fixture without the markers is not
+      // saying there is no selection - most of the corpus is Normal mode and never mentions one -
+      // so a stale selection left behind by this host would not be caught here.
+      val wanted = expected.selection
+      if (wanted != null) {
+        val got = actualSelection
+        if (got == null || actualAt(got.first) != expectedAt(wanted.first) ||
+          actualAt(got.second) != expectedAt(wanted.second)
+        ) {
+          return "    keys ${fixture.keys}${fixture.setup.joinToString("") { " after :" + it }}\n" +
+            "    selection expected $wanted, actual $got in ${show(actualText)}"
+        }
+      }
       return null
     }
+
+    /**
+     * A fixture's text with IdeaVim's markers taken out, and the offsets they were sitting at.
+     *
+     * They have to come out in one pass rather than one `replace` each: `<selection>Lorem<caret>`
+     * puts the caret five characters into the text only once the selection marker in front of it
+     * has already gone.
+     */
+    class Marked(marked: String) {
+      val text: String
+      val caret: Int?
+      val selection: Pair<Int, Int>?
+
+      init {
+        val builder = StringBuilder()
+        var caretAt: Int? = null
+        var from: Int? = null
+        var to: Int? = null
+        var index = 0
+        while (index < marked.length) {
+          val marker = MARKERS.firstOrNull { marked.startsWith(it, index) }
+          when (marker) {
+            null -> { builder.append(marked[index]); index++ }
+            else -> {
+              when (marker) {
+                VimFixtures.CARET -> caretAt = builder.length
+                VimFixtures.SELECTION_START -> from = builder.length
+                else -> to = builder.length
+              }
+              index += marker.length
+            }
+          }
+        }
+        text = builder.toString()
+        caret = caretAt
+        selection = if (from != null && to != null) from to to else null
+      }
+    }
+
+    val MARKERS = listOf(VimFixtures.CARET, VimFixtures.SELECTION_START, VimFixtures.SELECTION_END)
 
     fun show(text: String): String = "\"" + text.replace("\n", "\\n").take(120) + "\""
 
@@ -174,8 +240,18 @@ class VimFixtureReplayTest {
           .joinToString("\n")
       }
 
-    /** Keeps the engine's command registry warm; each fixture builds its own host around it. */
-    @Suppress("unused")
-    val commandCount: Int = engineCommandProvider.getCommands().size
+    /**
+     * Builds the engine's command registry once, rather than inside the first fixture.
+     *
+     * It has to be called and not written as an initialiser: reading the registry needs `injector`,
+     * and `injector` is only set once a host has started. As a companion property this ran while
+     * the test class was being constructed, which passed only because some other class in the
+     * module happened to have started a host first - and stopped passing the moment this test was
+     * run on its own.
+     */
+    fun warmUp() {
+      VimHost().also { it.start() }
+      engineCommandProvider.getCommands()
+    }
   }
 }

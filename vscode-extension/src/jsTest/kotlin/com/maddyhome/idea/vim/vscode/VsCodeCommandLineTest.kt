@@ -182,4 +182,33 @@ class VsCodeCommandLineTest {
       "the previous command should come back, but the prompt showed ${session.display.shown}",
     )
   }
+  /**
+   * `:copy` finishes, rather than inserting its lines and then giving up.
+   *
+   * The engine asks the put to reindent what it inserted, which IdeaVim does through IntelliJ's
+   * code style. Vim reindents nothing, and VS Code's reindent is an asynchronous command, so this
+   * host returns the range unchanged - but until it did, the base class's `TODO` threw, the ex
+   * command executor turned that into "Not implemented yet :(", and `:copy` left the caret past the
+   * lines it had just written instead of on the first of them.
+   */
+  @Test
+  fun `test copy finishes and leaves the caret on the copied lines`() {
+    val session = Session("one\ntwo\nthree\n")
+    session.type(":2,3copy 0")
+    session.key("<CR>")
+
+    assertEquals("two\nthree\none\ntwo\nthree\n", session.content)
+    assertEquals(0, session.caretOffset)
+  }
+
+  /** `:move` asks for the same reindent, and used to stop in the same place. */
+  @Test
+  fun `test move finishes and leaves the caret on the moved line`() {
+    val session = Session("one\ntwo\nthree\n")
+    session.type(":1move 2")
+    session.key("<CR>")
+
+    assertEquals("two\none\nthree\n", session.content)
+    assertEquals(4, session.caretOffset)
+  }
 }

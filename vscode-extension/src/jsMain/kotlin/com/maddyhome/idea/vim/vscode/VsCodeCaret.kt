@@ -102,8 +102,8 @@ class VsCodeCaret(
     vimLastColumn = getBufferPosition().column
   }
 
-  // ---- Selection. Not wired to VS Code's selections yet: visual mode is its own piece of work,
-  // and a caret that reported a selection nobody set would be worse than one that reports none.
+  // ---- Selection. VS Code has no separate idea of one: a selection there is a caret with its
+  // anchor somewhere else, so this pair is what `VsCodeEditor.flushCarets` turns into an anchor.
 
   private var selectionStartOffset: Int = -1
   private var selectionEndOffset: Int = -1

@@ -22,15 +22,18 @@ package com.maddyhome.idea.vim.vscode
  * [VimFixtureReplayTest] presses them against this host.
  *
  * The parsing is deliberately narrow. It understands ordinary and raw string literals, `trimIndent`,
- * `dotToSpace`, `listOf` of strings, and `${'$'}{c}` for the caret - and refuses everything else,
- * because a fixture it half-understands is worse than one it skips. What it refuses is counted, so
- * the yield is visible rather than assumed.
+ * `dotToSpace`, `dotToTab`, `listOf` of strings, the `exCommand`/`searchCommand` helpers that are
+ * only string building, `//` comments between the arguments, and IdeaVim's `${'$'}{c}`, `${'$'}{s}`
+ * and `${'$'}{se}` markers - and refuses everything else, because a fixture it half-understands is
+ * worse than one it skips. What it refuses is counted, so the yield is visible rather than assumed;
+ * `VimFixtureReplayTest` writes those counts out with every run.
  */
 internal data class VimFixture(
   /** Where it came from, which is the name in a failure and the key in the baseline. */
   val source: String,
   val keys: String,
   val before: String,
+  /** Still carrying its markers: `<caret>`, and `<selection>`/`</selection>` when there is one. */
   val after: String,
   /** Ex commands the test runs before the keys, as `enterCommand("set ...")` in a trailing lambda. */
   val setup: List<String> = emptyList(),
@@ -39,6 +42,16 @@ internal data class VimFixture(
 internal object VimFixtures {
 
   const val CARET = "<caret>"
+
+  /**
+   * IdeaVim's selection markers, which is what `${'$'}{s}` and `${'$'}{se}` expand to over there.
+   *
+   * They only ever appear in the `after` of a fixture - 462 of them do, and not one `before` does -
+   * so a fixture that has them is an ordinary one that additionally says where the selection ended
+   * up. That is worth having: Visual mode is most of what this port had no outside check on.
+   */
+  const val SELECTION_START = "<selection>"
+  const val SELECTION_END = "</selection>"
 
   /** Why a `doTest` was not harvested, counted so that a drop in yield is visible. */
   val skipped: MutableMap<String, Int> = mutableMapOf()
@@ -56,7 +69,10 @@ internal object VimFixtures {
       // produces nonsense that looks like a failure.
       if (source.contains("fun doTest(")) { skip("the file defines its own doTest"); continue }
       for ((method, body, at) in testMethods(source)) {
-        val trimmed = body.trim()
+        // Comments come out before the arguments are split, not after. A comment is not just noise
+        // in front of an argument: `// Move the line to below the current line, which ...` has a
+        // comma in it, and splitting on commas first tears the call into the wrong pieces.
+        val trimmed = stripLineComments(body).trim()
         if (!trimmed.startsWith("doTest(")) continue
         val spans = argumentSpans(trimmed, trimmed.indexOf('(')) ?: skip("could not parse the arguments")
           ?: continue
@@ -89,6 +105,16 @@ internal object VimFixtures {
 
         val (keys, before, after) = withCarets.map { it!! }
         if (before.split(CARET).size != 2) { skip("no caret, or more than one, in the input"); continue }
+        if (before.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
+        // Block Visual mode selects a range on every line, so its `after` has one pair of markers
+        // per line. This compares a single selection and would read the first pair as the whole of
+        // it, which is a wrong answer rather than a missing one.
+        if (after.split(SELECTION_START).size > 2 || after.split(SELECTION_END).size > 2) {
+          skip("more than one selection in the result"); continue
+        }
+        if (after.split(SELECTION_START).size != after.split(SELECTION_END).size) {
+          skip("an unbalanced selection in the result"); continue
+        }
         fixtures += VimFixture("${path.substringAfter("$repositoryRoot/")}:$method", keys, before, after, setup)
       }
     }
@@ -130,6 +156,8 @@ internal object VimFixtures {
     val substituted = value
       .replace(Regex("\\\$\\{c\\}"), CARET)
       .replace(Regex("\\\$c(?![A-Za-z0-9_])"), CARET)
+      .replace(Regex("\\\$\\{se\\}"), SELECTION_END)
+      .replace(Regex("\\\$\\{s\\}"), SELECTION_START)
     return if (Regex("\\\$\\{|\\\$[A-Za-z_]").containsMatchIn(substituted)) null else substituted
   }
 
@@ -140,6 +168,15 @@ internal object VimFixtures {
       val pieces = parts.map { (from, to) -> evaluate(expression.substring(from, to).trim()) }
       if (pieces.any { it == null }) return null
       return pieces.joinToString("") { it!! }
+    }
+    // Two helpers off `VimTestCase` that are only string building, and are used where a fixture
+    // would otherwise be an ordinary one: `exCommand("copy .")` is `":copy .<CR>"` and nothing more.
+    for ((helper, wrap) in HELPERS) {
+      if (!expression.startsWith("$helper(")) continue
+      val parts = argumentSpans(expression, expression.indexOf('(')) ?: return null
+      if (parts.size != 1) return null
+      if (parts.last().second + 1 != expression.length) return null
+      return wrap(evaluate(expression.substring(parts[0].first, parts[0].second).trim()) ?: return null)
     }
     val (value, end) = readString(expression, 0) ?: return null
     return if (end == expression.length) value else null
@@ -182,11 +219,47 @@ internal object VimFixtures {
     }
 
     while (true) {
-      val suffix = Regex("""^\s*\.(trimIndent|dotToSpace)\(\)""").find(text.substring(index)) ?: break
-      value = if (suffix.groupValues[1] == "trimIndent") trimIndent(value) else value.replace('.', ' ')
+      val suffix = Regex("""^\s*\.(trimIndent|dotToSpace|dotToTab)\(\)""").find(text.substring(index)) ?: break
+      value = when (suffix.groupValues[1]) {
+        "trimIndent" -> trimIndent(value)
+        "dotToSpace" -> value.replace('.', ' ')
+        else -> value.replace('.', '\t')
+      }
       index += suffix.value.length
     }
     return value to index
+  }
+
+  private val HELPERS: List<Pair<String, (String) -> String>> = listOf(
+    "exCommand" to { command: String -> ":$command<CR>" },
+    "searchCommand" to { pattern: String -> "$pattern<CR>" },
+  )
+
+  /**
+   * The source with its `//` comments removed, leaving string literals alone.
+   *
+   * `"http://x"` is not a comment, and a comment is not always harmless: a fixture's arguments are
+   * split on the commas between them, so a comment containing a comma splits an argument in half.
+   */
+  private fun stripLineComments(source: String): String {
+    val builder = StringBuilder()
+    var index = 0
+    while (index < source.length) {
+      val character = source[index]
+      if (character == '"') {
+        val end = skipString(source, index) ?: return source
+        builder.append(source, index, end)
+        index = end
+        continue
+      }
+      if (character == '/' && source.getOrNull(index + 1) == '/') {
+        while (index < source.length && source[index] != '\n') index++
+        continue
+      }
+      builder.append(character)
+      index++
+    }
+    return builder.toString()
   }
 
   /** Kotlin's own `trimIndent`, over text this has read out of a source file rather than compiled. */
