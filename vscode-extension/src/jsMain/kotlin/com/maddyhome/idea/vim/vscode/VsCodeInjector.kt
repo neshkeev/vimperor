@@ -866,6 +866,15 @@ open class VsCodeInjector(
   override val lineChange: LineChange by lazy { VsCodeLineChange() }
 
   /**
+   * Vim's `=~`, `:catch /pattern/` and `split()`, which match a Vim regex against a plain string.
+   *
+   * `VimRegexServiceBase` is the engine's own class over the engine's own regex engine, and the
+   * IntelliJ host does no more than name it. This host had it down as "does not provide
+   * regexpService yet" - which was true of the line and not of the work.
+   */
+  override val regexpService: VimRegexpService by lazy { VimRegexServiceBase() }
+
+  /**
    * Prompts that answer one keystroke at a time - `:s///c` is the one the engine opens.
    *
    * See [StatusBarModalInput]. What is still missing is the *other* half of the interface,

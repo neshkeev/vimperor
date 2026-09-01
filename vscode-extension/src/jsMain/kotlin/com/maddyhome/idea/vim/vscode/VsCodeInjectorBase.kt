@@ -135,8 +135,6 @@ abstract class VsCodeInjectorBase : VimInjector {
   override val tabService: TabService
     get() = TODO("the VS Code host does not provide tabService yet")
 
-  override val regexpService: VimRegexpService
-    get() = TODO("the VS Code host does not provide regexpService yet")
 
   override val searchHelper: VimSearchHelper
     get() = TODO("the VS Code host does not provide searchHelper yet")

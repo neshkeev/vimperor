@@ -148,6 +148,19 @@ that doing it there is *more* exact than change events. Two names for one thing 
 `VimRangeMarker` - were enough to hide that one of them was done. `:g/pattern/command` was what that
 cost, and no sweep could find it: a bare `:g` is a Vim error before it reaches the marker.
 
+That is the same blind spot three times, and it took three findings to name it. Every one of the
+four sweeps exercises its surface *with no arguments* - a bare `:g`, an `echo split()` with nothing
+to split, `gx` on a line with no URL - so a service reached only once there is a real argument is
+invisible to all of them. `:g` needed a range marker, `split()` and `=~` needed a regex service, and
+that service was `VimRegexServiceBase`: the engine's own class over the engine's own regex engine,
+which the IntelliJ host does no more than name.
+
+So there is a fifth sweep now, and it works the other way round. `UnimplementedServicesTest` reads
+`VsCodeInjectorBase` for the services declared as `TODO` and `VsCodeInjector` for the ones actually
+overridden, and asserts the difference in both directions. Nothing has to be *reachable* to appear
+on it - which is the point, since reachability was what the other four were measuring by accident.
+Ten services are left, and each carries a line saying what it needs.
+
 ## Checking it against somebody else's expectations
 
 Every test in this module was written by whoever wrote the code under it, and they all share that
