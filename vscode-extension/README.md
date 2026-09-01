@@ -138,6 +138,16 @@ line, taken the first time that line is touched, and `U` swaps it with what is t
 second `U` puts the change back. What it needed was a copy taken *before* an edit, and every edit
 here already funnels through one class. A description on that list is a claim like any other.
 
+That has now happened often enough to be the pattern rather than the exception. `'incsearch'`, the
+incsearch caret, `:s///c`'s prompt, `:e newfile`, `U`, and range markers were each ruled out in a
+comment in this repository, and every one of those comments was wrong - usually about which VS Code
+API was being talked about. The range marker one is the sharpest: it said VS Code has nothing
+equivalent and that this would have to be built on `onDidChangeTextDocument`, while forty lines away
+`DocumentBuffer` already tracked markers over the engine's own mutations and said in its own comment
+that doing it there is *more* exact than change events. Two names for one thing - `LiveRange` and
+`VimRangeMarker` - were enough to hide that one of them was done. `:g/pattern/command` was what that
+cost, and no sweep could find it: a bare `:g` is a Vim error before it reaches the marker.
+
 ## Checking it against somebody else's expectations
 
 Every test in this module was written by whoever wrote the code under it, and they all share that

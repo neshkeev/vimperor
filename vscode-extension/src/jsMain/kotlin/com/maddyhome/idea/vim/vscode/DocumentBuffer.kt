@@ -111,6 +111,16 @@ class DocumentBuffer(private val editor: TextEditor) {
 
   fun createMarker(start: Int, end: Int): LiveRange = TrackedRange(start, end).also { markers += it }
 
+  /**
+   * Stops tracking a marker.
+   *
+   * By identity rather than by equality: [TrackedRange] compares by offsets, so two markers over
+   * the same span are equal, and removing "the one that equals this" could take somebody else's.
+   */
+  fun removeMarker(marker: LiveRange) {
+    markers.removeAll { it === marker }
+  }
+
   fun addChangeListener(listener: ChangesListener) {
     listeners += listener
   }

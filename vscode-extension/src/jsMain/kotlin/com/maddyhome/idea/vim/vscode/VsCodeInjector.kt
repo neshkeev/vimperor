@@ -763,12 +763,33 @@ open class VsCodeInjector(
         editor.getLineEndOffset(visualLine) - editor.getLineStartOffset(visualLine)
 
       /**
-       * A marker that follows edits, which is what keeps a visual selection anchored across one.
-       * IntelliJ has range markers; VS Code has nothing equivalent, so this will have to be built
-       * on top of `onDidChangeTextDocument` rather than borrowed.
+       * A marker that follows edits, which is what `:g` uses to remember the lines it matched.
+       *
+       * The comment here used to say VS Code has nothing equivalent and that this would have to be
+       * built on `onDidChangeTextDocument`. It was already built, forty lines away: `DocumentBuffer`
+       * tracks markers over the engine's own mutations, and says in its own comment that doing it
+       * there is *more* exact than deriving it from VS Code's change events, which arrive after the
+       * fact. Two names for one thing - `LiveRange` and `VimRangeMarker` - were enough to hide that
+       * one of them was done.
+       *
+       * `:g/pattern/command` was the whole of what this cost. It reported "Not implemented yet :("
+       * and no sweep caught it, because a bare `:g` is a Vim error before it reaches this.
        */
-      override fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker =
-        TODO("VS Code host: range markers must be built on document change events")
+      override fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker {
+        val buffer = (editor as VsCodeEditor).buffer
+        val range = buffer.createMarker(startOffset, endOffset)
+        return object : VimRangeMarker {
+          private var disposed = false
+          override val startOffset: Int get() = range.startOffset
+          override val endOffset: Int get() = range.endOffset
+          override val isValid: Boolean get() = !disposed && !editor.isDisposed()
+
+          override fun dispose() {
+            disposed = true
+            buffer.removeMarker(range)
+          }
+        }
+      }
     }
   }
 
@@ -1061,7 +1082,17 @@ private data class PlainCopiedText(override val text: String) : VimCopiedText {
   override fun updateText(newText: String): VimCopiedText = copy(text = newText)
 }
 
-private object SingleThreadedApplication : VimApplication {
+/**
+ * An application that can be asked to replay a key later. See `postKey`.
+ *
+ * Named separately from the service interface because [VimHost] is the thing that drains it, and
+ * `VimApplication` has no idea a key queue exists - it only has the end that puts keys in.
+ */
+internal interface PostingApplication {
+  fun takePostedKeys(): List<VimKeyStroke>
+}
+
+internal object SingleThreadedApplication : VimApplication, PostingApplication {
   override fun isMainThread(): Boolean = true
   override fun invokeLater(editor: VimEditor, action: () -> Unit) = action()
   override fun invokeLater(action: () -> Unit) = action()
@@ -1076,9 +1107,30 @@ private object SingleThreadedApplication : VimApplication {
 
   override fun currentStackTrace(): String = Throwable().stackTraceToString()
 
-  /** Feeding a key back into the handler, which needs the key dispatch loop this host lacks. */
-  override fun postKey(stroke: VimKeyStroke, editor: VimEditor) =
-    TODO("VS Code host: there is no key queue yet")
+  /**
+   * A key the engine wants handled *after* the one being handled now.
+   *
+   * One caller: `<C-V>` in Insert mode collects a numeric literal - `<C-V>065` types `A` - and the
+   * key that ends the number is not part of it, so it has to be replayed. IdeaVim posts it to
+   * Swing's event queue and skips the whole thing under test because it needs one.
+   *
+   * A queue rather than a nested `handleKey`: the engine is still inside the digraph when it calls
+   * this, and re-entering the handler there would interleave two commands. [VimHost] drains this
+   * after the stroke it is on, which is what "post" means and is what Swing was being used for.
+   */
+  override fun postKey(stroke: VimKeyStroke, editor: VimEditor) {
+    posted += stroke
+  }
+
+  private val posted: MutableList<VimKeyStroke> = mutableListOf()
+
+  /** Takes what was posted, leaving the queue empty. */
+  override fun takePostedKeys(): List<VimKeyStroke> {
+    if (posted.isEmpty()) return emptyList()
+    val keys = posted.toList()
+    posted.clear()
+    return keys
+  }
 }
 
 private object NodeSystemInfo : SystemInfoService {

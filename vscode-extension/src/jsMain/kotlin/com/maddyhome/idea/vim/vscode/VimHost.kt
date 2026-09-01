@@ -140,6 +140,10 @@ class VimHost(
     handle(textEditor, injector.parser.parseKeys(notation))
   }
 
+  /** What the engine asked to have replayed. See `SingleThreadedApplication.postKey`. */
+  private fun postedKeys(): List<com.maddyhome.idea.vim.key.VimKeyStroke> =
+    (injector.application as? PostingApplication)?.takePostedKeys() ?: emptyList()
+
   private fun handle(textEditor: TextEditor, keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>) {
     if (pending > 0) {
       // A VS Code command the engine asked for has not finished. Running these keys now would
@@ -156,8 +160,13 @@ class VimHost(
 
     val handler = KeyHandler.getInstance()
     val state = handler.keyHandlerState
-    for (stroke in keys) {
+    val remaining = keys.toMutableList()
+    while (remaining.isNotEmpty()) {
+      val stroke = remaining.removeAt(0)
       handler.handleKey(editor, stroke, VsCodeExecutionContext, state)
+      // A key the engine asked to have handled after this one - `<C-V>065x` ends its literal on the
+      // `x`, which is not part of it. Ahead of the rest, because Vim replays it immediately.
+      remaining.addAll(0, postedKeys())
     }
     editor.flush { applied ->
       if (!applied) {
