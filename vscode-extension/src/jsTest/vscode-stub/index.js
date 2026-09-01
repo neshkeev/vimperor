@@ -81,6 +81,12 @@ const commands = {
 }
 
 const env = {
+  /** What `gx` and `:help` handed to the operating system, so a test can read it back. */
+  opened: [],
+  openExternal(uri) {
+    env.opened.push(uri.toString())
+    return { then: (onFulfilled) => (onFulfilled(true), { then: () => {} }) }
+  },
   clipboard: {
     _text: '',
     readText() {
@@ -108,7 +114,7 @@ const workspace = {
  */
 const Uri = {
   file: (path) => ({ scheme: 'file', path, fsPath: path }),
-  parse: (value) => ({ scheme: value.split(':')[0], path: value, fsPath: value }),
+  parse: (value) => ({ scheme: value.split(':')[0], path: value, fsPath: value, toString: () => value }),
 }
 
 const StatusBarAlignment = { Left: 1, Right: 2 }

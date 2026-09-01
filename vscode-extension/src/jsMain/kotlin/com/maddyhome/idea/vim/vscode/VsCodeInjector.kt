@@ -76,6 +76,8 @@ open class VsCodeInjector(
   private val outputPanelService: VimOutputPanelService = DiscardingOutputPanel,
   /** How `:!` runs a shell command. Injectable so a test can assert on one without a shell. */
   private val processes: VimProcessGroup = NodeProcessGroup(),
+  /** How `gx` opens a URL. Injectable so a test can assert on one without opening a browser. */
+  private val opener: VimExternalOpener = VsCodeExternalOpener(),
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -861,6 +863,9 @@ open class VsCodeInjector(
    * is an absence. Both are now in vim-engine, where nothing about them needed IntelliJ.
    */
   override val processGroup: VimProcessGroup get() = processes
+
+  /** `gx`, and `:help`. See [VsCodeExternalOpener] for why no sweep had reported it missing. */
+  override val externalOpener: VimExternalOpener by lazy { opener }
 
   /**
    * The `:` and `/` prompts.

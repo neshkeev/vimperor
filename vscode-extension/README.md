@@ -75,8 +75,14 @@ than the commands themselves. The ex command sweep walks the *engine's* registry
 declares eight commands in its IntelliJ module instead. A command that was never registered is not a
 hole in the sweep's eyes; it is not anything. `:!` and `:read` had no IntelliJ in them worth the
 name - a process and a file read, both of which the engine already asks a host for through an
-interface - so they moved into `vim-engine`. `ExCommandsOnlyInIntelliJTest` lists the six that
-remain and says what each of them needs.
+interface - so they moved into `vim-engine`. `ExCommandsOnlyInIntelliJTest` lists what
+remains and says what each of them needs. `:help` went the same way afterwards - it opens the online
+Vim documentation in a browser, and which browser is a host question that `gx` was already asking.
+
+`gx` is the third shape of blind spot, and worth naming beside the other two. The key sweep presses
+every key on a buffer of ordinary text, so `gx` returns before it ever asks for the service that
+opens a URL. A hole that needs the right *text* under the caret as well as the right key is
+invisible to a sweep that only varies the key.
 
 Your `~/.ideavimrc` is read at startup, so mappings and options come from the file you already have.
 The search order is IdeaVim's: `IDEA_VIM_CUSTOM_VIMRC`, then `~/.ideavimrc` and `~/_ideavimrc`, then

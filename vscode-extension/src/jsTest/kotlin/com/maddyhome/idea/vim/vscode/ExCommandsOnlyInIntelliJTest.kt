@@ -60,6 +60,7 @@ class ExCommandsOnlyInIntelliJTest {
   fun `test a command moved into the engine is registered rather than listed`() {
     assertTrue("!" in engineExCommandProvider.getCommands().keys, ":! should be an engine command now")
     assertTrue("r[ead]" in engineExCommandProvider.getCommands().keys, ":read should be an engine command now")
+    assertTrue("h[elp]" in engineExCommandProvider.getCommands().keys, ":help should be an engine command now")
     assertTrue("!" !in EXPECTED, ":! should not still be listed as IntelliJ-only")
   }
 
@@ -75,15 +76,12 @@ class ExCommandsOnlyInIntelliJTest {
      * `:buffer`, `:ls`, `:files` and `:buffers` are Vim's buffer list. VS Code has tabs rather than
      * buffers, and its tab model does not carry the modified/loaded state Vim prints in that table.
      *
-     * `:help` opens IdeaVim's help in a browser. This one is only waiting to be written.
-     *
      * `:resize` and `:vertical` size a split. VS Code has no API for the size of an editor group -
      * only commands to grow or shrink one by an unspecified amount.
      */
     val EXPECTED = """
       actionl[ist]
       b[uffer]
-      h[elp]
       ls,files,buffers
       res[ize]
       vert[ical]

@@ -114,6 +114,9 @@ external object commands {
 
 external object env {
   val clipboard: Clipboard
+
+  /** Hands a URL to whatever the operating system opens it with. `gx` and `:help` are the callers. */
+  fun openExternal(target: Uri): Thenable<Boolean>
 }
 
 /** The system clipboard, which VS Code exposes only through promises in both directions. */

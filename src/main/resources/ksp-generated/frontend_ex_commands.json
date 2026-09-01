@@ -15,10 +15,6 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
     "standardConstructor": true
   },
-  "h[elp]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
-    "standardConstructor": true
-  },
   "ls": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
     "standardConstructor": true

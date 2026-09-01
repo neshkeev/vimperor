@@ -24,6 +24,9 @@ const assert = require('assert')
 
 /** Every status bar item the extension made, so a scenario can read what is drawn on one. */
 const statusBarItems = []
+
+/** URLs handed to the operating system by `gx` and `:help`. */
+const openedExternally = []
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -233,6 +236,11 @@ const vscode = {
     },
   },
   env: {
+    /** What `gx` and `:help` handed to the operating system. */
+    openExternal(uri) {
+      openedExternally.push(uri.toString())
+      return { then: (onFulfilled) => (onFulfilled(true), { then: () => {} }) }
+    },
     clipboard: {
       text: '',
       readText() {
@@ -253,7 +261,14 @@ const vscode = {
   },
   Uri: {
     file: (filePath) => ({ scheme: 'file', path: filePath, fsPath: filePath }),
-    parse: (value) => ({ scheme: value.split(':')[0], path: value, fsPath: value }),
+    // `toString` because that is how VS Code's own `Uri` renders back to a URL, and `gx` is checked
+    // by reading what was handed to `openExternal`.
+    parse: (value) => ({
+      scheme: value.split(':')[0],
+      path: value,
+      fsPath: value,
+      toString: () => value,
+    }),
   },
 }
 
@@ -706,6 +721,23 @@ if (process.platform !== 'win32') {
     `:%!sort did not filter the buffer through a real shell. Got: ${JSON.stringify(editor.document._text)}`,
   )
 }
+
+// `gx` - the URL under the caret, handed to whatever the OS opens it with. No sweep had reported
+// this service missing and none could have: `gx` on a buffer without a URL under the caret returns
+// before it ever asks for it.
+reset()
+type('i')
+for (const character of 'see https://example.com/one for more') type(character)
+press('<Esc>')
+type('0')
+type('w')
+type('gx')
+
+assert.deepStrictEqual(
+  openedExternally,
+  ['https://example.com/one'],
+  `gx did not open the URL under the caret. Opened: ${openedExternally.join(', ')}`,
+)
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 

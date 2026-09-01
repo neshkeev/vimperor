@@ -207,6 +207,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
     "standardConstructor": true
   },
+  "h[elp]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
+    "standardConstructor": true
+  },
   "hid[e]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
     "standardConstructor": true

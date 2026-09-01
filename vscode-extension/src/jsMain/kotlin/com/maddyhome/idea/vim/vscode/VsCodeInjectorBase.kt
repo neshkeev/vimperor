@@ -249,6 +249,4 @@ abstract class VsCodeInjectorBase : VimInjector {
   override val pluginActivator: VimPluginActivator
     get() = TODO("the VS Code host does not provide pluginActivator yet")
 
-  override val externalOpener: VimExternalOpener
-    get() = TODO("the VS Code host does not provide externalOpener yet")
 }

@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.VimExternalOpener
 import com.maddyhome.idea.vim.api.VimProcessGroup
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanelService
@@ -42,10 +43,12 @@ class VimHost(
   outputPanel: VimOutputPanelService = DiscardingOutputPanel,
   /** How `:!` runs a shell command. Node's `spawnSync`, unless a test supplies something else. */
   processes: VimProcessGroup = NodeProcessGroup(),
+  /** How `gx` opens a URL. The operating system's own handler, in a real window. */
+  opener: VimExternalOpener = VsCodeExternalOpener(),
 ) : HostCommandRunner {
 
   private val vimInjector =
-    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes)
+    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener)
 
   /**
    * Editors by buffer identity rather than by object.
