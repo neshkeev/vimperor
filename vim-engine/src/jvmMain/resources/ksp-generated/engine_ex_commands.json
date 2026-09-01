@@ -1,4 +1,8 @@
 {
+  "!": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
+    "standardConstructor": true
+  },
   "&": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
     "standardConstructor": false
@@ -389,6 +393,10 @@
   },
   "quita[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
+    "standardConstructor": true
+  },
+  "r[ead]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
     "standardConstructor": true
   },
   "red[o]": {

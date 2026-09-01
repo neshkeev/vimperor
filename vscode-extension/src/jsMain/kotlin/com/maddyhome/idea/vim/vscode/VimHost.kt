@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.VimProcessGroup
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.injector
@@ -39,10 +40,12 @@ class VimHost(
   private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
   /** Where `:registers` and `:marks` print. An output channel, in a real window. */
   outputPanel: VimOutputPanelService = DiscardingOutputPanel,
+  /** How `:!` runs a shell command. Node's `spawnSync`, unless a test supplies something else. */
+  processes: VimProcessGroup = NodeProcessGroup(),
 ) : HostCommandRunner {
 
   private val vimInjector =
-    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel)
+    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes)
 
   /**
    * Editors by buffer identity rather than by object.

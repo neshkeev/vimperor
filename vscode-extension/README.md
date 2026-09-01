@@ -63,6 +63,21 @@ What genuinely cannot be done is the other half of that interface. `activate` bl
 event loop until a key arrives, which is what `getchar()` and IdeaVim's bundled extensions are built
 on, and JavaScript has one thread and no way to stop it.
 
+`:!cmd` runs a shell command and `:%!sort` filters the buffer through one, which is the third time
+the *synchronous* Node API has been the answer where the VS Code one was the wrong shape - after
+`readFileSync` and `writeFileSync`, now `child_process.spawnSync`. Every other way of running a
+command from an extension is a promise or a terminal, and the engine needs the output before it can
+replace the lines it handed over. The shell comes from `'shell'` and `'shellcmdflag'`, which are
+Vim's options rather than the host's.
+
+Those two - `:!` and `:read` - were missing without ever appearing on a list, and that is worth more
+than the commands themselves. The ex command sweep walks the *engine's* registry, and IdeaVim
+declares eight commands in its IntelliJ module instead. A command that was never registered is not a
+hole in the sweep's eyes; it is not anything. `:!` and `:read` had no IntelliJ in them worth the
+name - a process and a file read, both of which the engine already asks a host for through an
+interface - so they moved into `vim-engine`. `ExCommandsOnlyInIntelliJTest` lists the six that
+remain and says what each of them needs.
+
 Your `~/.ideavimrc` is read at startup, so mappings and options come from the file you already have.
 The search order is IdeaVim's: `IDEA_VIM_CUSTOM_VIMRC`, then `~/.ideavimrc` and `~/_ideavimrc`, then
 `$XDG_CONFIG_HOME/ideavim/ideavimrc`. A line that fails does not stop the rest, the way Vim carries

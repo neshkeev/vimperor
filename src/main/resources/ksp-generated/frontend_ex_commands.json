@@ -1,8 +1,4 @@
 {
-  "!": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
-    "standardConstructor": true
-  },
   "actionl[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
     "standardConstructor": true
@@ -25,10 +21,6 @@
   },
   "ls": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
-  },
-  "r[ead]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
     "standardConstructor": true
   },
   "res[ize]": {

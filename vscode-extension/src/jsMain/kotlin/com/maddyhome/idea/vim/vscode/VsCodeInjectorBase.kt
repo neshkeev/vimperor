@@ -65,8 +65,6 @@ abstract class VsCodeInjectorBase : VimInjector {
   override val registerGroupIfCreated: VimRegisterGroup?
     get() = TODO("the VS Code host does not provide registerGroupIfCreated yet")
 
-  override val processGroup: VimProcessGroup
-    get() = TODO("the VS Code host does not provide processGroup yet")
 
   override val application: VimApplication
     get() = TODO("the VS Code host does not provide application yet")

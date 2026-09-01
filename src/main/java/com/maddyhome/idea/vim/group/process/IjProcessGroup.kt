@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.api.GlobalOptions
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimProcessGroupBase
 import com.maddyhome.idea.vim.group.rpc
+import com.maddyhome.idea.vim.newapi.ij
 
 /**
  * Unified [VimProcessGroup][com.maddyhome.idea.vim.api.VimProcessGroup] that always uses RPC.
@@ -28,9 +29,12 @@ internal class IjProcessGroup : VimProcessGroupBase() {
     currentDirectoryPath: String?,
     options: GlobalOptions,
   ): String? {
+    // Where a shell command runs is the host's answer. `:!` no longer names a directory - it lives
+    // in vim-engine now and has no idea what a project is - so the default belongs here.
+    val workingDirectory = currentDirectoryPath ?: editor.ij.project?.basePath
     val result = rpc {
       ProcessRemoteApi.getInstance().executeCommand(
-        command, input?.toString(), currentDirectoryPath,
+        command, input?.toString(), workingDirectory,
         options.shell, options.shellcmdflag, options.shellxescape, options.shellxquote,
       )
     }

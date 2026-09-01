@@ -19,13 +19,13 @@ import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.put.PutData
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
-import java.io.IOException
-import kotlin.io.path.Path
-import kotlin.io.path.exists
-import kotlin.io.path.readText
+import com.maddyhome.idea.vim.api.VimFileReadException
 
 /**
  * see "h :read"
+ *
+ * Moved out of the IntelliJ module, where this port could not reach it. Nothing about it is
+ * IntelliJ-shaped once the file reading goes through the host.
  *
  * Inserts the contents of a file or command output below the current line (or specified line).
  * - `:read file` - insert file contents below current line
@@ -79,17 +79,16 @@ data class ReadCommand(val range: Range, val modifier: CommandModifier, val argu
     return output
   }
 
-  private fun readFileContent(filePath: String): String {
-    val file = Path(filePath)
-    if (!file.exists()) {
-      throw exExceptionMessage("E484", filePath)
-    }
-
-    return try {
-      file.readText()
-    } catch (_: IOException) {
-      throw exExceptionMessage("E484", filePath)
-    }
+  /**
+   * The host reads the file, because the engine has no filesystem of its own.
+   *
+   * `VimFileSystem` is the same one `:source` and the `.ideavimrc` go through - Java's `Path` here
+   * was what kept this command in the IntelliJ module, and it is the only thing that did.
+   */
+  private fun readFileContent(filePath: String): String = try {
+    injector.fileSystem.readText(filePath)
+  } catch (_: VimFileReadException) {
+    throw exExceptionMessage("E484", filePath)
   }
 
   private fun createPutData(content: String, line: Int, editor: VimEditor): PutData {

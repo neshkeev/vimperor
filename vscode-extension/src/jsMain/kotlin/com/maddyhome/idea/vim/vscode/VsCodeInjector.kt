@@ -74,6 +74,8 @@ open class VsCodeInjector(
   private val highlighter: Highlighter = Highlighter.None,
   private val clipboard: SystemClipboard = SystemClipboard.InMemory(),
   private val outputPanelService: VimOutputPanelService = DiscardingOutputPanel,
+  /** How `:!` runs a shell command. Injectable so a test can assert on one without a shell. */
+  private val processes: VimProcessGroup = NodeProcessGroup(),
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -849,6 +851,16 @@ open class VsCodeInjector(
    * it. The default implementation does nothing, which is the honest answer.
    */
   override val modalInput: VimModalInputService by lazy { VsCodeModalInputService(commandLineDisplay) }
+
+  /**
+   * `:!cmd`, and the filter form `:%!sort`.
+   *
+   * These had been missing without ever appearing on a list, which is the interesting part: `:!`
+   * and `:read` lived in IdeaVim's *IntelliJ* module, and the ex command sweep walks the engine's
+   * registry - so a command that was never registered there is not a hole in the sweep's eyes, it
+   * is an absence. Both are now in vim-engine, where nothing about them needed IntelliJ.
+   */
+  override val processGroup: VimProcessGroup get() = processes
 
   /**
    * The `:` and `/` prompts.

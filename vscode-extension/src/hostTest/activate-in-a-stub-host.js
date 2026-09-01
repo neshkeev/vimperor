@@ -686,6 +686,27 @@ assert.strictEqual(
 )
 assert.ok(!prompt(), 'the substitute prompt was left on the status bar')
 
+// `:%!sort` - a real shell, in the real Node the extension host runs in. Everything else in this
+// file is stubbed; this is not, which is the point of putting it here rather than in a unit test.
+// `spawnSync` is what makes `:!` possible at all: every other way of running a command from a VS
+// Code extension is a promise or a terminal, and the engine needs the output before it can replace
+// the lines it was given.
+if (process.platform !== 'win32') {
+  reset()
+  type('i')
+  for (const character of 'pear\napple\nbanana') type(character)
+  press('<Esc>')
+  type(':')
+  for (const character of '%!sort') type(character)
+  press('<CR>')
+
+  assert.strictEqual(
+    editor.document._text,
+    'apple\nbanana\npear\n',
+    `:%!sort did not filter the buffer through a real shell. Got: ${JSON.stringify(editor.document._text)}`,
+  )
+}
+
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
 extension.deactivate()
