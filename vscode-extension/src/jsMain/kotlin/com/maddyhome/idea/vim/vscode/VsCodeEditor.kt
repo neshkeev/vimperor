@@ -53,6 +53,15 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   init {
     syncCaretsFromEditor()
+    // What IntelliJ gets from a document listener: the line about to change, before it does. Only
+    // single-line changes, mirroring Vim's `u_save`, which calls `u_saveline` for a one-line range
+    // and nothing else.
+    buffer.beforeChange = { start, end, newText ->
+      val startLine = offsetToBufferPosition(start).line
+      if (startLine == offsetToBufferPosition(end).line && !newText.contains('\n')) {
+        injector.lineChange.snapshotLine(startLine, this)
+      }
+    }
   }
 
   /** The text as the engine sees it: its own edits included, whether or not VS Code has them yet. */

@@ -130,9 +130,13 @@ What is not built yet is written down rather than left to be discovered. `VsCode
 presses every key the engine registers and asserts the list of the ones that land on a host service
 this port has not written; implementing a service shrinks the list, and a key that starts or stops
 reaching one shows up as a diff. That list is the honest map of the gap, and what is on it now is
-not a matter of writing more host: `U` needs a history VS Code owns and will not describe, `[m` and
-`]s` need a language server and a spellchecker, and `q:` is Vim's command-line window. The ordinary
-Vim keys came off the list with `S`.
+not a matter of writing more host: `[m` and `]s` need a language server and a spellchecker, and `q:`
+is Vim's command-line window. The ordinary Vim keys came off the list with `S`, and `U` came off it
+afterwards - the list had said `U` "needs the same host history undo does", which was a wrong
+reading of the command. `u` walks a history; `U` walks nothing. Vim keeps one pristine copy of one
+line, taken the first time that line is touched, and `U` swaps it with what is there now, so a
+second `U` puts the change back. What it needed was a copy taken *before* an edit, and every edit
+here already funnels through one class. A description on that list is a claim like any other.
 
 ## Checking it against somebody else's expectations
 
@@ -238,9 +242,12 @@ and the command-id check.
 Paths are Vim's: `~` and `$VAR` are expanded, and a relative path resolves against the workspace
 folder. Vim would resolve against the current directory, and a VS Code window does not have one.
 
-`:e newfile` is where that stops. Vim gives you an empty buffer with that name, waiting to be
-written; VS Code's nearest equivalent is an untitled document, which has no path until it is saved
-and then asks where to put it. So this says the file is not there, which is at least true.
+`:e newfile` gives an empty buffer with that name, the way Vim does. It used to answer E447, with a
+comment saying that VS Code's nearest equivalent - an untitled document - "has no path until it is
+saved and then asks where to put it". That is true of `newUntitledFile` and false of the `untitled:`
+scheme, which takes one: `untitled:/dir/new.txt` is an unsaved buffer whose `:w` writes to exactly
+that file, with no dialog, and whose language VS Code derives from the name. Which is Vim's new
+buffer under another spelling, and the reasoning that ruled it out had been about the wrong API.
 
 `:bdelete N` asks for a buffer number, which VS Code does not have - an editor has a position among
 the tabs and no identity beyond its file - so it says so instead of closing whatever happens to be

@@ -264,8 +264,6 @@ class VsCodeUnimplementedTest {
 """
 
     const val EXPECTED = """
-VS Code host: U needs the same host history undo does
-    U
 VS Code host: findMethodEnd needs a language server
     [M ]M
 VS Code host: findMethodStart needs a language server

@@ -119,19 +119,24 @@ class VsCodeNamedFileTest {
   }
 
   /**
-   * Where this stops short of Vim, which would give you an empty buffer with that name. VS Code's
-   * nearest thing is an untitled document, which has no path until it is saved.
+   * `:e newfile` gives an empty buffer with that name, the way Vim does.
+   *
+   * This used to answer E447, and the comment explaining why said an untitled document "has no
+   * path until it is saved". That is true of `newUntitledFile` and false of the `untitled:` scheme,
+   * which takes one: `untitled:/dir/new.txt` is an unsaved buffer that `:w` writes to exactly that
+   * file, with no dialog.
    */
   @Test
-  fun `test colon e on a file that is not there says so`() {
+  fun `test colon e on a file that is not there opens a buffer with that name`() {
     val directory = temporaryFileDirectory()
     val session = Session("one two")
 
     session.type(":e $directory/missing.txt")
     session.key("<CR>")
 
-    assertEquals(emptyList(), session.dispatched)
-    assertTrue(session.sink.said.any { it.contains("E447") }, "expected E447, said ${session.sink.said}")
+    assertEquals(listOf("vscode.open"), session.dispatched)
+    assertEquals(listOf("untitled:$directory/missing.txt"), session.opened)
+    assertTrue(session.sink.said.none { it.contains("E447") }, "said ${session.sink.said}")
   }
 
   /**
@@ -160,8 +165,7 @@ class VsCodeNamedFileTest {
     session.type(":e relative-to-nothing.txt")
     session.key("<CR>")
 
-    assertEquals(emptyList(), session.dispatched)
-    assertTrue(session.sink.said.any { it.contains("E447") }, "said ${session.sink.said}")
+    assertEquals(listOf("untitled:relative-to-nothing.txt"), session.opened)
   }
 }
 

@@ -70,9 +70,20 @@ class DocumentBuffer(private val editor: TextEditor) {
     onChanged(0, before.length, text, before)
   }
 
+  /**
+   * Called with a change before the text moves, which is the whole of what `U` needs.
+   *
+   * Vim's `U` keeps one pristine copy of one line, saved the first time that line is touched, and
+   * "before" is not an optimisation there - once the edit has been applied the original is gone.
+   * IntelliJ drives the same call from a document listener; here every mutation already funnels
+   * through two methods, so this is exact rather than reconstructed.
+   */
+  var beforeChange: (start: Int, end: Int, newText: String) -> Unit = { _, _, _ -> }
+
   fun replace(start: Int, end: Int, newText: String) {
     val from = start.coerceIn(0, text.length)
     val to = end.coerceIn(from, text.length)
+    beforeChange(from, to, newText)
     val replaced = text.substring(from, to)
     text = text.substring(0, from) + newText + text.substring(to)
     revision++
@@ -81,6 +92,7 @@ class DocumentBuffer(private val editor: TextEditor) {
 
   fun insert(offset: Int, newText: String) {
     val at = offset.coerceIn(0, text.length)
+    beforeChange(at, at, newText)
     text = text.substring(0, at) + newText + text.substring(at)
     revision++
     onChanged(at, at, newText, "")

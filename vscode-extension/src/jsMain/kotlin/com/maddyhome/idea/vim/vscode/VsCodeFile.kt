@@ -131,18 +131,20 @@ internal class VsCodeFile(
   }
 
   /**
-   * `:e file`, which asks VS Code to open it.
+   * `:e file`, which asks VS Code to open it - and `:e newfile`, which asks for one that is not
+   * there yet.
    *
-   * A file that is not there is where this stops short of Vim. `:e newfile` in Vim gives you an
-   * empty buffer with that name, waiting to be written; VS Code's nearest equivalent is an untitled
-   * document, which is not the same thing - it has no path until it is saved, and saving it asks
-   * where to put it. So this says the file is not there, which is at least true, rather than
-   * opening something that only looks like what was asked for.
+   * Vim gives you an empty buffer with that name, waiting to be written. This used to answer E447
+   * and say so in a comment: an untitled document "has no path until it is saved, and saving it
+   * asks where to put it". That is true of `workbench.action.files.newUntitledFile` and not of the
+   * `untitled:` scheme, which takes a path - `untitled:/home/me/new.txt` is an unsaved buffer whose
+   * `:w` writes to exactly that file, with no dialog, and whose language VS Code derives from the
+   * name. Which is Vim's new buffer, under another spelling.
    */
   override fun openFile(filename: String, context: ExecutionContext, focusEditor: Boolean): String? {
     val path = absolute(filename)
-    if (!files.exists(path)) return "E447: Can't find file \"$filename\" in path"
-    host.run(VsCodeCommands.OPEN, arrayOf(UriFactory.file(path)))
+    val uri = if (files.exists(path)) UriFactory.file(path) else UriFactory.parse(UNTITLED + path)
+    host.run(VsCodeCommands.OPEN, arrayOf(uri))
     return null
   }
 
@@ -169,6 +171,9 @@ internal class VsCodeFile(
   private companion object {
     /** `C:` and the rest, so a Windows path is not treated as relative to the workspace. */
     val DRIVE_LETTER = Regex("[A-Za-z]:")
+
+    /** The scheme for a buffer that has a name and no file yet. See [openFile]. */
+    const val UNTITLED = "untitled:"
   }
 
   /**

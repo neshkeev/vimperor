@@ -841,8 +841,8 @@ open class VsCodeInjector(
     }
   }
 
-  override val lineChange: LineChange
-    get() = TODO("VS Code host: U needs the same host history undo does")
+  /** `U`. See [VsCodeLineChange] for why the sweep's description of what it needed was wrong. */
+  override val lineChange: LineChange by lazy { VsCodeLineChange() }
 
   /**
    * Prompts that answer one keystroke at a time - `:s///c` is the one the engine opens.
