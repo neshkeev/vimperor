@@ -105,7 +105,11 @@ internal object VimFixtures {
         if (withCarets.any { it == null }) { skip("string interpolation other than the caret"); continue }
 
         val (keys, before, after) = withCarets.map { it!! }
-        if (before.split(CARET).size != 2) { skip("no caret, or more than one, in the input"); continue }
+        // No caret at all is not a refusal: IdeaVim's `configureByText` puts one at the start when
+        // the text does not say otherwise, so the fixture means offset zero. More than one is - a
+        // multiple-caret fixture is about all of them at once, and replaying it with the first
+        // would produce a wrong answer rather than a missing one.
+        if (before.split(CARET).size > 2) { skip("more than one caret in the input"); continue }
         if (before.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
         // Block Visual mode selects a range on every line, so its `after` has one pair of markers
         // per line. This compares a single selection and would read the first pair as the whole of

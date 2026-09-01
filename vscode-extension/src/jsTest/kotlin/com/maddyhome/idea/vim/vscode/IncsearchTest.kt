@@ -58,6 +58,11 @@ class IncsearchTest {
     fun key(notation: String) = host.key(fake, notation)
     /** Where the view is, so that the match being previewed can be seen to have been scrolled to. */
     val topLine: Int get() = fake.topLine
+    val caretOffset: Int get() = host.editorFor(fake).primaryCaret().offset
+
+    /** The selection VS Code was left holding, as offsets. */
+    val selection: Pair<Int, Int>
+      get() = fake.document.offsetAt(fake.selection.anchor) to fake.document.offsetAt(fake.selection.active)
   }
 
   @Test
@@ -195,5 +200,54 @@ class IncsearchTest {
     session.type("s/one/two/g")
 
     assertEquals(emptyList(), session.highlighter.matches)
+  }
+  /**
+   * The caret follows the preview, which is what makes the *selection* follow it.
+   *
+   * This was written off once, on the grounds that a host moving the caret would be lying to the
+   * engine about where the user is. Vim moves it, and IdeaVim moves it, and fourteen of IdeaVim's
+   * fixtures turn on it - because `ve/dolor` extending the Visual selection to the match is the
+   * same act as moving the caret there.
+   */
+  @Test
+  fun `test the caret follows the previewed match`() {
+    val session = Session("one two one three")
+    session.type("/")
+    session.type("thr")
+
+    assertEquals(12, session.caretOffset, "the caret should be on the match being previewed")
+  }
+
+  @Test
+  fun `test each keystroke searches from where the caret started`() {
+    val session = Session("on one only one")
+    session.type("/")
+    session.type("on")
+    assertEquals(3, session.caretOffset, "the first match after the caret")
+    session.type("l")
+    assertEquals(7, session.caretOffset, "onl matches later, and the search still starts from 0")
+  }
+
+  @Test
+  fun `test a visual selection follows the previewed match`() {
+    val session = Session("one two one three")
+    session.type("ve")
+    session.type("/")
+    session.type("thr")
+
+    // Through the match's first character, not up to it: Vim's `'selection'` is inclusive, so the
+    // selection covers the character the caret is on.
+    assertEquals(0 to 13, session.selection, "the selection should reach the previewed match")
+  }
+
+  /** Cancelling puts the caret back where the prompt opened, the way Vim does. */
+  @Test
+  fun `test escape puts the caret back`() {
+    val session = Session("one two one three")
+    session.type("/")
+    session.type("thr")
+    session.key("<Esc>")
+
+    assertEquals(0, session.caretOffset)
   }
 }

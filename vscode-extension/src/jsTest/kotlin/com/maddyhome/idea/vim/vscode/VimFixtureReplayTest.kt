@@ -132,8 +132,14 @@ class VimFixtureReplayTest {
         editor.primaryCaret().moveToOffsetNative(caretAt)
         editor.flush()
         val handler = KeyHandler.getInstance()
+        // The command itself is typed rather than parsed, which is what IdeaVim does and for the
+        // reason it gives: `:nmap <Tab> ihello<Esc>` is a mapping whose text contains `<Esc>`, and
+        // parsing it would press Escape on the command line instead of writing five characters
+        // into it. Only the `:` and the Enter are keystrokes.
         for (command in fixture.setup) {
-          for (stroke in injector.parser.parseKeys(":" + command + "<CR>")) {
+          val keys = injector.parser.parseKeys(":") + injector.parser.stringToKeys(command) +
+            injector.parser.parseKeys("<CR>")
+          for (stroke in keys) {
             handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
           }
         }

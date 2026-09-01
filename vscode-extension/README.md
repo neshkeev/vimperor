@@ -75,9 +75,12 @@ containers, where the extension host runs on the remote machine and reads the co
 actually there. A web-only workspace has no Node and will need an asynchronous load at startup.
 
 `'hlsearch'` paints every match, in the editor's own find colours so it looks right in whatever
-theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` works too, and it is
-worth saying why it was written off first: the preview needs the pattern as typed so far, and that
-arrives on the command line rather than through the search group. Both halves are true and the
+theme you use, and `'ignorecase'` and `'smartcase'` both apply. `'incsearch'` moves the caret to the
+match as you type and puts it back if you cancel - which is also what makes `ve/dolor` extend the
+Visual selection to the match, since moving a caret in Visual mode is what moves the end of a
+selection. It is worth saying why it was written off first: the preview needs the pattern as typed
+so far, and that arrives on the command line rather than through the search group. Both halves are
+true and the
 conclusion was wrong. That reasoning was about IntelliJ's command line, which is a text field with a
 document listener; this one is a buffer this module owns keystroke by keystroke, so the pattern as
 typed so far is a string it already has. The note was never revisited after the command line stopped
@@ -123,9 +126,9 @@ for twenty years by people who were not thinking about VS Code. `VimFixtures` wa
 module's test sources, evaluates the `doTest` calls it can read without a compiler, and
 `VimFixtureReplayTest` presses all of them against this host.
 
-**955 of the 966 it harvests pass.** The eleven that do not are listed in
+**1,018 of the 1,025 it harvests pass.** The seven that do not are listed in
 `src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
-things, not eleven.
+things, not seven.
 
 It started at 294 of 314, and every bug it has found was one no sweep could have: the service
 existed, was reached, threw nothing, and was wrong. Seven fixtures were the empty line a trailing
@@ -154,7 +157,7 @@ The parser is deliberately narrow and refuses far more than it accepts, because 
 slightly wrong is worse than one skipped - it fails against a correct host and gets recorded as a
 bug in it. It also has tests of its own, for the same reason the sweeps do.
 
-The corpus went 314 -> 642 -> 966 as the parser learned what these tests are actually written with.
+The corpus went 314 -> 642 -> 966 -> 1,025 as the parser learned what these tests are written with.
 First `exCommand("...")`, which is only string building; `//` comments between the arguments, which
 have to go before the arguments are split, because a comment with a comma in it otherwise tears the
 call into the wrong pieces; and the `${s}`/`${se}` selection markers. Those appear in 462 `after`s
@@ -166,7 +169,15 @@ Then `trimMargin`, which was the single largest thing it could not read: 318 fix
 with it rather than `trimIndent`, and it is a different rule - a line that does not carry the margin
 prefix is kept exactly as it was, which is why IdeaVim reaches for it when the text under test has
 indentation of its own. With `.repeat(n)`, `"a" + "b"` and `\uXXXX` alongside it, "an argument this
-cannot evaluate" fell from 397 to 26.
+cannot evaluate" fell from 397 to 26. A fixture with no caret marker at all is harvested too - it
+means offset zero, which is where `configureByText` puts one.
+
+Four entries left the baseline without anything being fixed, and that is the thing to remember about
+a harness like this. It was typing its setup commands through `parseKeys`, so `:nmap <Tab>
+ihello<Esc>` pressed Escape on the command line instead of writing five characters into it. IdeaVim
+types those literally and says why in a comment two lines long. Four fixtures had been recorded here
+as bugs in this host that were bugs in the reading of them - which is exactly what the parser is
+narrow to avoid, arriving through the one part of the harness that is not the parser.
 
 Two things it does on purpose. Trailing whitespace is not compared, because IdeaVim does not compare
 it either - thirteen fixtures assert that `]}`, a motion, removed two spaces from a line. And the

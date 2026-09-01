@@ -22,15 +22,27 @@ import com.maddyhome.idea.vim.common.TextRange
  * module owns keystroke by keystroke, so the pattern as typed so far is a string it already has.
  * IntelliJ needs a document listener on a text field for this. There is no text field.
  *
- * What is deliberately not here is Vim's cursor preview. Vim moves the caret to the match while you
- * type and puts it back if you cancel; this scrolls the match into view and leaves the caret alone.
- * The caret is engine state, and a host that moved it would be lying to the engine about where the
- * user is for as long as the prompt was open - a much worse failure than not previewing the move.
+ * It moves the caret too, which was written off here once on the grounds that a host moving the
+ * caret would be "lying to the engine about where the user is". That was wrong twice over: Vim
+ * itself moves the caret while you type and puts it back if you cancel, and the caret is how the
+ * *selection* follows the preview - `ve/dolor` extends the Visual selection to the match, because
+ * moving a caret in Visual mode is what moves the end of a selection. Fourteen of IdeaVim's
+ * fixtures say so. The saved offset is the one every search starts from, so typing another
+ * character re-searches from where the user was rather than from the previous match.
  */
 internal class IncsearchPreview(private val highlighter: Highlighter) {
 
   /** Whether anything is painted, so that cancelling only repaints when there is something to undo. */
   private var showing: Boolean = false
+
+  /**
+   * Where the caret was when the prompt opened.
+   *
+   * Every keystroke searches from here rather than from wherever the last preview left the caret -
+   * otherwise typing `d`, `o`, `l` in `/dolor` would walk forwards through the buffer one match per
+   * character instead of narrowing the same search.
+   */
+  private var caretBefore: Int? = null
 
   /**
    * The pattern as typed so far, painted.
@@ -43,10 +55,12 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
     val vsCode = editor as? VsCodeEditor ?: return
     if (!injector.globalOptions().incsearch) return
     val direction = directionOf(label) ?: return
+    val from = caretBefore ?: vsCode.primaryCaret().offset.also { caretBefore = it }
 
     val pattern = patternIn(text, label)
     if (pattern.isEmpty()) {
       clear(vsCode)
+      restoreCaret(vsCode)
       return
     }
 
@@ -60,13 +74,17 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
 
     if (matches.isEmpty()) {
       clear(vsCode)
+      restoreCaret(vsCode)
       return
     }
 
     showing = true
     highlighter.showMatches(vsCode, matches)
-    val current = nextMatch(matches, vsCode.primaryCaret().offset, direction)
+    val current = nextMatch(matches, from, direction)
     highlighter.showCurrentMatch(vsCode, current)
+    // The engine's move rather than the native one, because in Visual mode moving the caret is what
+    // moves the end of the selection - which is the whole of what this preview shows there.
+    vsCode.primaryCaret().moveToOffset(current.startOffset)
     vsCode.scrollLineIntoView(vsCode.offsetToBufferPosition(current.startOffset).line)
   }
 
@@ -78,12 +96,28 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
    * one leaves whatever `'hlsearch'` had before. Both are the search group's answer, so this only
    * undoes the preview and lets the engine repaint.
    */
-  fun finish(editor: VimEditor) {
+  fun finish(editor: VimEditor, resetCaret: Boolean = true) {
+    val vsCode = editor as? VsCodeEditor
+    if (vsCode != null && resetCaret) restoreCaret(vsCode)
+    caretBefore = null
     if (!showing) return
     showing = false
-    val vsCode = editor as? VsCodeEditor ?: return
+    if (vsCode == null) return
     highlighter.showCurrentMatch(vsCode, null)
     injector.searchGroup.updateSearchHighlightsAfterGlobalCommand()
+  }
+
+  /**
+   * Puts the caret back where the prompt opened, without touching the selection.
+   *
+   * The native move, deliberately, and IdeaVim does the same: on `<CR>` the command line closes
+   * before the search runs, so the search has to start from where the user was - but re-deriving
+   * the selection from a caret that is only passing through would throw away what Visual mode is
+   * holding.
+   */
+  private fun restoreCaret(editor: VsCodeEditor) {
+    val offset = caretBefore ?: return
+    if (editor.primaryCaret().offset != offset) editor.primaryCaret().moveToOffsetNative(offset)
   }
 
   private fun clear(editor: VsCodeEditor) {

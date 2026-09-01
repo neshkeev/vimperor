@@ -144,7 +144,7 @@ internal class StatusBarCommandLine(
   override fun deactivate(refocusOwningEditor: Boolean, resetCaret: Boolean) {
     // Before hiding, and whether the search ran or was cancelled: what should be on screen next is
     // the search group's answer either way, and the preview is in the way of it.
-    preview?.finish(editor)
+    preview?.finish(editor, resetCaret)
     display.hide()
   }
 
