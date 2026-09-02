@@ -382,7 +382,152 @@ class VsCodeOptionsTest {
     assertEquals(emptyList(), unabbreviated.map { it.name }, "registered without their short form")
   }
 
+  // `'filetype'` and `'syntax'`, which are one setting here.
+
+  /**
+   * `set syntax=java` colours the file as Java, which is what it was reported for.
+   *
+   * Vim has two options where VS Code has one setting: `'filetype'` decides which plugins and
+   * indent rules apply, `'syntax'` decides only the colours. VS Code's language mode does both, so
+   * `set syntax=java` gets Java's language server as well - more than Vim would have done, and what
+   * a VS Code user means by it.
+   */
+  @Test
+  fun `test setting the syntax changes the language mode`() {
+    val session = Session()
+    session.run("set syntax=java")
+
+    assertEquals("java", session.fake.document.languageId)
+    assertEquals(emptyList(), session.errors)
+  }
+
+  @Test
+  fun `test setting the filetype does the same`() {
+    val session = Session()
+    session.run("set filetype=markdown")
+
+    assertEquals("markdown", session.fake.document.languageId)
+  }
+
+  @Test
+  fun `test ft is the short form`() {
+    val session = Session()
+    session.run("set ft=python")
+
+    assertEquals("python", session.fake.document.languageId)
+  }
+
+  /** `'filetype'` is the file's identity, so it wins when both name something. */
+  @Test
+  fun `test filetype wins over syntax`() {
+    val session = Session()
+    session.run("set syntax=java")
+    session.run("set filetype=kotlin")
+
+    assertEquals("kotlin", session.fake.document.languageId)
+  }
+
+  @Test
+  fun `test setfiletype sets it too`() {
+    val session = Session()
+    session.run("setfiletype rust")
+
+    assertEquals("rust", session.fake.document.languageId)
+    assertEquals(emptyList(), session.errors)
+  }
+
+  /**
+   * Neither of them set leaves VS Code's own answer alone.
+   *
+   * The ordinary case, and the one worth asserting: a host that wrote an empty language on every
+   * keystroke would take the language away from every file that had one.
+   */
+  @Test
+  fun `test a file with neither option set keeps the language VS Code gave it`() {
+    val session = Session()
+    session.fake.document.languageId = "typescript"
+    session.run("set nu")
+
+    assertEquals("typescript", session.fake.document.languageId)
+  }
+
+  // What a Vim config can still say that this host does not answer.
+
+  /**
+   * The ex commands a `~/.vimrc` can use and this host reports `E492` for.
+   *
+   * Measured, by typing every candidate at the `:` prompt, and asserted rather than printed - the
+   * same shape as `VsCodeUnimplementedTest`. Implementing one has to come with taking it off this
+   * list, and a command that quietly stops working shows up as a diff.
+   *
+   * The first four are not commands at all but *modifiers*, which the engine's grammar does not
+   * have - `:silent!` is the standard way a portable config guards something optional, and it is
+   * the most valuable line here. `:unlet` is Vimscript and belongs beside `:let`. The rest are
+   * windows, buffers and the loops over them, which this host could answer with the VS Code
+   * commands it already sends, and are listed in the order they are worth doing.
+   */
+  @Test
+  fun `test the ex commands a config can use and this host does not have are these`() {
+    val session = Session()
+    val candidates = listOf(
+      "silent! echo 1", "verbose set nu", "noautocmd echo 1", "lockmarks echo 1",
+      "unlet g:x",
+      "enew", "new", "vnew", "tabnew", "tabedit", "wincmd l", "bfirst", "blast", "pwd",
+      "bufdo echo 1", "windo echo 1", "tabdo echo 1", "argdo echo 1",
+      "startinsert", "doautocmd BufRead", "earlier 1", "later 1",
+    )
+
+    val missing = candidates.filter { line ->
+      session.errors.clear()
+      session.run(line)
+      session.errors.any { "E492" in it || "Not an editor command" in it }
+    }
+
+    assertEquals(STILL_MISSING.trim().split("\n").map { it.trim() }, missing)
+  }
+
+  @Test
+  fun `test the commands added for a config are all registered`() {
+    val session = Session()
+    for (line in listOf(
+      "syntax on", "filetype plugin indent on", "setfiletype java", "colorscheme x",
+      "highlight Normal", "runtime x", "scriptencoding utf-8", "language en", "behave xterm",
+      "packloadall", "scriptnames", "messages", "redir => x", "mkview", "loadview", "sign define x",
+      "profile start x", "menu", "unmenu", "diffthis", "diffoff", "cd /tmp", "lcd /tmp",
+    )) {
+      session.errors.clear()
+      session.run(line)
+      assertEquals(emptyList(), session.errors, "`:$line` should be a command this host knows")
+    }
+  }
+
   private companion object {
+    /** See [`the ex commands a config can use and this host does not have are these`]. */
+    val STILL_MISSING = """
+      silent! echo 1
+      verbose set nu
+      noautocmd echo 1
+      lockmarks echo 1
+      unlet g:x
+      enew
+      new
+      vnew
+      tabnew
+      tabedit
+      wincmd l
+      bfirst
+      blast
+      pwd
+      bufdo echo 1
+      windo echo 1
+      tabdo echo 1
+      argdo echo 1
+      startinsert
+      doautocmd BufRead
+      earlier 1
+      later 1
+    """
+
     /**
      * What the engine declares, read out of `getAllOptions` before any of this host's were added.
      *

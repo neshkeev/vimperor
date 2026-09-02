@@ -244,6 +244,12 @@ const vscode = {
   EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorSelectionChangeKind: { Keyboard: 1, Mouse: 2, Command: 3 },
   TextEditorCursorStyle: { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 },
+  languages: {
+    setTextDocumentLanguage(document, languageId) {
+      document.languageId = languageId
+      return { then: (onFulfilled) => (onFulfilled(document), { then: () => {} }) }
+    },
+  },
   TextEditorLineNumbersStyle: { Off: 0, On: 1, Relative: 2 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {

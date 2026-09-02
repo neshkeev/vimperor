@@ -102,7 +102,7 @@ class VimHost(
     }
     // The config is where `'number'` and `'relativenumber'` are set, and it runs before any key is
     // pressed, so nothing else would apply them until one was.
-    editors.values.forEach { applyLineNumbers(it) }
+    editors.values.forEach { applyEditorOptions(it) }
     return path
   }
 
@@ -143,7 +143,7 @@ class VimHost(
     // A window-local option applies to a window that did not exist when it was set. `'number'` and
     // `'relativenumber'` come from the `.ideavimrc`, which runs once, and every editor opened after
     // it has to be told - the change listener only fires when the value changes.
-    applyLineNumbers(editor)
+    applyEditorOptions(editor)
     return editor
   }
 
@@ -261,9 +261,9 @@ class VimHost(
         sink.error("Vimperor: the document changed while a command was running, so it was not applied.")
       }
     }
-    // Vim owns the gutter, so the host writes it whenever Vim's answer has changed - which the
-    // option listener alone cannot guarantee. See [watchLineNumbers].
-    applyLineNumbers(editor)
+    // Vim owns the gutter and the language mode, so the host writes them whenever Vim's answer
+    // has changed - which the option listeners alone cannot guarantee. See [watchLineNumbers].
+    applyEditorOptions(editor)
   }
 
   // ---- Commands that only VS Code can run.

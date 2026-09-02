@@ -13,6 +13,8 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ranges.Range
+import com.maddyhome.idea.vim.options.OptionAccessScope
+import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 import com.maddyhome.idea.vim.vimscript.model.commands.Command
 import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
@@ -46,6 +48,25 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "scriptencoding" to command { range, modifier, argument -> ScriptEncodingCommand(range, modifier, argument) },
     "lan[guage]" to command { range, modifier, argument -> LanguageCommand(range, modifier, argument) },
     "behave" to command { range, modifier, argument -> BehaveCommand(range, modifier, argument) },
+    "setf[iletype]" to command { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
+
+    // The rest of what a `~/.vimrc` reaches for and VS Code answers for itself. Measured rather
+    // than guessed at: every name the engine registers was typed at the prompt, and these are the
+    // ones that came back `E492` and turn up in real configuration.
+    "packl[oadall]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "scrip[tnames]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "mes[sages]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "redi[r]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "mkvie[w]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "loadv[iew]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "sign" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "prof[ile]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "menu" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "unme[nu]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "difft[his]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "diffo[ff]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "lc[d]" to command { range, modifier, argument -> WorkingDirectoryCommand(range, modifier, argument) },
+    "cd" to command { range, modifier, argument -> WorkingDirectoryCommand(range, modifier, argument) },
   )
 
   private inline fun <reified T : Command> command(
@@ -148,3 +169,54 @@ internal class LanguageCommand(range: Range, modifier: CommandModifier, argument
 /** `:behave`, which chooses between `mswin` and `xterm` mouse and selection behaviour. */
 internal class BehaveCommand(range: Range, modifier: CommandModifier, argument: String) :
   AcceptedCommand(range, modifier, argument)
+
+
+/**
+ * `:setfiletype {name}`, which is `:setlocal filetype={name}` with one difference Vim cares about.
+ *
+ * Vim's version does nothing if the filetype has already been set, so a `FileType` autocommand that
+ * guesses cannot override one the user chose. There is nothing here yet that sets it behind the
+ * user's back, so this is the plain form, and the rule is written down rather than silently not
+ * implemented.
+ */
+internal class SetFiletypeCommand(range: Range, modifier: CommandModifier, private val name: String) :
+  Command.SingleExecution(range, modifier, name) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_FORBIDDEN, ArgumentFlag.ARGUMENT_REQUIRED, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    injector.optionGroup.setOptionValue(
+      VsCodeOptions.filetype,
+      OptionAccessScope.LOCAL(editor),
+      VimString(name.trim()),
+    )
+    applyLanguage(editor)
+    return ExecutionResult.Success
+  }
+}
+
+/** One of the commands VS Code answers for itself. See [AcceptedCommand]. */
+internal class AcceptedHostCommand(range: Range, modifier: CommandModifier, argument: String) :
+  AcceptedCommand(range, modifier, argument)
+
+/**
+ * `:cd`, `:lcd` and their kind.
+ *
+ * VS Code's working directory is the workspace folder, which it opens and an extension does not
+ * move. A window-local one, which is what `:lcd` asks for, has no counterpart at all.
+ */
+internal class WorkingDirectoryCommand(range: Range, modifier: CommandModifier, argument: String) :
+  AcceptedCommand(range, modifier, argument) {
+  override fun contradiction(argument: String): String? =
+    if (argument.isEmpty()) {
+      null
+    } else {
+      "VS Code's working directory is the workspace folder and an extension cannot move it, " +
+        "so `:cd $argument` did nothing."
+    }
+}

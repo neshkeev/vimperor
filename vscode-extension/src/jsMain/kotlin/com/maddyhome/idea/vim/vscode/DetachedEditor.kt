@@ -103,6 +103,7 @@ private class DetachedDocument : TextDocument {
 
   override val fileName: String get() = uri.path
   override val isUntitled: Boolean = true
+  override val languageId: String = "plaintext"
   override val isDirty: Boolean = false
   override val eol: Int = EndOfLine.LF
   override val lineCount: Int get() = text.count { it == '\n' } + 1

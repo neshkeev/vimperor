@@ -234,6 +234,9 @@ external class Range(start: Position, end: Position) {
 external interface TextDocument {
   val uri: Uri
   val fileName: String
+
+  /** VS Code's language mode, which is `'filetype'` and `'syntax'` in one. See [languages]. */
+  val languageId: String
   val lineCount: Int
   val isUntitled: Boolean
 
@@ -468,6 +471,18 @@ external class TabInputText {
 external object EndOfLine {
   val LF: Int
   val CRLF: Int
+}
+
+/**
+ * Language modes, of which VS Code has one where Vim has two.
+ *
+ * Vim's `'filetype'` decides which plugins and indent rules apply and `'syntax'` decides only how
+ * the text is coloured, and either can be set without the other. VS Code has a single language
+ * mode that does both, so both options land here - `set syntax=java` gets Java's highlighting *and*
+ * its language server, which is more than Vim would have done and is what a VS Code user means.
+ */
+external object languages {
+  fun setTextDocumentLanguage(document: TextDocument, languageId: String): Thenable<TextDocument>
 }
 
 /** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */

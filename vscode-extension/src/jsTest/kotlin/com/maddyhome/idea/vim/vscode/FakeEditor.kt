@@ -36,6 +36,10 @@ class FakeDocument(text: String, path: String = "/test/buffer.txt") : TextDocume
   override val fileName: String get() = uri.fsPath
   override val isUntitled: Boolean = false
 
+  /** VS Code's language mode, which `'filetype'` and `'syntax'` write through `languages`. */
+  override var languageId: String = "plaintext"
+    internal set
+
   /** Set by a test that wants to model an editor with unsaved changes. */
   override var isDirty: Boolean = false
 

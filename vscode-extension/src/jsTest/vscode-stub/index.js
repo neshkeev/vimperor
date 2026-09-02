@@ -167,6 +167,18 @@ const commands = {
   },
 }
 
+/*
+ * Language modes. `'filetype'` and `'syntax'` write through here, and a test reads back what was
+ * asked for - the real one hands back a *new* document for the same file, which is why nothing
+ * waits for it.
+ */
+const languages = {
+  setTextDocumentLanguage(document, languageId) {
+    document.languageId = languageId
+    return { then: (onFulfilled) => (onFulfilled && onFulfilled(document), { then: () => {} }) }
+  },
+}
+
 const env = {
   /** What `gx` and `:help` handed to the operating system, so a test can read it back. */
   opened: [],
@@ -231,4 +243,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, openedDocuments }
+module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }

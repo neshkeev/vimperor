@@ -172,15 +172,26 @@ hidden fallback window and the first real editor is initialised from it, and eve
 from the one that was active. Before that, every editor was initialised to the option defaults and
 `set nu rnu` numbered exactly one window.
 
+`'filetype'` and `'syntax'` work too, and they are one setting here: VS Code's language mode does
+both jobs, so `set syntax=java` gets Java's language server as well as its colours - more than Vim
+would have done, and what a VS Code user means by it. `:setfiletype` is the same thing.
+
 The rest of a `~/.vimrc` is accepted rather than implemented, and that distinction is the whole of
 `VsCodeOptions`. `set expandtab`, `set laststatus=2` and `syntax on` name things VS Code has already
 decided - indentation it resolves per language and per file, a status bar and a highlighter it draws
 itself - and an option or command that is not declared is not ignored, it is `E518` or `E492`. A
 `~/.vimrc` sourced from an `.ideavimrc` is thirty of those, which is a config that stops being read.
-So 58 options and 9 commands are declared, do nothing, and say nothing; the exceptions are the forms
-that ask for something VS Code contradicts, like `:syntax off`, which say so. The cost is honest:
-`:set expandtab?` answers with what was set rather than with what the editor is doing. IdeaVim's
-`IjOptions` has the same group for the same reason.
+So 134 options and 21 commands are declared, do nothing, and say nothing; the exceptions are the
+forms that ask for something VS Code contradicts, like `:syntax off` and `:cd`, which say so. The
+cost is honest: `:set expandtab?` answers with what was set rather than with what the editor is
+doing. IdeaVim's `IjOptions` has the same group for the same reason.
+
+What a config can still say and this host reports `E492` for is a list in `VsCodeOptionsTest`,
+measured by typing every candidate at the prompt rather than guessed at. `:silent!` is the one worth
+having next - it is the standard way a portable config guards something optional, and it is a
+grammar-level *modifier* rather than a command, so it belongs in `vim-engine` beside `:verbose` and
+`:noautocmd`. After that `:unlet`, and then the window and buffer commands - `:enew`, `:tabnew`,
+`:wincmd`, `:bufdo` - which this host could answer with the VS Code commands it already sends.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
