@@ -88,6 +88,7 @@ internal val VsCodeEditor.screenBottomLine: Int
 internal fun VsCodeEditor.scrollLineToTop(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
   val at = Position(target, 0)
+  logReveal("AtTop", target)
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.AtTop)
   rememberRevealed(target)
 }
@@ -105,6 +106,11 @@ private fun VsCodeEditor.rememberRevealed(top: Int) {
   lastReportedTopLine = reportedTopLine
 }
 
+/** Records a reveal for the trace: what was asked for, and what the editor was showing when asked. */
+private fun VsCodeEditor.logReveal(kind: String, line: Int) {
+  if (revealLog.size < 12) revealLog += "$kind@$line(saw ${reportedTopLine}..${reportedBottomLine})"
+}
+
 /**
  * Brings [line] onto the screen if it is not already, and leaves the view alone if it is.
  *
@@ -116,6 +122,7 @@ internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
   val at = Position(target, 0)
   val top = screenTopLine
   val height = screenHeight
+  logReveal("IfOutside", target)
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenterIfOutsideViewport)
   rememberRevealed(if (target < top || target > top + height - 1) target - (height - 1) / 2 else top)
 }
@@ -134,6 +141,7 @@ internal fun VsCodeEditor.scrollLineToMiddle(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
   val at = Position(target, 0)
   val height = screenHeight
+  logReveal("InCenter", target)
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenter)
   rememberRevealed(target - (height - 1) / 2)
 }
@@ -190,6 +198,7 @@ internal object RevealingScrollGroup : VimScrollGroup {
     val at = Position(position.line, position.column)
     val top = vsCode.screenTopLine
     val height = vsCode.screenHeight
+    vsCode.logReveal("Default", position.line)
     vsCode.nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
     // Default is the smallest scroll that brings the line on screen, which is usually none at all.
     vsCode.rememberRevealed(

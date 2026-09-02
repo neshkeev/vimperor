@@ -69,6 +69,15 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   internal var lastReportedTopLine: Int? = null
 
   /**
+   * Every `revealRange` this host asked for since the last keystroke, for the trace.
+   *
+   * A scroll command's only lever is the reveal, and a window has now twice disagreed with what
+   * this host believed a reveal did. So the asks themselves are recorded - the line, the type, and
+   * what the editor was reporting at the time - rather than reasoned about from a distance.
+   */
+  internal val revealLog: MutableList<String> = mutableListOf()
+
+  /**
    * What was last pushed to VS Code, so that the event it fires in response is not read back.
    *
    * Setting selections makes VS Code report a selection change, and it reports it later rather than

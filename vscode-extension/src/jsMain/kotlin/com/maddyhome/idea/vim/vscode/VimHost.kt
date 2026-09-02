@@ -358,7 +358,12 @@ class VimHost(
     // seeing too: the fallbacks for it claim the whole file is on screen.
     val ranges = textEditor.visibleRanges
     val view = if (ranges.isEmpty()) "none" else ranges.joinToString(",") { "${it.start.line}..${it.end.line}" }
-    return "${modeName()} carets=[$carets] pushed=[$pushed] view=[$view] of ${editor.lineCount()}"
+    // What this host asked the view to do while the key was being handled, and in what order. A
+    // scroll command's only lever is the reveal, so when the window disagrees this is the evidence.
+    val asked = if (editor.revealLog.isEmpty()) "" else " reveals=[" + editor.revealLog.joinToString(" ") + "]"
+    editor.revealLog.clear()
+    val believed = editor.revealedTopLine?.let { " believedTop=$it" } ?: ""
+    return "${modeName()} carets=[$carets] pushed=[$pushed] view=[$view] of ${editor.lineCount()}$believed$asked"
   }
 
   /**
