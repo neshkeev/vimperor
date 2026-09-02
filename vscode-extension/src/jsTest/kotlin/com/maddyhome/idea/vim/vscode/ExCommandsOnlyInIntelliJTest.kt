@@ -37,7 +37,9 @@ class ExCommandsOnlyInIntelliJTest {
     val root = repositoryRoot()
     assertTrue(root != null, "could not find the repository root, so the sources could not be read")
 
-    val registered = engineExCommandProvider.getCommands().keys
+    // Both registries: a command IdeaVim declares in its module is not missing here if this host
+    // declares its own, which is what `:actionlist` and the tutor do.
+    val registered = engineExCommandProvider.getCommands().keys + VsCodeExCommandProvider.getCommands().keys
     val onlyInIntelliJ = mutableListOf<String>()
     for (path in kotlinFilesUnder(root!! + "/src/main")) {
       for (match in EX_COMMAND.findAll(readText(path))) {
@@ -65,14 +67,26 @@ class ExCommandsOnlyInIntelliJTest {
     assertTrue("!" !in EXPECTED, ":! should not still be listed as IntelliJ-only")
   }
 
+  /** ...and so does a command this host declares for itself rather than sharing. */
+  @Test
+  fun `test a command this host declares of its own is not listed either`() {
+    assertTrue(
+      "actionl[ist]" in VsCodeExCommandProvider.getCommands().keys,
+      ":actionlist should be registered by this host's provider",
+    )
+    assertTrue("actionl" !in EXPECTED, ":actionlist should not still be listed as IntelliJ-only")
+  }
+
   private companion object {
     val EX_COMMAND = Regex("""@ExCommand\(command\s*=\s*"([^"]*)"""")
 
     /**
      * Each of these needs something VS Code does not offer, or offers only asynchronously.
      *
-     * `:actionlist` lists IntelliJ's actions by id. VS Code's equivalent is `getCommands`, which
-     * returns a promise - and this host already prints the ones it uses at activation.
+     * `:actionlist` was on this list, with the reason that VS Code's equivalent - `getCommands` -
+     * returns a promise. It does, and the promise is answered once at activation and the answer
+     * kept, which is all the command needed. It is this host's own now, declared through
+     * `commandProviders` next to the tutor, so it is registered above and not listed here.
      *
      * `:resize` and `:vertical` size a split. VS Code has no API for the size of an editor group -
      * only commands to grow or shrink one by an unspecified amount.
@@ -81,12 +95,11 @@ class ExCommandsOnlyInIntelliJTest {
      * tabs rather than buffers, and its tab model does not carry the modified/loaded state Vim
      * prints in that table". The first clause is a difference that does not matter and the second
      * was wrong: `Tab.isDirty` and `Tab.isActive` are Vim's `+` and `%`. They are engine commands
-     * now. That makes three of these notes that turned out to be about which API had been looked at
+     * now. That makes four of these notes that turned out to be about which API had been looked at
      * rather than about VS Code, so a line here is a claim to be checked, not a decision that is
      * already made.
      */
     val EXPECTED = """
-      actionl[ist]
       res[ize]
       vert[ical]
     """.trimIndent()

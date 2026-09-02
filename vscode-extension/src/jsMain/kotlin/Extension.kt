@@ -203,7 +203,13 @@ fun activate(context: ExtensionContext) {
   // the tests assert the string, and the stub answers to whatever the string says. This asks the
   // real VS Code, and it is deliberately not fatal - a missing id costs one Vim command, and
   // refusing to start over it would cost all of them.
-  commands.getCommands(filterInternal = true).then({ available ->
+  //
+  // The answer is also the whole of what `:action` and `:actionlist` can offer, so it is kept -
+  // `filterInternal = false` because a user typing `:action` is entitled to everything this editor
+  // can do, and VS Code's idea of "internal" is a leading underscore rather than a promise that the
+  // command is unusable.
+  commands.getCommands(filterInternal = false).then({ available ->
+    vim.rememberActions(available.toList())
     val missing = VsCodeCommands.missingFrom(available.toList())
     if (missing.isEmpty()) {
       output.appendLine("Checked ${VsCodeCommands.all.size} VS Code commands; this VS Code has all of them.")

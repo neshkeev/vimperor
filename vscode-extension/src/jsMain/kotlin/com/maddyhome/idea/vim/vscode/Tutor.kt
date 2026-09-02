@@ -199,5 +199,11 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
       TutorCommand::class,
       { range, modifier, argument -> TutorCommand(range, modifier, argument) },
     ),
+    // `actionl[ist]`, spelled the way IdeaVim spells it, so `:actionl` is enough and `:action`
+    // stays the engine's. See [ActionListCommand].
+    "actionl[ist]" to LazyExCommandInstance(
+      ActionListCommand::class,
+      { range, modifier, argument -> ActionListCommand(range, modifier, argument) },
+    ),
   )
 }

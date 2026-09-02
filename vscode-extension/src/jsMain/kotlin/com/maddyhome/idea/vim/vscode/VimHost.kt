@@ -337,6 +337,14 @@ class VimHost(
   }
 
   /**
+   * What VS Code answered when asked what commands it has, for `:action` and `:actionlist`.
+   *
+   * Asked once, at activation, because `commands.getCommands` returns a promise and both of those
+   * have to answer during a keystroke. See [VsCodeActionExecutor].
+   */
+  fun rememberActions(ids: Collection<String>) = vimInjector.rememberActions(ids)
+
+  /**
    * What the last keystroke left behind, for `ideavim.trace`.
    *
    * The mode, every caret with its selection, and what was handed to VS Code - which is the set of

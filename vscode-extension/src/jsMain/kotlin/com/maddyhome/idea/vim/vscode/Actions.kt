@@ -1,0 +1,226 @@
+/*
+ * Copyright 2026 Nikita Eshkeev
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE.txt file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+package com.maddyhome.idea.vim.vscode
+
+import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.NativeAction
+import com.maddyhome.idea.vim.api.VimActionExecutor
+import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.ex.ranges.Range
+import com.maddyhome.idea.vim.handler.EditorActionHandlerBase
+import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
+import com.maddyhome.idea.vim.vimscript.model.commands.Command
+import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
+
+/**
+ * Vim's own actions, and VS Code's commands as if they were IntelliJ's actions.
+ *
+ * IdeaVim gives a user `:action GotoClass`, `:actionlist` and `<Action>(Back)`, and behind all
+ * three is one idea: the editor has a named thing it can do, and Vim can name it. IntelliJ calls
+ * them actions and VS Code calls them commands, and the engine does not care which - it asks the
+ * host for the names it needs by [ACTION_COLLAPSE_REGION] and the rest, and passes everything else
+ * through from what the user typed.
+ *
+ * `executeVimAction` is the odd one out and the one that matters most: it is how `KeyHandler` runs
+ * the handler it found for a keystroke, and it is pure engine code with no host in it.
+ *
+ * [known] is the list of command ids this VS Code actually has, which is the only part that needs
+ * arranging. There is no synchronous way to ask - `commands.getCommands` returns a promise - so it
+ * is fetched once at activation and remembered here. Until it arrives every name is accepted, which
+ * is the right way round: a `:action` that runs and fails names the command in its error, and one
+ * refused because a list had not loaded yet would be a lie.
+ */
+internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimActionExecutor {
+
+  private var known: Set<String>? = null
+
+  /** Called once at activation, when VS Code has answered what commands it has. */
+  fun remember(ids: Collection<String>) {
+    known = ids.toSet()
+  }
+  override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
+  override val ACTION_COLLAPSE_ALL_REGIONS: String = VsCodeCommands.FOLD_ALL
+  override val ACTION_COLLAPSE_REGION: String = VsCodeCommands.FOLD
+  override val ACTION_COLLAPSE_REGION_RECURSIVELY: String = VsCodeCommands.FOLD_RECURSIVELY
+  override val ACTION_EXPAND_ALL_REGIONS: String = VsCodeCommands.UNFOLD_ALL
+  override val ACTION_EXPAND_REGION: String = VsCodeCommands.UNFOLD
+  override val ACTION_EXPAND_REGION_RECURSIVELY: String = VsCodeCommands.UNFOLD_RECURSIVELY
+  override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = VsCodeCommands.TOGGLE_FOLD
+  override val ACTION_UNDO: String = VsCodeCommands.UNDO
+  override val ACTION_REDO: String = VsCodeCommands.REDO
+  override val ACTION_GOTO_DECLARATION: String = VsCodeCommands.REVEAL_DEFINITION
+
+  override fun executeVimAction(
+    editor: VimEditor,
+    cmd: EditorActionHandlerBase,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ) {
+    // IntelliJ wraps this in its CommandProcessor so the change becomes one undoable unit. VS Code
+    // groups undo by edit, and the whole command reaches the document as a single edit, so the
+    // grouping IntelliJ needs a wrapper for is what this host gets for free.
+    cmd.execute(editor, context, operatorArguments)
+  }
+
+  override fun executeCommand(editor: VimEditor?, runnable: () -> Unit, name: String?, groupId: Any?) = runnable()
+
+  override fun executeAction(editor: VimEditor?, action: NativeAction, context: ExecutionContext): Boolean =
+    executeAction(editor, action)
+
+  /**
+   * The host's own actions, of which this host has exactly one - see
+   * [VsCodeInjector.nativeActionManager] for why Enter has to be one of them.
+   */
+  override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean {
+    // Before the editor is looked at, because a VS Code command is not addressed to one: it goes to
+    // whatever has focus, and `:action` from the fallback window is still a command worth running.
+    if (action is HostCommandAction) {
+      host.run(action.id)
+      return true
+    }
+    val vsCode = editor as? VsCodeEditor ?: return false
+    return when (action) {
+      is InsertNewLineAction -> {
+        // Vim's own `o` would indent the new line to match; `'autoindent'` is not wired up yet, so
+        // this is the newline and nothing else.
+        vsCode.typeAtCarets("\n")
+        true
+      }
+
+      is DeleteSelectionAction -> {
+        vsCode.deleteSelections()
+        true
+      }
+
+      else -> false
+    }
+  }
+
+  /**
+   * A VS Code command, by name.
+   *
+   * The engine reaches this for the folds - `za`, `zo`, `zc`, `zR`, `zM` - for `gd` and `<C-]>`,
+   * and for whatever a user puts in an `<Action>` mapping. IdeaVim's names are IntelliJ action ids
+   * and this host's are VS Code command ids; the engine does not care which, because it asks the
+   * host for the names it uses by [ACTION_COLLAPSE_REGION] and the rest.
+   *
+   * It waits. The result cannot be reported either way - `executeCommand` resolves a promise long
+   * after this has had to answer - so `true` here means "dispatched" and nothing more, in the same
+   * way `u` reports success it cannot check. But an `<Action>` mapping can name anything, including
+   * a reformat, so the conservative half of the decision is the right one: hold the keys.
+   */
+  override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean {
+    if (name.isEmpty()) return false
+    host.run(name)
+    return true
+  }
+
+  /**
+   * Whether the *host* consumed Escape. IntelliJ runs its own Escape action first, so that closing
+   * a completion popup does not also leave insert mode. VS Code settles that with `when` clauses in
+   * its keybindings rather than by asking an extension, so nothing is consumed here and the engine
+   * goes on to treat Escape as Vim's.
+   */
+  override fun executeEsc(editor: VimEditor, context: ExecutionContext): Boolean = false
+
+  /**
+   * A VS Code command, as the `NativeAction` the engine's `:action` asks for.
+   *
+   * `:action` looks the name up first and reports `Action not found` when this answers null, which
+   * is the whole reason this exists rather than dispatching blind: a typo should say so at the `:`
+   * prompt rather than half a second later in the output panel.
+   *
+   * Before the id list has arrived nothing can be ruled out, so nothing is - see [known].
+   */
+  override fun getAction(actionId: String): NativeAction? {
+    val id = actionId.trim()
+    if (id.isEmpty()) return null
+    val ids = known ?: return HostCommandAction(id)
+    return if (id in ids) HostCommandAction(id) else null
+  }
+
+  /**
+   * Every command this VS Code has, for `:actionlist`.
+   *
+   * Empty until the list has arrived, which `:actionlist` says out loud rather than printing an
+   * empty list and letting the reader conclude their editor can do nothing.
+   */
+  override fun getActionIdList(idPrefix: String): List<String> =
+    (known ?: emptySet()).filter { it.startsWith(idPrefix) }.sorted()
+
+  /** Vim's own actions are findable, because the registry holding them is the engine's. */
+  override fun findVimAction(id: String): EditorActionHandlerBase? =
+    engineCommandProvider.getCommands().firstOrNull { it.actionId == id }?.instance
+
+  override fun findVimActionOrDie(id: String): EditorActionHandlerBase =
+    findVimAction(id) ?: error("no Vim action with id $id")
+}
+
+
+/**
+ * One VS Code command, named.
+ *
+ * `NativeAction.action` is `Any` because only the host knows what it holds - IntelliJ puts an
+ * `AnAction` in it. This host has nothing to put but the id, since a command is only ever a string
+ * until it is executed.
+ */
+private data class HostCommandAction(val id: String) : NativeAction {
+  override val action: Any get() = id
+}
+
+/**
+ * `:actionlist [pattern]` - every command this VS Code has, filtered.
+ *
+ * IdeaVim's, in the terms this editor uses. The pattern is split on `*` and every piece has to
+ * appear in the line, case-insensitively, so `:actionlist git*commit` finds
+ * `git.commitStagedAll` - which is IdeaVim's rule and not a glob, whatever it looks like.
+ *
+ * What IdeaVim prints and this does not is the keystroke bound to each action. VS Code has no API
+ * that reads its own keybindings, so a shortcut column here would be blank or invented; the
+ * Keyboard Shortcuts editor is where they live and it can be searched by the same id.
+ *
+ * A host command rather than an engine one, for the same reason as [TutorCommand]: IdeaVim has its
+ * own `:actionlist`, in its own module, over `ActionManager`.
+ */
+data class ActionListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_FORBIDDEN, ArgumentFlag.ARGUMENT_OPTIONAL, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val ids = injector.actionExecutor.getActionIdList("")
+    if (ids.isEmpty()) {
+      injector.outputPanel.output(
+        editor,
+        context,
+        "Vimperor has not been told what commands this VS Code has yet, so there is nothing to " +
+          "list. It is asked once when the extension activates; reloading the window will ask again.",
+      )
+      return ExecutionResult.Success
+    }
+
+    val pattern = argument.trim().lowercase().split("*").filter { it.isNotEmpty() }
+    val matching = ids.filter { id -> pattern.all { it in id.lowercase() } }
+    val text = buildString {
+      appendLine(injector.messages.message("command.action.list.header"))
+      matching.forEach { appendLine(it) }
+      appendLine("--- ${matching.size} of ${ids.size} ---")
+    }
+    injector.outputPanel.output(editor, context, text)
+    return ExecutionResult.Success
+  }
+}

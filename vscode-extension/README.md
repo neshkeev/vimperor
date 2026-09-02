@@ -159,6 +159,14 @@ meant to be separate from the clipboard - doing it to the clipboard would wipe i
 `html` and `exclude:{pattern}` are X11 and GUI concerns and are no-ops for the same reason, which is
 what Vim does on a build without `+X11`. `ideaput` is IntelliJ's.
 
+`:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
+maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
+different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes
+`:action workbench.action.quickOpen`, and `:actionlist quickopen` is how you find that out. A name
+this VS Code does not have is reported at the `:` prompt rather than failing silently, from the
+command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
+each one - VS Code has no API that reads its own keybindings.
+
 `:registers` and `:marks` print to the *IdeaVim* output channel. Vim's output panel takes over the
 screen and then takes keys - space pages, `q` closes - and VS Code has no equivalent that does not
 fight the editor for focus, so this prints and gets out of the way. Typing carries on working while

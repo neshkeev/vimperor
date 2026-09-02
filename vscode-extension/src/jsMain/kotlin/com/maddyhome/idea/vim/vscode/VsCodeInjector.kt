@@ -812,7 +812,18 @@ open class VsCodeInjector(
     }
   }
 
-  override val actionExecutor: VimActionExecutor by lazy { VimOnlyActionExecutor(hostCommands) }
+  /**
+   * `<Action>` mappings, `:action` and `:actionlist` - and the folds, `gd` and Vim's own actions.
+   *
+   * Held at its own type as well as the interface's, because [rememberActions] has to reach past
+   * `VimActionExecutor`: the list of what VS Code can do arrives over a promise at activation and
+   * there is nowhere in the engine's interface to put it.
+   */
+  private val actions: VsCodeActionExecutor by lazy { VsCodeActionExecutor(hostCommands) }
+  override val actionExecutor: VimActionExecutor get() = actions
+
+  /** What VS Code answered when asked what commands it has. See [VsCodeActionExecutor]. */
+  internal fun rememberActions(ids: Collection<String>) = actions.remember(ids)
 
   // ---- Reachable only asynchronously, and therefore not yet reachable at all.
 
@@ -1309,106 +1320,6 @@ private class NodeTimer(override var delayMillis: Int) : VimTimer {
 }
 
 /**
- * Runs Vim's own actions, and only those.
- *
- * `executeVimAction` is the one that matters: it is how `KeyHandler` runs the handler it found, and
- * it is pure engine code. The rest are about the *host's* actions, and VS Code's are commands -
- * `executeCommand` returns a promise, so whether one succeeded is not knowable in time to answer.
- * That is what `<Action>` mappings will have to solve.
- */
-private class VimOnlyActionExecutor(private val host: HostCommandRunner) : VimActionExecutor {
-  override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
-  override val ACTION_COLLAPSE_ALL_REGIONS: String = VsCodeCommands.FOLD_ALL
-  override val ACTION_COLLAPSE_REGION: String = VsCodeCommands.FOLD
-  override val ACTION_COLLAPSE_REGION_RECURSIVELY: String = VsCodeCommands.FOLD_RECURSIVELY
-  override val ACTION_EXPAND_ALL_REGIONS: String = VsCodeCommands.UNFOLD_ALL
-  override val ACTION_EXPAND_REGION: String = VsCodeCommands.UNFOLD
-  override val ACTION_EXPAND_REGION_RECURSIVELY: String = VsCodeCommands.UNFOLD_RECURSIVELY
-  override val ACTION_EXPAND_COLLAPSE_TOGGLE: String = VsCodeCommands.TOGGLE_FOLD
-  override val ACTION_UNDO: String = VsCodeCommands.UNDO
-  override val ACTION_REDO: String = VsCodeCommands.REDO
-  override val ACTION_GOTO_DECLARATION: String = VsCodeCommands.REVEAL_DEFINITION
-
-  override fun executeVimAction(
-    editor: VimEditor,
-    cmd: EditorActionHandlerBase,
-    context: ExecutionContext,
-    operatorArguments: OperatorArguments,
-  ) {
-    // IntelliJ wraps this in its CommandProcessor so the change becomes one undoable unit. VS Code
-    // groups undo by edit, and the whole command reaches the document as a single edit, so the
-    // grouping IntelliJ needs a wrapper for is what this host gets for free.
-    cmd.execute(editor, context, operatorArguments)
-  }
-
-  override fun executeCommand(editor: VimEditor?, runnable: () -> Unit, name: String?, groupId: Any?) = runnable()
-
-  override fun executeAction(editor: VimEditor?, action: NativeAction, context: ExecutionContext): Boolean =
-    executeAction(editor, action)
-
-  /**
-   * The host's own actions, of which this host has exactly one - see
-   * [VsCodeInjector.nativeActionManager] for why Enter has to be one of them.
-   */
-  override fun executeAction(editor: VimEditor?, action: NativeAction): Boolean {
-    val vsCode = editor as? VsCodeEditor ?: return false
-    return when (action) {
-      is InsertNewLineAction -> {
-        // Vim's own `o` would indent the new line to match; `'autoindent'` is not wired up yet, so
-        // this is the newline and nothing else.
-        vsCode.typeAtCarets("\n")
-        true
-      }
-
-      is DeleteSelectionAction -> {
-        vsCode.deleteSelections()
-        true
-      }
-
-      else -> false
-    }
-  }
-
-  /**
-   * A VS Code command, by name.
-   *
-   * The engine reaches this for the folds - `za`, `zo`, `zc`, `zR`, `zM` - for `gd` and `<C-]>`,
-   * and for whatever a user puts in an `<Action>` mapping. IdeaVim's names are IntelliJ action ids
-   * and this host's are VS Code command ids; the engine does not care which, because it asks the
-   * host for the names it uses by [ACTION_COLLAPSE_REGION] and the rest.
-   *
-   * It waits. The result cannot be reported either way - `executeCommand` resolves a promise long
-   * after this has had to answer - so `true` here means "dispatched" and nothing more, in the same
-   * way `u` reports success it cannot check. But an `<Action>` mapping can name anything, including
-   * a reformat, so the conservative half of the decision is the right one: hold the keys.
-   */
-  override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean {
-    if (name.isEmpty()) return false
-    host.run(name)
-    return true
-  }
-
-  /**
-   * Whether the *host* consumed Escape. IntelliJ runs its own Escape action first, so that closing
-   * a completion popup does not also leave insert mode. VS Code settles that with `when` clauses in
-   * its keybindings rather than by asking an extension, so nothing is consumed here and the engine
-   * goes on to treat Escape as Vim's.
-   */
-  override fun executeEsc(editor: VimEditor, context: ExecutionContext): Boolean = false
-
-  override fun getAction(actionId: String): NativeAction? = null
-  override fun getActionIdList(idPrefix: String): List<String> = emptyList()
-
-  /** Vim's own actions are findable, because the registry holding them is the engine's. */
-  override fun findVimAction(id: String): EditorActionHandlerBase? =
-    engineCommandProvider.getCommands().firstOrNull { it.actionId == id }?.instance
-
-  override fun findVimActionOrDie(id: String): EditorActionHandlerBase =
-    findVimAction(id) ?: error("no Vim action with id $id")
-}
-
-
-/**
  * For a host with nowhere to put output.
  *
  * `:registers` produces its text and it goes nowhere, which is what a host without a panel can
@@ -1444,7 +1355,7 @@ private object NoDisplay : CommandLineDisplay {
 }
 
 /** Pressing Enter, which `o` and `O` reach for through the host rather than doing themselves. */
-private object InsertNewLineAction : NativeAction {
+internal object InsertNewLineAction : NativeAction {
   override val action: Any = "ideavim.insertNewLine"
 }
 
@@ -1455,7 +1366,7 @@ private object InsertNewLineAction : NativeAction {
  * Select mode, rather than deleting the selection itself - because a host might have something else
  * bound there. This host has not, so the action is the deletion.
  */
-private object DeleteSelectionAction : NativeAction {
+internal object DeleteSelectionAction : NativeAction {
   override val action: Any = "ideavim.deleteSelection"
 }
 
