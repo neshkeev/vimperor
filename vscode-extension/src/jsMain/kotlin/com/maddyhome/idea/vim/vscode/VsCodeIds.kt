@@ -40,6 +40,22 @@ internal object VsCodeCommands {
 
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
+  /**
+   * Moves the view by a number of lines, which is the only API that does exactly that.
+   *
+   * `revealRange` is the other half of VS Code's scrolling API and the obvious thing to reach for,
+   * and it is the wrong shape twice over. It says where a *range* should end up rather than where
+   * the view should be, and a real window put every `AtTop` request five lines above the line it
+   * named - measured, over sixty reveals, in a window whose reported viewport was nineteen lines
+   * tall. `editorScroll` has no such arithmetic to disagree about: it moves the scroll position by
+   * the number of lines it is given.
+   *
+   * It takes an object argument - `{to, by, value, revealCursor}` - and acts on the *focused*
+   * editor rather than on the one it is handed, because it is not handed one. Every scroll here
+   * happens while the user is typing into the editor being scrolled, so that is the same editor.
+   */
+  const val EDITOR_SCROLL = "editorScroll"
+
   /** `:e file`. One of the few built-ins that takes an argument, which is why the runner carries one. */
   const val OPEN = "vscode.open"
 
@@ -88,7 +104,7 @@ internal object VsCodeCommands {
   val all: List<String> = listOf(
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
-    REVEAL_DEFINITION, OPEN,
+    REVEAL_DEFINITION, EDITOR_SCROLL, OPEN,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

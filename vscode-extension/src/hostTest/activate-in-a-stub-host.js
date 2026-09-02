@@ -165,6 +165,14 @@ function makeEditor(text) {
       else top = this.topLine
       this.topLine = Math.min(Math.max(top, 0), last)
     },
+    // VS Code's `editorScroll`, which is what actually moves the view here - `revealRange` is not
+    // used by the extension any more. It arrives through `commands.executeCommand` because that is
+    // where VS Code puts it: it acts on the focused editor rather than on one it is handed.
+    editorScroll(args) {
+      const last = document.lineCount - 1
+      const signed = args.to === 'up' ? -args.value : args.value
+      this.topLine = Math.min(Math.max(this.topLine + signed, 0), last)
+    },
     decorations: new Map(),
     setDecorations(type, ranges) {
       this.decorations.set(type, ranges)
@@ -289,6 +297,12 @@ const vscode = {
       // other scenarios assert on exactly.
       if (command === 'setContext') {
         contextsSet.push(args)
+        return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+      }
+      // Scrolling is the view moving, not a command the extension is asking VS Code to perform on
+      // its behalf, so it goes to the editor and stays out of the list the other scenarios assert.
+      if (command === 'editorScroll') {
+        editor.editorScroll(args[0])
         return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
       }
       dispatchedCommands.push(command)
@@ -505,10 +519,10 @@ assert.strictEqual(
 )
 
 // Scrolling, which is the one thing in this file that needs the stub to have a viewport at all.
-// Vim moves the view and VS Code will only reveal a range, so every scroll command reads
-// `visibleRanges` back to work out where to reveal next - and a stub whose view never moved would
-// let all of them pass while doing nothing. Twenty lines, a ten-line window: `<C-E>` moves the view
-// down one and leaves the caret where it was, and `zt` puts the caret's line at the top.
+// Vim moves the view relative to where it already is, so every scroll command reads `visibleRanges`
+// back to work out how far to go - and a stub whose view never moved would let all of them pass
+// while doing nothing. Twenty lines, a ten-line window: `<C-E>` moves the view down one and leaves
+// the caret where it was, and `zt` puts the caret's line at the top.
 reset()
 type('i')
 for (let line = 0; line < 20; line++) {

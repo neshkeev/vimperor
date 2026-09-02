@@ -57,25 +57,26 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * Vim owns the view: `<C-E>` means "the window is now one line further down", and the next
    * `<C-E>` has to build on that. This host asked `visibleRanges` instead, which is VS Code's
    * answer to a different question - where the view has been *painted* - and in a real window that
-   * answer did not follow a `revealRange` at all. `oldTop` stayed 0 forever, so every `<C-E>`
-   * recomputed the same target and `<C-Y>` clamped to 0 and refused. Both keys did nothing, on a
-   * 924-line file, with the view reporting `0..13` after every press.
+   * answer did not follow a scroll at all. `oldTop` stayed 0 forever, so every `<C-E>` recomputed
+   * the same target and `<C-Y>` clamped to 0 and refused. Both keys did nothing, on a 924-line
+   * file, with the view reporting `0..13` after every press.
    *
    * So the intention is remembered here and believed until VS Code contradicts it. A reported top
    * that differs from the last one seen is the editor saying where it actually is - because the
    * user scrolled, or because it caught up - and that is adopted. Anything else keeps Vim's answer.
    */
-  internal var revealedTopLine: Int? = null
+  internal var believedTopLine: Int? = null
   internal var lastReportedTopLine: Int? = null
 
   /**
-   * Every `revealRange` this host asked for since the last keystroke, for the trace.
+   * Every scroll this host asked for since the last keystroke, for the trace.
    *
-   * A scroll command's only lever is the reveal, and a window has now twice disagreed with what
-   * this host believed a reveal did. So the asks themselves are recorded - the line, the type, and
-   * what the editor was reporting at the time - rather than reasoned about from a distance.
+   * A window has now three times disagreed with what this host believed a scroll did, and each time
+   * it was this log that said so. So the asks themselves are recorded - where the view was believed
+   * to be, where it was sent, and what the editor was reporting at the time - rather than reasoned
+   * about from a distance.
    */
-  internal val revealLog: MutableList<String> = mutableListOf()
+  internal val scrollLog: MutableList<String> = mutableListOf()
 
   /**
    * What was last pushed to VS Code, so that the event it fires in response is not read back.

@@ -826,13 +826,11 @@ open class VsCodeInjector(
   /**
    * Keeping the caret on screen, which is the one every command reaches after moving one.
    *
-   * `revealRange` is the whole of VS Code's scrolling API for an extension: it takes a range and
-   * puts it on screen, and there is no way to scroll by a line or a page. Vim's `<C-E>`, `<C-D>`
-   * and `zt` are all defined the other way round - move the *view* and let the caret follow - so
-   * they need `visibleRanges` to work out where the view currently is, and are left naming
-   * themselves until something asks.
+   * Vim's `<C-E>`, `<C-D>` and `zt` all move the *view* and let the caret follow, so they need
+   * `visibleRanges` to work out where the view currently is and `editorScroll` to move it. See
+   * [Viewport.kt] for why the reveal API that looks written for this is not used.
    */
-  override val scroll: VimScrollGroup by lazy { RevealingScrollGroup }
+  override val scroll: VimScrollGroup by lazy { VsCodeScrollGroup }
 
   /**
    * Undo, in the two halves the engine asks about separately.

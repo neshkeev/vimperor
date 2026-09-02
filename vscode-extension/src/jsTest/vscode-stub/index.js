@@ -144,9 +144,24 @@ const window = {
   showInformationMessage: () => undefined,
 }
 
+/*
+ * Commands, which is how the view is scrolled.
+ *
+ * `editorScroll` acts on whatever editor has focus rather than on one it is handed, so there is
+ * nothing on an editor object for a test to reach for. `handlers` is that focus: a `FakeEditor`
+ * installs itself as it is built, and the last one built answers - which is the same rule VS Code
+ * follows, and the reason a scroll issued for a background editor would go to the wrong window.
+ */
 const commands = {
   registerCommand: () => ({ dispose() {} }),
-  executeCommand: () => ({ then: () => {} }),
+  handlers: {},
+  executed: [],
+  executeCommand(command, ...args) {
+    commands.executed.push(command)
+    const handler = commands.handlers[command]
+    const result = handler ? handler(...args) : undefined
+    return { then: (onFulfilled) => (onFulfilled && onFulfilled(result), { then: () => {} }) }
+  },
 }
 
 const env = {

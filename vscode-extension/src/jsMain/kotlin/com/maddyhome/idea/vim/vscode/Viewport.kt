@@ -14,6 +14,8 @@ import com.maddyhome.idea.vim.api.VimScrollGroup
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.normalizeLine
 import com.maddyhome.idea.vim.api.options
+import kotlin.js.json
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 
@@ -22,15 +24,22 @@ import kotlin.math.min
  *
  * Vim and VS Code disagree about what scrolling is. In Vim the view is the thing you move -
  * `<C-E>` moves it down a line, `zt` puts the current line at the top - and the caret comes along
- * only if it would otherwise fall off. VS Code's extension API has no such verb: `revealRange`
- * takes a range and a hint about where to put it, and there is nothing that scrolls by a line.
+ * only if it would otherwise fall off. `TextEditor.revealRange`, the API an extension is pointed
+ * at, says where a *range* should end up instead, and leaves the rest to the editor.
  *
- * The two are reconcilable because `visibleRanges` completes the conversation. Read the view, do
- * Vim's arithmetic on line numbers, and ask for the line that should end up at the top to be
- * revealed `AtTop`. Every vertical scroll in Vim reduces to that one call.
+ * That difference is not academic. A real window put every `AtTop` reveal five lines above the line
+ * it named, consistently, over sixty of them: `zt` on line 18 left the view at 13, and `<C-E>` -
+ * which asks for one line further down than it believes it is - walked the view four lines
+ * *backwards* per press. Whatever the five lines are (sticky scroll, a surrounding-lines setting,
+ * an editor padding), a reveal is a request to be interpreted and this one was interpreted.
+ *
+ * So nothing here reveals any more. [VsCodeEditor.scrollViewTo] is the single primitive, and it is
+ * `editorScroll` - VS Code's own "move the view by N lines", which has no range to reason about
+ * and nothing to be five lines out by. Every vertical scroll in Vim reduces to it, and the
+ * arithmetic that decides N is Vim's own, in line numbers, here.
  *
  * Columns do not. `visibleRanges` is line ranges only - there is no horizontal viewport to read and
- * no way to scroll sideways - so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` are the one group here that
+ * `editorScroll` moves only up and down - so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` are the group that
  * cannot be written rather than merely not written yet. They report failure, which is what Vim does
  * when a scroll has nowhere to go.
  */
@@ -51,18 +60,18 @@ private val VsCodeEditor.reportedBottomLine: Int
  * top line asked for is remembered, and kept until the editor reports a different one from the last
  * it reported, which is it saying where the view really is.
  *
- * See [VsCodeEditor.revealedTopLine] for what that cost.
+ * See [VsCodeEditor.believedTopLine] for what that cost.
  */
 internal val VsCodeEditor.screenTopLine: Int
   get() {
     val reported = reportedTopLine
     if (reported != lastReportedTopLine) {
-      // The editor has moved of its own accord - the user scrolled, or it caught up with a reveal.
+      // The editor has moved of its own accord - the user scrolled, or it caught up with a scroll.
       lastReportedTopLine = reported
-      revealedTopLine = null
+      believedTopLine = null
       return reported
     }
-    return revealedTopLine ?: reported
+    return believedTopLine ?: reported
   }
 
 /**
@@ -85,90 +94,72 @@ internal val VsCodeEditor.screenBottomLine: Int
   get() = min(screenTopLine + screenHeight - 1, max(0, lineCount() - 1))
 
 /**
- * Scrolls so that [line] is the first line on screen, as far as the end of the file allows.
+ * Moves the window so that [line] is its first line, as far as the end of the file allows.
  *
- * Reveals a range one window tall rather than the single line it names, and still asks for `AtTop`.
+ * The one thing in this file that moves the view, and the reason it takes a line number rather than
+ * a delta is that every Vim scroll is easier to say that way: `zt` names a line, `<C-E>` names one
+ * more than the top, a page names a window's worth further on. The delta this sends is worked out
+ * against [screenTopLine] - Vim's belief - so a run of presses composes even while VS Code has not
+ * repainted once.
  *
- * `AtTop` is the API written for exactly this - "the range will always be revealed at the top of
- * the viewport" - and a trace from a real window shows it doing nothing whatsoever: `AtTop@1`
- * through `AtTop@6` requested over six consecutive keystrokes with the view answering `0..18`
- * throughout, while `InCenter` from `zz` and `Default` from `j` moved that same window exactly as
- * asked. Whether the enum value is not arriving or the editor is declining it is not yet known.
+ * A previous version of this asked `revealRange` for the line `AtTop`, which is the API written for
+ * exactly this and which a real window answered five lines out, every time. `editorScroll` is not a
+ * request about a range: it moves the scroll position by the number of lines it is given, and the
+ * only thing that can move it somewhere else is the end of the document.
  *
- * The range is what makes this work either way. `Default` - which is what an unrecognised reveal
- * type falls back to, and which that window honours - is the smallest scroll that brings a range
- * into view, and a range one window tall can only be brought into view by putting its first line
- * at the top. So the request is correct for an editor that honours `AtTop` and lands in the same
- * place on one that does not.
- *
- * The exception is the last window of a file, where the range is clipped and the fallback can only
- * bring the file's end to the bottom. `AtTop` has no such limit, which is why it is still asked
- * for rather than replaced.
+ * That is also the one drift left. With `editor.scrollBeyondLastLine` turned off VS Code will
+ * refuse to put the last line at the top and this will believe it did - until the editor reports a
+ * top that contradicts it, which [screenTopLine] adopts.
  */
-internal fun VsCodeEditor.scrollLineToTop(line: Int) {
+internal fun VsCodeEditor.scrollViewTo(line: Int) {
   val lastLine = max(0, lineCount() - 1)
   val target = line.coerceIn(0, lastLine)
-  val windowBottom = min(target + screenHeight - 1, lastLine)
-  logReveal("Top", target)
-  nativeEditor.revealRange(
-    Range(Position(target, 0), Position(windowBottom, 0)),
-    TextEditorRevealType.AtTop,
+  val from = screenTopLine
+  val delta = target - from
+  if (delta == 0) return
+  logScroll(from, target)
+  commands.executeCommand(
+    VsCodeCommands.EDITOR_SCROLL,
+    json(
+      "to" to if (delta > 0) "down" else "up",
+      "by" to "line",
+      "value" to abs(delta),
+      // Vim decides where the caret goes; the callers below do it explicitly, and letting VS Code
+      // drag it too would fight them.
+      "revealCursor" to false,
+    ),
   )
-  rememberRevealed(target)
-}
-
-/**
- * Records where a reveal has put the top of the window.
- *
- * Every reveal has to do this, not only the one that names a top line: they all move the view, and
- * a command that moved it without saying so would leave the next one building on a position two
- * commands out of date. The arithmetic for each type is VS Code's own, and the same arithmetic
- * [FakeEditor] models.
- */
-private fun VsCodeEditor.rememberRevealed(top: Int) {
-  revealedTopLine = top.coerceIn(0, max(0, lineCount() - 1))
+  believedTopLine = target
   lastReportedTopLine = reportedTopLine
 }
 
-/** Records a reveal for the trace: what was asked for, and what the editor was showing when asked. */
-private fun VsCodeEditor.logReveal(kind: String, line: Int) {
-  if (revealLog.size < 12) revealLog += "$kind@$line(saw ${reportedTopLine}..${reportedBottomLine})"
+/**
+ * Records a scroll for the trace: where the view was believed to be, where it was sent, and what VS
+ * Code was reporting at the time.
+ */
+private fun VsCodeEditor.logScroll(from: Int, to: Int) {
+  if (scrollLog.size < 12) scrollLog += "$from->$to(saw ${reportedTopLine}..${reportedBottomLine})"
 }
 
 /**
  * Brings [line] onto the screen if it is not already, and leaves the view alone if it is.
  *
- * `InCenterIfOutsideViewport` is exactly Vim's behaviour for a search: typing a pattern does not
- * scroll the window while the match you are heading for is already visible.
+ * The "if it is not already" is Vim's behaviour for a search: typing a pattern does not scroll the
+ * window while the match you are heading for is already visible.
  */
 internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
-  val at = Position(target, 0)
   val top = screenTopLine
   val height = screenHeight
-  logReveal("IfOutside", target)
-  nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenterIfOutsideViewport)
-  rememberRevealed(if (target < top || target > top + height - 1) target - (height - 1) / 2 else top)
+  if (target >= top && target <= top + height - 1) return
+  scrollLineToMiddle(target)
 }
 
 /** Scrolls so that [line] is the last line on screen. */
-internal fun VsCodeEditor.scrollLineToBottom(line: Int) = scrollLineToTop(line - screenHeight + 1)
+internal fun VsCodeEditor.scrollLineToBottom(line: Int) = scrollViewTo(line - screenHeight + 1)
 
-/**
- * Scrolls so that [line] is in the middle.
- *
- * `InCenter` is VS Code's own idea of the middle rather than this file's arithmetic, which is the
- * better answer: it is what the editor does for "go to definition" and it accounts for whatever the
- * window is actually showing.
- */
-internal fun VsCodeEditor.scrollLineToMiddle(line: Int) {
-  val target = line.coerceIn(0, max(0, lineCount() - 1))
-  val at = Position(target, 0)
-  val height = screenHeight
-  logReveal("InCenter", target)
-  nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenter)
-  rememberRevealed(target - (height - 1) / 2)
-}
+/** Scrolls so that [line] is in the middle, which is where Vim's `zz` puts it. */
+internal fun VsCodeEditor.scrollLineToMiddle(line: Int) = scrollViewTo(line - (screenHeight - 1) / 2)
 
 /** `'scrolloff'`, capped so that a large value on a small window cannot pin the caret off screen. */
 private fun VsCodeEditor.scrollOffset(): Int =
@@ -182,8 +173,8 @@ private fun VsCodeEditor.scrollOffset(): Int =
  * place to be.
  *
  * [newTop] is passed in rather than read, and that is the whole point of this function's shape.
- * `revealRange` is asynchronous: VS Code scrolls on a later frame, so `visibleRanges` goes on
- * describing where the view *was* until then. Anything that reveals and then asks where the view is
+ * A scroll is asynchronous: VS Code moves the view on a later frame, so `visibleRanges` goes on
+ * describing where the view *was* until then. Anything that scrolls and then asks where the view is
  * gets the old answer, in a real window, every time. So the caller works out where the view is
  * going and everything downstream is told rather than asking.
  */
@@ -205,14 +196,32 @@ private fun VsCodeEditor.moveCaretToLine(line: Int) {
 }
 
 /**
- * Vim's vertical scrolling, in terms of `visibleRanges` and `revealRange`.
+ * Moves the caret to [line] keeping the column it had, and not at all if it is already there.
+ *
+ * `'startofline'` lists the commands that send the caret to the first non-blank, and `<C-E>` and
+ * `<C-Y>` are not among them - they are not caret commands. When the view scrolls out from under
+ * the caret Vim brings it along in the same column, and when it does not, Vim leaves it alone.
+ *
+ * "Not at all" is the half that was wrong: this went through `'startofline'` unconditionally, so
+ * every `<C-E>` on an indented line moved the caret from column 0 to the first non-blank while the
+ * user was asking for the view to move and the caret to stay.
+ */
+private fun VsCodeEditor.dragCaretToLine(line: Int) {
+  val target = normalizeLine(line)
+  val caret = primaryCaret()
+  if (target == caret.getBufferPosition().line) return
+  caret.moveToOffset(injector.motion.moveCaretToLineWithSameColumn(this, target, caret))
+}
+
+/**
+ * Vim's vertical scrolling, in terms of `visibleRanges` and `editorScroll`.
  *
  * IdeaVim's version of this file works in pixels - it asks IntelliJ for the visible rectangle in
  * y coordinates and converts back and forth - because IntelliJ has block inlays that make a line
  * taller than a line. Nothing here does, so this works in line numbers, which is what Vim's own
  * documentation is written in and makes the arithmetic say what it means.
  */
-internal object RevealingScrollGroup : VimScrollGroup {
+internal object VsCodeScrollGroup : VimScrollGroup {
 
   /**
    * Vim's `update_topline`: bring the caret into the window, and do nothing at all if it is already
@@ -220,11 +229,10 @@ internal object RevealingScrollGroup : VimScrollGroup {
    *
    * The "do nothing" half is the important one, and it was missing. The engine calls this after
    * more or less every command - a single `<Esc>` in the stub host produced twelve of them - and
-   * each one revealed the caret unconditionally. A reveal is a scroll request even when the caret
-   * has not moved, and `Default` computes the smallest scroll from the view VS Code has *painted*,
-   * so one issued straight after `<C-E>` asks the editor to put a line back on screen that `<C-E>`
-   * had just scrolled past. The scroll and the reveal that follows it fight, and the reveal wins
-   * because it is last.
+   * each one moved the view unconditionally. That is a scroll request even when the caret has not
+   * moved, and it was computed from the view VS Code had *painted*, so one issued straight after
+   * `<C-E>` asked the editor to put a line back on screen that `<C-E>` had just scrolled past. The
+   * scroll and the correction behind it fight, and the correction wins because it is last.
    *
    * Vim does not have this problem because `update_topline` returns immediately when the cursor is
    * inside the window, which is what the guard below is.
@@ -238,17 +246,9 @@ internal object RevealingScrollGroup : VimScrollGroup {
     val height = vsCode.screenHeight
     if (position.line >= top && position.line <= top + height - 1) return
 
-    val at = Position(position.line, position.column)
-    vsCode.logReveal("Default", position.line)
-    vsCode.nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
-    // Default is the smallest scroll that brings the line on screen, which is usually none at all.
-    vsCode.rememberRevealed(
-      when {
-        position.line < top -> position.line
-        position.line > top + height - 1 -> position.line - height + 1
-        else -> top
-      },
-    )
+    // The smallest scroll that puts the caret back on screen, which is what Vim does when a motion
+    // has taken it off one edge - a jump that lands far away is centred by whoever made the jump.
+    vsCode.scrollViewTo(if (position.line < top) position.line else position.line - height + 1)
   }
 
   /**
@@ -270,7 +270,7 @@ internal object RevealingScrollGroup : VimScrollGroup {
     // From `newTop` rather than from the editor. Asking where the view is, immediately after asking
     // it to move, gets the old answer in a real window - see [scrollLines].
     val caretLine = if (pages > 0) newTop else min(newTop + height - 1, lastLine)
-    vsCode.scrollLineToTop(newTop)
+    vsCode.scrollViewTo(newTop)
     vsCode.moveCaretToLine(caretLine)
     return true
   }
@@ -293,7 +293,7 @@ internal object RevealingScrollGroup : VimScrollGroup {
     val step = if (options.scroll > 0) options.scroll else max(1, vsCode.screenHeight / 2)
     val signed = if (down) step else -step
 
-    vsCode.scrollLineToTop(vsCode.screenTopLine + signed)
+    vsCode.scrollViewTo(vsCode.screenTopLine + signed)
     vsCode.moveCaretToLine((caretLine + signed).coerceIn(0, lastLine))
     return true
   }
@@ -301,14 +301,14 @@ internal object RevealingScrollGroup : VimScrollGroup {
   /**
    * `<C-E>` and `<C-Y>`: the view by [lines], the caret only if it would be left behind.
    *
-   * This used to reveal the new top line and then ask whether the view had moved, treating "it has
+   * This used to ask for the new top line and then ask whether the view had moved, treating "it has
    * not" as the scroll having nowhere to go. In a real window the answer is always "it has not" -
-   * `revealRange` scrolls on a later frame - so both keys reported failure and never dragged the
-   * caret. Every test passed, because [FakeEditor] applies a reveal the moment it is asked.
+   * VS Code scrolls on a later frame - so both keys reported failure and never dragged the caret.
+   * Every test passed, because [FakeEditor] used to move the moment it was asked.
    *
-   * Whether the scroll has anywhere to go is now decided by arithmetic, before anything is
-   * revealed, which is also the only way to answer it honestly: it is a question about the file's
-   * length, not about what the editor has finished painting.
+   * Whether the scroll has anywhere to go is now decided by arithmetic, before anything is asked,
+   * which is also the only way to answer it honestly: it is a question about the file's length, not
+   * about what the editor has finished painting.
    */
   override fun scrollLines(editor: VimEditor, lines: Int): Boolean {
     val vsCode = editor as? VsCodeEditor ?: return false
@@ -319,13 +319,13 @@ internal object RevealingScrollGroup : VimScrollGroup {
     if (newTop == oldTop) return false
 
     val caretLine = vsCode.caretLineForView(newTop, vsCode.screenHeight)
-    vsCode.scrollLineToTop(newTop)
-    vsCode.moveCaretToLine(caretLine)
+    vsCode.scrollViewTo(newTop)
+    vsCode.dragCaretToLine(caretLine)
     return true
   }
 
   override fun scrollCurrentLineToDisplayTop(editor: VimEditor, rawCount: Int, start: Boolean): Boolean =
-    scrollLineToScreen(editor, rawCount, start) { vsCode, line -> vsCode.scrollLineToTop(line - vsCode.scrollOffset()) }
+    scrollLineToScreen(editor, rawCount, start) { vsCode, line -> vsCode.scrollViewTo(line - vsCode.scrollOffset()) }
 
   override fun scrollCurrentLineToDisplayMiddle(editor: VimEditor, rawCount: Int, start: Boolean): Boolean =
     scrollLineToScreen(editor, rawCount, start) { vsCode, line -> vsCode.scrollLineToMiddle(line) }

@@ -20,7 +20,6 @@ import com.maddyhome.idea.vim.vscode.OutputChannel
 import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
 import com.maddyhome.idea.vim.vscode.StatusBarAlignment
 import com.maddyhome.idea.vim.vscode.StatusBarItem
-import com.maddyhome.idea.vim.vscode.TextEditorRevealType
 import com.maddyhome.idea.vim.vscode.TextEditor
 import com.maddyhome.idea.vim.vscode.VimHost
 import com.maddyhome.idea.vim.vscode.VsCodeClipboard
@@ -64,20 +63,6 @@ fun activate(context: ExtensionContext) {
   // the mode stay visible while a command is being typed.
   val commandLine = window.createStatusBarItem(StatusBarAlignment.Left, 99)
   commandLineBar = commandLine
-
-  // What the reveal-type enum actually resolves to in this window.
-  //
-  // `AtTop` was traced doing nothing while `InCenter` and `Default` moved the same view exactly as
-  // asked, and there are two explanations: the editor declines it, or the value never arrives as 3.
-  // These are external declarations compiled against nothing, so the second is not far-fetched -
-  // `checkVsCodeApiDeclarations` checks that the names exist, not what they are worth. One line
-  // settles it.
-  output.appendLine(
-    "Reveal types: Default=" + TextEditorRevealType.Default +
-      " InCenter=" + TextEditorRevealType.InCenter +
-      " IfOutside=" + TextEditorRevealType.InCenterIfOutsideViewport +
-      " AtTop=" + TextEditorRevealType.AtTop + " (VS Code documents 0, 1, 2, 3)",
-  )
 
   val vim = VimHost(
     sink = OutputAndStatusBar(output, status),

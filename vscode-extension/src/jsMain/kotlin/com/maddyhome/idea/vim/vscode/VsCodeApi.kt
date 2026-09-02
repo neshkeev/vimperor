@@ -311,15 +311,22 @@ external interface TextEditor {
    */
   fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean>
 
-  /** Scrolls so that [range] is on screen. VS Code's only scrolling API for an extension. */
+  /**
+   * Scrolls so that [range] is on screen.
+   *
+   * The scrolling API an extension is pointed at, and not the one this host uses. It says where a
+   * range should end up rather than where the view should be, and a real window put every `AtTop`
+   * request five lines above the line it named - see [VsCodeCommands.EDITOR_SCROLL], which is what
+   * moves the view here. Kept because it is part of the API surface and one of the guards checks
+   * the whole of it.
+   */
   fun revealRange(range: Range, revealType: Int = definedExternally)
 
   /**
    * What is on screen, as line ranges, in order.
    *
-   * The other half of scrolling: [revealRange] moves the view and this says where it now is. Vim's
-   * `<C-E>`, `<C-D>` and `zt` are all defined as moving the view relative to where it already is,
-   * so neither call is any use without the other.
+   * Where the view is, which Vim needs before it can say where the view goes next: `<C-E>`, `<C-D>`
+   * and `zt` are all defined relative to the window's current top line.
    *
    * More than one range means something between them is folded. It can be empty for an editor that
    * has not been laid out yet, which is a case worth handling rather than indexing into.

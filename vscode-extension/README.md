@@ -588,14 +588,25 @@ document order, the primary is found by its flag, and the flush puts it first be
 VS Code looks for it.
 
 Scrolling is off it. Vim moves the *view* - `<C-E>` by a line, `<C-D>` by half a window, `zt` to put
-the current line at the top - and lets the caret follow; VS Code's extension API has no verb for
-that, only `revealRange`. What makes them reconcilable is `visibleRanges`, which says where the view
-currently is: read it, do Vim's arithmetic in line numbers, and reveal the line that should end up
-at the top. `<C-E>`, `<C-Y>`, `<C-F>`, `<C-B>`, `<C-D>`, `<C-U>`, `zt`, `zz`, `zb` and `H`/`M`/`L`
-are all that one call. Sideways scrolling is not: `visibleRanges` carries no columns and nothing can
-scroll by one, so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` report failure, which is what Vim does when
-a scroll has nowhere to go. For the same reason `g0` and `g$` answer as if the line starts at column
-0 and ends where the buffer line ends - right whenever the line fits on screen.
+the current line at the top - and lets the caret follow. `visibleRanges` says where the view is and
+the `editorScroll` command moves it by a number of lines, so `<C-E>`, `<C-Y>`, `<C-F>`, `<C-B>`,
+`<C-D>`, `<C-U>`, `zt`, `zz`, `zb` and `H`/`M`/`L` are all Vim's arithmetic in line numbers and one
+call.
+
+Not `revealRange`, which is the API an extension is pointed at and which this used for months. It
+says where a *range* should end up rather than where the view should be, and a real window put every
+`AtTop` request five lines above the line it named - `zt` on line 18 left the view at 13, and
+`<C-E>`, which asks for one line further down than it believes it is, walked the view four lines
+*backwards* per press. Sticky scroll, a surrounding-lines setting, an editor padding: whichever it
+was, a reveal is a request to be interpreted and that window interpreted it. `editorScroll` has no
+range to reason about. It cost three wrong diagnoses to get there, all three of them plausible and
+none of them it, and what finally settled it was sixty reveals in a trace with the requested line
+and the reported viewport side by side.
+
+Sideways scrolling is still missing: `visibleRanges` carries no columns and `editorScroll` moves
+only up and down, so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` report failure, which is what Vim does
+when a scroll has nowhere to go. For the same reason `g0` and `g$` answer as if the line starts at
+column 0 and ends where the buffer line ends - right whenever the line fits on screen.
 
 `%`, `di(` and the rest of the bracket text objects need to know whether a bracket is code or is
 written inside a string or a comment, or they land on the wrong pair. IdeaVim asks IntelliJ's syntax

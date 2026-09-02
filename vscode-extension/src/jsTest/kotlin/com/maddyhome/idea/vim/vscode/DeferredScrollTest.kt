@@ -13,33 +13,38 @@ import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Scrolling when the editor has not painted yet, which is the only kind of editor there is.
  *
- * `revealRange` schedules a scroll; `visibleRanges` describes the view VS Code has actually drawn.
- * Between the two lies a frame that an extension never gets to wait for, so anything that reveals
- * and then asks where the view is reads the answer from *before* its own request.
+ * A scroll is scheduled; `visibleRanges` describes the view VS Code has actually drawn. Between the
+ * two lies a frame that an extension never gets to wait for, so anything that scrolls and then asks
+ * where the view is reads the answer from *before* its own request.
  *
- * `<C-E>` and `<C-Y>` were built on exactly that. They revealed the new top line, asked whether the
+ * `<C-E>` and `<C-Y>` were built on exactly that. They asked for the new top line, asked whether the
  * view had moved, and treated "no" as the scroll having nowhere to go - so in a real window both
  * keys reported failure and never dragged the caret, every time, on every file. It was reported as
  * "`<C-e>` and `<C-y>` don't work".
  *
  * [VsCodeScrollTest] could not have caught it, and neither could any test written the same way:
- * [FakeEditor] applied a reveal the moment it was asked, so the read-back returned the new view and
- * the command looked correct. That is this port's recurring shape - a fake more permissive than VS
- * Code - and the fix belongs in the fake as much as in the code, which is why
+ * [FakeEditor] moved the moment it was asked, so the read-back returned the new view and the
+ * command looked correct. That is this port's recurring shape - a fake more permissive than VS Code
+ * - and the fix belongs in the fake as much as in the code, which is why
  * `revealsTakeEffectImmediately` now exists and why these tests run with it off.
  *
  * Each test therefore types a key, then paints, then looks. Painting after the command is the whole
  * point: the command has to be right about where the view is going without being able to see it.
  */
-class DeferredRevealScrollTest {
+class DeferredScrollTest {
 
-  private class Session(lines: Int = 40, caretLine: Int = 0, height: Int = 10, top: Int = 0) {
-    val fake = FakeEditor((0 until lines).joinToString("\n") { "line $it" })
+  private class Session(
+    lines: Int = 40,
+    caretLine: Int = 0,
+    height: Int = 10,
+    top: Int = 0,
+    text: String = (0 until lines).joinToString("\n") { "line $it" },
+  ) {
+    val fake = FakeEditor(text)
     val editor: VsCodeEditor
 
     init {
@@ -71,6 +76,98 @@ class DeferredRevealScrollTest {
 
     val top: Int get() = fake.topLine
     val caretLine: Int get() = editor.primaryCaret().getBufferPosition().line
+    val caretColumn: Int get() = editor.primaryCaret().getBufferPosition().column
+  }
+
+  /**
+   * The six keys, in the terms they were asked for.
+   *
+   * Written from a bug report that spelled out what each one should do rather than what it did:
+   * "assuming the page size is 20 lines what I expect". So these use a window of that size and say
+   * it in the report's own line numbers - one-based, the way the editor's gutter numbers them and
+   * the way the reader counted them - with the zero-based line the code works in beside it.
+   *
+   * Four of the six are exactly what was asked for. `<C-F>` and `<C-B>` are not, and deliberately:
+   * Vim keeps two lines of the old page at the far edge of the new one so there is something to
+   * read across the join, and the report expected a clean cut with none. Vim's rule is what is
+   * asserted, because matching Vim is what this fork is for.
+   */
+  private fun page(top: Int, caretLine: Int) =
+    Session(lines = 200, caretLine = caretLine - 1, height = 21, top = top - 1)
+
+  @Test
+  fun `test Ctrl-E scrolls the buffer one line and leaves the caret alone`() {
+    // Showing 8-28, caret comfortably inside. After: 9-29, caret where it was.
+    val session = page(top = 8, caretLine = 16)
+    session.type("<C-E>")
+    assertEquals(8, session.top, "the window's first line, zero-based: line 9")
+    assertEquals(15, session.caretLine, "the caret was on screen and stays where it is")
+  }
+
+  @Test
+  fun `test Ctrl-Y scrolls the buffer back one line and leaves the caret alone`() {
+    val session = page(top = 8, caretLine = 16)
+    session.type("<C-Y>")
+    assertEquals(6, session.top, "line 7")
+    assertEquals(15, session.caretLine)
+  }
+
+  /**
+   * `<C-E>` does not touch the column either.
+   *
+   * `'startofline'` names the commands that send the caret to the first non-blank, and neither of
+   * the two scrolling keys is among them. This went through it anyway, so every press on an
+   * indented file moved the caret from column 0 to the indent - visible in a real window's trace as
+   * `col0` becoming `col5` on a key that is not supposed to move the caret at all.
+   */
+  @Test
+  fun `test Ctrl-E does not send the caret to the first non-blank`() {
+    val session = Session(
+      lines = 200,
+      caretLine = 15,
+      height = 21,
+      top = 7,
+      text = (0 until 200).joinToString("\n") { "     line $it" },
+    )
+    session.type("<C-E>")
+    assertEquals(15, session.caretLine)
+    assertEquals(0, session.caretColumn, "the caret was in the indent and had no reason to leave it")
+  }
+
+  @Test
+  fun `test Ctrl-F moves the caret a page down, less the two lines Vim keeps`() {
+    // Showing 8-28 with the caret on 8. Vim's new page starts at 27, not 29: the last two lines of
+    // the old page are the first two of the new one.
+    val session = page(top = 8, caretLine = 8)
+    session.type("<C-F>")
+    assertEquals(26, session.top, "line 27")
+    assertEquals(26, session.caretLine, "the caret goes to the first line of the new page")
+  }
+
+  @Test
+  fun `test Ctrl-B moves the caret a page up, less the two lines Vim keeps`() {
+    // Showing 28-48 with the caret on 28. The new page ends at 29, so the caret lands there.
+    val session = page(top = 28, caretLine = 28)
+    session.type("<C-B>")
+    assertEquals(8, session.top, "line 9")
+    assertEquals(28, session.caretLine, "the caret goes to the last line of the new page: line 29")
+  }
+
+  @Test
+  fun `test Ctrl-U moves the caret half a page up`() {
+    // Showing 28-48 with the caret on 48. Half of twenty is ten, so the caret goes to 38.
+    val session = page(top = 28, caretLine = 48)
+    session.type("<C-U>")
+    assertEquals(37, session.caretLine, "line 38")
+    assertEquals(17, session.top, "and the view came with it")
+  }
+
+  @Test
+  fun `test Ctrl-D moves the caret half a page down`() {
+    val session = page(top = 28, caretLine = 28)
+    session.type("<C-D>")
+    assertEquals(37, session.caretLine, "line 38")
+    assertEquals(37, session.top)
   }
 
   // <C-E> and <C-Y>, the two that were reported.
@@ -204,7 +301,7 @@ class DeferredRevealScrollTest {
     val fake get() = session.fake
 
     init {
-      fake.reveals.clear()
+      fake.scrolls.clear()
     }
 
     /** Types [keys] and never paints, so the reported viewport stays where it started. */
@@ -217,13 +314,8 @@ class DeferredRevealScrollTest {
       session.editor.flush()
     }
 
-    /**
-     * The top lines this host asked for, in order.
-     *
-     * A scroll asks for a range one window tall; a caret being brought back into view asks for a
-     * single line. That is what tells them apart now that both go through `Default`.
-     */
-    fun topsAskedFor(): List<Int> = fake.reveals.filter { it.end > it.start }.map { it.start }
+    /** The top lines this host asked for, in order. */
+    fun topsAskedFor(): List<Int> = fake.scrolls.toList()
   }
 
   @Test
@@ -237,7 +329,7 @@ class DeferredRevealScrollTest {
   fun `test Ctrl-Y comes back down the same way`() {
     val session = UnpaintedSession(caretLine = 5)
     repeat(4) { session.type("<C-E>") }
-    session.fake.reveals.clear()
+    session.fake.scrolls.clear()
     repeat(3) { session.type("<C-Y>") }
     assertEquals(listOf(3, 2, 1), session.topsAskedFor(), "and each press back should undo one")
   }
@@ -247,17 +339,17 @@ class DeferredRevealScrollTest {
     val session = UnpaintedSession(caretLine = 0)
     session.type("<C-E>")
     session.type("<C-Y>")
-    session.fake.reveals.clear()
+    session.fake.scrolls.clear()
     session.type("<C-Y>")
     assertEquals(emptyList(), session.topsAskedFor(), "the view is at the top and there is nowhere to go")
   }
 
   /**
-   * A scroll is not followed by a reveal that undoes it.
+   * A scroll is not followed by a correction that undoes it.
    *
    * The engine calls `scrollCaretIntoView` after almost every command - twelve times for a single
-   * `<Esc>` in the stub host - and it used to reveal the caret unconditionally. `Default` asks for
-   * the smallest scroll that puts a line on screen, computed from the view VS Code has painted, so
+   * `<Esc>` in the stub host - and it used to move the view unconditionally. It asked for the
+   * smallest scroll that puts the caret on screen, computed from the view VS Code has painted, so
    * one issued straight after `<C-E>` asks the editor to bring back a line that `<C-E>` had just
    * scrolled past. Last request wins, and it is not the scroll.
    *
@@ -266,25 +358,27 @@ class DeferredRevealScrollTest {
    * thing.
    */
   @Test
-  fun `test a scroll is not undone by a caret reveal behind it`() {
+  fun `test a scroll is not undone by a caret correction behind it`() {
     val session = UnpaintedSession(caretLine = 5)
     session.type("<C-E>")
     assertEquals(
-      listOf(RecordedReveal(1, 10, TextEditorRevealType.AtTop)),
-      session.fake.reveals.toList(),
-      "the scroll should be the only thing asked of the view, and a whole window of it",
+      listOf(1),
+      session.fake.scrolls.toList(),
+      "the scroll should be the only thing asked of the view",
     )
+    assertEquals(emptyList(), session.fake.reveals.toList(), "and nothing should have been revealed")
   }
 
   /** ...and the caret is still brought back when it really has gone off screen. */
   @Test
-  fun `test a caret off screen is still revealed`() {
+  fun `test a caret off screen is still brought back`() {
     val session = UnpaintedSession(lines = 200, caretLine = 0)
-    session.fake.reveals.clear()
+    session.fake.scrolls.clear()
     session.type("100G")
-    assertTrue(
-      session.fake.reveals.any { it.start == 99 && it.end == 99 },
-      "a jump past the window has to bring the caret back: ${session.fake.reveals}",
+    assertEquals(
+      listOf(90),
+      session.fake.scrolls.toList(),
+      "a jump past the window has to bring the caret back to the bottom line",
     )
   }
 

@@ -77,14 +77,7 @@ private class FakeUri(override val scheme: String, override val path: String) : 
   override val fsPath: String get() = path
 }
 
-/**
- * One `revealRange` request: the lines it named and the type it was asked with.
- *
- * The range matters as much as the type. "Put line N at the top" is asked for by revealing a range
- * one window tall with `Default`, because `AtTop` does not move a real editor - see
- * [VsCodeEditor.scrollLineToTop] - so a test that looked only at the start line could not tell a
- * scroll from a caret being brought back into view.
- */
+/** One `revealRange` request: the lines it named and the type it was asked with. */
 data class RecordedReveal(val start: Int, val end: Int, val type: Int)
 
 /** A single replacement, in the offsets it was made against, so a test can see how wide it was. */
@@ -114,15 +107,18 @@ class FakeEditor(text: String) : TextEditor {
   /** What the editor was asked to scroll to, so a test can see that it was asked at all. */
   val revealedRanges: MutableList<Range> = mutableListOf()
 
+  /** The same reveals, as the line asked for and the type it was asked with. */
+  val reveals: MutableList<RecordedReveal> = mutableListOf()
+
   /**
-   * The same reveals, as the line asked for and the type it was asked with.
+   * The top line each `editorScroll` was asked to put on screen, in order.
    *
    * What a scroll command actually *does* is ask; whether the view then moves is the editor's
    * business, and in a real window it may not report that it did. So this is the observable that
    * survives a viewport which never catches up, and the one a test can assert on when modelling
    * that window.
    */
-  val reveals: MutableList<RecordedReveal> = mutableListOf()
+  val scrolls: MutableList<Int> = mutableListOf()
 
   /**
    * A viewport, because scrolling cannot be tested without one.
@@ -140,13 +136,13 @@ class FakeEditor(text: String) : TextEditor {
   var topLine: Int = 0
 
   /**
-   * Whether a reveal moves the view at once.
+   * Whether a scroll moves the reported view at once.
    *
-   * VS Code's does not. `revealRange` schedules a scroll and `visibleRanges` goes on describing the
-   * old view until the editor paints, so a command that reveals and then reads the view back gets
-   * the answer it had before. Applying it immediately, as this fake did unconditionally, is a
-   * convenient lie - and it is the one that let `<C-E>` and `<C-Y>` pass every test here while
-   * doing nothing at all in a real window.
+   * VS Code's does not. A scroll is scheduled and `visibleRanges` goes on describing the old view
+   * until the editor paints, so a command that scrolls and then reads the view back gets the answer
+   * it had before. Applying it immediately, as this fake did unconditionally, is a convenient lie -
+   * and it is the one that let `<C-E>` and `<C-Y>` pass every test here while doing nothing at all
+   * in a real window.
    *
    * Set this false to model the real editor; [paint] then applies what was scheduled, the way a
    * rendered frame would.
@@ -154,11 +150,31 @@ class FakeEditor(text: String) : TextEditor {
   var revealsTakeEffectImmediately: Boolean = true
   private var pendingTopLine: Int? = null
 
+  init {
+    // `editorScroll` goes to whatever editor has focus, and there is nothing on the editor object
+    // to intercept - so this makes itself the focused one. See the stub's `commands.handlers`.
+    val handlers = js("require('vscode').commands.handlers")
+    handlers["editorScroll"] = { args: dynamic -> editorScroll(args) }
+  }
+
+  /**
+   * VS Code's `editorScroll`, in the one shape this host asks for it: by whole lines, without
+   * dragging the caret. Clamped to the document, the way an editor with `scrollBeyondLastLine`
+   * turned off would clamp - which is the drift the host's belief has to survive.
+   */
+  private fun editorScroll(args: dynamic) {
+    val value = args.value as Int
+    val signed = if (args.to as String == "up") -value else value
+    val newTop = (scrollTop + signed).coerceIn(0, lastLine)
+    scrolls += newTop
+    if (revealsTakeEffectImmediately) topLine = newTop else pendingTopLine = newTop
+  }
+
   /**
    * Where the editor has scrolled to, painted or not.
    *
    * The lag is in `visibleRanges`, which is the snapshot an *extension* reads; the editor widget
-   * itself moves when it is asked. So a second reveal in the same tick computes from where the
+   * itself moves when it is asked. So a second scroll in the same tick computes from where the
    * first one sent it, and only a reader outside the editor sees the old view. Modelling it the
    * other way makes a following `scrollCaretIntoView` undo the scroll that was just requested,
    * which is not what a real window does.
