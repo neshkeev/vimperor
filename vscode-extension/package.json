@@ -3,7 +3,7 @@
   "displayName": "Vimperor",
   "description": "Vim for VS Code, powered by IdeaVim's engine.",
   "version": "0.0.1",
-  "publisher": "vimperor",
+  "publisher": "neshkeev",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
