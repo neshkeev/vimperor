@@ -115,6 +115,7 @@ fun activate(context: ExtensionContext) {
       reporting(output, "typing '" + text + "'") {
         vim.type(editor, text)
         refreshMode()
+        trace(output, vim, editor, "'" + text + "'")
       }
     }
   }
@@ -129,6 +130,7 @@ fun activate(context: ExtensionContext) {
       reporting(output, "the key " + notation) {
         vim.key(editor, notation)
         refreshMode()
+        trace(output, vim, editor, notation)
       }
     }
   }
@@ -224,6 +226,18 @@ fun deactivate() {
  * to, and is not where anybody looks. A key that fails silently is the hardest kind of bug to report
  * and the easiest to fix once it has a name, so it gets named here.
  */
+/**
+ * Writes what a keystroke did to the output channel, when `ideavim.trace` is on.
+ *
+ * Read on every key rather than cached, so that turning it on takes effect without a reload - which
+ * matters, because the bugs it is for are the ones that have already happened by the time anybody
+ * thinks to look.
+ */
+private fun trace(output: OutputChannel, vim: VimHost, editor: TextEditor, key: String) {
+  if (workspace.getConfiguration("ideavim").get("trace") != true) return
+  output.appendLine("  $key -> " + vim.describeState(editor))
+}
+
 private inline fun reporting(output: OutputChannel, what: String, block: () -> Unit) {
   try {
     block()

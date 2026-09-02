@@ -329,6 +329,11 @@ const vscode = {
       documentSavedListeners.push(callback)
       return disposable()
     },
+    // The extension's own settings, as opposed to Vim's - `ideavim.trace` is the only one. Tracing
+    // is on here so that the wiring is exercised rather than merely present.
+    getConfiguration: (section) => ({
+      get: (key) => (section === 'ideavim' && key === 'trace' ? true : undefined),
+    }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
     workspaceFolders: [{ uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }],
@@ -878,6 +883,14 @@ reset()
 type(':')
 for (const character of 'autocmd BufWritePost * :normal isaved') type(character)
 press('<CR>')
+
+// `ideavim.trace`, which is what a user turns on to report a bug that only happens in a real
+// window. The wiring is what breaks - reading a setting, describing the state, writing it out - so
+// the stub host turns it on and checks that something arrived.
+assert.ok(
+  output.some((line) => line.includes('-> NORMAL carets=[')),
+  `tracing was on and nothing was traced. Output:\n${output.join('\n')}`,
+)
 
 assert.ok(documentSavedListeners.length > 0, 'the extension registered no save listener')
 for (const listener of documentSavedListeners) listener(editor.document)

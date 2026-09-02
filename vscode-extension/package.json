@@ -365,6 +365,16 @@
         "args": "<C-^>",
         "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "IdeaVim",
+      "properties": {
+        "ideavim.trace": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write what each keystroke did to the IdeaVim output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
+        }
+      }
+    }
   }
 }

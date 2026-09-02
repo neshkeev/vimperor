@@ -165,12 +165,27 @@ external object workspace {
   val onDidSaveTextDocument: (listener: (TextDocument) -> Unit) -> Disposable
 
   /**
+   * The user's settings, which is where `ideavim.trace` lives.
+   *
+   * Vim's own options come from the `.ideavimrc` and nowhere else - a Vim user configures Vim the
+   * way Vim is configured. This is for the handful of things that are about the *extension* rather
+   * than about Vim, and there is one: whether to write what each keystroke did to the output
+   * channel, which is the only way a bug that only happens in a real window can be reported.
+   */
+  fun getConfiguration(section: String): WorkspaceConfiguration
+
+  /**
    * The folders open in this window, which is what a relative path in `:e` is relative to.
    *
    * Vim resolves against the current directory; a VS Code window has no current directory, it has a
    * workspace. Null when nothing is open - a single loose file has an editor and no folder.
    */
   val workspaceFolders: Array<WorkspaceFolder>?
+}
+
+external interface WorkspaceConfiguration {
+  /** VS Code's is generic; only the boolean half is used here, and it is undefined when unset. */
+  fun get(section: String): Any?
 }
 
 external interface WorkspaceFolder {

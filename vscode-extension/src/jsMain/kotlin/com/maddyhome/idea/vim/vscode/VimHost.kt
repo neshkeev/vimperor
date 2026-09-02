@@ -336,6 +336,25 @@ class VimHost(
     clipboard.refresh()
   }
 
+  /**
+   * What the last keystroke left behind, for `ideavim.trace`.
+   *
+   * The mode, every caret with its selection, and what was handed to VS Code - which is the set of
+   * facts that took four rounds of guessing to get at for one bug in a real window. A user who can
+   * turn this on can report a window-only problem in one message.
+   */
+  fun describeState(textEditor: TextEditor): String {
+    val editor = editors[identityOf(textEditor)] ?: return "${modeName()} (no editor registered)"
+    val carets = editor.carets().joinToString(", ") { caret ->
+      val where = if (caret.hasSelection()) "${caret.offset}[${caret.selectionStart}..${caret.selectionEnd}]" else "${caret.offset}"
+      where + (if (caret.isPrimary) "*" else "") + "/col" + caret.vimLastColumn
+    }
+    val pushed = textEditor.selections.joinToString(", ") {
+      "(${it.anchor.line},${it.anchor.character})-(${it.active.line},${it.active.character})"
+    }
+    return "${modeName()} carets=[$carets] pushed=[$pushed]"
+  }
+
   /** Vim's mode, named the way Vim names it on the last line. */
   fun modeName(): String {
     val mode = injector.vimState.mode
