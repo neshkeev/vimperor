@@ -162,8 +162,15 @@ what Vim does on a build without `+X11`. `ideaput` is IntelliJ's.
 `'number'` and `'relativenumber'` work, with their short forms: they write `lineNumbers` on the
 editor, which VS Code lets an extension set per window - exactly what a window-local Vim option is.
 Vim has four states there and VS Code has three, so `set rnu` without `nu` gets the absolute number
-on the caret's line rather than a `0`. A window opened *after* the value was set starts from the
-option's default, which is not what Vim does and is written down in `VsCodeOptionsTest`.
+on the caret's line rather than a `0`.
+
+Getting that to hold for a file opened *later* is most of the work, and it is not about line
+numbers. A window-local option belongs to one window, and Vim carries it from the window you opened
+from - evaluating the config in the context of the first window, which this host does not have,
+because VS Code activates an extension before it restores the editors. So the config runs against a
+hidden fallback window and the first real editor is initialised from it, and every editor after that
+from the one that was active. Before that, every editor was initialised to the option defaults and
+`set nu rnu` numbered exactly one window.
 
 The rest of a `~/.vimrc` is accepted rather than implemented, and that distinction is the whole of
 `VsCodeOptions`. `set expandtab`, `set laststatus=2` and `syntax on` name things VS Code has already

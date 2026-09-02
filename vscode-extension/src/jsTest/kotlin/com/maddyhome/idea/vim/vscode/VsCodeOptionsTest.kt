@@ -128,29 +128,74 @@ class VsCodeOptionsTest {
   }
 
   /**
-   * A window opened later starts from the option's default, which is not what Vim does.
+   * The config runs before any file is open, and the first file opened is numbered by it.
    *
-   * `'relativenumber'` is local to a window, and this engine stores the "global" value of a
-   * window-local option per window too - so `:set rnu` reaches the window it was typed in and a
-   * window opened afterwards is initialised from the option's default rather than from it. Vim
-   * carries the value; IdeaVim's own window-local options are carried by the tracking that
-   * `startInitVimRc` turns on, which is for options a *host* maps to an IDE setting.
-   *
-   * Asserted rather than left to be discovered, because it is the difference between a gutter that
-   * stays put and one that resets when you open a file. The fix is to register a new editor with
-   * the one it was opened from as its source - `initialiseLocalOptions` takes a source editor and
-   * a scenario for exactly this - which is a change to how every editor is registered and belongs
-   * on its own rather than at the end of this one.
+   * This is the report, in the order it happens. VS Code activates the extension before it restores
+   * a window's editors, so `window.activeTextEditor` is usually null when the `.ideavimrc` runs and
+   * the config is evaluated against the fallback window - a hidden editor that exists so that
+   * options have somewhere to live when nothing is open. Vim does not need one because it always
+   * has a window; this host needs the first real editor to inherit from it, which is what the
+   * `FALLBACK` scenario is for and what was missing.
    */
   @Test
-  fun `test a window opened later does not yet inherit the gutter`() {
+  fun `test a file opened after the config is numbered by it`() {
+    val host = VimHost().also { it.start() }
+    val startup = host.startupEditor(null)
+
+    injector.optionGroup.startInitVimRc()
+    injector.vimscriptExecutor.execute(
+      "set nu rnu",
+      startup,
+      VsCodeExecutionContext,
+      skipHistory = true,
+      indicateErrors = true,
+    )
+    injector.optionGroup.endInitVimRc()
+
+    val opened = FakeEditor("a file\nopened after", path = "/test/after.txt")
+    host.editorFor(opened)
+
+    assertEquals(TextEditorLineNumbersStyle.Relative, opened.lineNumbers)
+  }
+
+  /**
+   * A file opened later is numbered the same way, which is what `set nu rnu` in a config means.
+   *
+   * Two things had to change for this. `'relativenumber'` is local to a window, and every editor
+   * used to be initialised to the option *defaults* - so the config numbered the window it was read
+   * in and no other. Vim carries window-local options from the window you opened from, and
+   * evaluates the config in the context of the first window; this host has no window at activation,
+   * so the config runs against the fallback window and `FALLBACK` is the scenario that carries what
+   * it set into the first real one. `NEW` carries them on from there.
+   */
+  @Test
+  fun `test a file opened later is numbered the same way`() {
     val session = Session()
     session.run("set relativenumber")
 
-    val opened = FakeEditor("later\nfile")
+    val opened = FakeEditor("later\nfile", path = "/test/later.txt")
     session.host.editorFor(opened)
 
-    assertEquals(TextEditorLineNumbersStyle.Off, opened.lineNumbers, "known, and written down above")
+    assertEquals(TextEditorLineNumbersStyle.Relative, opened.lineNumbers)
+  }
+
+  /**
+   * ...and so is the same file reopened in a new editor object.
+   *
+   * VS Code hands out a new `TextEditor` for the same document more often than is obvious - moving
+   * a file to a split is enough - and the host replaces its wrapper when that happens. The old one
+   * used to be retired *before* the new one was registered, which left the fallback window as the
+   * only editor to inherit from, and its options are the defaults.
+   */
+  @Test
+  fun `test a replaced editor keeps the gutter`() {
+    val session = Session()
+    session.run("set relativenumber")
+
+    val again = FakeEditor("one two\nthree four")
+    session.host.editorFor(again)
+
+    assertEquals(TextEditorLineNumbersStyle.Relative, again.lineNumbers)
   }
 
   /** Writing the same style twice is a round trip to VS Code that buys nothing. */

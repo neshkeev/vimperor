@@ -132,9 +132,14 @@ class VimHost(
     // no longer using, so it is replaced rather than repaired. Mode and caret state go with it,
     // which is the same reset a user sees when moving between windows.
     val editor = VsCodeEditor(textEditor)
-    existing?.let { vimInjector.unregister(it) }
     editors[identity] = editor
+    // Registered before the old one is retired, not after. The new editor takes its window-local
+    // options from whichever editor was active - and retiring the old one first made that the
+    // fallback window, whose options are the defaults, so a replaced editor lost `'relativenumber'`
+    // and everything else the config had set. Retiring it afterwards is safe: `unregister` only
+    // moves the active editor if the one going away was it, and by then it is not.
     vimInjector.register(editor)
+    existing?.let { vimInjector.unregister(it) }
     // A window-local option applies to a window that did not exist when it was set. `'number'` and
     // `'relativenumber'` come from the `.ideavimrc`, which runs once, and every editor opened after
     // it has to be told - the change listener only fires when the value changes.

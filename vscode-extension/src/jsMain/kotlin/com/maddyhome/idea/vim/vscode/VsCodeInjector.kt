@@ -99,6 +99,9 @@ open class VsCodeInjector(
   private var activeEditor: VsCodeEditor? = null
 
   fun register(editor: VsCodeEditor) {
+    // Before `activeEditor` is moved: the window a new one is opened *from* is the one it takes its
+    // window-local options from, and that is the window the user was looking at a moment ago.
+    val opening = activeEditor
     if (openEditors.none { it === editor }) openEditors += editor
     activeEditor = editor
 
@@ -108,8 +111,30 @@ open class VsCodeInjector(
     // visible, since `zR` only sets it - see the first set as initialisation and skip it. IntelliJ
     // does this when a window opens; this host has to do it when an editor is registered, which is
     // the same moment.
-    optionGroup.initialiseLocalOptions(editor, null, LocalOptionInitialisationScenario.DEFAULTS)
+    //
+    // Which *scenario* is the part that took a bug report. Every editor used to be initialised to
+    // the option defaults, so `set nu rnu` in a `~/.vimrc` numbered the window it was read in and
+    // no other: open a second file and the gutter was bare. Vim carries window-local options from
+    // the window you opened from, and it evaluates the config in the context of the first window -
+    // which this host does not have at activation, so the config runs against [fallbackWindow]
+    // instead. `FALLBACK` is the scenario written for exactly that: it copies what the config set
+    // into the first real window. `NEW` carries them on from there, which is Vim's `:new`, and is
+    // what IdeaVim uses for every editor after the first.
+    if (initialisedFirstEditor) {
+      optionGroup.initialiseLocalOptions(editor, opening ?: fallbackWindow, LocalOptionInitialisationScenario.NEW)
+    } else {
+      initialisedFirstEditor = true
+      optionGroup.initialiseLocalOptions(editor, fallbackWindow, LocalOptionInitialisationScenario.FALLBACK)
+    }
   }
+
+  /**
+   * Whether any editor has been initialised, which decides the scenario for the next one.
+   *
+   * Not "is this editor initialised" - the option group answers that itself and returns early. This
+   * is only about which window the *first* one inherits from, and there is one first window.
+   */
+  private var initialisedFirstEditor: Boolean = false
 
   fun unregister(editor: VsCodeEditor) {
     openEditors.removeAll { it === editor }

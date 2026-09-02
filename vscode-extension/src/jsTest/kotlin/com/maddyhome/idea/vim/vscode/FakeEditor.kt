@@ -20,11 +20,19 @@ package com.maddyhome.idea.vim.vscode
  * right but *how* it got there - a whole-document rewrite and a one-character replacement both
  * produce the same text.
  */
-class FakeDocument(text: String) : TextDocument {
+class FakeDocument(text: String, path: String = "/test/buffer.txt") : TextDocument {
   var content: String = text
     internal set
 
-  override val uri: Uri = FakeUri("file", "/test/buffer.txt")
+  /**
+   * Which file this is, which every fake used to answer identically.
+   *
+   * The host keys its editors by document identity - `scheme://path` - so two fakes claiming the
+   * same path were one buffer as far as it was concerned, and a test that opened a second file was
+   * really replacing the first. That hid a real bug: a replaced editor was inheriting its
+   * window-local options from the fallback window rather than from the editor it replaced.
+   */
+  override val uri: Uri = FakeUri("file", path)
   override val fileName: String get() = uri.fsPath
   override val isUntitled: Boolean = false
 
@@ -83,8 +91,8 @@ data class RecordedReveal(val start: Int, val end: Int, val type: Int)
 /** A single replacement, in the offsets it was made against, so a test can see how wide it was. */
 data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
-class FakeEditor(text: String) : TextEditor {
-  override val document: FakeDocument = FakeDocument(text)
+class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
+  override val document: FakeDocument = FakeDocument(text, path)
   override var selections: Array<Selection> = arrayOf(Selection(Position(0, 0), Position(0, 0)))
 
   /**
