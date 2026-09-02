@@ -37,6 +37,9 @@ const contextsSet = []
 /** What `Extension.kt` registered for a document closing and for one being saved. */
 const documentClosedListeners = []
 const documentSavedListeners = []
+
+/** Whether `ideavim.trace` is on. Flipped on for the stretch of this script that checks it. */
+let tracing = false
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -133,7 +136,8 @@ function makeEditor(text) {
     // How the file is indented, which VS Code resolves and Vim's Tab and `S` both ask for. Two
     // spaces rather than VS Code's default four, so that a scenario asserting the indent is
     // asserting that this was read and not that a constant happened to match.
-    options: { tabSize: 2, insertSpaces: true },
+    // `cursorStyle` is written by the extension - Vim's mode is drawn on the caret.
+    options: { tabSize: 2, insertSpaces: true, cursorStyle: 1 },
 
     // A viewport, ten lines tall, because `visibleRanges` is half of VS Code's scrolling API and
     // the commands that use it read the view back to work out where to scroll next.
@@ -231,6 +235,7 @@ const vscode = {
   Selection,
   EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorSelectionChangeKind: { Keyboard: 1, Mouse: 2, Command: 3 },
+  TextEditorCursorStyle: { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,
@@ -329,10 +334,11 @@ const vscode = {
       documentSavedListeners.push(callback)
       return disposable()
     },
-    // The extension's own settings, as opposed to Vim's - `ideavim.trace` is the only one. Tracing
-    // is on here so that the wiring is exercised rather than merely present.
+    // The extension's own settings, as opposed to Vim's - `ideavim.trace` is the only one. Turned
+    // on for a few keystrokes below rather than for the whole run, so that the wiring is exercised
+    // without burying everything else this host prints.
     getConfiguration: (section) => ({
-      get: (key) => (section === 'ideavim' && key === 'trace' ? true : undefined),
+      get: (key) => (section === 'ideavim' && key === 'trace' ? tracing : undefined),
     }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
@@ -887,10 +893,26 @@ press('<CR>')
 // `ideavim.trace`, which is what a user turns on to report a bug that only happens in a real
 // window. The wiring is what breaks - reading a setting, describing the state, writing it out - so
 // the stub host turns it on and checks that something arrived.
+tracing = true
+press('<Esc>')
+tracing = false
 assert.ok(
   output.some((line) => line.includes('-> NORMAL carets=[')),
   `tracing was on and nothing was traced. Output:\n${output.join('\n')}`,
 )
+
+// The caret's shape, which is the mode indicator a user reads without looking at the status bar.
+// Only a loaded extension sets it: it is applied from `refreshMode` in `Extension.kt`, against
+// whichever editor is active, and neither of those is visible to a unit test.
+reset()
+assert.strictEqual(editor.options.cursorStyle, 2, 'Normal mode should draw a block caret')
+type('i')
+assert.strictEqual(editor.options.cursorStyle, 1, 'Insert mode should draw a line caret')
+press('<Esc>')
+assert.strictEqual(editor.options.cursorStyle, 2, 'leaving Insert should put the block back')
+type('R')
+assert.strictEqual(editor.options.cursorStyle, 3, 'Replace mode should draw an underline caret')
+press('<Esc>')
 
 assert.ok(documentSavedListeners.length > 0, 'the extension registered no save listener')
 for (const listener of documentSavedListeners) listener(editor.document)

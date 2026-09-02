@@ -187,3 +187,42 @@ class VsCodeKeystrokeTest {
     assertEquals(4, session.editor.primaryCaret().offset)
   }
 }
+
+/**
+ * The caret's shape, which is how Vim says which mode you are in.
+ *
+ * Vim's own default `guicursor` is `n-v-c:block,i-ci:ver25,r-cr:hor20` - a block in Normal, Visual
+ * and on the command line, a bar in Insert, an underline in Replace - and a Vim user reads it a
+ * hundred times a minute without looking at the status bar. It is the one editor option this
+ * emulator has any business writing.
+ */
+class CursorStyleTest {
+
+  private val host = VimHost().also { it.start() }
+
+  @Test
+  fun `test normal and visual modes draw a block`() {
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("NORMAL"))
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("VISUAL"))
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("VISUAL BLOCK"))
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("SELECT"))
+  }
+
+  /** A block on the command line too, which is where Vim leaves it while `:` is being typed. */
+  @Test
+  fun `test the command line draws a block`() {
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("COMMAND"))
+  }
+
+  /** Operator-pending is not a mode you type in - `d` is a command half-finished. */
+  @Test
+  fun `test operator pending draws a block`() {
+    assertEquals(TextEditorCursorStyle.Block, host.cursorStyleFor("OP PENDING"))
+  }
+
+  @Test
+  fun `test insert draws a bar and replace an underline`() {
+    assertEquals(TextEditorCursorStyle.Line, host.cursorStyleFor("INSERT"))
+    assertEquals(TextEditorCursorStyle.Underline, host.cursorStyleFor("REPLACE"))
+  }
+}

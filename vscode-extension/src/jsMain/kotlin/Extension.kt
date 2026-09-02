@@ -82,9 +82,23 @@ fun activate(context: ExtensionContext) {
    * does not. Without `ideavim.mode` those bindings would either never fire or would steal paste.
    */
   var lastMode: String? = null
+  var styledEditor: TextEditor? = null
   fun refreshMode() {
     val mode = vim.modeName()
     status.text = "-- " + mode + " --"
+
+    // The caret's shape, which is the mode indicator a user actually reads - a block in Normal and
+    // Visual, a bar in Insert, an underline in Replace, which is Vim's own default `guicursor`.
+    //
+    // Tracked against the editor as well as the mode, because a newly focused editor needs the
+    // shape applied even when the mode has not changed: VS Code gives each editor its own options,
+    // and one opened while in Normal mode would otherwise keep the user's default bar.
+    val editor = window.activeTextEditor
+    if (editor != null && (mode != lastMode || editor !== styledEditor)) {
+      styledEditor = editor
+      editor.options.cursorStyle = vim.cursorStyleFor(mode)
+    }
+
     // Only on a change. This runs after every keystroke, and `setContext` is a round trip to VS
     // Code that re-evaluates every `when` clause in the window - sending it for each character of
     // an insert would be fifty of them for a typed word.

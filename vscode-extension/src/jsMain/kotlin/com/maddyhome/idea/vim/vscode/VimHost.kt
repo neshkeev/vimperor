@@ -355,6 +355,24 @@ class VimHost(
     return "${modeName()} carets=[$carets] pushed=[$pushed]"
   }
 
+  /**
+   * The caret's shape, which is how Vim tells you which mode you are in.
+   *
+   * Vim's own default `guicursor` is `n-v-c:block,i-ci:ver25,r-cr:hor20`: a block in Normal, Visual
+   * and on the command line, a vertical bar in Insert, an underline in Replace. That is what this
+   * maps, and it is the one editor option a Vim emulator has any business writing - the shape *is*
+   * the mode indicator, and a user reads it a hundred times a minute without looking at the status
+   * bar.
+   *
+   * Operator-pending is a block too. Vim leaves it alone there and so does this: `d` is not a mode
+   * you are typing in, it is a command half-finished.
+   */
+  fun cursorStyleFor(mode: String): Int = when {
+    mode == "INSERT" -> TextEditorCursorStyle.Line
+    mode == "REPLACE" -> TextEditorCursorStyle.Underline
+    else -> TextEditorCursorStyle.Block
+  }
+
   /** Vim's mode, named the way Vim names it on the last line. */
   fun modeName(): String {
     val mode = injector.vimState.mode

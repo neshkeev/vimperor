@@ -341,6 +341,14 @@ reason at all, put there by the habit of typing `org.junit`, and it has moved. `
 now pins the list in both directions with a reason for each, and marks the two that could move if
 somebody rewrote their JUnit 5 features.
 
+The caret's shape is the mode indicator, and it is drawn the way Vim draws it: a block in Normal,
+Visual, Select and on the command line, a vertical bar in Insert, an underline in Replace. That is
+Vim's own default `guicursor`, `n-v-c:block,i-ci:ver25,r-cr:hor20`, and it is the one editor option
+a Vim emulator has any business writing - a user reads it a hundred times a minute without looking
+at the status bar. It is applied against whichever editor is active and tracked against that editor
+as well as against the mode, because VS Code gives each editor its own options and one opened while
+in Normal mode would otherwise keep the user's default bar.
+
 ## What only a real window found
 
 The extension ran in a real VS Code for the first time and the first keystroke failed:

@@ -128,10 +128,21 @@ class FakeEditor(text: String) : TextEditor {
   var indentWithSpaces: Boolean = true
   var indentWidth: Int = 4
 
+  /** The caret's shape, which a Vim emulator writes and a test reads back. */
+  var cursorStyle: Int = TextEditorCursorStyle.Line
+
   override val options: TextEditorOptions
     get() = object : TextEditorOptions {
       override val tabSize: dynamic get() = indentWidth
       override val insertSpaces: dynamic get() = indentWithSpaces
+
+      // Through the editor's own field, because VS Code's `options` is a live view onto the editor
+      // rather than a snapshot - writing `editor.options.cursorStyle` changes the editor.
+      override var cursorStyle: Int
+        get() = this@FakeEditor.cursorStyle
+        set(value) {
+          this@FakeEditor.cursorStyle = value
+        }
     }
 
   private val lastLine: Int get() = document.lineCount - 1

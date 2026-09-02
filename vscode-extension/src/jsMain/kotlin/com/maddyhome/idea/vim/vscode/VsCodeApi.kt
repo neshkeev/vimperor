@@ -337,6 +337,25 @@ external interface TextEditor {
 external interface TextEditorOptions {
   val tabSize: dynamic
   val insertSpaces: dynamic
+
+  /**
+   * The shape of the caret, which in Vim is part of knowing which mode you are in.
+   *
+   * Vim draws a block in Normal and Visual, a vertical bar in Insert and an underline in Replace,
+   * and that shape is how a user reads the mode without looking anywhere else. Writable, unlike the
+   * indentation settings beside it, because this is the one editor option a Vim emulator owns.
+   */
+  var cursorStyle: Int
+}
+
+/** VS Code's `TextEditorCursorStyle`, a numeric enum on the module object. */
+external object TextEditorCursorStyle {
+  val Line: Int
+  val Block: Int
+  val Underline: Int
+  val LineThin: Int
+  val BlockOutline: Int
+  val UnderlineThin: Int
 }
 
 /** A style that can be painted over ranges. Created once and reused; disposing it unpaints it. */

@@ -76,6 +76,9 @@ internal class DetachedTextEditor : TextEditor {
   override val options: TextEditorOptions = object : TextEditorOptions {
     override val tabSize: dynamic get() = 4
     override val insertSpaces: dynamic get() = true
+
+    /** Nothing is on screen, so the caret has no shape; it is written and never read. */
+    override var cursorStyle: Int = TextEditorCursorStyle.Block
   }
 
   override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {}
