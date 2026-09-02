@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Scrolling when the editor has not painted yet, which is the only kind of editor there is.
@@ -245,6 +246,42 @@ class DeferredRevealScrollTest {
     session.fake.reveals.clear()
     session.type("<C-Y>")
     assertEquals(emptyList(), session.topsAskedFor(), "the view is at the top and there is nowhere to go")
+  }
+
+  /**
+   * A scroll is not followed by a reveal that undoes it.
+   *
+   * The engine calls `scrollCaretIntoView` after almost every command - twelve times for a single
+   * `<Esc>` in the stub host - and it used to reveal the caret unconditionally. `Default` asks for
+   * the smallest scroll that puts a line on screen, computed from the view VS Code has painted, so
+   * one issued straight after `<C-E>` asks the editor to bring back a line that `<C-E>` had just
+   * scrolled past. Last request wins, and it is not the scroll.
+   *
+   * Vim's `update_topline` returns immediately when the cursor is inside the window. So does this,
+   * now, and the assertion is that a `<C-E>` whose caret stays on screen asks for exactly one
+   * thing.
+   */
+  @Test
+  fun `test a scroll is not undone by a caret reveal behind it`() {
+    val session = UnpaintedSession(caretLine = 5)
+    session.type("<C-E>")
+    assertEquals(
+      listOf(1 to TextEditorRevealType.AtTop),
+      session.fake.reveals.toList(),
+      "the scroll should be the only thing asked of the view",
+    )
+  }
+
+  /** ...and the caret is still brought back when it really has gone off screen. */
+  @Test
+  fun `test a caret off screen is still revealed`() {
+    val session = UnpaintedSession(lines = 200, caretLine = 0)
+    session.fake.reveals.clear()
+    session.type("100G")
+    assertTrue(
+      session.fake.reveals.any { (line, type) -> line == 99 && type == TextEditorRevealType.Default },
+      "a jump past the window has to bring the caret back: ${session.fake.reveals}",
+    )
   }
 
   // <C-D> and <C-U> never read the view back, and are here so that stays true.

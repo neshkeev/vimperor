@@ -190,14 +190,31 @@ private fun VsCodeEditor.moveCaretToLine(line: Int) {
  */
 internal object RevealingScrollGroup : VimScrollGroup {
 
+  /**
+   * Vim's `update_topline`: bring the caret into the window, and do nothing at all if it is already
+   * there.
+   *
+   * The "do nothing" half is the important one, and it was missing. The engine calls this after
+   * more or less every command - a single `<Esc>` in the stub host produced twelve of them - and
+   * each one revealed the caret unconditionally. A reveal is a scroll request even when the caret
+   * has not moved, and `Default` computes the smallest scroll from the view VS Code has *painted*,
+   * so one issued straight after `<C-E>` asks the editor to put a line back on screen that `<C-E>`
+   * had just scrolled past. The scroll and the reveal that follows it fight, and the reveal wins
+   * because it is last.
+   *
+   * Vim does not have this problem because `update_topline` returns immediately when the cursor is
+   * inside the window, which is what the guard below is.
+   */
   override fun scrollCaretIntoView(editor: VimEditor) {
     val vsCode = editor as? VsCodeEditor ?: return
     // From the buffer rather than from the document: this runs mid-command, before the flush, when
     // the document still has the old text and `positionAt` would answer about that.
     val position = vsCode.offsetToBufferPosition(vsCode.primaryCaret().offset)
-    val at = Position(position.line, position.column)
     val top = vsCode.screenTopLine
     val height = vsCode.screenHeight
+    if (position.line >= top && position.line <= top + height - 1) return
+
+    val at = Position(position.line, position.column)
     vsCode.logReveal("Default", position.line)
     vsCode.nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
     // Default is the smallest scroll that brings the line on screen, which is usually none at all.
