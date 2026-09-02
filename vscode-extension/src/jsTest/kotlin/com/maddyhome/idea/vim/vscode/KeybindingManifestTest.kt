@@ -144,9 +144,16 @@ class KeybindingManifestTest {
      * `<C-W>`, `<C-D>`, `<C-O>`, every shifted arrow and the whole of Home/End/PageUp/PageDown were
      * implemented, tested, and unreachable in a real window.
      *
-     * `<C-F>`, `<C-S>` and `<C-Q>` are find, save and quit. Vim has meanings for all three and a Vim
-     * emulator that took them would be the reason somebody uninstalled it; a user who wants them can
-     * add three lines to their own keybindings, which is the direction that decision should go.
+     * `<C-S>` and `<C-Q>` are save and quit. Vim has meanings for both and a Vim emulator that took
+     * them would be the reason somebody uninstalled it; a user who wants them can add two lines to
+     * their own keybindings, which is the direction that decision should go.
+     *
+     * `<C-F>` was on that list too, as find, and came off it the same way `<C-C>` did: it was
+     * reported from a real window as behaving "like readline's `<C-f>`, advancing the caret one
+     * symbol to the right". That is what an unbound key does - VS Code's own default answers it -
+     * and what the user was reaching for was a page down, which is a motion with no other key on
+     * it. Find is `cmd+f` on macOS and stays `ctrl+f` in Insert mode on every platform, because the
+     * mode guard lets it through.
      *
      * `<C-C>` was on that list with them, on the same reasoning, and came off it after a real window
      * was used for ten minutes. Copy is not what `<C-C>` means to a Vim user - it is Escape, in
@@ -168,7 +175,6 @@ class KeybindingManifestTest {
       <C-2>
       <C-6>
       <C-@>
-      <C-F>
       <C-Kleft>
       <C-Kright>
       <C-Q>

@@ -84,12 +84,36 @@ internal val VsCodeEditor.screenHeight: Int
 internal val VsCodeEditor.screenBottomLine: Int
   get() = min(screenTopLine + screenHeight - 1, max(0, lineCount() - 1))
 
-/** Scrolls so that [line] is the first line on screen, as far as the end of the file allows. */
+/**
+ * Scrolls so that [line] is the first line on screen, as far as the end of the file allows.
+ *
+ * Reveals a range one window tall rather than the single line it names, and still asks for `AtTop`.
+ *
+ * `AtTop` is the API written for exactly this - "the range will always be revealed at the top of
+ * the viewport" - and a trace from a real window shows it doing nothing whatsoever: `AtTop@1`
+ * through `AtTop@6` requested over six consecutive keystrokes with the view answering `0..18`
+ * throughout, while `InCenter` from `zz` and `Default` from `j` moved that same window exactly as
+ * asked. Whether the enum value is not arriving or the editor is declining it is not yet known.
+ *
+ * The range is what makes this work either way. `Default` - which is what an unrecognised reveal
+ * type falls back to, and which that window honours - is the smallest scroll that brings a range
+ * into view, and a range one window tall can only be brought into view by putting its first line
+ * at the top. So the request is correct for an editor that honours `AtTop` and lands in the same
+ * place on one that does not.
+ *
+ * The exception is the last window of a file, where the range is clipped and the fallback can only
+ * bring the file's end to the bottom. `AtTop` has no such limit, which is why it is still asked
+ * for rather than replaced.
+ */
 internal fun VsCodeEditor.scrollLineToTop(line: Int) {
-  val target = line.coerceIn(0, max(0, lineCount() - 1))
-  val at = Position(target, 0)
-  logReveal("AtTop", target)
-  nativeEditor.revealRange(Range(at, at), TextEditorRevealType.AtTop)
+  val lastLine = max(0, lineCount() - 1)
+  val target = line.coerceIn(0, lastLine)
+  val windowBottom = min(target + screenHeight - 1, lastLine)
+  logReveal("Top", target)
+  nativeEditor.revealRange(
+    Range(Position(target, 0), Position(windowBottom, 0)),
+    TextEditorRevealType.AtTop,
+  )
   rememberRevealed(target)
 }
 

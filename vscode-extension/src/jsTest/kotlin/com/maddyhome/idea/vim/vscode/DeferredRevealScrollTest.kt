@@ -217,9 +217,13 @@ class DeferredRevealScrollTest {
       session.editor.flush()
     }
 
-    /** The top lines this host asked for, in order, ignoring the reveals that keep the caret in view. */
-    fun topsAskedFor(): List<Int> =
-      fake.reveals.filter { (_, type) -> type == TextEditorRevealType.AtTop }.map { (line, _) -> line }
+    /**
+     * The top lines this host asked for, in order.
+     *
+     * A scroll asks for a range one window tall; a caret being brought back into view asks for a
+     * single line. That is what tells them apart now that both go through `Default`.
+     */
+    fun topsAskedFor(): List<Int> = fake.reveals.filter { it.end > it.start }.map { it.start }
   }
 
   @Test
@@ -266,9 +270,9 @@ class DeferredRevealScrollTest {
     val session = UnpaintedSession(caretLine = 5)
     session.type("<C-E>")
     assertEquals(
-      listOf(1 to TextEditorRevealType.AtTop),
+      listOf(RecordedReveal(1, 10, TextEditorRevealType.AtTop)),
       session.fake.reveals.toList(),
-      "the scroll should be the only thing asked of the view",
+      "the scroll should be the only thing asked of the view, and a whole window of it",
     )
   }
 
@@ -279,7 +283,7 @@ class DeferredRevealScrollTest {
     session.fake.reveals.clear()
     session.type("100G")
     assertTrue(
-      session.fake.reveals.any { (line, type) -> line == 99 && type == TextEditorRevealType.Default },
+      session.fake.reveals.any { it.start == 99 && it.end == 99 },
       "a jump past the window has to bring the caret back: ${session.fake.reveals}",
     )
   }

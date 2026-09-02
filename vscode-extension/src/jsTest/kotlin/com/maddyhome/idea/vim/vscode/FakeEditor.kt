@@ -77,6 +77,16 @@ private class FakeUri(override val scheme: String, override val path: String) : 
   override val fsPath: String get() = path
 }
 
+/**
+ * One `revealRange` request: the lines it named and the type it was asked with.
+ *
+ * The range matters as much as the type. "Put line N at the top" is asked for by revealing a range
+ * one window tall with `Default`, because `AtTop` does not move a real editor - see
+ * [VsCodeEditor.scrollLineToTop] - so a test that looked only at the start line could not tell a
+ * scroll from a caret being brought back into view.
+ */
+data class RecordedReveal(val start: Int, val end: Int, val type: Int)
+
 /** A single replacement, in the offsets it was made against, so a test can see how wide it was. */
 data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
@@ -112,7 +122,7 @@ class FakeEditor(text: String) : TextEditor {
    * survives a viewport which never catches up, and the one a test can assert on when modelling
    * that window.
    */
-  val reveals: MutableList<Pair<Int, Int>> = mutableListOf()
+  val reveals: MutableList<RecordedReveal> = mutableListOf()
 
   /**
    * A viewport, because scrolling cannot be tested without one.
@@ -199,7 +209,7 @@ class FakeEditor(text: String) : TextEditor {
   @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
   override fun revealRange(range: Range, revealType: Int) {
     revealedRanges += range
-    reveals += range.start.line to revealType
+    reveals += RecordedReveal(range.start.line, range.end.line, revealType)
     val start = range.start.line
     val end = range.end.line
     val current = scrollTop
