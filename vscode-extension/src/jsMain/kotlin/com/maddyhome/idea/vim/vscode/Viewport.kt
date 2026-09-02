@@ -35,29 +35,74 @@ import kotlin.math.min
  * when a scroll has nowhere to go.
  */
 
-/** The first line on screen. Zero for an editor VS Code has not laid out yet. */
-internal val VsCodeEditor.screenTopLine: Int
+/** What VS Code says the window shows, which is where it has been painted rather than where it is. */
+private val VsCodeEditor.reportedTopLine: Int
   get() = nativeEditor.visibleRanges.firstOrNull()?.start?.line ?: 0
 
-/**
- * The last line on screen.
- *
- * Folding would show up as more than one visible range with gaps between them, so this takes the
- * end of the last one rather than adding a height to the top. This host cannot fold, but reading
- * the ranges the way VS Code means them costs nothing.
- */
-internal val VsCodeEditor.screenBottomLine: Int
+private val VsCodeEditor.reportedBottomLine: Int
   get() = nativeEditor.visibleRanges.lastOrNull()?.end?.line ?: (lineCount() - 1)
 
-/** How many lines the window shows. At least one, so that arithmetic dividing by it is safe. */
+/**
+ * The first line on screen: Vim's idea of it, which is the one that has to be built on.
+ *
+ * A scroll command is a statement about where the window goes next, and the next command continues
+ * from there. Asking VS Code where the view is instead makes every command start from wherever the
+ * editor has got round to painting - which, measured in a real window, is where it started. So the
+ * top line asked for is remembered, and kept until the editor reports a different one from the last
+ * it reported, which is it saying where the view really is.
+ *
+ * See [VsCodeEditor.revealedTopLine] for what that cost.
+ */
+internal val VsCodeEditor.screenTopLine: Int
+  get() {
+    val reported = reportedTopLine
+    if (reported != lastReportedTopLine) {
+      // The editor has moved of its own accord - the user scrolled, or it caught up with a reveal.
+      lastReportedTopLine = reported
+      revealedTopLine = null
+      return reported
+    }
+    return revealedTopLine ?: reported
+  }
+
+/**
+ * How many lines the window shows.
+ *
+ * From the reported ranges, and it is the one thing they can still be trusted for: a height changes
+ * when the window is laid out, not when it scrolls, so a stale pair of ranges is the wrong place
+ * and the right size. At least one, so that arithmetic dividing by it is safe.
+ */
 internal val VsCodeEditor.screenHeight: Int
-  get() = max(1, screenBottomLine - screenTopLine + 1)
+  get() = max(1, reportedBottomLine - reportedTopLine + 1)
+
+/**
+ * The last line on screen, derived from the top and the height.
+ *
+ * Not read from the ranges: the top no longer comes from them either, and a bottom that did would
+ * describe a different window from the top.
+ */
+internal val VsCodeEditor.screenBottomLine: Int
+  get() = min(screenTopLine + screenHeight - 1, max(0, lineCount() - 1))
 
 /** Scrolls so that [line] is the first line on screen, as far as the end of the file allows. */
 internal fun VsCodeEditor.scrollLineToTop(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
   val at = Position(target, 0)
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.AtTop)
+  rememberRevealed(target)
+}
+
+/**
+ * Records where a reveal has put the top of the window.
+ *
+ * Every reveal has to do this, not only the one that names a top line: they all move the view, and
+ * a command that moved it without saying so would leave the next one building on a position two
+ * commands out of date. The arithmetic for each type is VS Code's own, and the same arithmetic
+ * [FakeEditor] models.
+ */
+private fun VsCodeEditor.rememberRevealed(top: Int) {
+  revealedTopLine = top.coerceIn(0, max(0, lineCount() - 1))
+  lastReportedTopLine = reportedTopLine
 }
 
 /**
@@ -69,7 +114,10 @@ internal fun VsCodeEditor.scrollLineToTop(line: Int) {
 internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
   val at = Position(target, 0)
+  val top = screenTopLine
+  val height = screenHeight
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenterIfOutsideViewport)
+  rememberRevealed(if (target < top || target > top + height - 1) target - (height - 1) / 2 else top)
 }
 
 /** Scrolls so that [line] is the last line on screen. */
@@ -85,7 +133,9 @@ internal fun VsCodeEditor.scrollLineToBottom(line: Int) = scrollLineToTop(line -
 internal fun VsCodeEditor.scrollLineToMiddle(line: Int) {
   val target = line.coerceIn(0, max(0, lineCount() - 1))
   val at = Position(target, 0)
+  val height = screenHeight
   nativeEditor.revealRange(Range(at, at), TextEditorRevealType.InCenter)
+  rememberRevealed(target - (height - 1) / 2)
 }
 
 /** `'scrolloff'`, capped so that a large value on a small window cannot pin the caret off screen. */
@@ -138,7 +188,17 @@ internal object RevealingScrollGroup : VimScrollGroup {
     // the document still has the old text and `positionAt` would answer about that.
     val position = vsCode.offsetToBufferPosition(vsCode.primaryCaret().offset)
     val at = Position(position.line, position.column)
+    val top = vsCode.screenTopLine
+    val height = vsCode.screenHeight
     vsCode.nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
+    // Default is the smallest scroll that brings the line on screen, which is usually none at all.
+    vsCode.rememberRevealed(
+      when {
+        position.line < top -> position.line
+        position.line > top + height - 1 -> position.line - height + 1
+        else -> top
+      },
+    )
   }
 
   /**

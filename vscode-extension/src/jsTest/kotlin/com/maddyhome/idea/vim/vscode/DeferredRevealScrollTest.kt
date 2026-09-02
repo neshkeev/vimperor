@@ -185,6 +185,68 @@ class DeferredRevealScrollTest {
     assertEquals(21, session.caretLine, "the caret goes to the last line of the new window")
   }
 
+  /**
+   * The window that never reports where it is - which is the one the bug was reported from.
+   *
+   * A trace from a real window showed `view=[0..13] of 924` after every single press of `<C-E>` and
+   * `<C-Y>`, over a dozen of them. The keys arrived, the commands ran, `revealRange` was called -
+   * and `visibleRanges` said the same thing throughout. Reading the top line from it meant every
+   * command started from line 0, so `<C-E>` asked for line 1 again and again and `<C-Y>` clamped to
+   * 0 and refused. Both keys did nothing, for ever.
+   *
+   * This models exactly that: reveals are deferred and never painted, so `visibleRanges` is frozen
+   * at the start. What is asserted is what the host *asked for*, because that is the only thing a
+   * scroll command controls.
+   */
+  private class UnpaintedSession(lines: Int = 40, caretLine: Int = 0, height: Int = 10) {
+    val session = Session(lines = lines, caretLine = caretLine, height = height)
+    val fake get() = session.fake
+
+    init {
+      fake.reveals.clear()
+    }
+
+    /** Types [keys] and never paints, so the reported viewport stays where it started. */
+    fun type(keys: String) {
+      val handler = KeyHandler.getInstance()
+      val state = handler.keyHandlerState
+      for (stroke in injector.parser.parseKeys(keys)) {
+        handler.handleKey(session.editor, stroke, VsCodeExecutionContext, state)
+      }
+      session.editor.flush()
+    }
+
+    /** The top lines this host asked for, in order, ignoring the reveals that keep the caret in view. */
+    fun topsAskedFor(): List<Int> =
+      fake.reveals.filter { (_, type) -> type == TextEditorRevealType.AtTop }.map { (line, _) -> line }
+  }
+
+  @Test
+  fun `test Ctrl-E keeps advancing when the viewport never reports moving`() {
+    val session = UnpaintedSession(caretLine = 5)
+    repeat(5) { session.type("<C-E>") }
+    assertEquals(listOf(1, 2, 3, 4, 5), session.topsAskedFor(), "each press should ask for the next line")
+  }
+
+  @Test
+  fun `test Ctrl-Y comes back down the same way`() {
+    val session = UnpaintedSession(caretLine = 5)
+    repeat(4) { session.type("<C-E>") }
+    session.fake.reveals.clear()
+    repeat(3) { session.type("<C-Y>") }
+    assertEquals(listOf(3, 2, 1), session.topsAskedFor(), "and each press back should undo one")
+  }
+
+  @Test
+  fun `test Ctrl-Y still refuses at the top of the file`() {
+    val session = UnpaintedSession(caretLine = 0)
+    session.type("<C-E>")
+    session.type("<C-Y>")
+    session.fake.reveals.clear()
+    session.type("<C-Y>")
+    assertEquals(emptyList(), session.topsAskedFor(), "the view is at the top and there is nowhere to go")
+  }
+
   // <C-D> and <C-U> never read the view back, and are here so that stays true.
 
   @Test

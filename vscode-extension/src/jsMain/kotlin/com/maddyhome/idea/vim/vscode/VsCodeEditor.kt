@@ -52,6 +52,23 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   private val vimCarets: MutableList<VsCodeCaret> = mutableListOf()
 
   /**
+   * Where Vim believes the top of the window is, and where VS Code last said it was.
+   *
+   * Vim owns the view: `<C-E>` means "the window is now one line further down", and the next
+   * `<C-E>` has to build on that. This host asked `visibleRanges` instead, which is VS Code's
+   * answer to a different question - where the view has been *painted* - and in a real window that
+   * answer did not follow a `revealRange` at all. `oldTop` stayed 0 forever, so every `<C-E>`
+   * recomputed the same target and `<C-Y>` clamped to 0 and refused. Both keys did nothing, on a
+   * 924-line file, with the view reporting `0..13` after every press.
+   *
+   * So the intention is remembered here and believed until VS Code contradicts it. A reported top
+   * that differs from the last one seen is the editor saying where it actually is - because the
+   * user scrolled, or because it caught up - and that is adopted. Anything else keeps Vim's answer.
+   */
+  internal var revealedTopLine: Int? = null
+  internal var lastReportedTopLine: Int? = null
+
+  /**
    * What was last pushed to VS Code, so that the event it fires in response is not read back.
    *
    * Setting selections makes VS Code report a selection change, and it reports it later rather than

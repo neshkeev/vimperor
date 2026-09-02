@@ -105,6 +105,16 @@ class FakeEditor(text: String) : TextEditor {
   val revealedRanges: MutableList<Range> = mutableListOf()
 
   /**
+   * The same reveals, as the line asked for and the type it was asked with.
+   *
+   * What a scroll command actually *does* is ask; whether the view then moves is the editor's
+   * business, and in a real window it may not report that it did. So this is the observable that
+   * survives a viewport which never catches up, and the one a test can assert on when modelling
+   * that window.
+   */
+  val reveals: MutableList<Pair<Int, Int>> = mutableListOf()
+
+  /**
    * A viewport, because scrolling cannot be tested without one.
    *
    * VS Code gives an extension half a conversation: `revealRange` moves the view and
@@ -189,6 +199,7 @@ class FakeEditor(text: String) : TextEditor {
   @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
   override fun revealRange(range: Range, revealType: Int) {
     revealedRanges += range
+    reveals += range.start.line to revealType
     val start = range.start.line
     val end = range.end.line
     val current = scrollTop
