@@ -26,4 +26,21 @@ interface VimWindowGroup {
   fun splitWindowHorizontal(context: ExecutionContext, filename: String, focusNew: Boolean = true)
   fun closeCurrentWindow(context: ExecutionContext)
   fun closeAll(context: ExecutionContext)
+
+  /**
+   * `:enew` - a new, empty, unnamed buffer, in the window that is already focused.
+   *
+   * Vim's is a buffer with no file behind it, waiting for a `:w` to give it a name. Both hosts have
+   * something that is that and each calls it something else, so each answers with its own.
+   */
+  fun openNewBuffer(context: ExecutionContext)
+
+  /**
+   * `:tabnew` and `:tabedit` - a new tab, empty or showing [filename].
+   *
+   * Vim's tab page holds a whole window layout and neither host's tab does, which is a difference
+   * `:tabnext` and `:tabclose` already live with. What matters here is that a file opened this way
+   * gets a tab of its own, which is true in both, so the base implementation is the whole of it.
+   */
+  fun openNewTab(context: ExecutionContext, filename: String)
 }

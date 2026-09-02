@@ -73,6 +73,14 @@ internal class VsCodeWindowGroup(private val host: HostCommandRunner) : WindowGr
     run(command)
   }
 
+  /**
+   * `:enew` - VS Code's untitled file, which is Vim's new buffer under another name.
+   *
+   * Unnamed, unsaved, and in the group that is focused. `:w` on it asks where to put it, which is
+   * what Vim's `:w` on an unnamed buffer does too.
+   */
+  override fun openNewBuffer(context: ExecutionContext) = run(VsCodeCommands.NEW_UNTITLED_FILE)
+
   override fun closeCurrentWindow(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_AND_GROUP)
 
   override fun closeAllExceptCurrent(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_IN_OTHER_GROUPS)

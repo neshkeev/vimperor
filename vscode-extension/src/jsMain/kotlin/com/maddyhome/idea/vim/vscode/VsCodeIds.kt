@@ -82,6 +82,9 @@ internal object VsCodeCommands {
   const val CLOSE_EDITORS_IN_OTHER_GROUPS = "workbench.action.closeEditorsInOtherGroups"
   const val CLOSE_ALL_GROUPS = "workbench.action.closeAllGroups"
 
+  /** `:enew` - VS Code's blank page, which it calls an untitled file. */
+  const val NEW_UNTITLED_FILE = "workbench.action.files.newUntitledFile"
+
   /**
    * The nth tab of the current group, which VS Code numbers into the command id itself rather than
    * taking as an argument. One through nine; there is no tenth, and `:tabmove 10` has nowhere to go.
@@ -112,6 +115,7 @@ internal object VsCodeCommands {
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,
     SPLIT_EDITOR_DOWN, SPLIT_EDITOR_RIGHT,
     CLOSE_EDITORS_AND_GROUP, CLOSE_EDITORS_IN_OTHER_GROUPS, CLOSE_ALL_GROUPS,
+    NEW_UNTITLED_FILE,
   ) + TAB_INDEXES.map { openEditorAtIndex(it) } +
     GROUP_ORDINALS.indices.mapNotNull { focusEditorGroup(it + 1) }
 

@@ -189,6 +189,14 @@ internal class VsCodeFile(
     return if (path.startsWith(root)) path.removePrefix(root) else path
   }
 
+  /**
+   * The folder open in this window, which is the nearest thing VS Code has to a current directory.
+   *
+   * Already what a relative path is resolved against here, so `:pwd` prints the truth rather than a
+   * guess. Null when the window has no folder open.
+   */
+  override fun getWorkingDirectory(context: ExecutionContext): String? = workspaceRoot()
+
   /** `:bnext` and `:bprevious`, which VS Code calls the next and previous editor. */
   override fun selectNextFile(count: Int, context: ExecutionContext) {
     if (count == 0) return

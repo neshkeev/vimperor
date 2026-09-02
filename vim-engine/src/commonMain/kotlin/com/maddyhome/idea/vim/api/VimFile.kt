@@ -78,6 +78,18 @@ interface VimFile {
    */
   fun listFilesForCompletion(pathPrefix: String, context: ExecutionContext): List<String> = emptyList()
 
+  /**
+   * The directory a relative path is resolved against, as `:pwd` prints it.
+   *
+   * Vim's current directory is a real one that `:cd` moves; neither host has that. IntelliJ has the
+   * project's base directory and VS Code has the workspace folder, and each is the thing relative
+   * paths are already resolved against here - so `:pwd` prints what the host means, and `:cd` is
+   * the command neither can honour.
+   *
+   * Null when there is no folder open, which is a window VS Code will happily give you.
+   */
+  fun getWorkingDirectory(context: ExecutionContext): String? = null
+
   fun getProjectId(project: Any): String
 
   /**

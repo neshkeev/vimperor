@@ -83,12 +83,24 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
     "standardConstructor": true
   },
+  "bf[irst]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
+    "standardConstructor": true
+  },
+  "bl[ast]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
+    "standardConstructor": true
+  },
   "bn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
     "standardConstructor": true
   },
   "bp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
+    "standardConstructor": true
+  },
+  "br[ewind]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
     "standardConstructor": true
   },
   "bro[wse]": {
@@ -186,6 +198,10 @@
   "ec[ho]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoCommand",
     "standardConstructor": false
+  },
+  "ene[w]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditNewFileCommand",
+    "standardConstructor": true
   },
   "exe[cute]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExecuteCommand",
@@ -339,6 +355,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
     "standardConstructor": true
   },
+  "new": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewWindowCommand",
+    "standardConstructor": true
+  },
   "nm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
@@ -409,6 +429,10 @@
   },
   "pu[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PutLinesCommand",
+    "standardConstructor": true
+  },
+  "pw[d]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintWorkingDirectoryCommand",
     "standardConstructor": true
   },
   "q[uit]": {
@@ -495,6 +519,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
     "standardConstructor": false
   },
+  "star[tinsert]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.StartInsertCommand",
+    "standardConstructor": true
+  },
   "stopi[nsert]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopInsertCommand",
     "standardConstructor": true
@@ -515,12 +543,20 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabCloseCommand",
     "standardConstructor": true
   },
+  "tabe[dit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
+    "standardConstructor": true
+  },
   "tabm[ove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabMoveCommand",
     "standardConstructor": true
   },
   "tabn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextTabCommand",
+    "standardConstructor": true
+  },
+  "tabnew": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
     "standardConstructor": true
   },
   "tabo[nly]": {
@@ -575,6 +611,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
   },
+  "vne[w]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewVerticalWindowCommand",
+    "standardConstructor": true
+  },
   "vs[plit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
     "standardConstructor": false
@@ -593,6 +633,10 @@
   },
   "wa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteAllCommand",
+    "standardConstructor": true
+  },
+  "winc[md]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinCmdCommand",
     "standardConstructor": true
   },
   "wn[ext]": {

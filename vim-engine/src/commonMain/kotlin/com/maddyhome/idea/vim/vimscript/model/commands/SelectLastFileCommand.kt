@@ -18,9 +18,12 @@ import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 
 /**
- * see "h :last"
+ * see "h :last" / "h :blast"
+ *
+ * `:last` is the argument list and `:blast` the buffer list; see [SelectFirstFileCommand] for why
+ * they are one command here.
  */
-@ExCommand(command = "la[st]")
+@ExCommand(command = "la[st],bl[ast]")
 data class SelectLastFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

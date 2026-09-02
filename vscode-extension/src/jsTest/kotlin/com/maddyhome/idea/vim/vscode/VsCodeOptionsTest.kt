@@ -57,6 +57,10 @@ class VsCodeOptionsTest {
      * listener alone, which is exactly the part that cannot be relied on.
      */
     fun run(line: String) {
+      // Back to Normal first: a line that leaves the editor somewhere else - `:startinsert` does -
+      // would otherwise swallow the `:` of the next one, and a probe that never ran reports no
+      // error, which reads as a command that works.
+      host.key(fake, "<Esc>")
       host.type(fake, ":")
       line.forEach { host.type(fake, it.toString()) }
       host.key(fake, "<CR>")
@@ -540,20 +544,10 @@ class VsCodeOptionsTest {
   private companion object {
     /** See [`the ex commands a config can use and this host does not have are these`]. */
     val STILL_MISSING = """
-      enew
-      new
-      vnew
-      tabnew
-      tabedit
-      wincmd l
-      bfirst
-      blast
-      pwd
       bufdo echo 1
       windo echo 1
       tabdo echo 1
       argdo echo 1
-      startinsert
       doautocmd BufRead
       earlier 1
       later 1

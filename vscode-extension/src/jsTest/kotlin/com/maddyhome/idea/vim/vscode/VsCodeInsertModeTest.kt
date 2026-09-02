@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.state.mode.Mode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -244,4 +245,55 @@ class VsCodeInsertModeTest {
     assertEquals("grzyb", session.fake.document.content)
   }
 
+  // `:startinsert`, which is a command that leaves the user typing.
+
+  @Test
+  fun `test startinsert leaves the editor in insert mode`() {
+    val session = Session("abc", 1)
+    session.type(":startinsert<CR>")
+
+    assertEquals(Mode.INSERT, session.editor.mode)
+  }
+
+  /** ...at the caret, like `i`. */
+  @Test
+  fun `test what is typed after startinsert goes in at the caret`() {
+    val session = Session("abc", 1)
+    session.type(":startinsert<CR>X<Esc>")
+
+    assertEquals("aXbc", session.fake.document.content)
+  }
+
+  /** The bang is `A` rather than `i`, which is the whole of the difference. */
+  @Test
+  fun `test startinsert bang appends at the end of the line`() {
+    val session = Session("abc\nnext", 1)
+    session.type(":startinsert!<CR>X<Esc>")
+
+    assertEquals("abcX\nnext", session.fake.document.content)
+  }
+
+  /**
+   * Already inserting is not an error in Vim, and must not move the caret either.
+   *
+   * Run through the executor rather than typed, because typing it would be typing it: the only way
+   * to reach a command while in Insert is for something else to run it, which a sourced file or an
+   * autocommand can.
+   */
+  @Test
+  fun `test startinsert while already inserting does nothing`() {
+    val session = Session("abc", 1)
+    session.type("i")
+
+    injector.vimscriptExecutor.execute(
+      "startinsert!",
+      session.editor,
+      VsCodeExecutionContext,
+      skipHistory = true,
+      indicateErrors = true,
+    )
+
+    assertEquals(Mode.INSERT, session.editor.mode)
+    assertEquals(1, session.editor.primaryCaret().offset, "the bang must not have moved the caret to the line end")
+  }
 }

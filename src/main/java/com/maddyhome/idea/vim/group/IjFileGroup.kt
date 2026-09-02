@@ -222,6 +222,10 @@ class IjFileGroup : VimFileBase() {
     return rpc { FileRemoteApi.getInstance().listFilesForCompletion(pathPrefix, extractProjectId(context)) }
   }
 
+  /** The project's base directory, which is what a relative path is resolved against here. */
+  override fun getWorkingDirectory(context: ExecutionContext): String? =
+    PlatformDataKeys.PROJECT.getData(context.context as DataContext)?.basePath
+
   override fun getProjectId(project: Any): String {
     require(project is Project)
     return project.projectId().serializeToString()

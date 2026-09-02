@@ -200,10 +200,28 @@ stops a mark following the text, `:verbose` the `'verbose'` option.
 any scope, `E108` for one that was never set, and `:unlet!` for the form a config that may be
 sourced twice actually writes.
 
+`:bfirst`, `:blast`, `:pwd` and `:startinsert` are in the engine too. The first two are Vim's
+buffer-list names for `:first` and `:last`, which are one command here because neither host keeps an
+argument list separate from the files it has open. `:pwd` prints the folder open in the window -
+VS Code has no current directory, it has a workspace, and that folder is already what a relative
+path is resolved against here, so `:pwd` prints the truth and `:cd` is the one that has to say it
+cannot. `:startinsert` is `i` and `:startinsert!` is `A`.
+
+The windows and buffers are there too. `:enew` is VS Code's untitled file, which is Vim's new
+buffer under another name - unnamed, unsaved, and in the group that is focused. `:new` and `:vnew`
+are that with a split in front, and with a name they split first and open afterwards, which is the
+thing `:split file` still says it cannot do: opening into the group that is *now* focused needs
+nothing VS Code does not have. `:tabnew` and `:tabedit` are the same again, since an editor opened
+by name gets a tab of its own either way.
+
+`:wincmd` is not a table of arguments but the keys themselves: Vim defines `:wincmd {arg}` as what
+`CTRL-W {arg}` does, so the argument is appended to `<C-W>` and handed to the key handler. It
+therefore answers for exactly the `<C-W>` commands this host has, and for any added later without
+being touched. `:2wincmd l` is `2<C-W>l`, as it is in Vim.
+
 What a config can still say and this host reports `E492` for is a list in `VsCodeOptionsTest`,
-measured by typing every candidate at the prompt rather than guessed at - the window and buffer
-commands, `:enew`, `:tabnew`, `:wincmd`, `:bufdo`, which this host could answer with the VS Code
-commands it already sends.
+measured by typing every candidate at the prompt rather than guessed at - the loops over windows and
+buffers, `:bufdo` and its three relatives, and `:doautocmd`, `:earlier` and `:later`.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

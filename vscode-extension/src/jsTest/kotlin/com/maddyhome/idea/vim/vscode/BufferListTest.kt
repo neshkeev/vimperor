@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.VimFile
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -211,6 +212,39 @@ class BufferListTest {
     val file = VsCodeFile(RecordingRunner())
 
     assertEquals(false, file.selectFile(8, VsCodeExecutionContext))
+  }
+
+  /**
+   * `:bfirst` and `:blast` are the ends of the same list `:ls` numbers.
+   *
+   * Vim has four commands here over two lists - `:first`/`:last` walk the argument list and
+   * `:bfirst`/`:blast` the buffer list - and this host has one list, so it has two commands under
+   * four names. The pair that was missing is the one a config is more likely to write.
+   */
+  @Test
+  fun `test bfirst opens the first buffer and blast the last`() {
+    openTabs("/test/buffer.txt", "/test/other.txt")
+    val runner = RecordingRunner()
+    val file = VsCodeFile(runner)
+
+    assertTrue(file.selectFile(0, VsCodeExecutionContext), ":bfirst should have found a buffer")
+    assertEquals("/test/buffer.txt", (runner.arguments[0][0] as Uri).path)
+
+    assertTrue(file.selectFile(VimFile.LAST_FILE_SENTINEL, VsCodeExecutionContext), ":blast should have found one")
+    assertEquals("/test/other.txt", (runner.arguments[1][0] as Uri).path)
+  }
+
+  /** ...and both spellings resolve to a command rather than to `E492`. */
+  @Test
+  fun `test bfirst and blast are commands this host knows`() {
+    openTabs("/test/buffer.txt")
+    val session = Session("hello")
+
+    for (command in listOf("bfirst", "brewind", "blast")) {
+      injector.messages.clearError()
+      session.run(command)
+      assertTrue(!injector.messages.isError(), "`:$command` should have resolved")
+    }
   }
 
   /** `:buffer name` matches on the file's own name, not on the path `:ls` displays. */

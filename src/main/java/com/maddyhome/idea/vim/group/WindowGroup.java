@@ -205,6 +205,19 @@ public class WindowGroup extends WindowGroupBase {
     return null;
   }
 
+  /**
+   * {@code :enew} - the nearest thing IntelliJ has to Vim's new, unnamed buffer.
+   *
+   * A scratch file: an editable buffer with no file in the project behind it. IntelliJ asks which
+   * language it should be, where Vim asks nothing, which is the one visible difference.
+   */
+  @Override
+  public void openNewBuffer(@NotNull ExecutionContext context) {
+    final var editor = injector.getEditorGroup().getFocusedEditor();
+    if (editor == null) return;
+    injector.getActionExecutor().executeAction(editor, "NewScratchFile", context);
+  }
+
   @Override
   public void closeCurrentWindow(@NotNull ExecutionContext context) {
     final FileEditorManagerEx fileEditorManager = getFileEditorManager((DataContext)context.getContext());
