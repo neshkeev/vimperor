@@ -785,7 +785,16 @@ assert.ok(
   `entering insert mode did not set the ideavim.mode context. Sent: ${JSON.stringify(contextsSet)}`,
 )
 
+// And only on a change: `setContext` re-evaluates every `when` clause in the window, so sending it
+// per character would be fifty round trips for a typed word.
 contextsSet.length = 0
+for (const character of 'hello') type(character)
+assert.deepStrictEqual(
+  contextsSet,
+  [],
+  `typing inside one mode should send no context updates. Sent: ${JSON.stringify(contextsSet)}`,
+)
+
 press('<Esc>')
 assert.ok(
   contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'NORMAL'),

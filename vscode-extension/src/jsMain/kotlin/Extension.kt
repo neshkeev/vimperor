@@ -80,10 +80,17 @@ fun activate(context: ExtensionContext) {
    * is the only place that distinction can be made, because a keybinding either claims a key or
    * does not. Without `ideavim.mode` those bindings would either never fire or would steal paste.
    */
+  var lastMode: String? = null
   fun refreshMode() {
     val mode = vim.modeName()
     status.text = "-- " + mode + " --"
-    commands.executeCommand("setContext", "ideavim.mode", mode)
+    // Only on a change. This runs after every keystroke, and `setContext` is a round trip to VS
+    // Code that re-evaluates every `when` clause in the window - sending it for each character of
+    // an insert would be fifty of them for a typed word.
+    if (mode != lastMode) {
+      lastMode = mode
+      commands.executeCommand("setContext", "ideavim.mode", mode)
+    }
   }
   refreshMode()
 

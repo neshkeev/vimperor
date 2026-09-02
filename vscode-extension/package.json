@@ -12,6 +12,16 @@
     "Keymaps",
     "Other"
   ],
+  "capabilities": {
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "The engine reads files through Node's `fs` so that `:source` can return with their contents. A virtual workspace has no Node, and would need an asynchronous load at startup."
+    },
+    "untrustedWorkspaces": {
+      "supported": true,
+      "description": "Configuration is read from your home directory - `~/.ideavimrc` and the XDG location - and never from the workspace, so opening an untrusted folder cannot make IdeaVim run anything."
+    }
+  },
   "main": "./build/compileSync/js/main/productionExecutable/kotlin/IdeaVIM-vscode-extension.js",
   "activationEvents": [
     "onStartupFinished"

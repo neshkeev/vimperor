@@ -193,7 +193,16 @@ cannot produce and keypad keys VS Code does not distinguish.
 
 The control chords that clash with editing habits are bound only outside Insert mode, which needs
 the mode in a `when` clause - `ctrl+v` is block Visual to Vim and paste to everyone else. The
-extension sets `ideavim.mode` alongside the status bar for exactly that.
+extension sets `ideavim.mode` alongside the status bar for exactly that, and only when the mode
+changes: `setContext` re-evaluates every `when` clause in the window, so sending it per keystroke
+would be fifty round trips for a typed word.
+
+The rest of the manifest is checked too, because it is read before any of this code runs.
+`engines.vscode` and the `@types/vscode` that `checkVsCodeApiDeclarations` reads are pinned to the
+same version - otherwise the API check passes while checking a version users are not promised. And
+`capabilities` now says where this works: not in a virtual workspace, because every file it reads
+goes through Node's `fs` so that `:source` can return with the contents, and yes in an untrusted
+one, because the configuration comes from your home directory and never from the workspace.
 
 The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
 The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test

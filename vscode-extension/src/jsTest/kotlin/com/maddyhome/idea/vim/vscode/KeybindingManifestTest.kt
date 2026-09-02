@@ -63,6 +63,42 @@ class KeybindingManifestTest {
     assertTrue(needed.size > 40, "only ${needed.size} keys were enumerated, so the engine was not read")
   }
 
+  /**
+   * The rest of the manifest, which is the other half of what a real window reads before any of
+   * this code runs.
+   *
+   * `engines.vscode` is the version this extension claims to work against, and `@types/vscode` is
+   * what `checkVsCodeApiDeclarations` checks every `external` declaration against. If those two
+   * drift apart the check still passes and it is checking the wrong API - an `external fun` that
+   * exists in 1.9x and not in the version users are told is enough. They are pinned together here
+   * because nothing else notices.
+   *
+   * `capabilities` is what VS Code reads to decide whether to load this at all. A virtual workspace
+   * has no Node, and every file this host reads goes through Node's `fs` so that `:source` can
+   * return with the contents - so the honest declaration is that it does not work there, rather
+   * than loading and failing on `require`. Untrusted workspaces are the opposite case: the
+   * configuration comes from the home directory and never from the workspace, so opening an
+   * untrusted folder cannot make IdeaVim run anything.
+   */
+  @Test
+  fun `test the manifest declares the version and the workspaces it works in`() {
+    val root = repositoryRoot()!!
+    val manifest = JSON.parse<dynamic>(readText("$root/vscode-extension/package.json"))
+    val declaredVersion = (manifest.engines.vscode as String).removePrefix("^")
+    val pinned = Regex("""npm\("@types/vscode",\s*"([^"]+)"\)""")
+      .find(readText("$root/vscode-extension/build.gradle.kts"))
+      ?.groupValues?.get(1)
+
+    assertEquals(
+      declaredVersion,
+      pinned,
+      "engines.vscode and the @types/vscode the API check reads have to be the same version",
+    )
+
+    assertEquals(false, manifest.capabilities.virtualWorkspaces.supported, "Node's fs is not there")
+    assertEquals(true, manifest.capabilities.untrustedWorkspaces.supported, "no workspace file is read")
+  }
+
   private companion object {
     /**
      * The `args` of every keybinding, which is where the manifest names a key in Vim's notation.
