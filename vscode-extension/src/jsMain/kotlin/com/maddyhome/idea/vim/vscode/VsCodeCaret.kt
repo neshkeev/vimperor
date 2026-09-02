@@ -49,7 +49,6 @@ class VsCodeCaret(
 
   override fun moveToOffsetNative(offset: Int) {
     this.offset = offset
-    rememberColumn()
   }
 
   /**
@@ -59,13 +58,11 @@ class VsCodeCaret(
    */
   override fun moveToInlayAwareOffset(newOffset: Int): VimCaret {
     offset = newOffset
-    rememberColumn()
     return this
   }
 
   override fun moveToBufferPosition(position: BufferPosition) {
     offset = vimEditor.bufferPositionToOffset(position)
-    rememberColumn()
   }
 
   override fun getBufferPosition(): BufferPosition = vimEditor.offsetToBufferPosition(offset)
@@ -84,41 +81,33 @@ class VsCodeCaret(
   override val registerStorage: CaretRegisterStorage by lazy { CaretRegisterStorageBase(this) }
 
   /**
-   * Vim's `curswant`: the column `j` and `k` aim for, so that passing over a short line does not
-   * lose it - and, in blockwise Visual, the column the block's edge is drawn at.
+   * Vim's `curswant`: the column `j` and `k` aim for, and the column a block's edge is drawn at.
    *
-   * This used to answer with the caret's *current* column whenever the caret had moved since the
-   * column was last set, on the reasoning that a remembered column is only meaningful until
-   * something else moves the caret. The reasoning is right and the rule is not: a vertical motion
-   * sets the column and *then* moves the caret, so the very next read threw the answer away. On a
-   * ragged file that is plainly wrong - `<C-V>` at column 2 and then `k` over a one-character line
-   * dragged the whole block's left edge to column 1, and the next `k` to column 0, widening every
-   * row of the block as it went.
+   * The rule is IdeaVim's, checked against it rather than invented: a remembered column is only
+   * meaningful until something else moves the caret, so a read that finds the caret somewhere other
+   * than where the column was set answers with the caret's own column. IntelliJ's version keys the
+   * same check on a visual position; this one on an offset, which is the same thing where nothing
+   * folds.
    *
-   * It is a plain field now, as IntelliJ's `lastColumnNumber` is. The engine resets it through
-   * [resetLastColumn] when a horizontal motion or an edit makes it meaningless, and the one case
-   * the engine cannot know about - the user moving the caret with the mouse - is handled where that
-   * arrives, in [VsCodeEditor.syncCaretsFromEditor], which is what builds a caret from a click.
+   * What was actually wrong was not the rule but where the value lived. IdeaVim keeps it against
+   * the *editor*, so every caret of a block shares one; here it is per caret, and a block's carets
+   * are built fresh on every motion - so each new one started at zero and answered with whatever
+   * column the line it landed on happened to clamp to. That is why `<C-V>` widened by a column on
+   * every `j` over ragged text. [VsCodeEditor.vimSetSystemBlockSelectionSilently] seeds them all
+   * from the caret the block is being drawn by.
    */
-  override var vimLastColumn: Int = 0
+  private var lastColumn: Int = 0
+  private var lastColumnSetAt: Int = -1
 
-  /**
-   * Keeps the remembered column in step with an ordinary move, which is IntelliJ's behaviour.
-   *
-   * IntelliJ's caret maintains `lastColumnNumber` itself on every move, and `vim-engine` is written
-   * to that: `MotionActionHandler` sets the intended column around a motion, and the motions that do
-   * not - `G`, and everything that returns an absolute offset - rely on the *editor* having kept it
-   * current. With nothing keeping it here, `G` then `ll` left it at zero and the next `<C-V>k` drew
-   * the block from column zero.
-   *
-   * Deliberately not called from [moveToVisualPosition], and deliberately restored by
-   * [VsCodeEditor.vimSetSystemBlockSelectionSilently]: laying out a block moves every caret onto its
-   * own line, and the engine reads the remembered column *after* that to decide where the block's
-   * edge goes. A move made while rebuilding a block is not the user aiming at a column.
-   */
-  private fun rememberColumn() {
-    vimLastColumn = getBufferPosition().column
-  }
+  override var vimLastColumn: Int
+    get() {
+      if (offset != lastColumnSetAt) vimLastColumn = getBufferPosition().column
+      return lastColumn
+    }
+    set(value) {
+      lastColumn = value
+      lastColumnSetAt = offset
+    }
 
   override fun resetLastColumn() {
     vimLastColumn = getBufferPosition().column

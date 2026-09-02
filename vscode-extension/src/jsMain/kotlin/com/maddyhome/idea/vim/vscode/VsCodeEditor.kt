@@ -642,7 +642,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val primary = rebuilt.firstOrNull { (line, _) -> line == activeLine }?.second ?: rebuilt.last().second
     for ((_, caret) in rebuilt) caret.isPrimary = caret === primary
     if (anchor != null) primary.vimSelectionStart = anchor
-    if (column != null) primary.vimLastColumn = column
+    // Every caret of the block, not only the primary. The remembered column is what the block's
+    // edge is drawn at, and a caret built for a line it has never been on has none of its own - so
+    // without this each new one answered with whatever column its line clamped to, and the block
+    // widened by a column on every motion over ragged text. IdeaVim gets this for free by keeping
+    // the column against the editor rather than against the caret.
+    if (column != null) for ((_, caret) in rebuilt) caret.vimLastColumn = column
 
     val carets = rebuilt.map { it.second }
     val removed = vimCarets.filter { existing -> carets.none { it === existing } }
