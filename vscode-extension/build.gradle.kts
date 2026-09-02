@@ -170,6 +170,32 @@ val checkVsCodeApiDeclarations by tasks.registering {
       "These are declared as VS Code API but are not in @types/vscode:\n" +
         missing.joinToString("\n") { (owner, member) -> "  $owner.$member" }
     }
+
+    // And that a thing VS Code declares as a *class* is declared as a class here.
+    //
+    // This is the check that was missing when a real window refused the first keystroke with
+    // `Illegal argument: selections`. `Selection` is a class in VS Code, was an interface here, and
+    // its setter is not duck-typed: `TextEditor.selections` does `!(a instanceof Selection)` and
+    // throws. A Kotlin class implementing an interface of the right shape is a plain object, so
+    // every caret this host pushed was refused - and nothing offline saw it, because the stub host
+    // takes what it is handed and the check above compares names.
+    //
+    // The two exceptions are classes this module only ever *receives*. Receiving an instance
+    // through an interface is fine; it is constructing one that is not.
+    val receivedOnly = setOf("Disposable", "Uri")
+    val declaredAsInterface = Regex("^external interface (\\w+)", RegexOption.MULTILINE)
+      .findAll(declarations.asFile.readText())
+      .map { it.groupValues[1] }
+      .filterNot { it in notInTheNamespace || it in receivedOnly }
+      .filter { name -> Regex("export class $name\\b").containsMatchIn(realApi) }
+      .toList()
+
+    check(declaredAsInterface.isEmpty()) {
+      "VS Code declares these as classes, so an object of ours will not pass its `instanceof` " +
+        "checks - declare them as `external class` here:\n" +
+        declaredAsInterface.joinToString("\n") { "  $it" }
+    }
+
     logger.lifecycle("Checked ${ours.size} VS Code API declarations against the real API.")
   }
 }

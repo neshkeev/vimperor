@@ -233,7 +233,19 @@ external interface TextEditorEdit {
   fun delete(location: Range)
 }
 
-external interface Selection {
+/**
+ * A selection, which is a class in VS Code and had to be an object of that class here.
+ *
+ * Declared as an interface until a real window rejected the first keystroke with
+ * `Illegal argument: selections`. VS Code's setter for `TextEditor.selections` is not duck-typed -
+ * it does `value.some(a => !(a instanceof Selection))` and throws - so a Kotlin class implementing
+ * an interface of the same shape is a plain JavaScript object and is refused. Nothing offline could
+ * see it: the stub host takes whatever it is handed, and the declaration check compares *names*.
+ *
+ * `checkVsCodeApiDeclarations` now also compares interface against class, which is what would have
+ * caught this without a window.
+ */
+external class Selection(anchor: Position, active: Position) {
   val anchor: Position
   val active: Position
 }

@@ -31,7 +31,7 @@ internal class DetachedTextEditor : TextEditor {
 
   override val document: TextDocument = DetachedDocument()
 
-  override var selection: Selection = DetachedSelection(Position(0, 0), Position(0, 0))
+  override var selection: Selection = Selection(Position(0, 0), Position(0, 0))
   override var selections: Array<Selection> = arrayOf(selection)
 
   override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
@@ -74,11 +74,6 @@ internal class DetachedTextEditor : TextEditor {
 
   override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {}
 }
-
-private class DetachedSelection(
-  override val anchor: Position,
-  override val active: Position,
-) : Selection
 
 /**
  * A document with no file behind it.

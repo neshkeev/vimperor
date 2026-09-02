@@ -96,6 +96,17 @@ class VimHost(
     return path
   }
 
+  /**
+   * The editor a startup command runs against: the one on screen, or the fallback window.
+   *
+   * `onStartupFinished` fires before VS Code has focused a restored editor, so `activeTextEditor`
+   * is often null at exactly the moment the `.ideavimrc` should be read - and a window opened on a
+   * folder rather than a file has no editor at all. The fallback window exists for this: somewhere
+   * for the engine to run a command when there is no window yet.
+   */
+  fun startupEditor(textEditor: TextEditor?): VimEditor =
+    textEditor?.let { editorFor(it) } ?: vimInjector.fallbackWindow
+
   /** The Vim editor for [textEditor], created on first sight and reused after. */
   fun editorFor(textEditor: TextEditor): VsCodeEditor {
     val identity = identityOf(textEditor)

@@ -136,7 +136,7 @@ class CrlfTest {
   fun `test a caret set by VS Code is read at the right offset`() {
     val session = Session("one\r\ntwo\r\nthree")
     // Where a click on the `h` of `three` puts it: the third line, fourth character.
-    val clicked = FakeSelection(Position(2, 3), Position(2, 3))
+    val clicked = Selection(Position(2, 3), Position(2, 3))
     session.fake.selections = arrayOf(clicked)
     session.fake.selection = clicked
 

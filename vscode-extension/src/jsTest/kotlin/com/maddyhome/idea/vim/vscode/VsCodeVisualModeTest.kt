@@ -113,7 +113,7 @@ class VsCodeVisualModeTest {
     val session = Session("one two")
     session.host.editorFor(session.fake)
 
-    session.fake.selections = arrayOf(FakeSelection(Position(0, 0), Position(0, 3)))
+    session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 3)))
     session.host.selectionChanged(session.fake)
 
     assertEquals("VISUAL", session.host.modeName())
@@ -126,11 +126,11 @@ class VsCodeVisualModeTest {
   fun `test collapsing the selection leaves visual mode`() {
     val session = Session("one two")
     session.host.editorFor(session.fake)
-    session.fake.selections = arrayOf(FakeSelection(Position(0, 0), Position(0, 3)))
+    session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 3)))
     session.host.selectionChanged(session.fake)
     assertEquals("VISUAL", session.host.modeName())
 
-    session.fake.selections = arrayOf(FakeSelection(Position(0, 5), Position(0, 5)))
+    session.fake.selections = arrayOf(Selection(Position(0, 5), Position(0, 5)))
     session.host.selectionChanged(session.fake)
 
     assertEquals("NORMAL", session.host.modeName())

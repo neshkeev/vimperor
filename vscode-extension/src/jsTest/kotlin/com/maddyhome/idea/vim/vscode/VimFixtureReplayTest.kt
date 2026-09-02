@@ -134,7 +134,7 @@ class VimFixtureReplayTest {
         // reports a selection change, and the host rebuilds its carets from it.
         fake.selections = caretsAt.map { offset ->
           val position = fake.document.positionAt(offset)
-          FakeSelection(position, position)
+          Selection(position, position)
         }.toTypedArray()
         fake.selection = fake.selections[0]
         editor.syncCaretsFromEditor()

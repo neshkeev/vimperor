@@ -189,6 +189,20 @@ const editor = makeEditor('')
  * The tab kind that holds an ordinary file. VS Code exports it as a class and the extension narrows
  * a tab's input with `instanceof`, so a plain object here would make every tab invisible to `:ls`.
  */
+/*
+ * VS Code checks a selection with `instanceof` before accepting one - `TextEditor.selections` throws
+ * `Illegal argument: selections` for a plain object, which is what took the first keystroke in a
+ * real window. A class here, so that this host refuses what a real one refuses.
+ */
+class Selection {
+  constructor(anchor, active) {
+    this.anchor = anchor
+    this.active = active
+    this.start = anchor
+    this.end = active
+  }
+}
+
 class TabInputText {
   constructor(uri) {
     this.uri = uri
@@ -214,6 +228,7 @@ const vscode = {
     }
   },
   TabInputText,
+  Selection,
   EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {

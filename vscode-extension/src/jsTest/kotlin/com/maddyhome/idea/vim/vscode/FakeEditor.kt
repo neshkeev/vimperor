@@ -82,7 +82,7 @@ data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
 class FakeEditor(text: String) : TextEditor {
   override val document: FakeDocument = FakeDocument(text)
-  override var selection: Selection = FakeSelection(Position(0, 0), Position(0, 0))
+  override var selection: Selection = Selection(Position(0, 0), Position(0, 0))
   override var selections: Array<Selection> = arrayOf(selection)
 
   val recordedEdits: MutableList<RecordedEdit> = mutableListOf()
@@ -187,7 +187,6 @@ class FakeEditor(text: String) : TextEditor {
   }
 }
 
-class FakeSelection(override val anchor: Position, override val active: Position) : Selection
 
 private class FakeEditBuilder(private val document: FakeDocument) : TextEditorEdit {
   val edits: MutableList<RecordedEdit> = mutableListOf()

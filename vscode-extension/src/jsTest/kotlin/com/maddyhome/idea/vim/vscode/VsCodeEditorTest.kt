@@ -116,7 +116,7 @@ class VsCodeEditorTest {
   @Test
   fun `test the caret comes from the VS Code selection`() {
     val fake = FakeEditor("one\ntwo\nthree")
-    fake.selections = arrayOf(FakeSelection(Position(1, 2), Position(1, 2)))
+    fake.selections = arrayOf(Selection(Position(1, 2), Position(1, 2)))
     val editor = VsCodeEditor(fake)
 
     assertEquals(1, editor.carets().size)
@@ -128,8 +128,8 @@ class VsCodeEditorTest {
   fun `test every VS Code cursor becomes a caret, the first one primary`() {
     val fake = FakeEditor("one\ntwo\nthree")
     fake.selections = arrayOf(
-      FakeSelection(Position(0, 1), Position(0, 1)),
-      FakeSelection(Position(2, 3), Position(2, 3)),
+      Selection(Position(0, 1), Position(0, 1)),
+      Selection(Position(2, 3), Position(2, 3)),
     )
     val editor = VsCodeEditor(fake)
 

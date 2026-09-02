@@ -384,10 +384,10 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val ordered = listOf(primary) + vimCarets.filter { it !== primary }
     val selections = ordered.map { caret ->
       if (caret.hasSelection()) {
-        FlushedSelection(positionOf(caret.selectionStart), positionOf(caret.selectionEnd))
+        Selection(positionOf(caret.selectionStart), positionOf(caret.selectionEnd))
       } else {
         val position = positionOf(caret.offset)
-        FlushedSelection(position, position)
+        Selection(position, position)
       }
     }
     nativeEditor.selections = selections.toTypedArray()
@@ -749,8 +749,3 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 }
 
-/** A collapsed selection to hand back to VS Code, which has no separate notion of a caret. */
-private class FlushedSelection(
-  override val anchor: Position,
-  override val active: Position,
-) : Selection

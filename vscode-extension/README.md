@@ -341,6 +341,38 @@ reason at all, put there by the habit of typing `org.junit`, and it has moved. `
 now pins the list in both directions with a reason for each, and marks the two that could move if
 somebody rewrote their JUnit 5 features.
 
+## What only a real window found
+
+The extension ran in a real VS Code for the first time and the first keystroke failed:
+
+    IdeaVim: typing 'i' failed - Throwable: Illegal argument: selections
+
+That is VS Code's own error text. `TextEditor.selections` is not duck-typed - its setter does
+`value.some(a => !(a instanceof Selection))` and throws - and `Selection` was declared here as an
+`external interface`, so every caret this host pushed was a plain JavaScript object and every
+keystroke was refused. Normal mode looked fine because the status bar shows the mode of a freshly
+built state machine whether or not a key has ever been handled.
+
+Nothing offline could see it, and it is worth being precise about why. The stub host takes whatever
+it is handed, so it agreed. `checkVsCodeApiDeclarations` reads `@types/vscode`, but it compared
+*names* - and `Selection.anchor` and `Selection.active` are both real members of the real thing. The
+mistake was in the *kind*: an interface where VS Code has a class. That check now compares kind as
+well, with an exception list for the two classes this module only ever receives - receiving an
+instance through an interface is fine, and it is constructing one that is not. Reverting the fix
+makes the build fail, which is the only way to know a check works.
+
+The same run found a second thing, from what was *missing* from the output rather than from an
+error. The `.ideavimrc` line was absent: the config was loaded inside `window.activeTextEditor?.let
+{ ... }`, and `onStartupFinished` fires before VS Code has focused a restored editor - so the file
+was never read, silently, because the message saying so was inside the same block. It runs against
+the fallback window now, which is what that editor is for.
+
+And a third, which is a lesson about instrumentation rather than about VS Code. A keystroke that
+threw was swallowed: VS Code catches the exception from a command handler, shows a generic
+notification, and writes the detail to the extension host log - a different window from the one this
+extension prints to. The key handlers report to the output channel now, and that one line is what
+turned "`i` does nothing" into a named error in a single round trip.
+
 ## Checking it against somebody else's expectations
 
 Every test in this module was written by whoever wrote the code under it, and they all share that

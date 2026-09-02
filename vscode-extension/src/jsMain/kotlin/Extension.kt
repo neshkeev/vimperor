@@ -112,8 +112,10 @@ fun activate(context: ExtensionContext) {
       // back to VS Code is better than swallowing it.
       commands.executeCommand("default:type", arguments)
     } else {
-      vim.type(editor, text)
-      refreshMode()
+      reporting(output, "typing '" + text + "'") {
+        vim.type(editor, text)
+        refreshMode()
+      }
     }
   }
 
@@ -124,8 +126,10 @@ fun activate(context: ExtensionContext) {
     val editor = window.activeTextEditor
     val notation = arguments as? String ?: arguments?.key as? String
     if (editor != null && notation != null) {
-      vim.key(editor, notation)
-      refreshMode()
+      reporting(output, "the key " + notation) {
+        vim.key(editor, notation)
+        refreshMode()
+      }
     }
   }
 
@@ -165,11 +169,15 @@ fun activate(context: ExtensionContext) {
 
   // Before any key reaches the engine: the config is where mappings and options come from, and a
   // key handled ahead of it would use the defaults.
-  window.activeTextEditor?.let { editor ->
-    val vimEditor = vim.editorFor(editor)
-    val loaded = vim.loadVimRc(vimEditor)
-    output.appendLine(if (loaded != null) "Loaded " + loaded else "No .ideavimrc found.")
-  }
+  //
+  // Not conditional on there being an editor, which it used to be - and that was a real hole rather
+  // than a tidy guard. `onStartupFinished` fires before VS Code has focused a restored editor, so
+  // `activeTextEditor` is routinely null at this moment even when one is open, and a window opened
+  // on a folder rather than a file has none at all. The config was then never read for the whole
+  // session, silently, because the message saying so was inside the same `let`. It runs against the
+  // fallback window when there is nothing on screen.
+  val loaded = vim.loadVimRc(vim.startupEditor(window.activeTextEditor))
+  output.appendLine(if (loaded != null) "Loaded " + loaded else "No .ideavimrc found.")
 
   output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
 
@@ -206,6 +214,23 @@ fun deactivate() {
   statusBar = null
   commandLineBar = null
   host = null
+}
+
+/**
+ * Runs a keystroke and says so in the output channel if it throws.
+ *
+ * VS Code catches an exception from a command handler, shows a generic notification and writes the
+ * detail to the extension host log - which is a different window from the one this extension prints
+ * to, and is not where anybody looks. A key that fails silently is the hardest kind of bug to report
+ * and the easiest to fix once it has a name, so it gets named here.
+ */
+private inline fun reporting(output: OutputChannel, what: String, block: () -> Unit) {
+  try {
+    block()
+  } catch (e: Throwable) {
+    output.appendLine("IdeaVim: " + what + " failed - " + e::class.simpleName + ": " + e.message)
+    output.show(preserveFocus = true)
+  }
 }
 
 /** The `:` and `/` prompts, on the status bar - the closest thing VS Code has to Vim's last line. */

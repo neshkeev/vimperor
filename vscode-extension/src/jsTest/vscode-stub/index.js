@@ -34,6 +34,19 @@ class Range {
 /* The two line endings VS Code has. A document reports which it uses and the buffer normalises. */
 const EndOfLine = { LF: 1, CRLF: 2 }
 
+/*
+ * A selection, which VS Code checks with `instanceof` before it will accept one - so the stub has to
+ * be a class here too, or it would take what a real window refuses.
+ */
+class Selection {
+  constructor(anchor, active) {
+    this.anchor = anchor
+    this.active = active
+    this.start = anchor
+    this.end = active
+  }
+}
+
 const TextEditorRevealType = {
   Default: 0,
   InCenter: 1,
@@ -174,4 +187,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Uri, TabInputText, EndOfLine, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
