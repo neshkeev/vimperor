@@ -1,206 +1,160 @@
 # Codebase Maintenance Instructions
 
-## Goal
+Routine maintenance on a randomly chosen part of the codebase: keep an eye on it,
+find genuine issues, don't change things for the sake of changing them.
 
-Perform routine maintenance on random parts of the IdeaVim codebase to ensure code quality, consistency, and catch potential issues early. This is not about being overly pedantic or making changes for the sake of changes - it's about keeping an eye on the codebase and identifying genuine issues.
+This used to run weekly from `codebaseMaintenance.yml`. That workflow is disabled
+along with the rest of JetBrains' automation (see
+`.github/workflows-disabled/README.md`), so this is now something you do on
+purpose, when asked.
 
-## Approach
-
-### 1. Select Random Area
-
-Choose a random part of the codebase to inspect. Use one of these strategies:
+## 1. Pick an area
 
 ```bash
-# Get a random Kotlin file
+# A random Kotlin file
 find . -name "*.kt" -not -path "*/build/*" -not -path "*/.gradle/*" | shuf -n 1
 
-# Get a random package/directory
-find . -type d -name "*.kt" -not -path "*/build/*" | shuf -n 1 | xargs dirname
-
-# Pick from core areas randomly
-# - vim-engine/src/main/kotlin/com/maddyhome/idea/vim/
-# - src/main/java/com/maddyhome/idea/vim/
-# - tests/
+# Or pick a module deliberately:
+#   vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/   the engine, both hosts
+#   vim-engine/src/jsMain/  |  vim-engine/src/jvmMain/          per-platform engine code
+#   src/main/java/com/maddyhome/idea/vim/                       the IntelliJ plugin
+#   vscode-extension/src/jsMain/kotlin/                         the VS Code extension
 ```
 
-**Important**: You're not limited to the file you randomly selected. If investigating reveals related files that need attention, follow the trail. The random selection is just a starting point.
+**You are not limited to the file you drew.** It is a starting point; follow the
+trail into callers, implementations and tests when it leads somewhere.
 
-## 2. What to Check
+Note the layout: `vim-engine` is Kotlin Multiplatform, so the engine lives in
+`src/commonMain/kotlin`, **not** `src/main/kotlin`.
 
-### Code Style & Formatting
-- **Kotlin conventions**: Proper use of data classes, sealed classes, when expressions
-- **Naming consistency**: Follow existing patterns in the codebase
-- **Import organization**: Remove unused imports, prefer explicit imports over wildcards (wildcard imports are generally not welcome)
-- **Code structure**: Proper indentation, spacing, line breaks
-- **Documentation**: KDoc comments where needed (public APIs, complex logic)
-- **Copyright years**: Do NOT update copyright years unless you're making substantive changes to the file. It's perfectly fine for copyright to show an older year. Don't mention copyright year updates in commit messages or change summaries
+## 2. What to check
 
-### Code Quality Issues
-- **Null safety**: Proper use of nullable types, safe calls, Elvis operator
-- **Error handling**: Appropriate exception handling, meaningful error messages
-- **Code duplication**: Identify repeated code that could be extracted
-- **Dead code**: Unused functions, parameters, variables
-- **TODOs/FIXMEs**: Check if old TODOs are still relevant or can be addressed
-- **Magic numbers/strings**: Should be named constants
-- **Complex conditionals**: Can they be simplified or extracted?
+### Code style and structure
 
-### Potential Bugs
-- **Off-by-one errors**: Especially in loops and range operations
-- **Edge cases**: Empty collections, null values, boundary conditions
-- **Type safety**: Unnecessary casts, unchecked casts
-- **Resource handling**: Proper cleanup, try-with-resources
-- **Concurrency issues**: Thread safety if applicable
-- **State management**: Proper initialization, mutation patterns
-- **IdeaVim enablement checks**: Verify that `injector.enabler.isEnabled()` or `Editor.isIdeaVimDisabledHere` are not missed in places where they should be checked. These functions determine if IdeaVim is active and should be called before performing Vim-specific operations
+- Kotlin conventions: data classes, sealed classes, `when` expressions
+- Naming that follows what is already there
+- Explicit imports, not wildcards; no unused ones
+- KDoc on public API and on anything whose *reason* is not obvious from the code
+- **Copyright years: leave them alone.** An older year is fine. Never mention a
+  year bump in a commit message.
 
-### Architecture & Design
-- **Separation of concerns**: Does the code have a single responsibility?
-- **Dependency direction**: Are dependencies pointing the right way?
-- **Abstraction level**: Consistent level of abstraction within methods
-- **Vim architecture alignment**: Does it match Vim's design philosophy?
-- **IntelliJ Platform conventions**: Proper use of platform APIs
+There is no formatter task. `ktlintCheck` and `ktlintFormat` do not exist in this
+build - ktlint is commented out at `vim-engine/build.gradle.kts:27`. Match the
+surrounding file by hand.
 
-### Testing
-- **Test coverage**: Are there tests for the code you're reviewing?
-  - If checking a specific command or function, verify that tests exist for it
-  - If tests exist, check if they cover the needed cases (edge cases, error conditions, typical usage)
-  - If tests don't exist or coverage is incomplete, consider creating comprehensive test coverage
-- **Test quality**: Do tests cover edge cases?
-- **Test naming**: Clear, descriptive test names
-- **Flaky tests**: Any potentially unstable tests?
-- **Regression tests for bug fixes**: When fixing a bug, always write a test that:
-  - Would fail with the old (buggy) implementation
-  - Passes with the fixed implementation
-  - Clearly documents what bug it's testing (include comments explaining the issue)
-  - Tests the specific boundary condition or edge case that exposed the bug
-  - This ensures the bug doesn't resurface in future refactorings
+### Code quality
 
-## 3. Investigation Strategy
+- Null safety, safe calls, Elvis
+- Meaningful error messages
+- Duplication worth extracting; dead code worth deleting
+- TODOs and FIXMEs: still relevant, or addressable now?
+- Magic numbers and strings that want names
+- **`commonMain` cannot use JVM APIs.** `String.format`, `Character`, `java.*`,
+  reflection - all compile for the JVM target and break the JS one. This is a
+  real and repeated mistake; it is worth grepping for when you are in the engine.
+- **Enablement checks**: `injector.enabler.isEnabled()` and
+  `Editor.isIdeaVimDisabledHere` before Vim-specific operations, on the plugin side.
 
-Don't just look at surface-level issues. Dig deeper:
+### Possible bugs
 
-1. **Read the code**: Understand what it does before suggesting changes
-2. **Check related files**: Look at callers, implementations, tests
-3. **Look at git history**: `git log --oneline <file>` to understand context
-4. **Find related issues**: Search for TODOs, FIXMEs, or commented code
-5. **Run tests**: If you make changes, ensure tests pass
-6. **Check YouTrack**: Look for related issues if you find bugs
+- Off-by-one, especially in ranges and loops
+- Edge cases: empty collections, boundary offsets, empty files, the last line
+- Unchecked casts
+- Concurrency, on the plugin side; the extension is single-threaded
+- Initialisation order. In Kotlin/JS, properties are assigned in declaration
+  order - a field read from an `init` block before its declaration is `undefined`,
+  with no warning. That has bitten this project.
 
-## 4. When to Make Changes
+### Architecture
 
-**DO fix**:
-- Clear bugs or logic errors
-- Obvious code quality issues (unused imports, etc.)
-- Misleading or incorrect documentation
-- Code that violates established patterns
-- Security vulnerabilities
-- Performance issues with measurable impact
+- Single responsibility; dependencies pointing the right way
+- Consistent level of abstraction within a function
+- **Does it match Vim's design?** That is the goal, and it is a real review
+  question, not a slogan.
+- **Does an engine change hold for both hosts?** A fix in `commonMain` that
+  assumes an IntelliJ editor is a bug in the extension, and the reverse.
 
-**DON'T fix**:
-- Stylistic preferences if existing code is consistent
-- Working code just to use "newer" patterns
-- Minor formatting if it's consistent with surrounding code
-- Things that are subjective or arguable
-- Massive refactorings without clear benefit
+### The boundaries nothing checks
 
-**When in doubt**: Document the issue in your report but don't make changes.
+Worth a look whenever maintenance lands in `vscode-extension/`:
 
-## 5. Making Changes
+- `VsCodeApi.kt` - `external` declarations compiled against nothing. Guarded by
+  `checkVsCodeApiDeclarations`, which checks names and kind against `@types/vscode`.
+- `src/jsTest/vscode-stub/` - the fake VS Code the tests run against. Written from
+  the same reading of the docs as the declarations, so it agrees with them whether
+  or not they are right. Every real-window bug so far has been a stub that was
+  *more permissive* than VS Code.
+- The checked-in KSP registries. Moving an `@ExCommand` class without re-running
+  `:vim-engine:kspKotlinJvm` silently unregisters the command.
 
-If you decide to make changes:
+### Tests
 
-1. **Make focused commits**: One logical change per commit
-   - If the change affects many files or is complicated or has multiple logical changes, split it into multiple step-by-step commits
-   - This makes it easier for reviewers to understand the changes
-   - Example: First commit renames a function, second commit updates callers, third commit adds new functionality
-   - This rule is important!
-2. **Write clear commit messages**: Explain why, not just what
-3. **Run tests**: `./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test`
+- Is the thing you are reading tested at all? If not, that is often the most
+  valuable output of a maintenance pass.
+- Do the tests cover edge cases, or only the happy path?
+- Are the names descriptive?
+- **A bug fix gets a regression test** that would fail against the old code and
+  says, in a comment, what it is about.
 
-## 6. Examples
+## 3. Investigate before changing
 
-### Good Maintenance Examples
+1. Read the code and understand it
+2. Check callers, implementations, tests
+3. `git log --oneline <file>` - this repository's commit bodies carry the reasoning
+4. `git log upstream/master --oneline <file>` when the question is why IdeaVim did
+   it that way
+5. Run the tests
 
-**Example 1: Found and fixed null safety issue**
-```
-Inspected: vim-engine/.../motion/VimMotionHandler.kt
+## 4. When to change
 
-Issues found:
-- Several nullable properties accessed without safe checks
-- Could cause NPE in edge cases with cursor at document end
+**Do fix**: clear bugs, logic errors, unused imports, misleading documentation,
+violations of an established pattern, performance problems with measurable impact.
 
-Changes:
-- Added null checks with Elvis operator
-- Added early returns for invalid state
-- Added KDoc explaining preconditions
-```
+**Don't fix**: stylistic preference where the file is already consistent, working
+code rewritten in a newer idiom, anything subjective, large refactorings without a
+clear benefit.
 
-**Example 2: No changes needed**
-```
-Inspected: src/.../action/change/ChangeLineAction.kt
+**When in doubt**: write it up, don't change it.
 
-Checked:
-- Code style and formatting ✓
-- Null safety ✓
-- Error handling ✓
-- Tests present and comprehensive ✓
+## 5. Making changes
 
-Observations:
-- Code is well-structured and follows conventions
-- Good test coverage including edge cases
-- Documentation is clear
-- No issues found
-```
+1. **Focused commits**, one logical change each. Split anything larger - rename,
+   then update callers, then add behaviour. This matters.
+2. **Explain why in the commit body.** That is where this project keeps its
+   reasoning.
+3. **Run the tests** for what you touched.
 
-**Example 3: Found issues but didn't fix**
-```
-Inspected: tests/.../motion/MotionTests.kt
+## Commands
 
-Issues noted:
-- Some test names could be more descriptive
-- Potential for extracting common setup code
-- Tests are comprehensive but could add edge case for empty file
-
-Recommendation: These are minor quality-of-life improvements.
-Not critical, but could be addressed in future cleanup.
-```
-
-## IdeaVim-Specific Considerations
-
-- **Vim compatibility**: Changes should maintain compatibility with Vim behavior
-- **IntelliJ Platform**: Follow IntelliJ platform conventions and APIs
-- **Property tests**: Can be flaky - verify if test failures relate to your changes
-- **Action syntax**: Use `<Action>` in mappings, not `:action`
-- **Architecture & Guidelines**: Refer to [CONTRIBUTING.md](../CONTRIBUTING.md) for:
-  - Architecture overview and where to find specific code
-  - Testing guidelines and corner cases to consider
-  - Common patterns and conventions
-
-## Commands Reference
+Java 21 is required and the build refuses anything else:
 
 ```bash
-# Run tests (standard suite)
-./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+```
 
-# Run specific test class
-./gradlew test --tests "ClassName"
+```bash
+# The IntelliJ plugin and the engine's JVM target
+./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test --console=plain
 
-# Check code style
-./gradlew ktlintCheck
+# One class or package - much faster, and the usual thing to want
+./gradlew :test --tests "SearchGroupTest" --console=plain
 
-# Format code
-./gradlew ktlintFormat
+# The VS Code extension: tests, the stub-host smoke test, and both API guards
+./gradlew :vscode-extension:test --console=plain
 
-# Run IdeaVim in dev instance
+# Just its tests. NOTE: `jsNodeTest` does not accept `--tests`; it runs all of them.
+./gradlew :vscode-extension:jsNodeTest --console=plain
+
+# Failures land in XML, not on stdout - a Kotlin/JS test's println is swallowed
+grep -o 'testcase name="[^"]*"' vscode-extension/build/test-results/jsNodeTest/*.xml
+
+# The plugin, in a dev IDE
 ./gradlew runIde
 ```
 
-## Final Notes
+Property tests are flaky by nature; check whether a failure relates to your change.
 
-- **Be thorough but practical**: Don't waste time on nitpicks
-- **Context matters**: Understand why code is the way it is before changing
-- **Quality over quantity**: One good fix is better than ten trivial changes
-- **Document your process**: Help future maintainers understand your thinking
-- **Learn from the code**: Use this as an opportunity to understand the codebase better
+## Reporting
 
-Remember: The goal is to keep the codebase healthy, not to achieve perfection. Focus on genuine improvements that make the code safer, clearer, or more maintainable.
+Say what you inspected, what you found, and what you changed - including "nothing,
+and here is what I checked", which is a perfectly good result.

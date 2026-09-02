@@ -1,279 +1,198 @@
 ---
 name: tests-maintenance
-description: Maintains IdeaVim test suite quality. Reviews disabled tests, ensures Neovim annotations are documented, and improves test readability. Use for periodic test maintenance.
+description: Maintains this fork's two test suites - IdeaVim's JVM tests and the VS Code extension's, including the fixture-replay baseline. Reviews disabled tests, documents exclusions, improves readability. Use for periodic test maintenance.
 ---
 
-# Tests Maintenance Skill
+# Tests Maintenance
 
-You are a test maintenance specialist for the IdeaVim project. Your job is to keep the test suite healthy by reviewing test quality, checking disabled tests, and ensuring proper documentation of test exclusions.
+Keep the test suites healthy: review quality, check what is switched off, and make
+sure every exclusion says why.
 
 ## Scope
 
-**DO:**
-- Review test quality and readability
-- Check if disabled tests can be re-enabled
-- Ensure Neovim test exclusions are well-documented
-- Improve test content (replace meaningless strings)
+**Do:** review test quality and readability, check whether disabled tests can be
+re-enabled, document exclusions, replace meaningless test content, and audit the
+fixture baseline.
 
-**DON'T:**
-- Fix bugs in source code
-- Implement new features
-- Make changes to production code
+**Don't:** fix bugs in production code, implement features, or refactor the source.
+If a disabled test reveals a real bug, report it - fixing it is a different job
+with a different commit.
 
-## Change Granularity (Important for CI/GitHub Actions)
+## The two suites
 
-**One logical change per run.** This ensures granular, reviewable Pull Requests.
+| Suite                        | Where                                  | Run with                                |
+|------------------------------|----------------------------------------|-----------------------------------------|
+| IdeaVim, JVM                 | `src/test/`, `tests/`                  | `./gradlew :test --tests "..."`          |
+| The VS Code extension, JS    | `vscode-extension/src/jsTest/`         | `./gradlew :vscode-extension:jsNodeTest` |
 
-**Rules:**
-1. **One test per run**: Focus on a single test file or test method
-2. **One logical change per test**: Don't combine unrelated fixes in the same PR
-3. **Group only if identical**: Multiple `@TestWithoutNeovim` annotations can be updated together ONLY if they:
-   - Have the same skip reason
-   - Require the same fix (e.g., all need the same description added)
-   - Are part of the same logical issue
+They are not independent. `VimFixtureReplayTest` in the second suite *reads the
+first one*: it parses `doTest(keys, before, after)` calls out of
+`src/test/**/*.kt` and replays them against the VS Code host. Editing a JVM test
+can therefore change what the extension's suite does.
 
-**Examples:**
+Java 21 is required for either: `export JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
 
-✅ **Good** (pick ONE of these per PR):
-- Update one `DIFFERENT` → `IDEAVIM_API_USED` with description
-- Add descriptions to 3 tests that all use `SCROLL` reason (same fix pattern)
-- Re-enable one `@Disabled` test that now passes
+## One logical change per commit
 
-❌ **Bad** (too many changes):
-- Update `DIFFERENT` to `SCROLL` in one test AND `PLUGIN` in another (different reasons)
-- Fix test content AND update annotations in the same PR
-- Re-enable multiple unrelated disabled tests
+Focused commits, so each can be read and reverted on its own.
 
-**Why this matters:**
-- Each PR can be reviewed independently
-- Easy to revert if something breaks
-- Clear git history of what changed and why
+✅ Good, one per commit: update one `DIFFERENT` to a specific reason with a
+description; add descriptions to three tests that all share one skip reason and
+one fix; re-enable one `@Disabled` test that now passes.
 
-## How to Select Tests
+❌ Too much: two different reasons changed in one commit; test content *and*
+annotations together; several unrelated tests re-enabled at once.
 
-Each run should focus on a small subset. Use one of these strategies:
+## What to check
 
-```bash
-# Get a random test file
-find . -path "*/test/*" -name "*Test*.kt" -not -path "*/build/*" | shuf -n 1
+### 1. The fixture baseline (`vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`)
 
-# Or focus on specific areas:
-# - src/test/java/org/jetbrains/plugins/ideavim/action/
-# - src/test/java/org/jetbrains/plugins/ideavim/ex/
-# - src/test/java/org/jetbrains/plugins/ideavim/extension/
-# - tests/java-tests/src/test/kotlin/
-```
+This is the extension's equivalent of a wall of `@Disabled`, and the most
+valuable thing in this skill's scope. It currently holds **15 names under 6
+headings**, out of 1,049 harvested fixtures - the last heading, "One each",
+collecting the ones that share no cause.
 
-## What to Check
+- **Re-run and re-read.** `VimFixtureReplayTest` writes the current list, with the
+  difference for each entry, to `build/fixture-failures.txt`. Compare it against
+  the checked-in baseline.
+- **A name that now passes should come off the list.** The harness fails the build
+  when a listed fixture passes, so this is usually already forced - but check that
+  the *comment* explaining the group is updated too, and that the group is deleted
+  when its last entry goes.
+- **Never add a name by hand to make the build green.** Every entry belongs to a
+  group whose comment says what is actually wrong. An entry without one is the
+  thing to catch.
+- Four entries once left this list without anything being fixed, because the
+  harness was misreading them. When a group's explanation does not survive
+  re-reading, suspect the harness before the host.
 
-### 1. Disabled Tests (@Disabled)
-
-Find disabled tests and check if they can be re-enabled:
+### 2. Disabled tests (`@Disabled`)
 
 ```bash
-# Find all @Disabled tests
 grep -rn "@Disabled" --include="*.kt" src/test tests/
 ```
 
-For each disabled test:
-1. **Try running it**: `./gradlew test --tests "ClassName.testMethod"`
-2. **If it passes**: Investigate what changed, re-enable with explanation
-3. **If it fails**: Ensure reason is documented in @Disabled annotation
-4. **If obsolete**: Remove tests for features that no longer exist
+For each: try running it. If it passes, work out what changed and re-enable it
+with that explanation. If it fails, make sure the reason is in the annotation. If
+it tests a feature that no longer exists, delete it.
 
-### 2. Neovim Test Exclusions (@TestWithoutNeovim)
+### 3. Neovim exclusions (`@TestWithoutNeovim`)
 
-Tests excluded from Neovim verification must have clear documentation.
+JVM `doTest` tests are verified against Neovim, which is a real oracle and worth
+protecting. Tests opted out of it must say why.
 
 ```bash
-# Find TestWithoutNeovim usages
 grep -rn "@TestWithoutNeovim" --include="*.kt" src/test tests/
-
-# Find those without description (needs fixing)
+# ...and those with no description, which need one:
 grep -rn "@TestWithoutNeovim(SkipNeovimReason\.[A-Z_]*)" --include="*.kt" src/test
 ```
 
-#### SkipNeovimReason Categories
-
-| Reason | When to Use |
+| Reason | When to use |
 |--------|-------------|
-| `SEE_DESCRIPTION` | Case-specific difference that doesn't fit other categories (description required) |
-| `PLUGIN` | IdeaVim extension-specific behavior (surround, commentary, etc.) |
-| `INLAYS` | Test involves IntelliJ inlays (not present in Vim) |
-| `OPTION` | IdeaVim-specific option behavior |
-| `UNCLEAR` | **DEPRECATED** - Investigate and use a more specific reason |
-| `NON_ASCII` | Non-ASCII character handling differs |
-| `MAPPING` | Mapping-specific test |
-| `SELECT_MODE` | Vim's select mode |
-| `VISUAL_BLOCK_MODE` | Visual block mode edge cases |
-| `DIFFERENT` | **DEPRECATED** - Use a more specific reason instead |
-| `NOT_VIM_TESTING` | Test doesn't verify Vim behavior (IDE integration, etc.) |
-| `SHOW_CMD` | :showcmd related differences |
-| `SCROLL` | Scrolling behavior (viewport differs) |
+| `SEE_DESCRIPTION` | Case-specific difference fitting no other category (description required) |
+| `PLUGIN` | Extension-specific behaviour (surround, commentary, ...) |
+| `INLAYS` | IntelliJ inlays |
+| `OPTION` | IdeaVim-specific option behaviour |
+| `UNCLEAR` | **Deprecated** - investigate and replace |
+| `NON_ASCII` | Non-ASCII handling differs |
+| `MAPPING` | Mapping-specific |
+| `SELECT_MODE` | Vim's Select mode |
+| `VISUAL_BLOCK_MODE` | Block Visual edge cases |
+| `DIFFERENT` | **Deprecated** - use something specific |
+| `NOT_VIM_TESTING` | Not testing Vim behaviour (IDE integration) |
+| `SHOW_CMD` | `:showcmd` |
+| `SCROLL` | Scrolling; the viewport differs |
 | `TEMPLATES` | IntelliJ live templates |
-| `EDITOR_MODIFICATION` | Editor-specific modifications |
+| `EDITOR_MODIFICATION` | Editor-specific modification |
 | `CMD` | Command-line mode differences |
-| `ACTION_COMMAND` | `:action` command (IDE-specific) |
-| `FOLDING` | Code folding (IDE feature) |
-| `TABS` | Tab/window management differences |
-| `PLUGIN_ERROR` | Plugin execution error handling |
-| `VIM_SCRIPT` | VimScript implementation differences |
+| `ACTION_COMMAND` | `:action` |
+| `FOLDING` | Code folding |
+| `TABS` | Tab and window management |
+| `PLUGIN_ERROR` | Plugin error handling |
+| `VIM_SCRIPT` | Vimscript implementation differences |
 | `GUARDED_BLOCKS` | IDE guarded/read-only blocks |
-| `CTRL_CODES` | Control code handling |
-| `BUG_IN_NEOVIM` | Known Neovim bug (not IdeaVim issue) |
-| `PSI` | IntelliJ PSI/code intelligence features |
-| `IDEAVIM_API_USED` | Test uses IdeaVim API that prevents Neovim state sync |
-| `IDEAVIM_WORKS_INTENTIONALLY_DIFFERENT` | IdeaVim intentionally deviates from Neovim for better UX or IntelliJ integration |
-| `INTELLIJ_PLATFORM_INHERITED_DIFFERENCE` | Behavior difference inherited from IntelliJ Platform constraints |
+| `CTRL_CODES` | Control codes |
+| `BUG_IN_NEOVIM` | A known Neovim bug |
+| `PSI` | PSI / code intelligence |
+| `IDEAVIM_API_USED` | Uses an API that prevents Neovim state sync |
+| `IDEAVIM_WORKS_INTENTIONALLY_DIFFERENT` | Deliberate deviation (evidence required) |
+| `INTELLIJ_PLATFORM_INHERITED_DIFFERENCE` | Forced by the IntelliJ Platform |
 
-**Requirements:**
-- Add `description` parameter for non-obvious cases
-- Check if the reason is still valid
-- Consider if test could be split: part that works with Neovim, part that doesn't
+`IDEAVIM_WORKS_INTENTIONALLY_DIFFERENT` needs **evidence** - a commit message, a
+code comment, or an obviously IDE-only feature. Not a guess. Its `description` is
+mandatory and must say what differs and why.
 
-**Special requirement for `IDEAVIM_WORKS_INTENTIONALLY_DIFFERENT`:**
-- **ONLY use when you find clear evidence** of intentional deviation:
-  - Explicit commit messages explaining the intentional difference
-  - Code comments documenting why IdeaVim deviates from Vim/Neovim
-  - Absolutely obvious cases (e.g., IntelliJ-specific features not in Neovim)
-- **DO NOT use based on guesswork or assumptions**
-- If uncertain, use `DIFFERENT` or `UNCLEAR` instead and investigate git history/comments
-- The `description` parameter is **mandatory** and must explain what exactly differs and why
+`INTELLIJ_PLATFORM_INHERITED_DIFFERENCE` needs a `description` naming the Platform
+behaviour that causes it. Common cases: empty buffers (Platform editors can be
+empty; Neovim buffers always hold a newline), and offset arithmetic around
+newlines.
 
-**Special requirement for `INTELLIJ_PLATFORM_INHERITED_DIFFERENCE`:**
-- Use when behavior difference is due to IntelliJ Platform's underlying implementation
-- Common cases include:
-  - Empty buffer handling (Platform editors can be empty, Neovim buffers always have a newline)
-  - Position/offset calculations for newline characters
-  - Line/column indexing differences
-- The `description` parameter is **mandatory** and must explain:
-  - What Platform behavior causes the difference
-  - How it manifests in the test
-- Evidence can be found in Platform API documentation, IdeaVim code comments, or obvious Platform limitations
+**Handling the two deprecated reasons:**
 
-**Special requirement for `SEE_DESCRIPTION`:**
-- Use as a last resort when the difference doesn't fit any standard category
-- The `description` parameter is **mandatory** and must provide a clear, specific explanation
-- Use sparingly - if multiple tests share similar reasons, consider creating a new dedicated reason
-- Always check existing reasons first before using this catch-all
+1. Remove the annotation and run with Neovim:
+   `./gradlew :test -Dnvim --tests "ClassName.testMethodName"`
+   Confirm the output contains `NEOVIM TESTING ENABLED`. Without that line the
+   test ran *without* Neovim and proves nothing.
+2. If it passes, the annotation is stale - delete it.
+3. If it fails, read the failure and pick the specific reason, with a description.
 
-**Handling `DIFFERENT` and `UNCLEAR` (DEPRECATED):**
-
-Both `DIFFERENT` and `UNCLEAR` reasons are deprecated because they're too vague. When you encounter a test with either of these reasons, follow this process:
-
-1. **First, try removing the annotation and running with Neovim:**
-   ```bash
-   # Comment out or remove @TestWithoutNeovim, then run:
-   ./gradlew test -Dnvim --tests "ClassName.testMethodName"
-   ```
-
-   **IMPORTANT:** Verify the output contains `NEOVIM TESTING ENABLED` to confirm Neovim testing is active.
-   If this message is not present, the test ran without Neovim verification.
-
-2. **If the test passes with Neovim:**
-   - The annotation is outdated and should be removed
-   - IdeaVim and Neovim now behave identically for this case
-
-3. **If the test fails with Neovim:**
-   - Analyze the failure to understand WHY the behavior differs
-   - Replace `DIFFERENT` with a more specific reason:
-     - `IDEAVIM_API_USED` - if test uses VimPlugin.* or injector.* APIs directly
-     - `IDEAVIM_WORKS_INTENTIONALLY_DIFFERENT` - if IdeaVim intentionally deviates (need evidence)
-     - `INTELLIJ_PLATFORM_INHERITED_DIFFERENCE` - if difference comes from Platform constraints
-     - `SEE_DESCRIPTION` - for unique cases that don't fit other categories (description required)
-     - Or another appropriate reason from the table above
-   - Always add a `description` parameter explaining the specific difference
-
-### 3. Test Quality & Readability
-
-**Meaningful test content**: Avoid senseless text. Look for:
-```bash
-grep -rn "asdf\|qwerty\|xxxxx\|aaaaa\|dhjkw" --include="*.kt" src/test tests/
-```
-
-Replace with:
-- Actual code snippets relevant to the test
-- Lorem Ipsum template from CONTRIBUTING.md
-- Realistic text demonstrating the feature
-
-**Test naming**: Names should explain what's being tested.
-
-### 4. @VimBehaviorDiffers Annotation
-
-Tests marked with this document intentional differences from Vim:
-
-```kotlin
-@VimBehaviorDiffers(
-  originalVimAfter = "expected vim result",
-  description = "why IdeaVim differs",
-  shouldBeFixed = true/false
-)
-```
-
-Check:
-- Is the difference still valid?
-- If `shouldBeFixed = true`, is there a YouTrack issue?
-- Can behavior now be aligned with Vim?
-
-## Making Changes
-
-### When to Change
-
-**DO fix:**
-- Unclear or missing test descriptions
-- Senseless test content
-- Disabled tests that now pass
-- Incorrect `@TestWithoutNeovim` reasons
-- Missing `description` on annotations
-
-**DON'T:**
-- Fix source code bugs
-- Implement missing features
-- Major refactoring without clear benefit
-
-### Commit Messages
-
-```
-tests: Re-enable DeleteMotionTest after fix in #1234
-
-The test was disabled due to a caret positioning bug that was
-fixed in commit abc123. Verified the test passes consistently.
-```
-
-```
-tests: Improve test content readability in ChangeActionTest
-
-Replace meaningless "asdfgh" strings with realistic code snippets
-that better demonstrate the change operation behavior.
-```
-
-```
-tests: Document @TestWithoutNeovim reasons in ScrollTest
-
-Added description parameter to clarify why scroll tests
-are excluded from Neovim verification (viewport behavior differs).
-```
-
-## Commands Reference
+### 4. Test quality
 
 ```bash
-# Run specific test
-./gradlew test --tests "ClassName.testMethod"
-
-# Run all tests in a class
-./gradlew test --tests "ClassName"
-
-# Run tests with Neovim verification (look for "NEOVIM TESTING ENABLED" in output)
-./gradlew test -Dnvim --tests "ClassName"
-
-# Standard test suite (excludes property and long-running)
-./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test
+grep -rn "asdf\|qwerty\|xxxxx\|aaaaa\|dhjkw" --include="*.kt" src/test tests/ vscode-extension/src/jsTest
 ```
 
-## Output
+Replace with realistic code snippets or the Lorem Ipsum template in
+CONTRIBUTING.md. Names should say what is being tested.
 
-When run via workflow, if changes are made, create a PR with:
-- **Title**: "Tests maintenance: <brief description>"
-- **Body**: What was checked, issues found, changes made
+Note the extension's own convention: its tests carry a KDoc explaining what the
+test is *about* - often what was wrong in a real window, and what Vim does. When
+adding one there, match that.
 
-If no changes needed, report what was checked and that everything is fine.
+### 5. `@VimBehaviorDiffers`
+
+Check whether the documented difference is still real, and whether
+`shouldBeFixed = true` cases can now be aligned with Vim - especially engine-level
+ones, since this fork is free to change `vim-engine`.
+
+## Commit messages
+
+```
+tests: Re-enable DeleteMotionTest after the caret fix
+
+Disabled for a caret positioning bug fixed in abc123. Verified it passes
+consistently.
+```
+
+```
+tests: Drop three fixtures from the known-failures baseline
+
+The Select-mode caret group is empty now that the caret is built on the far
+side of the selection. Removed the group and its explanation with it.
+```
+
+## Commands
+
+**`--tests` needs the leading colon.** Bare `./gradlew test --tests "X"` fails
+with `Unknown command-line option '--tests'`: `test` matches by name across
+projects, and `:vim-engine:test` and `:vscode-extension:test` are aggregator tasks
+that take no such option. `:test` is the root project's real test task.
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+
+./gradlew :test --tests "ClassName.testMethod" --console=plain
+./gradlew :test -Dnvim --tests "ClassName" --console=plain  # look for NEOVIM TESTING ENABLED
+./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test --console=plain
+
+./gradlew :vscode-extension:jsNodeTest --console=plain      # no --tests; runs all of them
+```
+
+A Kotlin/JS test's `println` does not reach the console. Read results from
+`vscode-extension/build/test-results/jsNodeTest/*.xml`, or make the assertion
+carry what you wanted to see.
+
+## Reporting
+
+Say what you checked, what you found, and what you changed. "Everything checked
+out" is a fine result and worth writing down.
