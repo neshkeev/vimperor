@@ -455,24 +455,21 @@ class VsCodeOptionsTest {
     assertEquals("typescript", session.fake.document.languageId)
   }
 
-  // What a Vim config can still say that this host does not answer.
+  // Every ex command a Vim config can say.
 
   /**
-   * The ex commands a `~/.vimrc` can use and this host reports `E492` for.
+   * Every ex command a `~/.vimrc` can use, typed at the prompt, with nothing left that `E492`.
    *
-   * Measured, by typing every candidate at the `:` prompt, and asserted rather than printed - the
-   * same shape as `VsCodeUnimplementedTest`. Implementing one has to come with taking it off this
-   * list, and a command that quietly stops working shows up as a diff.
+   * This list started as the measurement of what was missing - typed rather than guessed at, and
+   * asserted rather than printed, so that implementing one had to come with taking it off. It is
+   * the same test with nothing left on it: a command that stops resolving shows up here.
    *
-   * What is left is windows, buffers and the loops over them, which this host could answer with the
-   * VS Code commands it already sends, and are listed in the order they are worth doing.
-   *
-   * The four command *modifiers* were here, with the note that the engine's grammar did not have
-   * them. It did not need to: a modifier is spelled like any other ex command and its argument is
-   * the command it modifies, so all four are ordinary `@ExCommand` classes in `vim-engine` now.
+   * The first four are not commands at all but *modifiers*, and the last few change the buffer or
+   * the window, which is why this runs them for real rather than only asking the registry - a name
+   * that resolves to a command that then throws is not a command a config can use.
    */
   @Test
-  fun `test the ex commands a config can use and this host does not have are these`() {
+  fun `test every ex command a config can use resolves`() {
     val session = Session()
     val candidates = listOf(
       "silent! echo 1", "verbose set nu", "noautocmd echo 1", "lockmarks echo 1",
@@ -488,7 +485,7 @@ class VsCodeOptionsTest {
       session.errors.any { "E492" in it || "Not an editor command" in it }
     }
 
-    assertEquals(STILL_MISSING.trim().split("\n").map { it.trim() }, missing)
+    assertEquals(emptyList(), missing)
   }
 
   @Test
@@ -542,17 +539,6 @@ class VsCodeOptionsTest {
   }
 
   private companion object {
-    /** See [`the ex commands a config can use and this host does not have are these`]. */
-    val STILL_MISSING = """
-      bufdo echo 1
-      windo echo 1
-      tabdo echo 1
-      argdo echo 1
-      doautocmd BufRead
-      earlier 1
-      later 1
-    """
-
     /**
      * What the engine declares, read out of `getAllOptions` before any of this host's were added.
      *

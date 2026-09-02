@@ -219,9 +219,23 @@ by name gets a tab of its own either way.
 therefore answers for exactly the `<C-W>` commands this host has, and for any added later without
 being touched. `:2wincmd l` is `2<C-W>l`, as it is in Vim.
 
-What a config can still say and this host reports `E492` for is a list in `VsCodeOptionsTest`,
-measured by typing every candidate at the prompt rather than guessed at - the loops over windows and
-buffers, `:bufdo` and its three relatives, and `:doautocmd`, `:earlier` and `:later`.
+`:bufdo`, `:windo`, `:tabdo` and `:argdo` are one walk. Vim has four because it has four lists -
+buffers, the windows of a tab page, the tab pages, the argument list - and neither host here keeps
+those apart, so all four run the command against every editor that is open and say so rather than
+three of them quietly doing nothing. Vim moves you to each in turn and leaves you in the last;
+nothing here changes focus, which is what you want from `:bufdo %s/old/new/ge` and the only thing a
+host whose focus changes asynchronously can do without reordering the edits. Vim's rule that an
+error stops the walk is kept.
+
+`:doautocmd` fires an event by hand, which is the line a config needs after installing handlers for
+a file that is already open. `:earlier` and `:later` are undo and redo: Vim's undo is a tree walked
+by state, by file write or by elapsed time, and VS Code's is a line, so `:earlier {N}` is N undos -
+right whenever nothing has branched - while `:earlier 5m` reports `E475` rather than answering a
+question about time with a number of undos.
+
+The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
+empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
+up as a failure rather than as a bug report.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

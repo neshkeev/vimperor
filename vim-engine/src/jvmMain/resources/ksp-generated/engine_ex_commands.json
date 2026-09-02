@@ -59,6 +59,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionCommand",
     "standardConstructor": true
   },
+  "argdo": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgDoCommand",
+    "standardConstructor": true
+  },
   "argu[ment]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFileCommand",
     "standardConstructor": true
@@ -105,6 +109,10 @@
   },
   "bro[wse]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "bufd[o]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufDoCommand",
     "standardConstructor": true
   },
   "buffers": {
@@ -191,8 +199,16 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
     "standardConstructor": true
   },
+  "do[autocmd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DoAutoCmdCommand",
+    "standardConstructor": true
+  },
   "e[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "ea[rlier]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.EarlierCommand",
     "standardConstructor": true
   },
   "ec[ho]": {
@@ -293,6 +309,10 @@
   },
   "la[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
+    "standardConstructor": true
+  },
+  "lat[er]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LaterCommand",
     "standardConstructor": true
   },
   "let": {
@@ -543,6 +563,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabCloseCommand",
     "standardConstructor": true
   },
+  "tabd[o]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabDoCommand",
+    "standardConstructor": true
+  },
   "tabe[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
     "standardConstructor": true
@@ -637,6 +661,10 @@
   },
   "winc[md]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinCmdCommand",
+    "standardConstructor": true
+  },
+  "windo": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinDoCommand",
     "standardConstructor": true
   },
   "wn[ext]": {
