@@ -87,9 +87,17 @@ class CommandLinePasteTest {
       this.caret = caret
     }
 
+    var matches: String? = null
+      private set
+
+    override fun showMatches(line: String?) {
+      matches = line
+    }
+
     override fun hide() {
       shown = null
       caret = null
+      matches = null
     }
   }
 

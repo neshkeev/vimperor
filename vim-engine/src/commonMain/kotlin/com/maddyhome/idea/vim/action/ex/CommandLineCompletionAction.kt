@@ -127,6 +127,10 @@ private fun findArgumentMatches(parsed: ArgumentCompletionContext, context: Exec
   val fullCommandName = injector.vimscriptParser.exCommands.getFullCommandName(parsed.commandName) ?: return null
   return when (CommandCompletionTypes.getCompletionType(fullCommandName)) {
     CommandLineCompletionType.FILE -> injector.file.listFilesForCompletion(parsed.argumentPrefix, context)
+    // Sorted here rather than trusted from the host: IntelliJ's `ActionManager.getActionIdList`
+    // answers in no order at all, and `CommandLineCompletion` is documented as taking sorted
+    // candidates because Tab walks them in the order it is given.
+    CommandLineCompletionType.ACTION -> injector.actionExecutor.getActionIdList(parsed.argumentPrefix).sorted()
     CommandLineCompletionType.NONE -> null
   }
 }

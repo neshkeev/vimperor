@@ -64,9 +64,13 @@ fun activate(context: ExtensionContext) {
   val commandLine = window.createStatusBarItem(StatusBarAlignment.Left, 99)
   commandLineBar = commandLine
 
+  // Vim's wildmenu, which it draws on the line above the command line. There is one row here, so it
+  // sits to the right of the prompt instead and is hidden whenever Tab is not walking a list.
+  val matches = window.createStatusBarItem(StatusBarAlignment.Left, 98)
+
   val vim = VimHost(
     sink = OutputAndStatusBar(output, status),
-    commandLineDisplay = StatusBarPrompt(commandLine),
+    commandLineDisplay = StatusBarPrompt(commandLine, matches),
     highlighter = DecorationHighlighter(),
     clipboard = VsCodeClipboard(),
     outputPanel = OutputChannelPanelService(output),
@@ -247,8 +251,8 @@ fun activate(context: ExtensionContext) {
 
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
-    output, status, commandLine, typing, namedKey, tutor, pasteInCommandLine, activeEditorChanged,
-    selectionChanged, windowStateChanged, documentClosed, documentSaved,
+    output, status, commandLine, matches, typing, namedKey, tutor, pasteInCommandLine,
+    activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentSaved,
   )) {
     subscriptions.push(registration)
   }

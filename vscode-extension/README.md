@@ -167,6 +167,21 @@ this VS Code does not have is reported at the `:` prompt rather than failing sil
 command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
 each one - VS Code has no API that reads its own keybindings.
 
+`:action git<Tab>` completes, and cycles on each Tab with `<S-Tab>` going back. The engine had all
+of this - a completion session, a parser that says whether the caret is in a command name or its
+argument, and a type per command saying what the argument completes against - and it knew about file
+paths and nothing else. Both hosts already answer `getActionIdList`, which is a prefix query, so an
+`ACTION` type in `vim-engine` was the whole of it; IdeaVim gets `:action` completion from the same
+change. Command names complete too, this host's own included: `:actionl<Tab>` finishes `:actionlist`.
+
+The matches are drawn on a second status bar item, which is Vim's wildmenu with the same two limits
+as the caret: text, so the current match is bracketed rather than highlighted, and one row, so the
+list is windowed around the selection with the count in front of it. `:action e` against a real VS
+Code matches a couple of hundred commands.
+
+File completion for `:e` is not wired up - `listFilesForCompletion` is a `VimFile` method this host
+does not override, so `:e <Tab>` finds nothing.
+
 The prompt draws a caret, so a typed command can be edited rather than only retyped. `<Left>`,
 `<Right>`, `<Home>`/`<C-B>`, `<End>`/`<C-E>` and `<S-Left>`/`<S-Right>` all worked already - they
 are assignments to an offset the engine owns - and what was missing was any way to see where that

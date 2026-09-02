@@ -38,9 +38,17 @@ class VsCodeCommandLineTest {
       this.caret = caret
     }
 
+    var matches: String? = null
+      private set
+
+    override fun showMatches(line: String?) {
+      matches = line
+    }
+
     override fun hide() {
       shown = null
       caret = null
+      matches = null
     }
   }
 
@@ -402,7 +410,7 @@ class VsCodeCommandLineTest {
   @Test
   fun `test the status bar splices a caret into the line`() {
     val item = FakeStatusBarItem()
-    val prompt = StatusBarPrompt(item)
+    val prompt = StatusBarPrompt(item, FakeStatusBarItem())
 
     prompt.show(":set nu", 5)
 
@@ -413,7 +421,7 @@ class VsCodeCommandLineTest {
   fun `test the status bar shows a trailing space that would otherwise be invisible`() {
     // `:e ` and `:e` are different commands and looked identical on the status bar.
     val item = FakeStatusBarItem()
-    val prompt = StatusBarPrompt(item)
+    val prompt = StatusBarPrompt(item, FakeStatusBarItem())
 
     prompt.show(":e ", 3)
 
@@ -423,7 +431,7 @@ class VsCodeCommandLineTest {
   @Test
   fun `test the status bar draws no caret when there is none`() {
     val item = FakeStatusBarItem()
-    val prompt = StatusBarPrompt(item)
+    val prompt = StatusBarPrompt(item, FakeStatusBarItem())
 
     prompt.show(":e \"", null)
 

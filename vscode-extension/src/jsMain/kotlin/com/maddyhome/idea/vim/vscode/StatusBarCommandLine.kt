@@ -62,6 +62,44 @@ internal class StatusBarCommandLine(
 
   override var activeCompletion: CommandLineCompletion? = null
 
+  /**
+   * Vim's wildmenu: the matches Tab is walking, on a line of their own.
+   *
+   * `showCompletionBar` and its two companions are no-ops on `VimCommandLine` because IdeaVim draws
+   * a panel over the editor for them, and a host without one is expected to say nothing. Cycling
+   * through matches you cannot see is a poor version of completion, though, so this draws them -
+   * with the same limits as the caret: a status bar item is text, so the selected match is bracketed
+   * rather than highlighted, and only as many as fit are shown.
+   */
+  override fun showCompletionBar(completion: CommandLineCompletion) {
+    display.showMatches(wildmenuLine(completion.displayNames, completion.currentIndex))
+  }
+
+  override fun selectCompletionItem(selectedIndex: Int?) {
+    val completion = activeCompletion ?: return
+    display.showMatches(wildmenuLine(completion.displayNames, selectedIndex))
+  }
+
+  override fun hideCompletionBar() {
+    display.showMatches(null)
+  }
+
+  /**
+   * Drops a completion the user has typed past.
+   *
+   * The engine invalidates its own session by comparing the text it last set against what is there
+   * now, but nothing tells the *bar* to go away, so a list of matches would sit under a command
+   * that no longer has anything to do with them. Safe to run on every render: `applyMatch` records
+   * the text it is about to set before it sets it, so a completion applying itself never looks
+   * stale to this.
+   */
+  private fun dismissStaleCompletion() {
+    val completion = activeCompletion ?: return
+    if (text == completion.expectedText) return
+    activeCompletion = null
+    hideCompletionBar()
+  }
+
   override fun isExCommand(): Boolean = label == ":"
 
   /**
@@ -155,6 +193,7 @@ internal class StatusBarCommandLine(
     // Before hiding, and whether the search ran or was cancelled: what should be on screen next is
     // the search group's answer either way, and the preview is in the way of it.
     preview?.finish(editor, resetCaret)
+    display.showMatches(null)
     display.hide()
   }
 
@@ -162,6 +201,7 @@ internal class StatusBarCommandLine(
   override fun focus() {}
 
   fun render() {
+    dismissStaleCompletion()
     display.show(getRenderedText(), caretInRenderedText())
     preview?.update(editor, label, text)
   }
@@ -194,7 +234,55 @@ internal class StatusBarCommandLine(
  */
 interface CommandLineDisplay {
   fun show(text: String, caret: Int?)
+
+  /** Vim's wildmenu, on a line of its own. Null hides it. */
+  fun showMatches(line: String?)
+
   fun hide()
+}
+
+/**
+ * The matches Tab is walking, as one line of text.
+ *
+ * Vim puts these on the line above the command line and highlights the current one. There is one
+ * status bar and no highlighting, so the current match is bracketed and the line is windowed around
+ * it - `:action e` against a real VS Code matches a couple of hundred commands, and a status bar
+ * that tried to show them all would show the first three and a truncation.
+ *
+ * The count comes first because it is the part that does not move: with a window sliding under the
+ * selection, "where am I" is otherwise the one thing the line cannot say.
+ */
+internal fun wildmenuLine(names: List<String>, selected: Int?, budget: Int = 96): String {
+  if (names.isEmpty()) return ""
+  val rendered = names.mapIndexed { index, name -> if (index == selected) "[$name]" else name }
+  val count = if (selected == null) "${names.size} matches" else "${selected + 1}/${names.size}"
+
+  // Grown outwards from the selection, so the match being applied is always on screen and the ones
+  // either side of it are what fills the rest.
+  val centre = selected ?: 0
+  var first = centre
+  var last = centre
+  var width = rendered[centre].length
+  while (true) {
+    val nextAfter = if (last + 1 < rendered.size) rendered[last + 1].length + 2 else null
+    val nextBefore = if (first - 1 >= 0) rendered[first - 1].length + 2 else null
+    val takeAfter = nextAfter != null && width + nextAfter <= budget
+    val takeBefore = nextBefore != null && width + nextBefore <= budget
+    if (!takeAfter && !takeBefore) break
+    // After first, so that a fresh completion reads forwards from the match it just applied.
+    if (takeAfter) {
+      last++
+      width += nextAfter!!
+    } else {
+      first--
+      width += nextBefore!!
+    }
+  }
+
+  val shown = rendered.subList(first, last + 1).joinToString("  ")
+  val before = if (first > 0) "... " else ""
+  val after = if (last < rendered.size - 1) " ..." else ""
+  return "$count  $before$shown$after"
 }
 
 /**
@@ -208,7 +296,22 @@ interface CommandLineDisplay {
  * It also makes a space at the end of the line visible, which it was not: `:e ` and `:e` looked the
  * same on the status bar and only one of them was going to open a file.
  */
-internal class StatusBarPrompt(private val item: StatusBarItem) : CommandLineDisplay {
+internal class StatusBarPrompt(
+  private val item: StatusBarItem,
+  /** Where the wildmenu goes: a second item, to the right of the prompt. */
+  private val matches: StatusBarItem,
+) : CommandLineDisplay {
+
+  override fun showMatches(line: String?) {
+    if (line.isNullOrEmpty()) {
+      matches.text = ""
+      matches.hide()
+    } else {
+      matches.text = line
+      matches.show()
+    }
+  }
+
   override fun show(text: String, caret: Int?) {
     item.text = if (caret == null) text else {
       val at = caret.coerceIn(0, text.length)
@@ -220,6 +323,7 @@ internal class StatusBarPrompt(private val item: StatusBarItem) : CommandLineDis
   override fun hide() {
     item.text = ""
     item.hide()
+    showMatches(null)
   }
 
   private companion object {
@@ -278,6 +382,8 @@ internal class VsCodeCommandLineService(
   /** Clears [active] when the command line it belongs to closes, so nothing outlives its prompt. */
   private inner class ClosingDisplay : CommandLineDisplay {
     override fun show(text: String, caret: Int?) = display.show(text, caret)
+
+    override fun showMatches(line: String?) = display.showMatches(line)
 
     override fun hide() {
       active = null
