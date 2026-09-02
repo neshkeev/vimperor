@@ -111,8 +111,11 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // `BufLeave` before `BufEnter`, in that order, which is the order Vim fires them and the order
+  // IdeaVim's own editor listener uses. The one being left has to be named before it stops being
+  // the active editor, so the host remembers it rather than asking VS Code afterwards.
   val activeEditorChanged = window.onDidChangeActiveTextEditor { editor ->
-    if (editor != null) vim.editorFor(editor)
+    vim.activeEditorChanged(editor)
     refreshMode()
   }
 
@@ -124,6 +127,7 @@ fun activate(context: ExtensionContext) {
   // copying in a browser and switching back is exactly the case `"+p` has to get right.
   val windowStateChanged = window.onDidChangeWindowState { state ->
     if (state.focused) vim.refreshClipboard()
+    vim.windowFocusChanged(state.focused)
   }
   vim.refreshClipboard()
 

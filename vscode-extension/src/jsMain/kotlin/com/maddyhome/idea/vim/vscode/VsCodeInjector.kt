@@ -11,6 +11,8 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
+import com.maddyhome.idea.vim.autocmd.AutoCmdImpl
 import com.maddyhome.idea.vim.api.*
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
@@ -873,6 +875,15 @@ open class VsCodeInjector(
    * regexpService yet" - which was true of the line and not of the work.
    */
   override val regexpService: VimRegexpService by lazy { VimRegexServiceBase() }
+
+  /**
+   * `:autocmd` and `:augroup`. The registry is `AutoCmdImpl`, which is the engine's now.
+   *
+   * A host supplies the *events* rather than the bookkeeping - see `Extension.kt`, which fires
+   * `BufEnter`/`BufLeave` when VS Code changes the active editor and `FocusGained`/`FocusLost` when
+   * the window gains or loses focus. IdeaVim fires the same set from its own listeners.
+   */
+  override val autoCmd: AutoCmdService by lazy { AutoCmdImpl() }
 
   /**
    * Prompts that answer one keystroke at a time - `:s///c` is the one the engine opens.

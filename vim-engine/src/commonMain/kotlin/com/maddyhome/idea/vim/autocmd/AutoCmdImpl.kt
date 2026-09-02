@@ -12,16 +12,27 @@ import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CopyOnWriteArrayList
 
+/**
+ * `:autocmd` and `:augroup` - a registry of commands to run when something happens to a buffer.
+ *
+ * Nothing in here is IntelliJ-shaped, and it lived in the IntelliJ module anyway, so this port had
+ * `:autocmd` reporting "Not implemented yet :(" - and no sweep could say so, because a bare
+ * `:autocmd` is a Vim error before it reaches this. What a host has to supply is the *events*, not
+ * the registry: which is why the two hosts share this file and fire it from their own listeners.
+ *
+ * The collections are plain rather than concurrent, and the iteration is over a copy. IdeaVim's
+ * version used `ConcurrentHashMap` and `CopyOnWriteArrayList`; the copy is what those were actually
+ * buying here, since an autocommand can register another one while the list is being walked, and
+ * every caller of this is on the UI thread in one host and on the only thread in the other.
+ */
 class AutoCmdImpl : AutoCmdService {
 
-  private val eventHandlers: MutableMap<AutoCmdEvent, MutableList<AuCommand>> = ConcurrentHashMap()
+  private val eventHandlers: MutableMap<AutoCmdEvent, MutableList<AuCommand>> = mutableMapOf()
   private var currentAugroup: String? = null
 
   override fun registerEventCommand(command: String, event: AutoCmdEvent, pattern: String) {
-    eventHandlers.getOrPut(event.canonical) { CopyOnWriteArrayList() }
+    eventHandlers.getOrPut(event.canonical) { mutableListOf() }
       .add(AuCommand(command, currentAugroup, AutoCmdPattern(pattern)))
   }
 
@@ -53,7 +64,7 @@ class AutoCmdImpl : AutoCmdService {
     val path = filePath ?: resolvedEditor.getPath()
     val handlers = eventHandlers[event.canonical] ?: return
     val context = injector.executionContextManager.getEditorExecutionContext(resolvedEditor)
-    handlers.forEach { auCommand ->
+    handlers.toList().forEach { auCommand ->
       if (auCommand.pattern.matches(path)) {
         if (event.runsInNormalMode && resolvedEditor.mode.isInsertOrReplace) {
           injector.changeGroup.processEscape(resolvedEditor, context)

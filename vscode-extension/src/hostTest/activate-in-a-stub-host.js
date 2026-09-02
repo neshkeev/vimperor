@@ -27,6 +27,9 @@ const statusBarItems = []
 
 /** URLs handed to the operating system by `gx` and `:help`. */
 const openedExternally = []
+
+/** What `Extension.kt` registered for the active editor changing. */
+const activeEditorListeners = []
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -209,7 +212,12 @@ const vscode = {
     },
     createTextEditorDecorationType: (options) => ({ ...disposable(), options }),
     showInformationMessage: () => undefined,
-    onDidChangeActiveTextEditor: () => disposable(),
+    // Captured rather than dropped: `:autocmd BufEnter` is wired here, in `Extension.kt`, and a
+    // unit test that calls the host directly would not see that wiring at all.
+    onDidChangeActiveTextEditor: (callback) => {
+      activeEditorListeners.push(callback)
+      return disposable()
+    },
     onDidChangeTextEditorSelection: () => disposable(),
     onDidChangeWindowState: () => disposable(),
   },
@@ -737,6 +745,22 @@ assert.deepStrictEqual(
   openedExternally,
   ['https://example.com/one'],
   `gx did not open the URL under the caret. Opened: ${openedExternally.join(', ')}`,
+)
+
+// `:autocmd`, fired by the extension's own listener rather than by calling the host directly. The
+// registry is the engine's; what a host owes it is the events, and this is the wire between them.
+reset()
+type(':')
+for (const character of 'autocmd BufEnter * :normal ientered') type(character)
+press('<CR>')
+
+assert.ok(activeEditorListeners.length > 0, 'the extension registered no active-editor listener')
+for (const listener of activeEditorListeners) listener(editor)
+
+assert.strictEqual(
+  editor.document._text,
+  'entered',
+  `:autocmd BufEnter did not run when the active editor changed. Got: ${editor.document._text}`,
 )
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')

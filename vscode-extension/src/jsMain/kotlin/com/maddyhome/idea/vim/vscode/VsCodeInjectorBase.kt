@@ -229,8 +229,6 @@ abstract class VsCodeInjectorBase : VimInjector {
   override val listenersNotifier: VimListenersNotifier
     get() = TODO("the VS Code host does not provide listenersNotifier yet")
 
-  override val autoCmd: AutoCmdService
-    get() = TODO("the VS Code host does not provide autoCmd yet")
 
   override val redrawService: VimRedrawService
     get() = TODO("the VS Code host does not provide redrawService yet")

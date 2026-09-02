@@ -159,7 +159,19 @@ So there is a fifth sweep now, and it works the other way round. `UnimplementedS
 `VsCodeInjectorBase` for the services declared as `TODO` and `VsCodeInjector` for the ones actually
 overridden, and asserts the difference in both directions. Nothing has to be *reachable* to appear
 on it - which is the point, since reachability was what the other four were measuring by accident.
-Ten services are left, and each carries a line saying what it needs.
+It found `autoCmd` on its first run, and that was the fourth
+feature in a row missing for the same reason: `:autocmd` and `:augroup` are engine commands, their
+registry and their Vim-glob pattern matching had nothing IntelliJ-shaped in them, and they lived in
+IdeaVim's IntelliJ module anyway. They are in `vim-engine` now. What a host owes them is the
+*events*, and this one fires `BufEnter`/`BufLeave` when VS Code changes the active editor and
+`FocusGained`/`FocusLost` when the window gains or loses focus.
+
+It also caught a wrong reason on its own list, which is the point of writing reasons down at all:
+`highlightingService` was described there as `matchadd()`, and `matchadd` does not exist anywhere in
+this repository. Its only caller is `Transaction.addHighlight` in the extension thin API, so it
+belongs with the plugin services and is reachable from nowhere else.
+
+Nine services are left, and each carries a line saying what it needs.
 
 ## Checking it against somebody else's expectations
 

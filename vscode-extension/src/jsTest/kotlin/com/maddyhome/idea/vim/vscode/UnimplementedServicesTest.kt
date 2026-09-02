@@ -55,7 +55,7 @@ class UnimplementedServicesTest {
    *
    * Without this the test above would pass just as well if the override regex matched nothing - and
    * that failure is silent, because a service that is implemented would simply appear on the list
-   * and the list would be updated to match. `motion` is implemented and `autoCmd` is not.
+   * and the list would be updated to match. `motion` is implemented and `spellcheckerService` is not.
    */
   @Test
   fun `test an implemented service is not listed and an unimplemented one is`() {
@@ -64,8 +64,8 @@ class UnimplementedServicesTest {
     val overridden = OVERRIDE.findAll(readText("$host/VsCodeInjector.kt")).map { it.groupValues[1] }.toSet()
 
     assertTrue("motion" in overridden, "motion is implemented and should be read as overridden")
-    assertTrue("autoCmd" !in overridden, "autoCmd is not implemented")
-    assertTrue("autoCmd" in EXPECTED, "autoCmd should be on the list")
+    assertTrue("spellcheckerService" !in overridden, "spellcheckerService is not implemented")
+    assertTrue("spellcheckerService" in EXPECTED, "spellcheckerService should be on the list")
   }
 
   private companion object {
@@ -75,9 +75,6 @@ class UnimplementedServicesTest {
     /**
      * What is left, and why each one is left.
      *
-     * `autoCmd` is `:autocmd`. The registry is engine work; what a host has to supply is the events
-     * - a file opened, written, a buffer entered - and VS Code has all of them. Only unwritten.
-     *
      * `extensionLoader`, `jsonExtensionProvider`, `pluginActivator` and `pluginService` are how
      * IdeaVim's twenty-six bundled extensions are found and started. They are blocked behind
      * `modalInput.activate`, which blocks a thread until a key arrives - `getchar()` is built on it,
@@ -85,9 +82,10 @@ class UnimplementedServicesTest {
      *
      * `fallbackWindow` is the editor the engine reaches for when there is no window at all.
      *
-     * `highlightingService` adds a coloured range by request, which is `matchadd()`. This host
-     * paints search matches through `Highlighter` already, so it is the same work under a name the
-     * engine asks for differently - the next of these to be worth writing.
+     * `highlightingService` adds a coloured range by request. This was written down here as
+     * `matchadd()` and that was wrong - `matchadd` does not exist anywhere in this repository. Its
+     * only caller is `Transaction.addHighlight` in the thin API, so it belongs with the extension
+     * services above and is reachable from nowhere else.
      *
      * `searchWindowGroup` and `virtualBufferGroup` are Vim's command-line window - `q:`, `q/` - and
      * the buffers behind it. A real editor buffer that is not a file, holding history, that closes
@@ -97,7 +95,6 @@ class UnimplementedServicesTest {
      * extensions, and an extension cannot ask another extension for a word list.
      */
     val EXPECTED = """
-      autoCmd
       extensionLoader
       fallbackWindow
       highlightingService

@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.VimExternalOpener
+import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.api.VimProcessGroup
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanelService
@@ -138,6 +139,42 @@ class VimHost(
   /** A key named the way Vim names it - `<Esc>`, `<C-W>` - from a keybinding rather than typing. */
   fun key(textEditor: TextEditor, notation: String) {
     handle(textEditor, injector.parser.parseKeys(notation))
+  }
+
+  // ---- Autocommand events.
+  //
+  // What a host owes `:autocmd`: the registry is the engine's, and the events are VS Code's. Only
+  // the ones VS Code actually reports are fired - there is no point inventing a `BufWritePre` this
+  // host cannot see coming.
+
+  /** The editor `BufLeave` will name, remembered because VS Code has stopped calling it active. */
+  private var lastActiveEditor: TextEditor? = null
+
+  /** VS Code changed the active editor: `BufLeave` for the old one, `BufEnter` for the new. */
+  fun activeEditorChanged(editor: TextEditor?) {
+    val left = lastActiveEditor
+    lastActiveEditor = editor
+    if (left != null && left !== editor) fire(AutoCmdEvent.BufLeave, editorFor(left))
+    if (editor != null) fire(AutoCmdEvent.BufEnter, editorFor(editor))
+  }
+
+  /** The window gained or lost focus, which is Vim's `FocusGained` and `FocusLost`. */
+  fun windowFocusChanged(focused: Boolean) {
+    val event = if (focused) AutoCmdEvent.FocusGained else AutoCmdEvent.FocusLost
+    fire(event, lastActiveEditor?.let { editorFor(it) })
+  }
+
+  /**
+   * Runs the autocommands for an event, and writes out whatever they changed.
+   *
+   * The flush is not optional and is easy to forget: an autocommand is a Vim command like any
+   * other, and every other route into the engine here ends in one - this is a second door into the
+   * same room. Without it `:autocmd BufEnter * :normal ix` edits the engine's buffer and VS Code
+   * never hears about it.
+   */
+  private fun fire(event: AutoCmdEvent, editor: VsCodeEditor?) {
+    injector.autoCmd.handleEvent(event, editor?.getPath(), editor)
+    editor?.flush()
   }
 
   /** What the engine asked to have replayed. See `SingleThreadedApplication.postKey`. */
