@@ -182,7 +182,10 @@ open class VsCodeInjector(
   override val markService: VimMarkService by lazy { object : VimMarkServiceBase() {} }
   override val vimState: VimStateMachine by lazy { VimStateMachineImpl() }
   override val historyGroup: VimHistory by lazy { object : VimHistoryBase() {} }
-  override val registerGroup: VimRegisterGroup by lazy { object : VimRegisterGroupBase() {} }
+  override val registerGroup: VimRegisterGroup by lazy {
+    // The listener is what makes `'clipboard'` do anything at all. See [VsCodeRegisterGroup].
+    VsCodeRegisterGroup().also { it.initClipboardOptionListener() }
+  }
   override val registerGroupIfCreated: VimRegisterGroup? get() = registerGroup
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
 
@@ -1081,6 +1084,38 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessages {
 }
 
 /**
+ * The registers, plus the two decisions `'clipboard'` leaves to a host.
+ *
+ * [initClipboardOptionListener] is what makes the option do anything at all: it sets the default
+ * register to `*` or `+` when `'clipboard'` names `unnamed` or `unnamedplus`, and it is a call
+ * `VimRegisterGroupBase` leaves to whoever builds one. IdeaVim makes it from its register group's
+ * constructor; this host had no register group of its own to make it from, so
+ * `set clipboard^=unnamed,unnamedplus` was parsed, stored, reported back by `:set clipboard?` - and
+ * ignored. Every yank went to `"` and the system clipboard never heard about it.
+ *
+ * [isPrimaryRegisterSupported] is the other. The engine asks it to tell X11's PRIMARY selection -
+ * the one middle-click pastes, which Vim calls `"*` - from the clipboard every platform has, and it
+ * answers from `$DISPLAY` and the platform name, which is right for a process that can talk to an X
+ * server. This one cannot. `env.clipboard` is the whole of VS Code's clipboard API and it is the
+ * CLIPBOARD selection on every platform, so on a Linux with `$DISPLAY` set the engine would route
+ * `"*` to a selection this host has no way to reach - and `set clipboard=unnamed`, whose whole
+ * effect is to make the default register `"*`, would write to nothing. False here says the true
+ * thing, and the engine then does what it does on macOS and Windows: `"*` and `"+` name the one
+ * clipboard there is.
+ *
+ * What that costs is `autoselect`, `autoselectml` and `autoselectplus`, which ask for the visual
+ * selection to be published as it is made. They describe owning a selection *separate* from the
+ * clipboard - that is the whole point of PRIMARY, and why publishing to it on every `v` is
+ * harmless. Doing the same to the clipboard would destroy the user's clipboard on every visual
+ * motion, so they are accepted and do nothing, which is what Vim does on a build without `+X11`.
+ * `html` (a GUI-only paste format) and `exclude:{pattern}` (whether to connect to an X server at
+ * all) are no-ops here for the same reason, and `ideaput` is IntelliJ's.
+ */
+private class VsCodeRegisterGroup : VimRegisterGroupBase() {
+  override fun isPrimaryRegisterSupported(): Boolean = false
+}
+
+/**
  * See [VsCodeInjector.clipboardManager] for why this is not the system clipboard.
  *
  * "Transferable data" is IntelliJ's rich payload travelling with a copy - syntax-highlighted text,
@@ -1089,15 +1124,14 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessages {
 private class RegisterBackedClipboard(private val clipboard: SystemClipboard) : VimClipboardManager {
 
   /**
-   * X11's primary selection - the one that middle-click pastes - which Vim exposes as `"*`.
+   * `"*`, which on this host is the same clipboard as `"+` - see [VsCodeRegisterGroup].
    *
-   * Kept separate and in memory. VS Code has one clipboard and no notion of a primary selection, so
-   * a host that mapped `"*` onto it would make `"*` and `"+` the same register on every platform,
-   * including the one where users rely on them differing.
+   * These two used to hold an in-memory value of their own, so that `"*` and `"+` could differ the
+   * way they do under X11. Nothing could ever read that value: VS Code has one clipboard API, and
+   * a `"*` nobody outside the process can see is not a primary selection, it is a lost yank.
    */
-  private var primary: VimCopiedText? = null
-
-  override fun getPrimaryContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? = primary
+  override fun getPrimaryContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? =
+    getClipboardContent(editor, context)
 
   override fun getClipboardContent(editor: VimEditor, context: ExecutionContext): VimCopiedText? =
     clipboard.read()?.let { PlainCopiedText(it) }
@@ -1116,10 +1150,7 @@ private class RegisterBackedClipboard(private val clipboard: SystemClipboard) : 
     context: ExecutionContext,
     textData: VimCopiedText,
     selectionType: SelectionType,
-  ): Boolean {
-    primary = textData
-    return true
-  }
+  ): Boolean = setClipboardContent(editor, context, textData)
 
   override fun setClipboardText(text: String, rawText: String, transferableData: List<Any>): Any? {
     clipboard.write(text)

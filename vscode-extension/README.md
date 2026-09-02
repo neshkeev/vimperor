@@ -148,8 +148,16 @@ re-reads whenever the window regains focus - which is what a user copying in a b
 back does. Copying elsewhere *while* VS Code has focus and pasting without clicking away is the case
 that stays wrong; fixing it means making paste asynchronous, which is a change to the key path.
 
-On macOS and Windows `"*` and `"+` are the same clipboard, as they are in Vim. Under X11 `"*` is the
-primary selection and is kept separate.
+`"*` and `"+` are the same clipboard here, on every platform including X11. In Vim `"*` is the
+primary selection - the one middle-click pastes, separate from the clipboard - but reaching it takes
+an X connection, and `env.clipboard` is the whole of what an extension gets.
+
+`'clipboard'` decides whether a plain `y`, `d`, `c` or `x` goes there too. `unnamed` and
+`unnamedplus` both do that; `autoselect`, `autoselectml` and `autoselectplus` are accepted and do
+nothing, because they publish the visual selection as it is made and the store they publish to is
+meant to be separate from the clipboard - doing it to the clipboard would wipe it on every `v`.
+`html` and `exclude:{pattern}` are X11 and GUI concerns and are no-ops for the same reason, which is
+what Vim does on a build without `+X11`. `ideaput` is IntelliJ's.
 
 `:registers` and `:marks` print to the *IdeaVim* output channel. Vim's output panel takes over the
 screen and then takes keys - space pages, `q` closes - and VS Code has no equivalent that does not
