@@ -1,7 +1,7 @@
 {
   "name": "vimperor",
   "displayName": "Vimperor",
-  "description": "A complete Vim for VS Code: modes, operators, text objects, registers, macros, marks and Vimscript.",
+  "description": "Vim for VS Code, powered by IdeaVim's engine: modes, operators, text objects, registers, macros, marks and Vimscript.",
   "version": "0.0.1",
   "publisher": "neshkeev",
   "repository": {
@@ -28,7 +28,7 @@
     },
     "untrustedWorkspaces": {
       "supported": true,
-      "description": "Configuration is read from your home directory and never from the workspace, so opening an untrusted folder cannot make Vimperor run anything."
+      "description": "Configuration is read from your home directory - `~/.ideavimrc` and the XDG location - and never from the workspace, so opening an untrusted folder cannot make Vimperor run anything."
     }
   },
   "main": "./build/compileSync/js/main/productionExecutable/kotlin/vimperor.js",
@@ -389,6 +389,7 @@
   "keywords": [
     "vim",
     "vi",
+    "ideavim",
     "vimrc",
     "modal editing",
     "normal mode",

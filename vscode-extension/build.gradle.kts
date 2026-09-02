@@ -291,6 +291,11 @@ tasks.named("jsNodeTest") {
   // the check that the baseline gate works passed by not running.
   inputs.dir(rootProject.layout.projectDirectory.dir("src/test"))
   inputs.dir(layout.projectDirectory.dir("src/jsTest/fixtures"))
+
+  // ...and `KeybindingManifestTest` reads the manifest the same way, for the same reason: what VS
+  // Code will hand this extension is decided in `package.json`, not in any Kotlin. Without this,
+  // editing the manifest leaves the one test that checks it sitting there up to date.
+  inputs.file(layout.projectDirectory.file("package.json"))
 }
 
 // `./gradlew test` matches by task NAME across projects, and a KMP module has no `test` task - so
