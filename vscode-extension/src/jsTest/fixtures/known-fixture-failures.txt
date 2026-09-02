@@ -5,14 +5,67 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1018 of the 1025 harvested fixtures pass. These seven are grouped by what is actually wrong, which
-# is six things.
+# 1030 of the 1049 harvested fixtures pass. These nineteen are grouped by what is actually wrong,
+# which is seven things.
 #
-# Four entries left this list without anything being fixed, which is the thing to remember about it:
-# the harness was typing setup commands through `parseKeys`, so `:nmap <Tab> ihello<Esc>` pressed
-# Escape on the command line instead of writing five characters into it. IdeaVim types those
-# literally and says why in a comment. Four fixtures had been recorded here as bugs in this host
-# that were bugs in the harness reading them.
+# The corpus grew by 24 when the harness stopped refusing fixtures with more than one caret, and
+# twelve of those twenty-four fail. That is the yield of removing a refusal, and it is why refusing
+# is only ever a temporary answer: multiple cursors are the feature VS Code is best known for, and
+# every one of these is IdeaVim saying what a multi-caret command should do.
+#
+# Four entries left this list without anything being fixed, which is the other thing to remember
+# about it: the harness was typing setup commands through `parseKeys`, so `:nmap <Tab> ihello<Esc>`
+# pressed Escape on the command line instead of writing five characters into it. Four fixtures had
+# been recorded here as bugs in this host that were bugs in the harness reading them.
+
+# --- A caret the block rebuild reassigned, still held by the motion that caused it.
+#
+# This is one bug and it accounts for eight of the entries below. The shape is unmistakable in the
+# difference: `caret expected [18, 47, 86, 127], actual [47, 86, 127, 127]` - the first caret is
+# missing, the last is there twice, and everything in between has slid along by one.
+#
+# What happens is that a vertical motion in blockwise Visual asks the *host* to lay the block out
+# again, and the engine's `vimSetSystemBlockSelectionSilently` is documented to invalidate the caret
+# the motion is running on: "WARNING! This can invalidate the primary caret". IntelliJ's selection
+# model really does replace its caret objects there, so the motion's own final move lands on a caret
+# that has been thrown away. This host reuses the caret instead - `vimSelectionStart` is stored on
+# the instance, so the anchor has to survive - and it becomes the block's *first* line, since that
+# is the line it is on when the block is rebuilt. The motion then moves it to the destination on the
+# *last* line, and the first line's caret is dragged to the bottom of the block.
+#
+# Traced by logging the caret moves for `<C-V>jl`:
+#     setBlock rebuilt=[(caret-1, 16, (15, 16)), (caret-2, 47, (46, 47))]
+#     caret-1 moveToVisualPosition(line=2, column=2) 16 -> 15
+#     caret-2 moveToVisualPosition(line=3, column=2) 47 -> 46
+#     caret-1 moveToInlayAwareOffset(46) from 15      <- the motion, on the wrong caret
+#
+# So the fix is about what a host owes a caret the engine has just re-purposed, and it is a separate
+# piece of work from reading these fixtures at all.
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVisualModeHandlerTest.kt:test switch to select mode blockwise left motion
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after block visual operation
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after block visual operation multiple time
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after visual operation multicaret
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with double count after block visual operation
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with ten count after block visual operation
+src/test/java/org/jetbrains/plugins/ideavim/group/SearchGroupTest.kt:test cancelling search restores Visual (blockwise)
+
+# --- Carets that should have gone and did not.
+#
+# `expected [46], actual [46, 75]` on leaving a block for line Visual, `expected [19, 104], actual
+# [19, 42, 104]` on `Ve<C-G>`, and `expected [12], actual [12, 12]` on a block Select reaching an
+# empty line. The engine narrows a multi-caret selection back to fewer carets and this host keeps
+# the ones it was told to drop - close kin to the entry above, and possibly the same fix.
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVisualModeHandlerTest.kt:test switch to select mode linewise multicaret
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionShiftDownActionHandlerTest.kt:test block select to empty line
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleLineModeActionTest.kt:enter visual line from visual block with motion up
+
+# --- Block Select entered with `g<C-H>`.
+#
+# Two of these were already here before multi-caret fixtures were read, and the third arrived with
+# them. `g<C-H>` starts block Select mode, which is Visual block with the keyboard behaving like a
+# normal editor's, and this host puts the caret at the anchor rather than at the far end.
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionShiftLeftActionHandlerTest.kt:test multiline with empty line block mode
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectEnableBlockModeActionHandlerTest.kt:test entering select mode multicaret
 
 # --- Reindenting, which is a VS Code command and therefore asynchronous.
 #
@@ -21,6 +74,12 @@
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionOuterSentenceActionTest.kt:test on empty last line
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionSentenceActionTest.kt:test indent outer sentence on empty last line
 
+# --- An IntelliJ action replayed by `.`, which this host has no equivalent of.
+#
+# `c<C-End><C-I><esc>.` repeats a change that ran an IDE action in the middle of it. Arrived with
+# the multi-caret fixtures because its `after` carries two selection markers.
+src/test/java/org/jetbrains/plugins/ideavim/action/RepeatActionTest.kt:repeat command with execution of ij action
+
 # --- One each.
 #
 # `ideajoin` is IntelliJ's smart join, a language feature this host cannot have.
@@ -28,14 +87,12 @@ src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionSentenceA
 # `partial Action mapping` is the keys of a half-typed `<Action>` mapping, replayed as literal text
 # here instead of being recognised.
 #
-# The two Select mode corners are block Select entered with `g<C-H>`, and where the caret lands when
-# a search is run from Select mode with `<C-O>`.
+# The Select mode one is where the caret lands when a search is run from Select mode with `<C-O>`.
 #
 # The incsearch one is the preview for an *ex command* - `:%s/dolor` shows its match and drops the
 # Visual selection while still being typed. That needs the command line parsed for a range and a
 # pattern before it is run, which is a different piece of machinery from previewing `/`.
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionShiftLeftActionHandlerTest.kt:test multiline with empty line block mode
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchEntryFwdActionTest.kt:search in one time from select mode
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
 src/test/java/org/jetbrains/plugins/ideavim/group/search/IncsearchTests.kt:test incsearch removes Visual when searching with no Visual range

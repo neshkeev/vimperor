@@ -282,8 +282,26 @@ handed back as a promise of `TextEdit`s, and this host applies its own asynchron
 `autocmd BufWritePre * :%s/\s\+$//e` - the reason anyone wants the event - could land after the
 file was written. Firing nothing beats firing it too late.
 
-All five of those blind spots are about *reach*: which surface a test drives and how far into it.
-The sixth is narrower and worse, and it is about the text. Every test in this module, and every one
+A seventh arrived from widening the corpus rather than from reasoning about it. The harness refused
+any fixture with more than one caret, on the honest grounds that replaying a multi-caret test with
+one caret would give a wrong answer rather than a missing one. That was true of a harness that
+compared one caret; the answer was to compare all of them, not to look away - and multiple cursors
+are the feature VS Code is best known for. Twenty-four fixtures came in with the refusal removed and
+twelve of them fail, which is the yield of a refusal that had been standing since the harness was
+written.
+
+They are one bug with a very legible signature: `caret expected [18, 47, 86, 127], actual [47, 86,
+127, 127]`. A vertical motion in blockwise Visual asks the host to lay the block out again, and the
+engine's own comment on that call says "WARNING! This can invalidate the primary caret" - IntelliJ's
+selection model really does throw its caret objects away there, so the motion's final move lands on
+one that no longer exists. This host reuses the caret instead, because `vimSelectionStart` is stored
+on the instance and the anchor has to survive, and it becomes the block's *first* line since that is
+where it is standing. The motion then drags it to the destination on the *last* line. What a host
+owes a caret the engine has just re-purposed is its own piece of work, so the twelve are recorded in
+`known-fixture-failures.txt` with the trace that found them rather than fixed in passing.
+
+All five of the earlier blind spots are about *reach*: which surface a test drives and how far into
+it. The sixth is narrower and worse, and it is about the text. Every test in this module, and every one
 of the 1,025 fixtures harvested from IdeaVim, writes `\n`. Files that end their lines with `\r\n`
 were therefore covered by nothing at all - and that is not an exotic file, it is most of a Windows
 checkout.

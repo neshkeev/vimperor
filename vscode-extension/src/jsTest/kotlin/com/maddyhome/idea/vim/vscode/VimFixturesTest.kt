@@ -228,13 +228,16 @@ class VimFixturesTest {
   }
 
   /**
-   * Block Visual mode marks a selection on every line, and this compares one.
+   * Block Visual marks a selection on every line, and all of them are kept.
    *
-   * Reading the first pair as the whole selection would be a wrong answer rather than a missing
-   * one, so a fixture with more than one pair is refused.
+   * This used to be refused, on the grounds that comparing the first pair as though it were the
+   * whole selection is a wrong answer rather than a missing one. That was true of a harness that
+   * compared one selection; the answer was to compare all of them rather than to look away. Block
+   * Visual and multiple cursors are the same shape - N carets, each with its own selection - and
+   * multiple cursors are the feature VS Code is best known for.
    */
   @Test
-  fun `test a result with more than one selection is refused`() {
+  fun `test every selection in a result is kept`() {
     val fixtures = harvest(
       """
       class SampleTest {
@@ -245,8 +248,28 @@ class VimFixturesTest {
       """.trimIndent(),
     )
 
-    assertEquals(emptyList(), fixtures)
-    assertTrue(VimFixtures.skipped.containsKey("more than one selection in the result"))
+    assertEquals(1, fixtures.size, "the fixture should have been harvested rather than refused")
+    assertEquals(
+      "<selection>o</selection>ne\n<selection>t<caret></selection>wo",
+      fixtures[0].after,
+    )
+  }
+
+  /** More than one caret in the input is kept too, and set through VS Code's own selections. */
+  @Test
+  fun `test more than one caret in the input is kept`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test two carets`() {
+          doTest("x", "${'$'}{c}one\n${'$'}{c}two", "ne\nwo")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size, "a multi-caret fixture should be harvested")
+    assertEquals("<caret>one\n<caret>two", fixtures[0].before)
   }
   /**
    * `trimMargin` is what 318 of the fixtures are written with, and it is not `trimIndent`.

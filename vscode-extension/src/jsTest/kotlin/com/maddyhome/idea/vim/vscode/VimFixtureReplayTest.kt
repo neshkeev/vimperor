@@ -117,19 +117,27 @@ class VimFixtureReplayTest {
       val start = Marked(fixture.before)
       val expected = Marked(fixture.after)
       val text = start.text
-      val caretAt = start.caret ?: 0
+      val caretsAt = start.carets.ifEmpty { listOf(0) }
       val expectedText = expected.text
-      val expectedCaret = expected.caret
+      val expectedCarets = expected.carets
 
       val fake = FakeEditor(text)
       val actualText: String
-      val actualCaret: Int
-      val actualSelection: Pair<Int, Int>?
+      val actualCarets: List<Int>
+      val actualSelections: List<Pair<Int, Int>>
       try {
         val host = VimHost().also { it.start() }
         val editor = host.editorFor(fake)
         KeyHandler.getInstance().fullReset(editor)
-        editor.primaryCaret().moveToOffsetNative(caretAt)
+        // Through VS Code's selections rather than by moving the engine's caret, because that is
+        // the only way a second caret can arrive in a real window - the user alt-clicks, VS Code
+        // reports a selection change, and the host rebuilds its carets from it.
+        fake.selections = caretsAt.map { offset ->
+          val position = fake.document.positionAt(offset)
+          FakeSelection(position, position)
+        }.toTypedArray()
+        fake.selection = fake.selections[0]
+        editor.syncCaretsFromEditor()
         editor.flush()
         val handler = KeyHandler.getInstance()
         // The command itself is typed rather than parsed, which is what IdeaVim does and for the
@@ -148,9 +156,11 @@ class VimFixtureReplayTest {
         }
         editor.flush()
         actualText = fake.document.content
-        val caret = editor.primaryCaret()
-        actualCaret = caret.offset
-        actualSelection = if (caret.hasSelection()) caret.selectionStart to caret.selectionEnd else null
+        // In document order, which is the order IdeaVim writes its markers in. The engine keeps its
+        // carets in the order they were made, and a block Visual command makes them bottom-up.
+        val carets = editor.carets().sortedBy { it.offset }
+        actualCarets = carets.map { it.offset }
+        actualSelections = carets.filter { it.hasSelection() }.map { it.selectionStart to it.selectionEnd }
       } catch (e: Throwable) {
         return "    threw ${e::class.simpleName}: ${e.message?.take(120)}"
       }
@@ -164,21 +174,21 @@ class VimFixtureReplayTest {
       fun actualAt(offset: Int) = withoutTrailingSpaces(actualText, upTo = offset).length
       fun expectedAt(offset: Int) = withoutTrailingSpaces(expectedText, upTo = offset).length
 
-      if (expectedCaret != null && actualAt(actualCaret) != expectedAt(expectedCaret)) {
+      if (expectedCarets.isNotEmpty() &&
+        actualCarets.map(::actualAt) != expectedCarets.map(::expectedAt)
+      ) {
         return "    keys ${fixture.keys}${fixture.setup.joinToString("") { " after :" + it }}\n" +
-          "    caret expected $expectedCaret, actual $actualCaret in ${show(actualText)}"
+          "    caret expected $expectedCarets, actual $actualCarets in ${show(actualText)}"
       }
-      // Only when the fixture says where the selection is. A fixture without the markers is not
+      // Only when the fixture says where the selections are. A fixture without the markers is not
       // saying there is no selection - most of the corpus is Normal mode and never mentions one -
       // so a stale selection left behind by this host would not be caught here.
-      val wanted = expected.selection
-      if (wanted != null) {
-        val got = actualSelection
-        if (got == null || actualAt(got.first) != expectedAt(wanted.first) ||
-          actualAt(got.second) != expectedAt(wanted.second)
-        ) {
+      if (expected.selections.isNotEmpty()) {
+        val wanted = expected.selections.map { expectedAt(it.first) to expectedAt(it.second) }
+        val got = actualSelections.map { actualAt(it.first) to actualAt(it.second) }
+        if (wanted != got) {
           return "    keys ${fixture.keys}${fixture.setup.joinToString("") { " after :" + it }}\n" +
-            "    selection expected $wanted, actual $got in ${show(actualText)}"
+            "    selection expected ${expected.selections}, actual $actualSelections in ${show(actualText)}"
         }
       }
       return null
@@ -193,14 +203,18 @@ class VimFixtureReplayTest {
      */
     class Marked(marked: String) {
       val text: String
-      val caret: Int?
-      val selection: Pair<Int, Int>?
+
+      /** Every caret the fixture marks, in the order they appear - which is document order. */
+      val carets: List<Int>
+
+      /** Every selection, likewise. A block Visual result has one per line. */
+      val selections: List<Pair<Int, Int>>
 
       init {
         val builder = StringBuilder()
-        var caretAt: Int? = null
-        var from: Int? = null
-        var to: Int? = null
+        val caretsAt = mutableListOf<Int>()
+        val starts = mutableListOf<Int>()
+        val ends = mutableListOf<Int>()
         var index = 0
         while (index < marked.length) {
           val marker = MARKERS.firstOrNull { marked.startsWith(it, index) }
@@ -208,17 +222,17 @@ class VimFixtureReplayTest {
             null -> { builder.append(marked[index]); index++ }
             else -> {
               when (marker) {
-                VimFixtures.CARET -> caretAt = builder.length
-                VimFixtures.SELECTION_START -> from = builder.length
-                else -> to = builder.length
+                VimFixtures.CARET -> caretsAt += builder.length
+                VimFixtures.SELECTION_START -> starts += builder.length
+                else -> ends += builder.length
               }
               index += marker.length
             }
           }
         }
         text = builder.toString()
-        caret = caretAt
-        selection = if (from != null && to != null) from to to else null
+        carets = caretsAt
+        selections = starts.zip(ends)
       }
     }
 

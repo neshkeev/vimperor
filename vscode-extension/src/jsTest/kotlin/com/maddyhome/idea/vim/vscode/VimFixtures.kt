@@ -106,17 +106,12 @@ internal object VimFixtures {
 
         val (keys, before, after) = withCarets.map { it!! }
         // No caret at all is not a refusal: IdeaVim's `configureByText` puts one at the start when
-        // the text does not say otherwise, so the fixture means offset zero. More than one is - a
-        // multiple-caret fixture is about all of them at once, and replaying it with the first
-        // would produce a wrong answer rather than a missing one.
-        if (before.split(CARET).size > 2) { skip("more than one caret in the input"); continue }
+        // the text does not say otherwise, so the fixture means offset zero. More than one is not a
+        // refusal either any more, and it should never have been the interesting one to give up on:
+        // multiple cursors are the feature VS Code is best known for, and every one of these
+        // fixtures is IdeaVim saying what a multi-caret command should do. The replay sets them all
+        // through VS Code's own selections, which is how a real one would arrive.
         if (before.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
-        // Block Visual mode selects a range on every line, so its `after` has one pair of markers
-        // per line. This compares a single selection and would read the first pair as the whole of
-        // it, which is a wrong answer rather than a missing one.
-        if (after.split(SELECTION_START).size > 2 || after.split(SELECTION_END).size > 2) {
-          skip("more than one selection in the result"); continue
-        }
         if (after.split(SELECTION_START).size != after.split(SELECTION_END).size) {
           skip("an unbalanced selection in the result"); continue
         }
