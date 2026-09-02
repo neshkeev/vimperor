@@ -19,11 +19,12 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 /**
  * see "h :first" / "h :bfirst"
  *
- * Two commands in Vim over two different lists - `:first` walks the argument list and `:bfirst` the
- * buffer list - and one here, because neither host keeps an argument list separate from the files
- * it has open. `:brewind` is Vim's own second name for `:bfirst`.
+ * Several commands in Vim over three different lists - `:first` walks the argument list, `:bfirst`
+ * the buffer list and `:tabfirst` the tab pages - and one here, because neither host keeps those
+ * apart: a file appears once, in one list, whichever of the three you ask about. `:brewind` and
+ * `:tabrewind` are Vim's own second names for two of them.
  */
-@ExCommand(command = "fir[st],bf[irst],br[ewind]")
+@ExCommand(command = "fir[st],bf[irst],br[ewind],tabfir[st],tabr[ewind]")
 data class SelectFirstFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

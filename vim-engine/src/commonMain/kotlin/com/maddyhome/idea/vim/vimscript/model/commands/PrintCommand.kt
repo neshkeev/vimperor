@@ -48,14 +48,40 @@ data class PrintCommand(val range: Range, val modifier: CommandModifier, val arg
   companion object {
     /**
      * @param lines 0-based list of line numbers
+     * @param forceNumbers number the lines whatever `'number'` says, which is what `:number` is
+     * @param listMode show the end of each line and its unprintable characters, which is `:list`
      */
-    fun getText(editor: VimEditor, lines: List<Int>): String {
-      val showNumbers = injector.options(editor).number
+    fun getText(
+      editor: VimEditor,
+      lines: List<Int>,
+      forceNumbers: Boolean = false,
+      listMode: Boolean = false,
+    ): String {
+      val showNumbers = forceNumbers || injector.options(editor).number
       val biggestNumberLength = lines.max().toString().length
       return lines.joinToString("\n") {
         val number = if (showNumbers) (it + 1).toString().padStart(biggestNumberLength, ' ') + " " else ""
-        "$number${getLineText(editor, it)}"
+        val text = getLineText(editor, it)
+        "$number${if (listMode) asList(text) else text}"
       }
+    }
+
+    /**
+     * A line as `:list` shows it: `$` for where it ends, `^I` for a tab, `^X` for a control character.
+     *
+     * Vim's `'listchars'` decides the first two and defaults to exactly this. The option is
+     * accepted rather than implemented here, so this is the default rendering and nothing reads it.
+     */
+    private fun asList(text: String): String = buildString {
+      for (c in text) {
+        when {
+          c == '\t' -> append("^I")
+          c.code < 32 -> append('^').append((c.code + 64).toChar())
+          c.code == 127 -> append("^?")
+          else -> append(c)
+        }
+      }
+      append('$')
     }
 
     private fun getLineText(editor: VimEditor, line: Int): String {

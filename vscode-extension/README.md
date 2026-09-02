@@ -269,11 +269,30 @@ take the expressions off it, so everything `:echo` understands they understand t
 throws, which is what makes `silent! echoerr` a way of testing something and what lets `:try` catch
 it. `:echohl` and `:undojoin` are registered and do nothing, with the reason written at each.
 
+`:left`, `:right`, `:center` and `:retab` rewrite a line's whitespace. The first three build their
+indent through `createIndentBySize`, so it is tabs or spaces according to `'expandtab'` - the same
+call every other indenting command makes, rather than a string of spaces that would look right
+until someone opened the file in Vim. `:retab` is the interesting one: a tab is a jump to the next
+tabstop rather than a fixed width, so a run of whitespace has to be measured from where it starts on
+the line, and it is read at the tabstop the file is laid out for now and written at the one it is
+being laid out for. Vim's rule that a run without a tab in it is left alone is kept, so `:retab`
+does not silently reflow a file someone aligned with spaces; `:retab!` is how you say you meant it.
+`:number`, `:list` and `:z` are `:print` with the two things it can be asked to show and a window of
+lines.
+
+`:args`, `:argadd`, `:argdelete`, `:badd`, `:bmodified`, `:tabs`, `:tabfirst`, `:tablast`,
+`:bunload`, `:bwipeout`, `:drop`, `:view`, `:visual` and the `s`-prefixed family (`:sbuffer`,
+`:snext`, `:sprevious`, `:sfind`, `:sview`) are the other names for the one list. Vim keeps three
+apart - the files named on the command line, the buffers it has loaded, the tab pages - and neither
+host does: a file appears once, whichever of the three you ask about. So `:args` and `:ls` print the
+same files and `:tabfirst` is `:bfirst`. Registering both spellings is the point; one of each pair
+working and the other reporting `E492` reads as an oversight rather than as a difference between Vim
+and an editor with tabs. The `s`-prefixed ones are written as what they mean - split, then run the
+command - so `:sbuffer 3` reports `E86` from the same place `:buffer 3` does.
+
 The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
 empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
-up as a failure rather than as a bug report. Sweeping the *whole* of Vim's command list rather than
-what a config reaches for leaves 114 - quickfix, tags, sessions, and the ones that need a language
-runtime.
+up as a failure rather than as a bug report.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

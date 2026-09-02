@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimFile
 import com.maddyhome.idea.vim.api.VimFileBase
 import com.maddyhome.idea.vim.api.injector
+import kotlin.js.json
 
 /**
  * `:w`, `:q`, `<C-G>` - the file, as opposed to the buffer.
@@ -235,7 +236,13 @@ internal class VsCodeFile(
   override fun openFile(filename: String, context: ExecutionContext, focusEditor: Boolean): String? {
     val path = absolute(filename)
     val uri = if (files.exists(path)) UriFactory.file(path) else UriFactory.parse(UNTITLED + path)
-    host.run(VsCodeCommands.OPEN, arrayOf(uri))
+    // `vscode.open` takes VS Code's own show options as a second argument, and `preserveFocus`
+    // there is exactly what `focusEditor = false` means: `:badd` and `:argadd` add a file to the
+    // list without taking you to it. Passed only when it is wanted, so the ordinary `:e file` sends
+    // what it always sent.
+    val arguments: Array<Any?> =
+      if (focusEditor) arrayOf(uri) else arrayOf(uri, json("preserveFocus" to true, "background" to true))
+    host.run(VsCodeCommands.OPEN, arguments)
     return null
   }
 

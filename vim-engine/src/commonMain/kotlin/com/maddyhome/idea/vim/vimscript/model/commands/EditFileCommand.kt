@@ -17,9 +17,17 @@ import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 
 /**
- * see "h :edit"
+ * see "h :edit" / "h :drop" / "h :view" / "h :visual"
+ *
+ * `:drop` differs from `:edit` in Vim by reusing a window that already shows the file rather than
+ * loading it into this one - which is what both hosts do anyway, since opening a file that is
+ * already open moves you to its tab.
+ *
+ * `:view` and `:visual` are `:edit` with `'readonly'` set and cleared. Neither host has a per-buffer
+ * read-only flag an extension can set, so both open the file and the flag is what is lost; the file
+ * being opened is the part anyone typing `:view` was after.
  */
-@ExCommand(command = "e[dit],bro[wse]")
+@ExCommand(command = "e[dit],bro[wse],dr[op],vie[w],vi[sual]")
 data class EditFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

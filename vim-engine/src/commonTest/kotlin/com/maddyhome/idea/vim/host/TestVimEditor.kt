@@ -213,7 +213,13 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
   override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not implemented yet")
   override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not implemented yet")
   override fun addCaret(offset: Int): VimCaret? = TODO("TestVimEditor.addCaret is not implemented yet")
-  override fun removeSecondaryCarets(): Unit = TODO("TestVimEditor.removeSecondaryCarets is not implemented yet")
+  /**
+   * Nothing to remove: a headless editor is built with the carets it is given and never grows one.
+   *
+   * A `TODO` until `:print` reached it - every command that prints a range drops the secondary
+   * carets first, so none of them could run here at all.
+   */
+  override fun removeSecondaryCarets() {}
   override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition): Unit = TODO("TestVimEditor.vimSetSystemBlockSelectionSilently is not implemented yet")
   override fun addCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.addCaretListener is not implemented yet")
   override fun removeCaretListener(listener: VimCaretListener): Unit = TODO("TestVimEditor.removeCaretListener is not implemented yet")
@@ -244,7 +250,14 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
 
   override fun getLastVisualLineColumnNumber(line: Int): Int = TODO("TestVimEditor.getLastVisualLineColumnNumber is not implemented yet")
   override fun createLiveMarker(start: Int, end: Int): LiveRange = TODO("TestVimEditor.createLiveMarker is not implemented yet")
-  override fun createIndentBySize(size: Int): String = TODO("TestVimEditor.createIndentBySize is not implemented yet")
+  /**
+   * Spaces, because a host with no `'expandtab'` has nothing to consult about tabs.
+   *
+   * Every indenting command in the engine builds its indent through here, so this being a `TODO`
+   * meant none of them could be tested headlessly at all - `:left`, `:right` and `:center` are the
+   * ones that found it.
+   */
+  override fun createIndentBySize(size: Int): String = " ".repeat(size.coerceAtLeast(0))
   override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? = null
 
   override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> = emptyList()
