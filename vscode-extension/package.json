@@ -1,10 +1,11 @@
 {
   "name": "vimperor",
   "displayName": "Vimperor",
-  "description": "Vim for VS Code, powered by IdeaVim's engine.",
+  "description": "A complete Vim for VS Code: modes, operators, text objects, registers, macros, marks and Vimscript.",
   "version": "0.0.1",
   "publisher": "neshkeev",
   "license": "MIT",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -19,7 +20,7 @@
     },
     "untrustedWorkspaces": {
       "supported": true,
-      "description": "Configuration is read from your home directory - `~/.ideavimrc` and the XDG location - and never from the workspace, so opening an untrusted folder cannot make IdeaVim run anything."
+      "description": "Configuration is read from your home directory and never from the workspace, so opening an untrusted folder cannot make Vimperor run anything."
     }
   },
   "main": "./build/compileSync/js/main/productionExecutable/kotlin/vimperor.js",
@@ -372,7 +373,7 @@
         "vimperor.trace": {
           "type": "boolean",
           "default": false,
-          "description": "Write what each keystroke did to the IdeaVim output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
+          "description": "Write what each keystroke did to the Vimperor output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
         }
       }
     }
@@ -381,8 +382,9 @@
     "vim",
     "vi",
     "vimrc",
-    "modal",
+    "modal editing",
+    "normal mode",
     "keybindings",
-    "ideavim"
+    "keymap"
   ]
 }
