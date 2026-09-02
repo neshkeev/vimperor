@@ -118,8 +118,27 @@ class VimHost(
   }
 
   fun forget(textEditor: TextEditor) {
-    val identity = identityOf(textEditor)
+    forgetDocument(textEditor.document)
+  }
+
+  /**
+   * A document VS Code has closed, and the editor state that went with it.
+   *
+   * Nothing called `forget` until this existed, so the host kept every editor of every file opened
+   * in the session. Memory is the least of it: every marker in a buffer is moved on every edit,
+   * `'hlsearch'` paints every editor the engine knows about, and `getFocusedEditor` falls back to
+   * the last one registered - which could be a file closed an hour ago.
+   */
+  fun forgetDocument(document: TextDocument) {
+    val identity = "${document.uri.scheme}://${document.uri.path}"
     editors.remove(identity)?.let { vimInjector.unregister(it) }
+    if (lastActiveEditor?.document?.uri?.path == document.uri.path) lastActiveEditor = null
+  }
+
+  /** A document written to disk, which is Vim's `BufWritePost`. */
+  fun documentSaved(document: TextDocument) {
+    val identity = "${document.uri.scheme}://${document.uri.path}"
+    fire(AutoCmdEvent.BufWritePost, editors[identity])
   }
 
   private fun identityOf(textEditor: TextEditor): String =

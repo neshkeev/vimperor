@@ -25,6 +25,7 @@ import com.maddyhome.idea.vim.vscode.VsCodeClipboard
 import com.maddyhome.idea.vim.vscode.VsCodeCommands
 import com.maddyhome.idea.vim.vscode.commands
 import com.maddyhome.idea.vim.vscode.window
+import com.maddyhome.idea.vim.vscode.workspace
 
 /**
  * The extension's entry points, and the only things here that JavaScript needs to see.
@@ -140,6 +141,20 @@ fun activate(context: ExtensionContext) {
     vim.selectionChanged(event.textEditor)
   }
 
+  // A buffer unloaded. Nothing was listening for this, so the host kept an editor - and its whole
+  // text, and its markers - for every file opened in the session.
+  val documentClosed = workspace.onDidCloseTextDocument { document ->
+    vim.forgetDocument(document)
+  }
+
+  // `BufWritePost`. `BufWritePre` is not fired: VS Code's `onWillSaveTextDocument` wants the edits
+  // handed back as a promise of `TextEdit`s, and this host applies its own asynchronously - so an
+  // autocommand that stripped trailing whitespace could land after the file was written. Firing
+  // nothing is better than firing it too late.
+  val documentSaved = workspace.onDidSaveTextDocument { document ->
+    vim.documentSaved(document)
+  }
+
   // The clipboard can change while VS Code is not looking, and this is when it finds out: a user
   // copying in a browser and switching back is exactly the case `"+p` has to get right.
   val windowStateChanged = window.onDidChangeWindowState { state ->
@@ -178,6 +193,7 @@ fun activate(context: ExtensionContext) {
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
     output, status, commandLine, typing, namedKey, activeEditorChanged, selectionChanged, windowStateChanged,
+    documentClosed, documentSaved,
   )) {
     subscriptions.push(registration)
   }

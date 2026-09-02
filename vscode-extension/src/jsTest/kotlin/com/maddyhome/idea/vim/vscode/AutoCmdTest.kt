@@ -100,4 +100,35 @@ class AutoCmdTest {
 
     assertEquals("awayone", session.first.document.content)
   }
+  /**
+   * `BufWritePost`, which is the other event VS Code reports plainly.
+   *
+   * `BufWritePre` is not fired, and that is a decision rather than an omission. VS Code's
+   * `onWillSaveTextDocument` wants the edits handed back as a promise of `TextEdit`s, and this host
+   * applies its own asynchronously - so `autocmd BufWritePre * :%s/\s\+$//e`, which is the reason
+   * anyone wants the event, could land after the file was written. Firing nothing beats firing it
+   * too late, and `AutoCmdEvent.BufWrite` canonicalises to `BufWritePre`, so both are silent here.
+   */
+  @Test
+  fun `test BufWritePost fires when a document is saved`() {
+    val session = Session()
+    session.host.activeEditorChanged(session.first)
+    session.command("autocmd BufWritePost * :normal isaved")
+
+    session.host.documentSaved(session.first.document)
+
+    assertEquals("savedone", session.first.document.content)
+  }
+
+  /** A closed document takes its editor with it, and the engine stops being told about it. */
+  @Test
+  fun `test a closed document is forgotten`() {
+    val session = Session()
+    session.host.editorFor(session.second)
+    val open = com.maddyhome.idea.vim.api.injector.editorGroup.getEditors().size
+
+    session.host.forgetDocument(session.second.document)
+
+    assertEquals(open - 1, com.maddyhome.idea.vim.api.injector.editorGroup.getEditors().size)
+  }
 }

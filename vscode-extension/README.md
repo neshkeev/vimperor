@@ -216,6 +216,18 @@ a trap: the lookup used to depend on two markers over the same span comparing eq
 went by where they did not. And every caret made one eagerly, while carets are rebuilt from VS
 Code's selections each time the mouse moves.
 
+A fourth thing was accumulating beside them, and it is the same shape. `VimHost.forget` existed to
+drop an editor and nothing called it - so the host kept an editor, its whole text and its markers
+for every file opened in the session. Memory is the least of it: `'hlsearch'` paints every editor
+the engine knows about, and `getFocusedEditor` falls back to the last one registered, which could be
+a file closed an hour ago. `workspace.onDidCloseTextDocument` is now wired to it.
+
+The same subscription pass added `BufWritePost`, which is the other autocommand event VS Code
+reports plainly. `BufWritePre` is deliberately not fired: `onWillSaveTextDocument` wants the edits
+handed back as a promise of `TextEdit`s, and this host applies its own asynchronously, so
+`autocmd BufWritePre * :%s/\s\+$//e` - the reason anyone wants the event - could land after the
+file was written. Firing nothing beats firing it too late.
+
 The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
 The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test
 of behaviour that reaches users on a platform the test never touches. 430 of its tests run on both

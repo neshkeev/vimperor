@@ -33,6 +33,10 @@ const activeEditorListeners = []
 
 /** Every `setContext` the extension sent, which is how the mode reaches `when` clauses. */
 const contextsSet = []
+
+/** What `Extension.kt` registered for a document closing and for one being saved. */
+const documentClosedListeners = []
+const documentSavedListeners = []
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -273,6 +277,16 @@ const vscode = {
   },
   workspace: {
     onDidChangeTextDocument: () => disposable(),
+    // Captured, like the active-editor listener: a document closing and a document being saved are
+    // both wired in `Extension.kt`, and a test that called the host directly would not see the wire.
+    onDidCloseTextDocument: (callback) => {
+      documentClosedListeners.push(callback)
+      return disposable()
+    },
+    onDidSaveTextDocument: (callback) => {
+      documentSavedListeners.push(callback)
+      return disposable()
+    },
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
     workspaceFolders: [{ uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }],
@@ -800,6 +814,26 @@ assert.ok(
   contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'NORMAL'),
   `leaving insert mode did not set it back. Sent: ${JSON.stringify(contextsSet)}`,
 )
+
+// `BufWritePost`, and a buffer being unloaded. Both are wired in `Extension.kt` from listeners
+// nothing was subscribing to until now - so the host kept an editor, its text and its markers for
+// every file opened in the session.
+reset()
+type(':')
+for (const character of 'autocmd BufWritePost * :normal isaved') type(character)
+press('<CR>')
+
+assert.ok(documentSavedListeners.length > 0, 'the extension registered no save listener')
+for (const listener of documentSavedListeners) listener(editor.document)
+
+assert.strictEqual(
+  editor.document._text,
+  'saved',
+  `BufWritePost did not run when the document was saved. Got: ${editor.document._text}`,
+)
+
+assert.ok(documentClosedListeners.length > 0, 'the extension registered no close listener')
+for (const listener of documentClosedListeners) listener(editor.document)
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 

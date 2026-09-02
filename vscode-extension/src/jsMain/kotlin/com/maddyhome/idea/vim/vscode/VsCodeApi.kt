@@ -134,6 +134,18 @@ external object workspace {
   val onDidChangeTextDocument: (listener: (TextDocumentChangeEvent) -> Unit) -> Disposable
 
   /**
+   * A document that is no longer open in any editor, which is Vim's buffer being unloaded.
+   *
+   * Nothing was listening for this and the host kept every editor it had ever seen. That is not
+   * only memory: every marker in a buffer is moved on every edit to it, `'hlsearch'` paints each
+   * editor the engine knows about, and `getFocusedEditor` falls back to the last one registered.
+   */
+  val onDidCloseTextDocument: (listener: (TextDocument) -> Unit) -> Disposable
+
+  /** A document written to disk, which is Vim's `BufWritePost`. */
+  val onDidSaveTextDocument: (listener: (TextDocument) -> Unit) -> Disposable
+
+  /**
    * The folders open in this window, which is what a relative path in `:e` is relative to.
    *
    * Vim resolves against the current directory; a VS Code window has no current directory, it has a
