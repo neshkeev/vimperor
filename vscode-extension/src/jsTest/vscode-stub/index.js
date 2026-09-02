@@ -39,21 +39,67 @@ const TextEditorRevealType = {
 }
 
 /*
+ * The kind of tab that holds an ordinary file. A class, because the extension narrows a tab's input
+ * with `instanceof` - which is what VS Code documents, since the other kinds have a different shape.
+ */
+class TabInputText {
+  constructor(uri) {
+    this.uri = uri
+  }
+}
+
+/*
  * Tabs, which a test can arrange: `:tabclose` and `:tabmove` read how many there are and which one
  * is current before they can work out what to tell VS Code to do, so a stub with no tabs would let
- * both of them pass while doing nothing.
+ * both of them pass while doing nothing. `:ls` reads more of them - the file behind each tab, and
+ * whether it is dirty - and reads them across every group, so this holds groups rather than one
+ * list of tabs.
  */
+function tab(path, isActive, isDirty) {
+  return {
+    label: path.split('/').pop(),
+    isActive,
+    isDirty: isDirty === true,
+    input: new TabInputText({ scheme: 'file', path, fsPath: path }),
+  }
+}
+
+function group(tabs, isActive) {
+  return {
+    tabs,
+    get activeTab() {
+      return tabs.find((each) => each.isActive)
+    },
+    isActive,
+  }
+}
+
 const tabGroups = {
-  _tabs: [{ label: 'one', isActive: true }],
+  _groups: [group([tab('/one', true)], true)],
+
+  /**
+   * Replaces every group with one holding these files, the first of them current, and hands the
+   * tabs back so a test can mark one dirty.
+   */
+  _openFiles(paths) {
+    this._groups = [group(paths.map((path, index) => tab(path, index === 0)), true)]
+    return this._groups[0].tabs
+  },
+
+  /** Puts the files in two groups, so that a list built across groups can be told from one that is not. */
+  _openInTwoGroups(first, second) {
+    this._groups = [
+      group(first.map((path, index) => tab(path, index === 0)), true),
+      group(second.map((path, index) => tab(path, index === 0)), false),
+    ]
+    return this._groups
+  },
+
   get all() {
-    return [this.activeTabGroup]
+    return this._groups
   },
   get activeTabGroup() {
-    return {
-      tabs: this._tabs,
-      activeTab: this._tabs.find((tab) => tab.isActive),
-      isActive: true,
-    }
+    return this._groups.find((each) => each.isActive) || this._groups[0]
   },
 }
 
@@ -125,4 +171,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Uri, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Uri, TabInputText, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }

@@ -312,6 +312,33 @@ external interface TabGroup {
 external interface Tab {
   val label: String
   val isActive: Boolean
+
+  /**
+   * Whether the tab shows the unsaved-changes dot, which is Vim's `+` in `:ls`.
+   *
+   * `:ls` was written off in this host on the grounds that "VS Code's tab model does not carry the
+   * modified state Vim prints in that table". It has carried it since 1.68.
+   */
+  val isDirty: Boolean
+
+  /**
+   * What kind of thing the tab holds, and where its file is.
+   *
+   * A union in the real API - a text file, a diff, a notebook, a terminal, a webview - so this is
+   * typed loosely and narrowed with [TabInputText], which is the only kind that is a Vim buffer.
+   */
+  val input: Any?
+}
+
+/**
+ * The tab kind that is an ordinary file, and the only one with a plain `uri`.
+ *
+ * A class rather than an interface because narrowing to it is `instanceof` at runtime, which is the
+ * check VS Code documents for reading a tab's input - the other kinds carry a different shape
+ * (`TabInputTextDiff` has two URIs and no `uri` at all).
+ */
+external class TabInputText {
+  val uri: Uri
 }
 
 /** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */

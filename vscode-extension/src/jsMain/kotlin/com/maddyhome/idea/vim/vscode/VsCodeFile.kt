@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.VimBuffer
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimFile
 import com.maddyhome.idea.vim.api.VimFileBase
@@ -73,12 +74,17 @@ internal class VsCodeFile(
   /**
    * `:bdelete N` - close the buffer with that number.
    *
-   * Vim numbers its buffers and VS Code does not: an editor has a position among the open tabs and
-   * no identity beyond its file. Closing "number three" would mean closing whatever happens to be
-   * third, which is not what was asked for.
+   * This said Vim numbers its buffers and VS Code does not, so "number three" could only mean
+   * whatever happened to be third. Half of that is still true - a tab has no identity beyond its
+   * file - and the conclusion no longer follows: [getBuffers] is a numbered list, `:ls` prints it,
+   * and this closes the file that list names. Bringing it forward first is what [VsCodeTabs] does
+   * for `:tabclose`, because VS Code closes the *active* editor and has no command for closing one
+   * by name.
    */
   override fun closeFile(number: Int, context: ExecutionContext) {
-    unsupported("closing a buffer by number")
+    val target = openBuffers().getOrNull(number) ?: return
+    host.run(VsCodeCommands.OPEN, arrayOf(target.uri), waitForIt = false)
+    host.run(VsCodeCommands.CLOSE_ACTIVE_EDITOR, waitForIt = false)
   }
 
   /**
@@ -96,17 +102,86 @@ internal class VsCodeFile(
   /**
    * `:buffer N`, and `:last` through [VimFile.LAST_FILE_SENTINEL].
    *
-   * VS Code numbers the first nine editors in a group with a command each and stops there, which is
-   * as far as this can go.
+   * By URI rather than by `workbench.action.openEditorAtIndexN`, which is what this used before:
+   * those commands stop at nine and count within one editor group, so `:buffer 3` and the third row
+   * of `:ls` were not necessarily the same file. Both read [openBuffers] now, which is the point of
+   * having the list at all - Vim's buffer numbers only mean anything if the command that prints
+   * them and the command that takes one agree.
    */
   override fun selectFile(count: Int, context: ExecutionContext): Boolean {
-    if (count == VimFile.LAST_FILE_SENTINEL) {
-      host.run(VsCodeCommands.LAST_EDITOR_IN_GROUP, waitForIt = false)
-      return true
-    }
-    if (count < 0 || count > 8) return false
-    host.run(VsCodeCommands.openEditorAtIndex(count), waitForIt = false)
+    val buffers = openBuffers()
+    val index = if (count == VimFile.LAST_FILE_SENTINEL) buffers.size - 1 else count
+    val target = buffers.getOrNull(index) ?: return false
+    host.run(VsCodeCommands.OPEN, arrayOf(target.uri), waitForIt = false)
     return true
+  }
+
+  /**
+   * `:ls` and `:buffer name` - Vim's buffer list, out of VS Code's tabs.
+   *
+   * This was written off, in `ExCommandsOnlyInIntelliJTest`, as something "VS Code's tab model does
+   * not carry": tabs rather than buffers, and no modified state to print. The first half is a real
+   * difference and does not matter here - a tab holds one file, which is all a row of this table
+   * describes. The second half was simply not so. `Tab.isDirty` is Vim's `+` and `Tab.isActive` is
+   * its `%`, and both have been in the API since 1.68. What made the note look right is that
+   * `window.tabGroups` is the one part of the workbench that answers synchronously, and it is easy
+   * to assume otherwise about a workbench API.
+   *
+   * The order is the workbench's own - groups left to right, tabs within each - so the numbers
+   * `:ls` prints are the order the user sees, and [selectFile] opens by the same list.
+   *
+   * Two of Vim's columns have no answer here and say so rather than guessing. There is no read-only
+   * flag on a tab, so `=` never appears. And `#` needs the alternate file, which VS Code keeps as
+   * an MRU order it will act on - `openPreviousRecentlyUsedEditorInGroup`, which is how `<C-^>`
+   * works - but will not report, so no row is ever marked as the alternate.
+   */
+  override fun getBuffers(context: ExecutionContext): List<VimBuffer> {
+    // A registered editor is a buffer Vim would call loaded; a tab that has never been given one is
+    // listed with `line 0`, which is exactly what Vim prints for a buffer it only knows the name of.
+    val loaded = injector.editorGroup.getEditors()
+      .filterIsInstance<VsCodeEditor>()
+      .associateBy { it.nativeEditor.document.uri.path }
+
+    return openBuffers().map { buffer ->
+      val editor = loaded[buffer.uri.path]
+      VimBuffer(
+        name = buffer.uri.path.substringAfterLast('/'),
+        displayPath = relativeToWorkspace(buffer.uri.fsPath),
+        isCurrent = buffer.isCurrent,
+        isAlternate = false,
+        isReadOnly = false,
+        isModified = buffer.isDirty,
+        line = editor?.let { it.primaryCaret().getBufferPosition().line + 1 } ?: 0,
+      )
+    }
+  }
+
+  /**
+   * The tabs that hold a file, in workbench order, with the URI each one is showing.
+   *
+   * Kept apart from [getBuffers] because the numbered commands need the URI and Vim's table does
+   * not: `VimBuffer` deliberately carries no handle, so that a list built for `:ls` cannot be used
+   * to reach a buffer the user has closed since.
+   *
+   * `TabInputText` and nothing else. A diff, a notebook, a terminal and a webview are all tabs, and
+   * none of them is a file Vim could put a cursor in - `TabInputTextDiff` does not even have a
+   * single `uri` to name.
+   */
+  private fun openBuffers(): List<OpenBuffer> {
+    return window.tabGroups.all.flatMap { group ->
+      group.tabs.mapNotNull { tab ->
+        val input = tab.input as? TabInputText ?: return@mapNotNull null
+        OpenBuffer(input.uri, isCurrent = tab.isActive && group.isActive, isDirty = tab.isDirty)
+      }
+    }
+  }
+
+  private class OpenBuffer(val uri: Uri, val isCurrent: Boolean, val isDirty: Boolean)
+
+  /** The path as `:ls` shows it: shortened against the open folder, the way IdeaVim shortens against a project. */
+  private fun relativeToWorkspace(path: String): String {
+    val root = workspaceRoot()?.let { if (it.endsWith("/")) it else "$it/" } ?: return path
+    return if (path.startsWith(root)) path.removePrefix(root) else path
   }
 
   /** `:bnext` and `:bprevious`, which VS Code calls the next and previous editor. */
@@ -187,9 +262,4 @@ internal class VsCodeFile(
     injector.editorGroup.getEditors()
       .filterIsInstance<VsCodeEditor>()
       .firstOrNull { it.nativeEditor.document.fileName == documentPath }
-
-  private fun unsupported(what: String) {
-    val editor = injector.editorGroup.getEditors().firstOrNull() ?: return
-    injector.messages.showErrorMessage(editor, "IdeaVim: $what is not supported yet.")
-  }
 }

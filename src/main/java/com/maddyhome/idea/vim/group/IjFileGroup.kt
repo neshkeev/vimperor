@@ -13,6 +13,7 @@ import com.intellij.openapi.actionSystem.PlatformDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.diagnostic.debug
+import com.intellij.openapi.editor.Document
 import com.intellij.openapi.editor.impl.editorId
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.TextEditor
@@ -25,14 +26,18 @@ import com.intellij.platform.project.ProjectId
 import com.intellij.platform.project.findProjectOrNull
 import com.intellij.platform.project.projectId
 import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.VimBuffer
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimFile
 import com.maddyhome.idea.vim.api.VimFileBase
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.group.file.FileRemoteApi
+import com.maddyhome.idea.vim.helper.EditorHelper
+import com.maddyhome.idea.vim.helper.vimLine
 import com.maddyhome.idea.vim.newapi.IjEditorExecutionContext
 import com.maddyhome.idea.vim.newapi.IjVimEditor
 import com.maddyhome.idea.vim.newapi.globalIjOptions
+import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 
 /**
@@ -102,6 +107,40 @@ class IjFileGroup : VimFileBase() {
   override fun saveFiles(editor: VimEditor, context: ExecutionContext) {
     val action = injector.nativeActionManager.saveAll ?: return
     injector.actionExecutor.executeAction(editor, action, context)
+  }
+
+  /**
+   * The open files, as `:ls` and `:buffer name` see them.
+   *
+   * This is the walk `BufferListCommand` and `BufferCommand` used to do themselves before both
+   * moved into `vim-engine`. It is unchanged apart from where it lives: the same order as
+   * `FileEditorManager.openFiles`, the same skip for a file with no editor behind it - which is
+   * what keeps the numbers `:ls` prints and the numbers `:buffer N` accepts the same list - and
+   * the same project-relative display path.
+   */
+  override fun getBuffers(context: ExecutionContext): List<VimBuffer> {
+    val project = PlatformDataKeys.PROJECT.getData((context as IjEditorExecutionContext).context) ?: return emptyList()
+    val fem = FileEditorManager.getInstance(project)
+    val currentFile = fem.selectedFiles.firstOrNull()
+    val previousFile = FileGroupHelper.getPreviousTab(context.context)
+    val basePath = project.basePath?.let { "$it/" } ?: ""
+
+    return fem.openFiles.mapNotNull { file ->
+      val editor = EditorHelper.getEditor(file) ?: return@mapNotNull null
+      VimBuffer(
+        name = file.name,
+        displayPath = if (basePath.isNotEmpty() && file.path.startsWith(basePath)) {
+          file.path.removePrefix(basePath)
+        } else {
+          file.path
+        },
+        isCurrent = file == currentFile,
+        isAlternate = file == previousFile,
+        isReadOnly = !file.isWritable,
+        isModified = isDocumentDirty(editor.ij.document),
+        line = editor.ij.vimLine,
+      )
+    }
   }
 
   override fun selectFile(count: Int, context: ExecutionContext): Boolean {
@@ -192,6 +231,16 @@ class IjFileGroup : VimFileBase() {
     val project = PlatformDataKeys.PROJECT.getData(context.context as DataContext) ?: return null
     return project.projectId()
   }
+
+  /**
+   * Whether the document has changes that have not been written.
+   *
+   * A line-by-line walk rather than `FileDocumentManager.isDocumentUnsaved`, which is what
+   * `BufferListCommand` did before it moved to `vim-engine` and is kept so that `:ls` marks the
+   * same buffers with `+` as it always has.
+   */
+  private fun isDocumentDirty(document: Document): Boolean =
+    (0 until document.lineCount).any { document.isLineModified(it) }
 
   companion object {
     private val logger = Logger.getInstance(IjFileGroup::class.java.name)

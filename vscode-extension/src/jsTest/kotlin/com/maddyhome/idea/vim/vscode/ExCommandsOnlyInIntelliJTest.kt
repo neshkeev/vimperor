@@ -61,6 +61,7 @@ class ExCommandsOnlyInIntelliJTest {
     assertTrue("!" in engineExCommandProvider.getCommands().keys, ":! should be an engine command now")
     assertTrue("r[ead]" in engineExCommandProvider.getCommands().keys, ":read should be an engine command now")
     assertTrue("h[elp]" in engineExCommandProvider.getCommands().keys, ":help should be an engine command now")
+    assertTrue("b[uffer]" in engineExCommandProvider.getCommands().keys, ":buffer should be an engine command now")
     assertTrue("!" !in EXPECTED, ":! should not still be listed as IntelliJ-only")
   }
 
@@ -73,16 +74,19 @@ class ExCommandsOnlyInIntelliJTest {
      * `:actionlist` lists IntelliJ's actions by id. VS Code's equivalent is `getCommands`, which
      * returns a promise - and this host already prints the ones it uses at activation.
      *
-     * `:buffer`, `:ls`, `:files` and `:buffers` are Vim's buffer list. VS Code has tabs rather than
-     * buffers, and its tab model does not carry the modified/loaded state Vim prints in that table.
-     *
      * `:resize` and `:vertical` size a split. VS Code has no API for the size of an editor group -
      * only commands to grow or shrink one by an unspecified amount.
+     *
+     * `:buffer`, `:ls`, `:files` and `:buffers` were on this list, with the reason that "VS Code has
+     * tabs rather than buffers, and its tab model does not carry the modified/loaded state Vim
+     * prints in that table". The first clause is a difference that does not matter and the second
+     * was wrong: `Tab.isDirty` and `Tab.isActive` are Vim's `+` and `%`. They are engine commands
+     * now. That makes three of these notes that turned out to be about which API had been looked at
+     * rather than about VS Code, so a line here is a claim to be checked, not a decision that is
+     * already made.
      */
     val EXPECTED = """
       actionl[ist]
-      b[uffer]
-      ls,files,buffers
       res[ize]
       vert[ical]
     """.trimIndent()

@@ -29,6 +29,19 @@ interface VimFile {
   fun displayLocationInfo(editor: VimEditor)
 
   /**
+   * The buffers open in this window, in the order Vim would number them from 1.
+   *
+   * `:ls` and `:buffer name` are the only two callers, and both of them need the *list* rather than
+   * a way to reach one - which is why this is here and not on [VimEditor]. Neither host has buffers:
+   * IntelliJ has the files open in a project and VS Code has the tabs in the workbench, and each
+   * answers with what it has.
+   *
+   * Only buffers the host can say something about are listed. Vim numbers every buffer it has ever
+   * loaded, including ones with nothing but a name, and neither host keeps that list.
+   */
+  fun getBuffers(context: ExecutionContext): List<VimBuffer>
+
+  /**
    * Selects the previous (alternate) tab/buffer.
    * @return true on success, false if there is no previous tab (caller should indicate error)
    */

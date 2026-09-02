@@ -95,10 +95,13 @@ class Range {
   }
 }
 
+/** The one file this host has open, named in both the document and the tab that shows it. */
+const bufferPath = '/test/buffer.txt'
+
 function makeEditor(text) {
   const document = {
-    uri: { scheme: 'file', path: '/test/buffer.txt', fsPath: '/test/buffer.txt' },
-    fileName: '/test/buffer.txt',
+    uri: { scheme: 'file', path: bufferPath, fsPath: bufferPath },
+    fileName: bufferPath,
     isUntitled: false,
     version: 1,
     get lineCount() {
@@ -180,6 +183,23 @@ function makeEditor(text) {
 
 const editor = makeEditor('')
 
+/*
+ * The tab kind that holds an ordinary file. VS Code exports it as a class and the extension narrows
+ * a tab's input with `instanceof`, so a plain object here would make every tab invisible to `:ls`.
+ */
+class TabInputText {
+  constructor(uri) {
+    this.uri = uri
+  }
+}
+
+const bufferTab = {
+  label: 'buffer.txt',
+  isActive: true,
+  isDirty: false,
+  input: new TabInputText({ scheme: 'file', path: bufferPath, fsPath: bufferPath }),
+}
+
 const vscode = {
   Position,
   Range,
@@ -191,18 +211,21 @@ const vscode = {
       this.id = id
     }
   },
+  TabInputText,
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,
     visibleTextEditors: [editor],
-    // One tab, which is what a stub host has. `:tabclose` reads this before it decides what to do.
+    // One tab, which is what a stub host has. `:tabclose` reads how many there are, and `:ls` reads
+    // the file behind each one - which is the tab's `input`, and only ever a `TabInputText` for a
+    // file the user could put a cursor in.
     tabGroups: {
       get all() {
         return [this.activeTabGroup]
       },
       activeTabGroup: {
-        tabs: [{ label: 'buffer.txt', isActive: true }],
-        activeTab: { label: 'buffer.txt', isActive: true },
+        tabs: [bufferTab],
+        activeTab: bufferTab,
         isActive: true,
       },
     },
@@ -813,6 +836,20 @@ press('<Esc>')
 assert.ok(
   contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'NORMAL'),
   `leaving insert mode did not set it back. Sent: ${JSON.stringify(contextsSet)}`,
+)
+
+// `:ls`, which reads the workbench rather than telling it to do something. The tab, the file behind
+// it and the caret line all have to line up for the row to be right, and only a loaded host has all
+// three - a unit test has the tabs and the editor, and cannot check that they are the same file.
+reset()
+output.length = 0
+type(':')
+for (const character of 'ls') type(character)
+press('<CR>')
+
+assert.ok(
+  output.some((line) => line.includes('%a') && line.includes('buffer.txt') && line.endsWith('line: 1')),
+  `:ls did not list the open file as the current buffer. Output:\n${output.join('\n')}`,
 )
 
 // `BufWritePost`, and a buffer being unloaded. Both are wired in `Extension.kt` from listeners

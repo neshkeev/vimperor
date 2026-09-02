@@ -50,7 +50,6 @@ internal object VsCodeCommands {
 
   const val NEXT_EDITOR = "workbench.action.nextEditor"
   const val PREVIOUS_EDITOR = "workbench.action.previousEditor"
-  const val LAST_EDITOR_IN_GROUP = "workbench.action.lastEditorInGroup"
   const val PREVIOUS_USED_EDITOR_IN_GROUP = "workbench.action.openPreviousRecentlyUsedEditorInGroup"
   const val MOVE_EDITOR_LEFT_IN_GROUP = "workbench.action.moveEditorLeftInGroup"
   const val MOVE_EDITOR_RIGHT_IN_GROUP = "workbench.action.moveEditorRightInGroup"
@@ -91,7 +90,7 @@ internal object VsCodeCommands {
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     REVEAL_DEFINITION, OPEN,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
-    NEXT_EDITOR, PREVIOUS_EDITOR, LAST_EDITOR_IN_GROUP, PREVIOUS_USED_EDITOR_IN_GROUP,
+    NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,
     FOCUS_ABOVE_GROUP, FOCUS_BELOW_GROUP, FOCUS_LEFT_GROUP, FOCUS_RIGHT_GROUP,
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,

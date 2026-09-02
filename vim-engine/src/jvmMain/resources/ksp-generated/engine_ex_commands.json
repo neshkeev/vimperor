@@ -75,6 +75,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AutogroupCommand",
     "standardConstructor": true
   },
+  "b[uffer]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
+    "standardConstructor": true
+  },
   "bd[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
     "standardConstructor": true
@@ -89,6 +93,10 @@
   },
   "bro[wse]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "buffers": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
     "standardConstructor": true
   },
   "ca[bbrev]": {
@@ -191,6 +199,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FileCommand",
     "standardConstructor": true
   },
+  "files": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
+    "standardConstructor": true
+  },
   "fin[d]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FindFileCommand",
     "standardConstructor": true
@@ -289,6 +301,10 @@
   },
   "lockv[ar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
+    "standardConstructor": true
+  },
+  "ls": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
     "standardConstructor": true
   },
   "lu[nmap]": {

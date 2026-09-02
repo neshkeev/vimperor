@@ -3,22 +3,6 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
     "standardConstructor": true
   },
-  "b[uffer]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
-    "standardConstructor": true
-  },
-  "buffers": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
-  },
-  "files": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
-  },
-  "ls": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
-  },
   "res[ize]": {
     "class": "com.maddyhome.idea.vim.resize.ResizeCommand",
     "standardConstructor": true

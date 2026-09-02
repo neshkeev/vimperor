@@ -79,6 +79,24 @@ interface - so they moved into `vim-engine`. `ExCommandsOnlyInIntelliJTest` list
 remains and says what each of them needs. `:help` went the same way afterwards - it opens the online
 Vim documentation in a browser, and which browser is a host question that `gx` was already asking.
 
+`:ls`, `:files`, `:buffers` and `:buffer` moved for a different reason: the note saying they could
+not was wrong. It read "VS Code has tabs rather than buffers, and its tab model does not carry the
+modified/loaded state Vim prints in that table". A tab holding one file instead of a buffer is a
+real difference and not one this table cares about; the second half was simply not true. `Tab` has
+carried `isDirty` since 1.68 and `isActive` beside it, which are Vim's `+` and `%` - the two flags
+anyone actually reads `:ls` for. `window.tabGroups` is also the rare workbench API that answers
+synchronously, which is what makes reading it possible at all. That is now three of these notes that
+turned out to be about which API had been looked at rather than about VS Code, so a line on that list
+is a claim to be checked rather than a decision already made.
+
+Two of Vim's columns stay empty and say so. There is no read-only flag on a tab, so `=` never
+appears; and `#`, the alternate file, is something VS Code will *go* to - that is how `<C-^>` works -
+and will not name. Guessing either would be worse than a blank. The list also fixed a disagreement
+nobody had noticed: `:buffer 3` used to send `workbench.action.openEditorAtIndex3`, which counts
+within one editor group and stops at nine, so it and the third row of `:ls` were not necessarily the
+same file. Both read the same list now, which is the only thing that makes a buffer number mean
+anything. `:bdelete N` works for the same reason.
+
 `gx` is the third shape of blind spot, and worth naming beside the other two. The key sweep presses
 every key on a buffer of ordinary text, so `gx` returns before it ever asks for the service that
 opens a URL. A hole that needs the right *text* under the caret as well as the right key is
