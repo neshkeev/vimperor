@@ -341,6 +341,11 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     vimCarets.clear()
     incoming.forEachIndexed { index, (anchor, active) ->
       val caret = VsCodeCaret(this, active, isPrimary = index == 0)
+      // Where the caret now is, is the column `j` and `k` should aim for. This is the one way a
+      // caret moves that the engine never hears about - a click or a drag - so it is the one place
+      // the host has to reset `curswant` itself. Without it a fresh caret remembers column zero and
+      // the first `k` after a click goes to the start of the line.
+      caret.resetLastColumn()
       if (anchor != active) {
         caret.setSelection(minOf(anchor, active), maxOf(anchor, active))
         caret.vimSelectionStart = anchor
@@ -627,10 +632,17 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // The anchor goes with the flag. `vimSelectionStart` is stored on the instance and is read from
     // the primary, so handing the flag to a different caret without it would lose the corner the
     // block is being drawn from.
+    // The remembered column survives with the anchor, and for the same reason: the engine reads it
+    // off the primary to decide where the block's edge belongs, and laying the block out moves every
+    // caret onto a line of its own - which on a short line means a clamped column that is not what
+    // the user is aiming at. Without this, `<C-V>` at column 2 then `k` over a one-character line
+    // dragged the block's whole left edge to column 1, and the next `k` to column 0.
+    val column = survivor?.vimLastColumn
     val anchor = survivor?.vimSelectionStart
     val primary = rebuilt.firstOrNull { (line, _) -> line == activeLine }?.second ?: rebuilt.last().second
     for ((_, caret) in rebuilt) caret.isPrimary = caret === primary
     if (anchor != null) primary.vimSelectionStart = anchor
+    if (column != null) primary.vimLastColumn = column
 
     val carets = rebuilt.map { it.second }
     val removed = vimCarets.filter { existing -> carets.none { it === existing } }
