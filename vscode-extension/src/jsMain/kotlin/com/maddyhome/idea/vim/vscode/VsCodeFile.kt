@@ -178,6 +178,11 @@ internal class VsCodeFile(
 
   private class OpenBuffer(val uri: Uri, val isCurrent: Boolean, val isDirty: Boolean)
 
+  private fun withLineEndingsOf(editor: VimEditor, content: String): String {
+    val document = (editor as? VsCodeEditor)?.nativeEditor?.document ?: return content
+    return if (document.eol == EndOfLine.CRLF) content.replace("\n", "\r\n") else content
+  }
+
   /** The path as `:ls` shows it: shortened against the open folder, the way IdeaVim shortens against a project. */
   private fun relativeToWorkspace(path: String): String {
     val root = workspaceRoot()?.let { if (it.endsWith("/")) it else "$it/" } ?: return path
@@ -199,7 +204,10 @@ internal class VsCodeFile(
    * does not open the file it wrote either, and neither does this.
    */
   override fun createFile(filename: String, context: ExecutionContext, content: String?, editor: VimEditor) {
-    val failure = files.writeText(absolute(filename), content.orEmpty())
+    // In the line ending the buffer came with. The engine's text is normalised to `\n`, so writing
+    // it straight out would turn a CRLF file into an LF one on its way to a new name - which is
+    // Vim's `'fileformat'`, and Vim keeps it.
+    val failure = files.writeText(absolute(filename), withLineEndingsOf(editor, content.orEmpty()))
     if (failure != null) {
       injector.messages.showErrorMessage(editor, "E212: Can't open file for writing: $failure")
     }

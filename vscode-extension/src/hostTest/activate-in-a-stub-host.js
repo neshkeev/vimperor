@@ -103,6 +103,8 @@ function makeEditor(text) {
     uri: { scheme: 'file', path: bufferPath, fsPath: bufferPath },
     fileName: bufferPath,
     isUntitled: false,
+    // This host's file uses `\n`; `DocumentBufferTest` is where the CRLF side is checked.
+    eol: 1,
     version: 1,
     get lineCount() {
       return document._text.split('\n').length
@@ -212,6 +214,7 @@ const vscode = {
     }
   },
   TabInputText,
+  EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,

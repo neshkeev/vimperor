@@ -31,6 +31,9 @@ class Range {
   }
 }
 
+/* The two line endings VS Code has. A document reports which it uses and the buffer normalises. */
+const EndOfLine = { LF: 1, CRLF: 2 }
+
 const TextEditorRevealType = {
   Default: 0,
   InCenter: 1,
@@ -171,4 +174,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Uri, TabInputText, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Uri, TabInputText, EndOfLine, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }

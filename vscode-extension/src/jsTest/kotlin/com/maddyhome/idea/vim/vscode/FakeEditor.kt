@@ -30,6 +30,14 @@ class FakeDocument(text: String) : TextDocument {
 
   /** Set by a test that wants to model an editor with unsaved changes. */
   override var isDirty: Boolean = false
+
+  /**
+   * How this file ends its lines, which a test sets alongside CRLF text.
+   *
+   * VS Code hands the text back exactly as the file has it, so a fake that reported CRLF while
+   * holding `\n` would be the one thing this cannot be used to check.
+   */
+  override var eol: Int = EndOfLine.LF
   override val lineCount: Int get() = content.count { it == '\n' } + 1
 
   /** VS Code bumps this on every applied edit, and refuses edits made against an older one. */

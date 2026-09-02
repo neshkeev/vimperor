@@ -327,8 +327,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   fun syncCaretsFromEditor() {
     val selections = nativeEditor.selections
-    val document = nativeEditor.document
-    val incoming = selections.map { document.offsetAt(it.anchor) to document.offsetAt(it.active) }
+    val incoming = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
     if (incoming == pushedSelections) return
 
     vimCarets.clear()
@@ -378,7 +377,6 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * not here.
    */
   private fun flushCarets() {
-    val document = nativeEditor.document
     // Primary first, because that is where VS Code takes its own primary from - `selections[0]`.
     // With a block drawn downwards the primary is the *last* caret in the document, and pushing
     // them in document order would leave the blinking caret at the top of the block.
@@ -386,18 +384,35 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val ordered = listOf(primary) + vimCarets.filter { it !== primary }
     val selections = ordered.map { caret ->
       if (caret.hasSelection()) {
-        FlushedSelection(document.positionAt(caret.selectionStart), document.positionAt(caret.selectionEnd))
+        FlushedSelection(positionOf(caret.selectionStart), positionOf(caret.selectionEnd))
       } else {
-        val position = document.positionAt(caret.offset)
+        val position = positionOf(caret.offset)
         FlushedSelection(position, position)
       }
     }
     nativeEditor.selections = selections.toTypedArray()
     selections.firstOrNull()?.let { nativeEditor.selection = it }
-    pushedSelections = selections.map {
-      document.offsetAt(it.anchor) to document.offsetAt(it.active)
-    }
+    pushedSelections = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
   }
+
+  /**
+   * The two conversions between an engine offset and a VS Code position, through the buffer.
+   *
+   * Not `document.offsetAt` and `document.positionAt`, for two reasons that both come down to the
+   * document being the wrong thing to ask. It is a *document* offset, which on a CRLF file counts
+   * one carriage return per line and so is not the offset the engine is holding - every caret would
+   * drift a line further off with each line above it. And the document lags the buffer, so a
+   * conversion made while an edit is still in flight would answer about text the engine has already
+   * moved past. The buffer's line index has neither problem, and a line and column mean the same
+   * thing on both sides whichever way the file ends its lines.
+   */
+  private fun positionOf(offset: Int): Position {
+    val position = offsetToBufferPosition(offset)
+    return Position(position.line, position.column)
+  }
+
+  private fun offsetOf(position: Position): Int =
+    bufferPositionToOffset(BufferPosition(position.line, position.character))
 
   /**
    * Collapses every selection to its caret. VS Code hears about it at the next flush, along with

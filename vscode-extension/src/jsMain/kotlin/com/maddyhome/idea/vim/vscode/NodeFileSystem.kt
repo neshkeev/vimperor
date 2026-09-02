@@ -25,8 +25,17 @@ import com.maddyhome.idea.vim.api.VimFileSystem
  * asynchronous load at startup.
  */
 class NodeFileSystem : VimFileSystem {
+  /**
+   * The file's text, with `\r\n` collapsed to `\n`.
+   *
+   * Every caller wants lines rather than bytes: `:source` and the `.ideavimrc` hand this to the
+   * Vimscript parser, and `:read` puts it in a buffer that is normalised. A carriage return at the
+   * end of every line would end up in a `:map` right-hand side and in the buffer's text - and the
+   * file that most often has them is a Windows user's `_ideavimrc`, which is the one file this has
+   * to read correctly on the platform IdeaVim's own host normalises for free.
+   */
   override fun readText(path: String): String = try {
-    fs.readFileSync(path, "utf8") as String
+    (fs.readFileSync(path, "utf8") as String).replace("\r\n", "\n")
   } catch (e: Throwable) {
     // The message is shown to the user verbatim when `:source` fails, and Node puts the useful part
     // - "no such file or directory" - in the message rather than in a code.

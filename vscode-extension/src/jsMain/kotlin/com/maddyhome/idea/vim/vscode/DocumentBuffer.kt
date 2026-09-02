@@ -31,8 +31,31 @@ import com.maddyhome.idea.vim.common.LiveRange
 class DocumentBuffer(private val editor: TextEditor) {
 
   /** What the engine sees. Diverges from the document only between a mutation and its [flush]. */
-  var text: String = editor.document.getText()
+  var text: String = normalized()
     private set
+
+  /**
+   * The document's text with `\r\n` collapsed to `\n`, which is the only kind the engine knows.
+   *
+   * IntelliJ's `Document` is always `\n` and the file's separator is applied on the way to disk, so
+   * every offset in `vim-engine` is a normalised one and nothing in it has ever seen a carriage
+   * return. VS Code hands the text over exactly as the file has it. Left alone, a CRLF file puts a
+   * `\r` at the end of every line *inside* the line as the engine measures it: `$` lands on it, `x`
+   * deletes it, `A` appends after it, and `J` leaves one in the middle of the joined line. None of
+   * the tests here would have noticed, because every one of them writes `\n`.
+   *
+   * A lone `\r` is deliberately left as an ordinary character. VS Code's own line model is the
+   * thing positions are mapped against and it has exactly two line endings; guessing at what it
+   * does with a stray carriage return would be a worse answer than treating it as text.
+   */
+  private fun normalized(): String {
+    val raw = editor.document.getText()
+    return if (raw.indexOf('\r') < 0) raw else raw.replace("\r\n", "\n")
+  }
+
+  /** The inverse, for text on its way back to a document that wants `\r\n`. */
+  private fun withDocumentLineEndings(value: String): String =
+    if (editor.document.eol == EndOfLine.CRLF) value.replace("\n", "\r\n") else value
 
   /** The document as it was when this buffer last agreed with it, and what [flush] diffs against. */
   private var flushed: String = text
@@ -54,7 +77,7 @@ class DocumentBuffer(private val editor: TextEditor) {
    * happened, not whether the engine caused it.
    */
   fun syncIfDocumentMoved(): Boolean {
-    if (editor.document.getText() == flushed) return false
+    if (normalized() == flushed) return false
     reseed()
     return true
   }
@@ -62,7 +85,7 @@ class DocumentBuffer(private val editor: TextEditor) {
   /** Takes the document's current text, discarding anything not yet flushed. */
   fun reseed() {
     val before = text
-    text = editor.document.getText()
+    text = normalized()
     flushed = text
     revision++
     // The whole buffer was replaced by something the engine did not do, so every marker in it is
@@ -212,7 +235,7 @@ class DocumentBuffer(private val editor: TextEditor) {
     }
 
     val document = editor.document
-    if (document.getText() != flushed) {
+    if (normalized() != flushed) {
       // Something else edited the document since the engine last agreed with it. Writing now would
       // revert that edit, so take the document's version and let the caller decide.
       reseed()
@@ -220,13 +243,35 @@ class DocumentBuffer(private val editor: TextEditor) {
       return
     }
 
-    val start = commonPrefixLength(flushed, target)
-    val end = commonSuffixLength(flushed, target, start)
-    val range = Range(
-      document.positionAt(start),
-      document.positionAt(flushed.length - end),
-    )
-    val replacement = target.substring(start, target.length - end)
+    // Line and column rather than `document.positionAt`, which takes a *document* offset - and on a
+    // CRLF file the two disagree by one character for every line before the change. A position does
+    // not disagree: VS Code's character index is within the line's own text, which excludes the
+    // separator whichever it is, so line-and-column is the currency both sides read the same way.
+    // The walk is free: finding the common prefix already visits every character before the change.
+    var start = 0
+    var line = 0
+    var lineStart = 0
+    val shared = minOf(flushed.length, target.length)
+    while (start < shared && flushed[start] == target[start]) {
+      if (flushed[start] == '\n') {
+        line++
+        lineStart = start + 1
+      }
+      start++
+    }
+    val startPosition = Position(line, start - lineStart)
+
+    val end = flushed.length - commonSuffixLength(flushed, target, start)
+    var index = start
+    while (index < end) {
+      if (flushed[index] == '\n') {
+        line++
+        lineStart = index + 1
+      }
+      index++
+    }
+    val range = Range(startPosition, Position(line, end - lineStart))
+    val replacement = withDocumentLineEndings(target.substring(start, target.length - (flushed.length - end)))
 
     editor.edit { it.replace(range, replacement) }.then({ applied ->
       if (applied) {
@@ -238,13 +283,6 @@ class DocumentBuffer(private val editor: TextEditor) {
       }
       onResult(applied)
     })
-  }
-
-  private fun commonPrefixLength(before: String, after: String): Int {
-    val limit = minOf(before.length, after.length)
-    var index = 0
-    while (index < limit && before[index] == after[index]) index++
-    return index
   }
 
   /** Length of the shared suffix, stopping before [prefix] so the two never overlap. */

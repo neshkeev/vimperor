@@ -189,6 +189,18 @@ external interface TextDocument {
 
   /** Whether the document has changes that are not on disk. */
   val isDirty: Boolean
+
+  /**
+   * Which line ending this file uses, and the reason the engine cannot read the text raw.
+   *
+   * IntelliJ normalises a document to `\n` and applies the file's separator on the way to disk, so
+   * `vim-engine` was written against a buffer that only ever has one kind of line ending. VS Code
+   * does not: [getText] on a CRLF file hands back `\r\n`, and every offset the engine computed
+   * would then have a carriage return inside the line - `$` would land on it, `x` would delete it,
+   * and `J` would leave one behind. [DocumentBuffer] normalises on the way in and puts this back on
+   * the way out.
+   */
+  val eol: Int
   val version: Int
   fun getText(range: Range? = definedExternally): String
   fun offsetAt(position: Position): Int
@@ -339,6 +351,12 @@ external interface Tab {
  */
 external class TabInputText {
   val uri: Uri
+}
+
+/** VS Code's `EndOfLine`, which is a numeric enum on the module object. There are only these two. */
+external object EndOfLine {
+  val LF: Int
+  val CRLF: Int
 }
 
 /** VS Code's `TextEditorRevealType`, which is a numeric enum on the module object. */

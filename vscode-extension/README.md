@@ -246,6 +246,37 @@ handed back as a promise of `TextEdit`s, and this host applies its own asynchron
 `autocmd BufWritePre * :%s/\s\+$//e` - the reason anyone wants the event - could land after the
 file was written. Firing nothing beats firing it too late.
 
+All five of those blind spots are about *reach*: which surface a test drives and how far into it.
+The sixth is narrower and worse, and it is about the text. Every test in this module, and every one
+of the 1,025 fixtures harvested from IdeaVim, writes `\n`. Files that end their lines with `\r\n`
+were therefore covered by nothing at all - and that is not an exotic file, it is most of a Windows
+checkout.
+
+It is host-specific by construction, which is exactly why IdeaVim's own tests could never have
+caught it. IntelliJ normalises a `Document` to `\n` and applies the file's separator on the way to
+disk, so `vim-engine` has never seen a carriage return and is not written to expect one. VS Code's
+`getText()` hands back what the file actually has. Left alone, the `\r` sits *inside* the line as
+the engine measures it, and it is the line's last character - so it is under everything that goes to
+the end of a line. `$` lands on it, `x` deletes it, `A` appends after it, and `J` leaves one in the
+middle of the joined line. `DocumentBuffer` normalises on the way in and puts the separator back on
+the way out, which is IntelliJ's arrangement and the only one the engine can be used with.
+
+The caret had the same problem from the other side, and the fix is the more interesting half. It
+went through `document.offsetAt` and `document.positionAt`, which speak in *document* offsets - so
+on a CRLF file every caret drifted one character further off for each line above it. It goes through
+the buffer's own line index now, because a line and a column mean the same thing on both sides
+whatever the file does: VS Code's character index is within the line's text, which excludes the
+separator. That also retires a second, older hazard the old code had - the document lags the buffer
+while an edit is in flight, so a conversion made through it could answer about text the engine had
+already moved past.
+
+Three other things read or write a file without going through a document, and each needed its own
+end of this. `:source` and the `.ideavimrc` are read through Node, and the file most likely to have
+CRLF endings is a Windows user's `_ideavimrc` - where a carriage return would land in the right-hand
+side of every `:map` in it. `:read` puts a file's contents into the normalised buffer. And `:w
+other.txt` writes the buffer straight to disk, so without putting the separator back it converts a
+CRLF file on its way to a new name, which is Vim's `'fileformat'` and Vim keeps it.
+
 The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
 The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test
 of behaviour that reaches users on a platform the test never touches. 430 of its tests run on both
