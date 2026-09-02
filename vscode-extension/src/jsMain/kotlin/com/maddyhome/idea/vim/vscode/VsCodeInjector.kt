@@ -34,6 +34,8 @@ import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.register.VimRegisterGroup
+import com.maddyhome.idea.vim.thinapi.VimPluginService
+import com.maddyhome.idea.vim.thinapi.VimPluginServiceBase
 import com.maddyhome.idea.vim.register.VimRegisterGroupBase
 import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.state.mode.SelectionType
@@ -884,6 +886,41 @@ open class VsCodeInjector(
    * the window gains or loses focus. IdeaVim fires the same set from its own listeners.
    */
   override val autoCmd: AutoCmdService by lazy { AutoCmdImpl() }
+
+  /**
+   * The editor the engine asks about when there is no window to ask about.
+   *
+   * This was on the list of services this host does not provide, described there as being for "no
+   * window at all" - which made it sound like a corner nobody reaches. Every scope in the thin API
+   * resolves its editor as `projectId?.let { getSelectedEditor(it) } ?: injector.fallbackWindow`,
+   * and a plugin's `init` runs with a null project id by construction, because there is no editor
+   * yet while a plugin is declaring its mappings. The option group needs it for a second reason:
+   * the global values of window-local options have to be stored against *some* window when none is
+   * open.
+   *
+   * One editor, made once and kept, because option values are stored against the editor object - a
+   * fresh one each time would be a fresh set of options each time.
+   *
+   * Its local options are initialised the same way [register] initialises a real editor's, and for
+   * a reason that is easy to miss: an option that has never been stored has no value to read, and
+   * the per-window "global" values of window-local options live in exactly this editor when no
+   * window is open. IdeaVim's own fallback window does the same thing on the line after it is made.
+   */
+  override val fallbackWindow: VimEditor by lazy {
+    VsCodeEditor(DetachedTextEditor()).also {
+      optionGroup.initialiseLocalOptions(it, null, LocalOptionInitialisationScenario.DEFAULTS)
+    }
+  }
+
+  /**
+   * What a plugin asks the host for, which turns out not to need one.
+   *
+   * The reason recorded against this was that it was blocked behind `modalInput.activate`, and that
+   * was about a different part of the extension system: nothing here reads a key. Running
+   * normal-mode keys is the key handler, exporting an operator function is a Vimscript declaration,
+   * and adding a command is an alias - all three the engine's, and shared with IdeaVim now.
+   */
+  override val pluginService: VimPluginService by lazy { object : VimPluginServiceBase() {} }
 
   /**
    * Prompts that answer one keystroke at a time - `:s///c` is the one the engine opens.

@@ -156,6 +156,34 @@ line, taken the first time that line is touched, and `U` swaps it with what is t
 second `U` puts the change back. What it needed was a copy taken *before* an edit, and every edit
 here already funnels through one class. A description on that list is a claim like any other.
 
+The reasons on that list were then read again as claims rather than as conclusions, and four of the
+nine were wrong. Two services came off it. `pluginService` was recorded as blocked behind
+`modalInput.activate` - the blocking key read a `getchar()` needs, which JavaScript cannot do on one
+thread. That limit is real and it is about a different part of the extension system: nothing in
+`pluginService` reads a key. Its three methods are running normal-mode keys, declaring a Vimscript
+function and adding a command alias, all of them the engine's, and IdeaVim's implementation was
+three one-line delegations to a facade in its IntelliJ module whose bodies had no IntelliJ in them.
+Both hosts share `VimPluginServiceBase` now.
+
+`fallbackWindow` was described as the editor for "no window at all", which reads like a corner
+nobody reaches. Every scope in the thin API resolves its editor as
+`projectId?.let { getSelectedEditor(it) } ?: injector.fallbackWindow`, and a plugin's `init` runs
+with a null project id by construction - there is no editor yet while a plugin is declaring its
+mappings. So it is the *first* thing the extension chain asks for rather than the last, and without
+it that chain stops at line one. The option group wants it for a second reason: the global values of
+window-local options have to be stored against some window when none is open.
+
+The other two corrections did not free anything and matter more. `extensionLoader` and
+`jsonExtensionProvider` are blocked by *class loading*, not by modal input: `LazyVimExtension` is in
+`vim-engine/src/jvmMain` and resolves a class by name through a `ClassLoader`, which JavaScript does
+not have - the same problem this build already solves for commands, functions and ex commands by
+generating a registry at build time, so the answer has a known shape. And they were described as how
+IdeaVim's twenty-six bundled extensions are found and started. They start exactly one:
+`ideavim_extensions.json` has a single entry. The other twenty-five use the older `VimExtension`
+extension point, which is not a `VimInjector` service at all, so it has never appeared on that list.
+The map of the gap was itself understating the gap, from the one direction it cannot see: a thing
+that was never a service.
+
 That has now happened often enough to be the pattern rather than the exception. `'incsearch'`, the
 incsearch caret, `:s///c`'s prompt, `:e newfile`, `U`, and range markers were each ruled out in a
 comment in this repository, and every one of those comments was wrong - usually about which VS Code

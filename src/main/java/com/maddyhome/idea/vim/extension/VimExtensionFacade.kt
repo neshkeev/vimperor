@@ -23,24 +23,17 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.common.CommandAlias
 import com.maddyhome.idea.vim.common.CommandAliasHandler
-import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.helper.TestInputModel
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.helper.inRepeatMode
-import com.maddyhome.idea.vim.helper.noneOfEnum
 import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.key.OperatorFunction
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.newapi.vim
 import com.maddyhome.idea.vim.state.mode.SelectionType
-import com.maddyhome.idea.vim.vimscript.model.Executable
-import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
-import com.maddyhome.idea.vim.vimscript.model.VimLContext
-import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.Scope
-import com.maddyhome.idea.vim.vimscript.model.statements.FunctionDeclaration
 import com.maddyhome.idea.vim.vimscript.model.statements.FunctionFlag
 import java.awt.event.KeyEvent
 import java.util.*
@@ -236,6 +229,12 @@ object VimExtensionFacade {
     VimPlugin.getRegister().setKeys(register, keys?.filterNotNull() ?: emptyList(), type)
   }
 
+  /**
+   * Declares a Vimscript function with a Kotlin body.
+   *
+   * The implementation is `ScriptFunctions.export` in `vim-engine` now. It never had any IntelliJ
+   * in it, and the thin API's `VimPluginService` needs it from a host that has no IntelliJ at all.
+   */
   @JvmStatic
   fun exportScriptFunction(
     scope: Scope?,
@@ -246,52 +245,10 @@ object VimExtensionFacade {
     flags: MutableSet<FunctionFlag>,
     function: ScriptFunction,
   ) {
-    var functionDeclaration: FunctionDeclaration? = null
-    val body = listOf(object : Executable {
-      // This context is set to the function declaration during initialisation and then set to the function execution
-      // context during execution
-      override lateinit var vimContext: VimLContext
-      override var rangeInScript: TextRange = TextRange(0, 0)
-
-      override fun execute(editor: VimEditor, context: ExecutionContext): ExecutionResult {
-        return function.execute(editor, context, functionDeclaration!!.functionVariables)
-      }
-    })
-    functionDeclaration = FunctionDeclaration(
-      scope,
-      name,
-      args,
-      defaultArgs,
-      body,
-      replaceExisting = true,
-      flags,
-      hasOptionalArguments
-    )
-    functionDeclaration.rangeInScript = TextRange(0, 0)
-    body.forEach { it.vimContext = functionDeclaration }
-    injector.functionService.storeFunction(functionDeclaration)
+    ScriptFunctions.export(scope, name, args, defaultArgs, hasOptionalArguments, flags, function)
   }
 }
 
 fun VimExtensionFacade.exportOperatorFunction(name: String, function: OperatorFunction) {
-  exportScriptFunction(null, name, listOf("type"), emptyList(), false, noneOfEnum()) { editor, context, args ->
-
-    val type = args["type"]?.toVimString()?.value
-    val selectionType = when (type) {
-      "line" -> SelectionType.LINE_WISE
-      "block" -> SelectionType.BLOCK_WISE
-      "char" -> SelectionType.CHARACTER_WISE
-      else -> return@exportScriptFunction ExecutionResult.Error
-    }
-
-    if (function.apply(editor, context, selectionType)) {
-      ExecutionResult.Success
-    } else {
-      ExecutionResult.Error
-    }
-  }
-}
-
-fun interface ScriptFunction {
-  fun execute(editor: VimEditor, context: ExecutionContext, args: Map<String, VimDataType>): ExecutionResult
+  ScriptFunctions.exportOperatorFunction(name, function)
 }

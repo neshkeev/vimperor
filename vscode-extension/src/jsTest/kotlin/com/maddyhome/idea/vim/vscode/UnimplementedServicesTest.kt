@@ -75,17 +75,34 @@ class UnimplementedServicesTest {
     /**
      * What is left, and why each one is left.
      *
-     * `extensionLoader`, `jsonExtensionProvider`, `pluginActivator` and `pluginService` are how
-     * IdeaVim's twenty-six bundled extensions are found and started. They are blocked behind
-     * `modalInput.activate`, which blocks a thread until a key arrives - `getchar()` is built on it,
-     * and JavaScript has one thread and no way to stop it.
+     * Four of these reasons were wrong and have been corrected rather than deleted, because a wrong
+     * reason is worse than none: it stops the next person from looking. Two services came off the
+     * list when the reason was checked.
      *
-     * `fallbackWindow` is the editor the engine reaches for when there is no window at all.
+     * `extensionLoader` and `jsonExtensionProvider` are the thin-API plugin registry, reached by
+     * `:Plug`, `:PlugEnable` and `:IdeaPlug` - so a `.ideavimrc` with a `Plug` line in it hits this,
+     * which is not a rare thing to have. They were recorded as blocked behind `modalInput.activate`,
+     * and that was about a different part of the extension system: the real blocker is *class
+     * loading*. `LazyVimExtension` lives in `vim-engine/src/jvmMain` and resolves a class by name
+     * through a `ClassLoader`, which JavaScript does not have. That is the same problem this build
+     * already solves for commands, functions and ex commands by generating a registry at build time,
+     * so the answer has a known shape.
      *
-     * `highlightingService` adds a coloured range by request. This was written down here as
-     * `matchadd()` and that was wrong - `matchadd` does not exist anywhere in this repository. Its
-     * only caller is `Transaction.addHighlight` in the thin API, so it belongs with the extension
-     * services above and is reachable from nowhere else.
+     * They were also described as how "IdeaVim's twenty-six bundled extensions are found and
+     * started". They start exactly one: `ideavim_extensions.json` has a single entry. The other
+     * twenty-five use the older `VimExtension` extension point, which is not a `VimInjector` service
+     * at all - so it never appears here, and this list understates what is missing. That is the
+     * blind spot this whole file exists to have less of, arriving from the one direction it cannot
+     * see: a thing that was never a service.
+     *
+     * `pluginActivator` has no caller anywhere in `vim-engine`. It exists so that IdeaVim can be
+     * switched off and on from its status-bar icon; this host's on and off are VS Code's own
+     * `activate` and `deactivate`, in `Extension.kt`.
+     *
+     * `highlightingService` adds a coloured range by request. This was recorded here as `matchadd()`
+     * and that was wrong - `matchadd` does not exist anywhere in this repository. Its only caller is
+     * `Transaction.addHighlight` in the thin API, so it belongs with the extension services above
+     * and is reachable from nowhere else.
      *
      * `searchWindowGroup` and `virtualBufferGroup` are Vim's command-line window - `q:`, `q/` - and
      * the buffers behind it. A real editor buffer that is not a file, holding history, that closes
@@ -93,14 +110,25 @@ class UnimplementedServicesTest {
      *
      * `spellcheckerService` is `z=`, `zg`, `]s`. VS Code has no spellchecker; the popular ones are
      * extensions, and an extension cannot ask another extension for a word list.
+     *
+     * Gone from this list, and why the reasons were wrong:
+     *
+     * `pluginService` was blocked by nothing. Its three methods are running normal-mode keys,
+     * declaring a Vimscript function and adding a command alias - all the engine's, and IdeaVim's
+     * implementation was three one-line delegations to a facade whose bodies had no IntelliJ in
+     * them. It is `VimPluginServiceBase` in `vim-engine` now and both hosts share it.
+     *
+     * `fallbackWindow` was described as the editor for "no window at all", which reads like a corner
+     * nobody reaches. Every scope in the thin API resolves its editor as
+     * `projectId?.let { getSelectedEditor(it) } ?: injector.fallbackWindow`, and a plugin's `init`
+     * runs with a null project id by construction - there is no editor yet while a plugin declares
+     * its mappings. It is the *first* thing the extension chain asks for, not the last.
      */
     val EXPECTED = """
       extensionLoader
-      fallbackWindow
       highlightingService
       jsonExtensionProvider
       pluginActivator
-      pluginService
       searchWindowGroup
       spellcheckerService
       virtualBufferGroup
