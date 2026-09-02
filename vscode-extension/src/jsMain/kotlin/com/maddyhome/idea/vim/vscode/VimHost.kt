@@ -89,7 +89,7 @@ class VimHost(
     } catch (e: Throwable) {
       // A broken config must not stop the extension from working. Vim itself carries on after an
       // error in the vimrc, and a user with a typo in one line still wants the other twenty.
-      sink.error("IdeaVim: " + path + " could not be run: " + e.message)
+      sink.error("Vimperor: " + path + " could not be run: " + e.message)
     } finally {
       vimInjector.optionGroup.endInitVimRc()
     }
@@ -239,7 +239,7 @@ class VimHost(
       if (!applied) {
         // The document moved between the command running and its edit landing, so what the engine
         // computed was against text that is no longer there. Saying so beats writing over it.
-        sink.error("IdeaVim: the document changed while a command was running, so it was not applied.")
+        sink.error("Vimperor: the document changed while a command was running, so it was not applied.")
       }
     }
   }
@@ -274,13 +274,13 @@ class VimHost(
   override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {
     if (!waitForIt) {
       runCommand(command, arguments) { succeeded ->
-        if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
+        if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
       }
       return
     }
     pending++
     runCommand(command, arguments) { succeeded ->
-      if (!succeeded) sink.error("IdeaVim: VS Code has no command '$command'.")
+      if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
       pending--
       if (pending == 0) hostCommandsFinished()
     }

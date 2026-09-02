@@ -143,7 +143,7 @@ open class VsCodeInjector(
       override fun ensureFileIsSaved(path: String) {
         val unsaved = editorGroup.getEditors().any { it.getPath()?.endsWith(path) == true && it.hasUnsavedChanges() }
         if (unsaved) {
-          messages.showStatusBarMessage(null, "IdeaVim: sourcing $path from disk; it has unsaved changes")
+          messages.showStatusBarMessage(null, "Vimperor: sourcing $path from disk; it has unsaved changes")
         }
       }
     }
@@ -224,7 +224,7 @@ open class VsCodeInjector(
       // `<C-X><C-L>` and `<C-X><C-F>` ask for a list to be shown and picked from, which needs a
       // widget rather than an answer. Saying so beats a crash and beats silence.
       override fun showCustomLookup(editor: VimEditor, values: List<String>, prefix: String) {
-        injector.messages.showErrorMessage(editor, "IdeaVim: this completion needs a lookup, which this host does not have")
+        injector.messages.showErrorMessage(editor, "Vimperor: this completion needs a lookup, which this host does not have")
       }
     }
   }

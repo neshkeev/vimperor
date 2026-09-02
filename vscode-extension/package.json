@@ -1,9 +1,9 @@
 {
-  "name": "ideavim-vscode",
-  "displayName": "IdeaVim",
-  "description": "Vim emulation for VS Code, powered by the IdeaVim engine.",
+  "name": "vimperor",
+  "displayName": "Vimperor",
+  "description": "Vim for VS Code, powered by IdeaVim's engine.",
   "version": "0.0.1",
-  "publisher": "IdeaVim",
+  "publisher": "vimperor",
   "license": "MIT",
   "engines": {
     "vscode": "^1.85.0"
@@ -22,7 +22,7 @@
       "description": "Configuration is read from your home directory - `~/.ideavimrc` and the XDG location - and never from the workspace, so opening an untrusted folder cannot make IdeaVim run anything."
     }
   },
-  "main": "./build/compileSync/js/main/productionExecutable/kotlin/IdeaVIM-vscode-extension.js",
+  "main": "./build/compileSync/js/main/productionExecutable/kotlin/vimperor.js",
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -31,350 +31,358 @@
     "keybindings": [
       {
         "key": "escape",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Esc>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+[",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-[>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+c",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-C>",
         "when": "editorTextFocus"
       },
       {
         "key": "backspace",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<BS>",
         "when": "editorTextFocus"
       },
       {
         "key": "delete",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Del>",
         "when": "editorTextFocus"
       },
       {
         "key": "insert",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Ins>",
         "when": "editorTextFocus"
       },
       {
         "key": "enter",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<CR>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "shift+enter",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-CR>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "tab",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Tab>",
         "when": "editorTextFocus && !suggestWidgetVisible && !inlineSuggestionVisible && !inlineEditIsVisible"
       },
       {
         "key": "shift+tab",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Tab>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "up",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Up>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "down",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Down>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "left",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Left>",
         "when": "editorTextFocus"
       },
       {
         "key": "right",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Right>",
         "when": "editorTextFocus"
       },
       {
         "key": "shift+up",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Up>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "shift+down",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Down>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "shift+left",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Left>",
         "when": "editorTextFocus"
       },
       {
         "key": "shift+right",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Right>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+up",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Up>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "ctrl+down",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Down>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "ctrl+left",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Left>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+right",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Right>",
         "when": "editorTextFocus"
       },
       {
         "key": "home",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Home>",
         "when": "editorTextFocus"
       },
       {
         "key": "end",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<End>",
         "when": "editorTextFocus"
       },
       {
         "key": "shift+home",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-Home>",
         "when": "editorTextFocus"
       },
       {
         "key": "shift+end",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<S-End>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+home",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Home>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+end",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-End>",
         "when": "editorTextFocus"
       },
       {
         "key": "pageup",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Pageup>",
         "when": "editorTextFocus"
       },
       {
         "key": "pagedown",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<Pagedown>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+pageup",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Pageup>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+pagedown",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Pagedown>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+r",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-R>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+o",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-O>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+w",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-W>",
         "when": "editorTextFocus"
       },
       {
         "key": "ctrl+a",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-A>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+b",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-B>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+d",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-D>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+e",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-E>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+g",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-G>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+h",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-H>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+i",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-I>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+j",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-J>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+k",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-K>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+l",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-L>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+m",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-M>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+n",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-N>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+p",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-P>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+t",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-T>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+u",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-U>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+v",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-V>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+x",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-X>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+y",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-Y>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+]",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-]>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+\\",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-\\>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       },
       {
         "key": "ctrl+6",
-        "command": "ideavim.key",
+        "command": "vimperor.key",
         "args": "<C-^>",
-        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+        "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
       }
     ],
     "configuration": {
-      "title": "IdeaVim",
+      "title": "Vimperor",
       "properties": {
-        "ideavim.trace": {
+        "vimperor.trace": {
           "type": "boolean",
           "default": false,
           "description": "Write what each keystroke did to the IdeaVim output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
         }
       }
     }
-  }
+  },
+  "keywords": [
+    "vim",
+    "vi",
+    "vimrc",
+    "modal",
+    "keybindings",
+    "ideavim"
+  ]
 }

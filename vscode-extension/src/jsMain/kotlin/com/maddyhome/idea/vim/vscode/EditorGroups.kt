@@ -67,7 +67,7 @@ internal class VsCodeWindowGroup(private val host: HostCommandRunner) : WindowGr
       // `:split file`. Splitting and then opening the file is two commands and the second needs an
       // argument, which is exactly what this host cannot pass yet.
       val editor = injector.editorGroup.getEditors().firstOrNull() ?: return
-      injector.messages.showErrorMessage(editor, "IdeaVim: splitting with a file name is not supported yet.")
+      injector.messages.showErrorMessage(editor, "Vimperor: splitting with a file name is not supported yet.")
       return
     }
     run(command)

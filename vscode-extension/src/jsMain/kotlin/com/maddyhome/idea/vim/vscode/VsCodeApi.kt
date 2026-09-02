@@ -165,7 +165,7 @@ external object workspace {
   val onDidSaveTextDocument: (listener: (TextDocument) -> Unit) -> Disposable
 
   /**
-   * The user's settings, which is where `ideavim.trace` lives.
+   * The user's settings, which is where `vimperor.trace` lives.
    *
    * Vim's own options come from the `.ideavimrc` and nowhere else - a Vim user configures Vim the
    * way Vim is configured. This is for the handful of things that are about the *extension* rather

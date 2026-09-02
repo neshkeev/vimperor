@@ -38,7 +38,7 @@ const contextsSet = []
 const documentClosedListeners = []
 const documentSavedListeners = []
 
-/** Whether `ideavim.trace` is on. Flipped on for the stretch of this script that checks it. */
+/** Whether `vimperor.trace` is on. Flipped on for the stretch of this script that checks it. */
 let tracing = false
 const path = require('path')
 const fs = require('fs')
@@ -254,7 +254,7 @@ const vscode = {
       },
     },
     createOutputChannel(name) {
-      assert.strictEqual(name, 'IdeaVim')
+      assert.strictEqual(name, 'Vimperor')
       return { ...disposable(), appendLine: (line) => output.push(line), show() {} }
     },
     // Recorded, because the command line and the `:s///c` prompt are drawn here and there is
@@ -334,11 +334,11 @@ const vscode = {
       documentSavedListeners.push(callback)
       return disposable()
     },
-    // The extension's own settings, as opposed to Vim's - `ideavim.trace` is the only one. Turned
+    // The extension's own settings, as opposed to Vim's - `vimperor.trace` is the only one. Turned
     // on for a few keystrokes below rather than for the whole run, so that the wiring is exercised
     // without burying everything else this host prints.
     getConfiguration: (section) => ({
-      get: (key) => (section === 'ideavim' && key === 'trace' ? tracing : undefined),
+      get: (key) => (section === 'vimperor' && key === 'trace' ? tracing : undefined),
     }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
@@ -377,7 +377,7 @@ extension.activate({ subscriptions })
 // Taking over `type` is how an extension sees ordinary typing at all; without it every letter goes
 // straight into the document and Vim never hears about it.
 assert.ok(registeredCommands.has('type'), 'the extension did not take over the `type` command')
-assert.ok(registeredCommands.has('ideavim.key'), 'the extension registered no handler for named keys')
+assert.ok(registeredCommands.has('vimperor.key'), 'the extension registered no handler for named keys')
 
 // Every keybinding in the manifest has to reach a command that exists, or the key does nothing and
 // VS Code reports no error worth reading.
@@ -401,7 +401,7 @@ for (const contextKey of ['inlineSuggestionVisible', 'inlineEditIsVisible']) {
 }
 
 const type = (text) => registeredCommands.get('type')({ text })
-const press = (notation) => registeredCommands.get('ideavim.key')(notation)
+const press = (notation) => registeredCommands.get('vimperor.key')(notation)
 
 /*
  * Empties the document between scenarios.
@@ -848,8 +848,8 @@ contextsSet.length = 0
 type('i')
 
 assert.ok(
-  contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'INSERT'),
-  `entering insert mode did not set the ideavim.mode context. Sent: ${JSON.stringify(contextsSet)}`,
+  contextsSet.some((args) => args[0] === 'vimperor.mode' && args[1] === 'INSERT'),
+  `entering insert mode did not set the vimperor.mode context. Sent: ${JSON.stringify(contextsSet)}`,
 )
 
 // And only on a change: `setContext` re-evaluates every `when` clause in the window, so sending it
@@ -864,7 +864,7 @@ assert.deepStrictEqual(
 
 press('<Esc>')
 assert.ok(
-  contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'NORMAL'),
+  contextsSet.some((args) => args[0] === 'vimperor.mode' && args[1] === 'NORMAL'),
   `leaving insert mode did not set it back. Sent: ${JSON.stringify(contextsSet)}`,
 )
 
@@ -890,7 +890,7 @@ type(':')
 for (const character of 'autocmd BufWritePost * :normal isaved') type(character)
 press('<CR>')
 
-// `ideavim.trace`, which is what a user turns on to report a bug that only happens in a real
+// `vimperor.trace`, which is what a user turns on to report a bug that only happens in a real
 // window. The wiring is what breaks - reading a setting, describing the state, writing it out - so
 // the stub host turns it on and checks that something arrived.
 tracing = true

@@ -50,7 +50,7 @@ private var host: VimHost? = null
 
 @JsExport
 fun activate(context: ExtensionContext) {
-  val output = window.createOutputChannel("IdeaVim")
+  val output = window.createOutputChannel("Vimperor")
   channel = output
 
   val status = window.createStatusBarItem(StatusBarAlignment.Left, 100)
@@ -79,7 +79,7 @@ fun activate(context: ExtensionContext) {
    * The context is not decoration. Half the control chords in `package.json` are bound only outside
    * Insert mode - `ctrl+v` is block Visual to Vim and paste to everyone else - and a `when` clause
    * is the only place that distinction can be made, because a keybinding either claims a key or
-   * does not. Without `ideavim.mode` those bindings would either never fire or would steal paste.
+   * does not. Without `vimperor.mode` those bindings would either never fire or would steal paste.
    */
   var lastMode: String? = null
   var styledEditor: TextEditor? = null
@@ -104,7 +104,7 @@ fun activate(context: ExtensionContext) {
     // an insert would be fifty of them for a typed word.
     if (mode != lastMode) {
       lastMode = mode
-      commands.executeCommand("setContext", "ideavim.mode", mode)
+      commands.executeCommand("setContext", "vimperor.mode", mode)
     }
   }
   refreshMode()
@@ -137,7 +137,7 @@ fun activate(context: ExtensionContext) {
   // Named keys, which arrive as commands because a keybinding cannot produce a character. Each one
   // carries the Vim notation for the key it stands for, so the manifest and the engine agree
   // without a table in between.
-  val namedKey = commands.registerCommand("ideavim.key") { arguments ->
+  val namedKey = commands.registerCommand("vimperor.key") { arguments ->
     val editor = window.activeTextEditor
     val notation = arguments as? String ?: arguments?.key as? String
     if (editor != null && notation != null) {
@@ -195,7 +195,7 @@ fun activate(context: ExtensionContext) {
   val loaded = vim.loadVimRc(vim.startupEditor(window.activeTextEditor))
   output.appendLine(if (loaded != null) "Loaded " + loaded else "No .ideavimrc found.")
 
-  output.appendLine("IdeaVim is running. ${window.visibleTextEditors.size} editor(s) open.")
+  output.appendLine("Vimperor is running. ${window.visibleTextEditors.size} editor(s) open.")
 
   // The one check that cannot be made anywhere but here. Every VS Code command this extension sends
   // is a string written from the documentation, and nothing offline can say whether VS Code has it:
@@ -208,7 +208,7 @@ fun activate(context: ExtensionContext) {
       output.appendLine("Checked ${VsCodeCommands.all.size} VS Code commands; this VS Code has all of them.")
     } else {
       output.appendLine(
-        "This VS Code does not have ${missing.size} of the ${VsCodeCommands.all.size} commands IdeaVim " +
+        "This VS Code does not have ${missing.size} of the ${VsCodeCommands.all.size} commands Vimperor " +
           "uses, so the Vim commands that need them will do nothing: " + missing.joinToString(", "),
       )
     }
@@ -225,7 +225,7 @@ fun activate(context: ExtensionContext) {
 
 @JsExport
 fun deactivate() {
-  channel?.appendLine("IdeaVim deactivated.")
+  channel?.appendLine("Vimperor deactivated.")
   channel = null
   statusBar = null
   commandLineBar = null
@@ -241,14 +241,14 @@ fun deactivate() {
  * and the easiest to fix once it has a name, so it gets named here.
  */
 /**
- * Writes what a keystroke did to the output channel, when `ideavim.trace` is on.
+ * Writes what a keystroke did to the output channel, when `vimperor.trace` is on.
  *
  * Read on every key rather than cached, so that turning it on takes effect without a reload - which
  * matters, because the bugs it is for are the ones that have already happened by the time anybody
  * thinks to look.
  */
 private fun trace(output: OutputChannel, vim: VimHost, editor: TextEditor, key: String) {
-  if (workspace.getConfiguration("ideavim").get("trace") != true) return
+  if (workspace.getConfiguration("vimperor").get("trace") != true) return
   output.appendLine("  $key -> " + vim.describeState(editor))
 }
 
@@ -256,7 +256,7 @@ private inline fun reporting(output: OutputChannel, what: String, block: () -> U
   try {
     block()
   } catch (e: Throwable) {
-    output.appendLine("IdeaVim: " + what + " failed - " + e::class.simpleName + ": " + e.message)
+    output.appendLine("Vimperor: " + what + " failed - " + e::class.simpleName + ": " + e.message)
     output.show(preserveFocus = true)
   }
 }

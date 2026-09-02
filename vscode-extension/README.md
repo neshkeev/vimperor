@@ -1,6 +1,18 @@
-# IdeaVim for VS Code
+# Vimperor
 
-The IdeaVim engine, compiled to JavaScript and loaded as a VS Code extension.
+Vim for VS Code, powered by IdeaVim's engine: JetBrains' `vim-engine` compiled to JavaScript and
+loaded as a VS Code extension.
+
+That is the whole of what makes this different from the extensions already in the marketplace. They
+are either a Vim written from scratch in TypeScript, or a real Neovim running as a subprocess. This
+is neither: it is a mature Vim implementation - the one IdeaVim ships, with its Vimscript parser,
+its regex engine and its 1,049 test fixtures - running in the extension host with nothing between
+it and the editor.
+
+The name is not IdeaVim's, deliberately. "Idea" means IntelliJ IDEA and means nothing here, and the
+engine being MIT-licensed makes it free to use but not free to imply an endorsement with. What the
+extension keeps is the attribution: it reads your `~/.ideavimrc`, because that is the config this
+engine has always read and the one its users already have.
 
 ## Running it
 
