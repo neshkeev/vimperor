@@ -173,6 +173,28 @@ belongs with the plugin services and is reachable from nowhere else.
 
 Nine services are left, and each carries a line saying what it needs.
 
+Then a sixth, and it found the largest gap in the port. Every test in this module presses keys by
+calling the extension's own entry point - `VimHost.key("<C-V>")` - which is not VS Code's. In a real
+window a key only reaches that entry point if `package.json` declares a keybinding for it: printable
+characters arrive through the `type` command and need nothing, and *everything else* arrives only if
+asked for. So a key can be implemented, swept, fixture-tested, and completely dead in a real editor,
+and nothing here would say so.
+
+Sixty-one keys were in that state. `<C-V>` for block Visual, `<C-W>` for windows, `<C-D>` and
+`<C-U>` for scrolling, `<C-O>` and `<C-I>` for the jump list, `<C-A>` and `<C-X>` for increment,
+every shifted arrow that Select mode is built on, and the whole of Home, End, PageUp and PageDown.
+Three of them had tests written in the same week the manifest did not mention them.
+
+`KeybindingManifestTest` compares what the engine registers against what the manifest asks for, in
+both directions, and sixteen are now left to VS Code on purpose with a reason each. `<C-C>`, `<C-F>`,
+`<C-S>` and `<C-Q>` are copy, find, save and quit: Vim has meanings for all four, and an emulator
+that took them is the reason somebody uninstalls it. The rest are terminal spellings a keyboard
+cannot produce and keypad keys VS Code does not distinguish.
+
+The control chords that clash with editing habits are bound only outside Insert mode, which needs
+the mode in a `when` clause - `ctrl+v` is block Visual to Vim and paste to everyone else. The
+extension sets `ideavim.mode` alongside the status bar for exactly that.
+
 The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
 The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test
 of behaviour that reaches users on a platform the test never touches. 430 of its tests run on both

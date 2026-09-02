@@ -30,6 +30,9 @@ const openedExternally = []
 
 /** What `Extension.kt` registered for the active editor changing. */
 const activeEditorListeners = []
+
+/** Every `setContext` the extension sent, which is how the mode reaches `when` clauses. */
+const contextsSet = []
 const path = require('path')
 const fs = require('fs')
 const os = require('os')
@@ -230,6 +233,13 @@ const vscode = {
     // user's keys until a command it is waiting on lands, so a stub whose promise never settled
     // would silently swallow every scenario after the first fold.
     executeCommand(command, ...args) {
+      // `setContext` is bookkeeping rather than a Vim action - it is how the mode reaches VS Code's
+      // `when` clauses - and it fires on nearly every keystroke, so it is kept out of the list the
+      // other scenarios assert on exactly.
+      if (command === 'setContext') {
+        contextsSet.push(args)
+        return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+      }
       dispatchedCommands.push(command)
       dispatchedArguments.push(args)
       return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
@@ -761,6 +771,25 @@ assert.strictEqual(
   editor.document._text,
   'entered',
   `:autocmd BufEnter did not run when the active editor changed. Got: ${editor.document._text}`,
+)
+
+// The mode as a `when` context. Half the control chords in package.json are bound only outside
+// Insert mode - `ctrl+v` is block Visual to Vim and paste to everyone else - and this is the only
+// thing that can tell those bindings apart.
+reset()
+contextsSet.length = 0
+type('i')
+
+assert.ok(
+  contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'INSERT'),
+  `entering insert mode did not set the ideavim.mode context. Sent: ${JSON.stringify(contextsSet)}`,
+)
+
+contextsSet.length = 0
+press('<Esc>')
+assert.ok(
+  contextsSet.some((args) => args[0] === 'ideavim.mode' && args[1] === 'NORMAL'),
+  `leaving insert mode did not set it back. Sent: ${JSON.stringify(contextsSet)}`,
 )
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')

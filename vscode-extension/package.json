@@ -26,6 +26,12 @@
         "when": "editorTextFocus"
       },
       {
+        "key": "ctrl+[",
+        "command": "ideavim.key",
+        "args": "<C-[>",
+        "when": "editorTextFocus"
+      },
+      {
         "key": "backspace",
         "command": "ideavim.key",
         "args": "<BS>",
@@ -38,9 +44,21 @@
         "when": "editorTextFocus"
       },
       {
+        "key": "insert",
+        "command": "ideavim.key",
+        "args": "<Ins>",
+        "when": "editorTextFocus"
+      },
+      {
         "key": "enter",
         "command": "ideavim.key",
         "args": "<CR>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "shift+enter",
+        "command": "ideavim.key",
+        "args": "<S-CR>",
         "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
@@ -48,6 +66,12 @@
         "command": "ideavim.key",
         "args": "<Tab>",
         "when": "editorTextFocus && !suggestWidgetVisible && !inlineSuggestionVisible && !inlineEditIsVisible"
+      },
+      {
+        "key": "shift+tab",
+        "command": "ideavim.key",
+        "args": "<S-Tab>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
       },
       {
         "key": "up",
@@ -74,10 +98,256 @@
         "when": "editorTextFocus"
       },
       {
+        "key": "shift+up",
+        "command": "ideavim.key",
+        "args": "<S-Up>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "shift+down",
+        "command": "ideavim.key",
+        "args": "<S-Down>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "shift+left",
+        "command": "ideavim.key",
+        "args": "<S-Left>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "shift+right",
+        "command": "ideavim.key",
+        "args": "<S-Right>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+up",
+        "command": "ideavim.key",
+        "args": "<C-Up>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "ctrl+down",
+        "command": "ideavim.key",
+        "args": "<C-Down>",
+        "when": "editorTextFocus && !suggestWidgetVisible"
+      },
+      {
+        "key": "ctrl+left",
+        "command": "ideavim.key",
+        "args": "<C-Left>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+right",
+        "command": "ideavim.key",
+        "args": "<C-Right>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "home",
+        "command": "ideavim.key",
+        "args": "<Home>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "end",
+        "command": "ideavim.key",
+        "args": "<End>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "shift+home",
+        "command": "ideavim.key",
+        "args": "<S-Home>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "shift+end",
+        "command": "ideavim.key",
+        "args": "<S-End>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+home",
+        "command": "ideavim.key",
+        "args": "<C-Home>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+end",
+        "command": "ideavim.key",
+        "args": "<C-End>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "pageup",
+        "command": "ideavim.key",
+        "args": "<Pageup>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "pagedown",
+        "command": "ideavim.key",
+        "args": "<Pagedown>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+pageup",
+        "command": "ideavim.key",
+        "args": "<C-Pageup>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+pagedown",
+        "command": "ideavim.key",
+        "args": "<C-Pagedown>",
+        "when": "editorTextFocus"
+      },
+      {
         "key": "ctrl+r",
         "command": "ideavim.key",
         "args": "<C-R>",
         "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+o",
+        "command": "ideavim.key",
+        "args": "<C-O>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+w",
+        "command": "ideavim.key",
+        "args": "<C-W>",
+        "when": "editorTextFocus"
+      },
+      {
+        "key": "ctrl+a",
+        "command": "ideavim.key",
+        "args": "<C-A>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+b",
+        "command": "ideavim.key",
+        "args": "<C-B>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+d",
+        "command": "ideavim.key",
+        "args": "<C-D>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+e",
+        "command": "ideavim.key",
+        "args": "<C-E>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+g",
+        "command": "ideavim.key",
+        "args": "<C-G>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+h",
+        "command": "ideavim.key",
+        "args": "<C-H>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+i",
+        "command": "ideavim.key",
+        "args": "<C-I>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+j",
+        "command": "ideavim.key",
+        "args": "<C-J>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+k",
+        "command": "ideavim.key",
+        "args": "<C-K>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+l",
+        "command": "ideavim.key",
+        "args": "<C-L>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+m",
+        "command": "ideavim.key",
+        "args": "<C-M>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+n",
+        "command": "ideavim.key",
+        "args": "<C-N>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+p",
+        "command": "ideavim.key",
+        "args": "<C-P>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+t",
+        "command": "ideavim.key",
+        "args": "<C-T>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+u",
+        "command": "ideavim.key",
+        "args": "<C-U>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+v",
+        "command": "ideavim.key",
+        "args": "<C-V>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+x",
+        "command": "ideavim.key",
+        "args": "<C-X>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+y",
+        "command": "ideavim.key",
+        "args": "<C-Y>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+]",
+        "command": "ideavim.key",
+        "args": "<C-]>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+\\",
+        "command": "ideavim.key",
+        "args": "<C-\\>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+6",
+        "command": "ideavim.key",
+        "args": "<C-^>",
+        "when": "editorTextFocus && ideavim.mode != 'INSERT' && ideavim.mode != 'REPLACE'"
       }
     ]
   }

@@ -72,8 +72,18 @@ fun activate(context: ExtensionContext) {
   vim.start()
   host = vim
 
+  /**
+   * The mode, on the status bar and in VS Code's `when` context.
+   *
+   * The context is not decoration. Half the control chords in `package.json` are bound only outside
+   * Insert mode - `ctrl+v` is block Visual to Vim and paste to everyone else - and a `when` clause
+   * is the only place that distinction can be made, because a keybinding either claims a key or
+   * does not. Without `ideavim.mode` those bindings would either never fire or would steal paste.
+   */
   fun refreshMode() {
-    status.text = "-- ${vim.modeName()} --"
+    val mode = vim.modeName()
+    status.text = "-- " + mode + " --"
+    commands.executeCommand("setContext", "ideavim.mode", mode)
   }
   refreshMode()
 
