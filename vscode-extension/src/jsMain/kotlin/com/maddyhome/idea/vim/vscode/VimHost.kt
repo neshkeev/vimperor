@@ -300,13 +300,21 @@ class VimHost(
   /**
    * Takes VS Code's selections as the carets, which is what happens when the user clicks or drags.
    *
-   * Only when nothing is pending: a selection change caused by the engine's own flush would
-   * otherwise be read back as if the user had made it.
+   * Only when nothing is pending, and only when VS Code says the user did it - see the `kind` check
+   * below, which is the part that matters and the part a stub host cannot have, because a stub
+   * fires no events at all.
    */
-  fun selectionChanged(textEditor: TextEditor) {
+  fun selectionChanged(textEditor: TextEditor, kind: Int?) {
     val editor = editors[identityOf(textEditor)] ?: return
     if (editor.nativeEditor !== textEditor) return
     if (pending > 0) return
+    // Only a change VS Code attributes to the user. `kind` is null for one it did not attribute -
+    // an edit moving its own caret, or an extension writing `TextEditor.selections` - and both of
+    // those are this host's own writing coming back. Reading them was the reason `O` opened a line
+    // above and left the caret below it, and the reason a blockwise Visual selection came apart one
+    // column per line: the block's anchor was replaced by whatever VS Code last reported for the
+    // line the caret happened to be on.
+    if (kind == null) return
     editor.syncCaretsFromEditor()
     if (editor.followSelectionIntoMode()) {
       // The mode changed without a key causing it, and `KeyHandler` is holding state that assumed

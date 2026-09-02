@@ -144,10 +144,16 @@ class KeybindingManifestTest {
      * `<C-W>`, `<C-D>`, `<C-O>`, every shifted arrow and the whole of Home/End/PageUp/PageDown were
      * implemented, tested, and unreachable in a real window.
      *
-     * `<C-C>`, `<C-F>`, `<C-S>` and `<C-Q>` are copy, find, save and quit. Vim has meanings for all
-     * four and a Vim emulator that took them would be the reason somebody uninstalled it; a user who
-     * wants them can add four lines to their own keybindings, which is the direction that decision
-     * should go.
+     * `<C-F>`, `<C-S>` and `<C-Q>` are find, save and quit. Vim has meanings for all three and a Vim
+     * emulator that took them would be the reason somebody uninstalled it; a user who wants them can
+     * add three lines to their own keybindings, which is the direction that decision should go.
+     *
+     * `<C-C>` was on that list with them, on the same reasoning, and came off it after a real window
+     * was used for ten minutes. Copy is not what `<C-C>` means to a Vim user - it is Escape, in
+     * every mode, and it is what a hand reaches for to get out of something. A user who does not
+     * want that has one line to write; a user who does had no way to get it, because the default was
+     * to leave the key alone. The rule this list encodes is "do not take a key VS Code needs", and
+     * the exception it now records is a key Vim needs more.
      *
      * `<C-2>`, `<C-@>` and `<C-S-2>` are terminal spellings of the same NUL that `<C-Space>` sends,
      * and `<C-6>` and `<C-S-6>` are terminal spellings of `<C-^>` - which *is* bound, to `ctrl+6`.
@@ -162,7 +168,6 @@ class KeybindingManifestTest {
       <C-2>
       <C-6>
       <C-@>
-      <C-C>
       <C-F>
       <C-Kleft>
       <C-Kright>

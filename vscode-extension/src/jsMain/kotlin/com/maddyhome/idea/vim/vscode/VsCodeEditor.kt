@@ -51,6 +51,20 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   private val vimCarets: MutableList<VsCodeCaret> = mutableListOf()
 
+  /**
+   * What was last pushed to VS Code, so that the event it fires in response is not read back.
+   *
+   * Setting selections makes VS Code report a selection change, and it reports it later rather than
+   * during the call - so a flag around the flush would not cover it. Comparing what arrived with
+   * what was sent does: an event carrying exactly what this editor asked for is its own echo.
+   *
+   * Declared *before* the initialiser that reads it, which is not a style preference. Kotlin/JS
+   * assigns properties in declaration order, and [syncCaretsFromEditor] runs from `init` - so with
+   * this further down the class it is plain `undefined` on the first call. Comparing against
+   * undefined merely answered false; calling a method on it throws, which is how it was found.
+   */
+  private var pushedSelections: List<Pair<Int, Int>> = emptyList()
+
   init {
     syncCaretsFromEditor()
     // What IntelliJ gets from a document listener: the line about to change, before it does. Only
@@ -316,19 +330,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   // ---- Carets. VS Code calls them selections; a collapsed selection is a plain caret.
 
-  /**
-   * What was last pushed to VS Code, so that the event it fires in response is not read back.
-   *
-   * Setting selections makes VS Code report a selection change, and it reports it later rather than
-   * during the call - so a flag around the flush would not cover it. Comparing what arrived with
-   * what was sent does: an event carrying exactly what this editor asked for is its own echo.
-   */
-  private var pushedSelections: List<Pair<Int, Int>> = emptyList()
-
   fun syncCaretsFromEditor() {
     val selections = nativeEditor.selections
     val incoming = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
-    if (incoming == pushedSelections) return
+    // As a set, because the order is not this host's to rely on. Carets are pushed primary first,
+    // and VS Code is free to report them back in document order - so comparing lists would call a
+    // block selection's own echo a user edit and rebuild every caret from it.
+    if (incoming.toSet() == pushedSelections.toSet()) return
 
     vimCarets.clear()
     incoming.forEachIndexed { index, (anchor, active) ->

@@ -42,6 +42,12 @@
         "when": "editorTextFocus"
       },
       {
+        "key": "ctrl+c",
+        "command": "ideavim.key",
+        "args": "<C-C>",
+        "when": "editorTextFocus"
+      },
+      {
         "key": "backspace",
         "command": "ideavim.key",
         "args": "<BS>",

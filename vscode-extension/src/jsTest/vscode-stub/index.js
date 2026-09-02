@@ -47,6 +47,9 @@ class Selection {
   }
 }
 
+/* Why a selection changed. Undefined means VS Code did not attribute it - see VimHost. */
+const TextEditorSelectionChangeKind = { Keyboard: 1, Mouse: 2, Command: 3 }
+
 const TextEditorRevealType = {
   Default: 0,
   InCenter: 1,
@@ -187,4 +190,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }

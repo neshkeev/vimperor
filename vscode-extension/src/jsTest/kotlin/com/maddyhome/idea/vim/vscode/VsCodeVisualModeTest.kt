@@ -114,7 +114,7 @@ class VsCodeVisualModeTest {
     session.host.editorFor(session.fake)
 
     session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 3)))
-    session.host.selectionChanged(session.fake)
+    session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
 
     assertEquals("VISUAL", session.host.modeName())
 
@@ -127,13 +127,37 @@ class VsCodeVisualModeTest {
     val session = Session("one two")
     session.host.editorFor(session.fake)
     session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 3)))
-    session.host.selectionChanged(session.fake)
+    session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
     assertEquals("VISUAL", session.host.modeName())
 
     session.fake.selections = arrayOf(Selection(Position(0, 5), Position(0, 5)))
-    session.host.selectionChanged(session.fake)
+    session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
 
     assertEquals("NORMAL", session.host.modeName())
+  }
+
+  /**
+   * A change VS Code did not attribute to the user is this host's own writing coming back.
+   *
+   * `kind` is null for a selection an *edit* moved and for one an extension set, and both of those
+   * are this host. Reading them was what left `O` opening a line above with the caret still below
+   * it, and what made a blockwise Visual selection widen by a column on every `j` - the block's
+   * anchor was replaced by whatever VS Code had last reported for the line the caret was on. The
+   * offline half of this port cannot see it: no stub fires an event at all.
+   */
+  @Test
+  fun `test a selection change VS Code did not attribute to the user is ignored`() {
+    val session = Session("one two three")
+    session.type("v")
+    session.type("e")
+    val afterMotion = session.selection
+
+    // What an applied edit reports: new selections, and no kind.
+    session.fake.selections = arrayOf(Selection(Position(0, 9), Position(0, 9)))
+    session.host.selectionChanged(session.fake, kind = null)
+
+    assertEquals("VISUAL", session.host.modeName())
+    assertEquals(afterMotion, session.selection, "an unattributed change is this host's own")
   }
 
   @Test
@@ -146,7 +170,7 @@ class VsCodeVisualModeTest {
     session.type("e")
     val afterMotion = session.selection
 
-    session.host.selectionChanged(session.fake)
+    session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
 
     assertEquals("VISUAL", session.host.modeName())
     assertEquals(afterMotion, session.selection, "the echo should change nothing")

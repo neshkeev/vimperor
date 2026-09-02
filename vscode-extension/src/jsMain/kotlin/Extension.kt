@@ -142,7 +142,7 @@ fun activate(context: ExtensionContext) {
   }
 
   val selectionChanged = window.onDidChangeTextEditorSelection { event ->
-    vim.selectionChanged(event.textEditor)
+    vim.selectionChanged(event.textEditor, event.kind)
   }
 
   // A buffer unloaded. Nothing was listening for this, so the host kept an editor - and its whole

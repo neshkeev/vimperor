@@ -74,9 +74,28 @@ external object window {
   val onDidChangeWindowState: (listener: (WindowState) -> Unit) -> Disposable
 }
 
+/**
+ * Why the selection changed, and the only reliable way to tell the user's move from this host's own.
+ *
+ * `kind` is undefined for a change VS Code did not attribute to the keyboard, the mouse or a
+ * command - which is exactly what an edit's own caret adjustment reports, and what setting
+ * `TextEditor.selections` from an extension reports. Reading those back is reading this host's own
+ * writing: `O` opened a line above and then had its caret pulled back by the edit that opened it,
+ * and a blockwise Visual selection came apart one column at a time as its anchor was overwritten by
+ * whichever line VS Code had last reported.
+ */
+external object TextEditorSelectionChangeKind {
+  val Keyboard: Int
+  val Mouse: Int
+  val Command: Int
+}
+
 external interface TextEditorSelectionChangeEvent {
   val textEditor: TextEditor
   val selections: Array<Selection>
+
+  /** See [TextEditorSelectionChangeKind]. Null when VS Code did not attribute the change. */
+  val kind: Int?
 }
 
 external interface StatusBarItem : Disposable {

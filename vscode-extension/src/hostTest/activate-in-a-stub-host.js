@@ -230,6 +230,7 @@ const vscode = {
   TabInputText,
   Selection,
   EndOfLine: { LF: 1, CRLF: 2 },
+  TextEditorSelectionChangeKind: { Keyboard: 1, Mouse: 2, Command: 3 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,
