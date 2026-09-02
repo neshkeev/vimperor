@@ -6,12 +6,12 @@
   "publisher": "neshkeev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neshkeev/vimperator.git"
+    "url": "https://github.com/neshkeev/vimperor.git"
   },
   "bugs": {
-    "url": "https://github.com/neshkeev/vimperator/issues"
+    "url": "https://github.com/neshkeev/vimperor/issues"
   },
-  "homepage": "https://github.com/neshkeev/vimperator#readme",
+  "homepage": "https://github.com/neshkeev/vimperor#readme",
   "license": "MIT",
   "icon": "icon.png",
   "engines": {
