@@ -36,6 +36,9 @@ Visual mode in all three kinds including blockwise; marks, macros and digraphs;
 and `'hlsearch'`. Insert mode steps aside for the suggest widget and for Copilot's
 ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwise.
 
+Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
+"Vimperor: Open Vim Tutor" in the Command Palette.
+
 What does not: anything built on `getchar()`, which blocks on a modal event loop
 until a key arrives. IdeaVim's bundled extensions — surround, commentary, easymotion
 — are built on it, and JavaScript has one thread and no way to stop it.
@@ -94,11 +97,11 @@ Testing
 
 Two things are checked that a test suite cannot check on its own. The `external`
 declarations for the VS Code API are compiled against nothing — the extension host
-injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all 102
+injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all 106
 of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
-Beyond its own 363 tests, the extension replays IdeaVim's test fixtures against the
+Beyond its own 377 tests, the extension replays IdeaVim's test fixtures against the
 VS Code host: **1,034 of 1,049 pass**. The fifteen that do not are listed, with an
 explanation of each, in
 [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt).

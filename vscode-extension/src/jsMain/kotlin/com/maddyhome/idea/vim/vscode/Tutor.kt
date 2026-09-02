@@ -15,8 +15,18 @@
 
 package com.maddyhome.idea.vim.vscode
 
+import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.tutor.TutorHost
 import com.maddyhome.idea.vim.tutor.vimTutor
+import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
+import com.maddyhome.idea.vim.vimscript.model.commands.Command
+import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
+import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
+import com.maddyhome.idea.vim.vimscript.model.commands.LazyExCommandInstance
 
 /**
  * Vimperor's tutor: Vim's own lessons, opened in a buffer the reader is meant to take apart.
@@ -138,5 +148,56 @@ internal fun openTutor(onFailure: (Any?) -> Unit) {
   workspace.openTextDocument(options).then(
     { document -> window.showTextDocument(document).then({ _: TextEditor -> }, onFailure); Unit },
     onFailure,
+  )
+}
+
+/**
+ * `:vimtutor`, `:tutor` and `:vimperortutor`.
+ *
+ * A Command Palette entry is VS Code's door and the `:` prompt is Vim's, and a Vim user reaches for
+ * the second one. Vim itself has no such command - `vimtutor` is a shell script that starts a fresh
+ * Vim - but there is no shell to start anything from here, so it becomes an ex command.
+ *
+ * These are *this host's* commands, not the engine's. They are registered through the
+ * `commandProviders` hook that `VimscriptParserBase` leaves open for exactly this, rather than with
+ * `@ExCommand` in `vim-engine`: that annotation is read by KSP into a registry both hosts load, and
+ * IdeaVim opens its tutor a different way. IdeaVim's own eight IntelliJ-only ex commands are
+ * declared the same way, in its module - see `ExCommandsOnlyInIntelliJTest`.
+ *
+ * Not an alias, either. `:command` is how a Vim plugin adds one of these, and the engine implements
+ * Vim's rule that a user-defined command must begin with an uppercase letter - `isAlias` rejects
+ * anything else - so `:tutor` could never have been one.
+ */
+data class TutorCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_FORBIDDEN, ArgumentFlag.ARGUMENT_FORBIDDEN, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    openTutor { failure ->
+      injector.messages.showErrorMessage(editor, "Vimperor: the tutor could not be opened - $failure")
+    }
+    return ExecutionResult.Success
+  }
+}
+
+/**
+ * The ex commands this host adds to the engine's.
+ *
+ * The names carry no `[...]`, so each is registered whole and nothing shorter resolves to it. That
+ * is deliberate: `:t` is Vim's `:copy`, and an abbreviation here would be a poor trade for a
+ * command nobody types twice.
+ */
+internal object VsCodeExCommandProvider : ExCommandProvider {
+  override fun getCommands(): Map<String, LazyExCommandInstance> = mapOf(
+    "vimtutor,tutor,vimperortutor" to LazyExCommandInstance(
+      TutorCommand::class,
+      { range, modifier, argument -> TutorCommand(range, modifier, argument) },
+    ),
   )
 }

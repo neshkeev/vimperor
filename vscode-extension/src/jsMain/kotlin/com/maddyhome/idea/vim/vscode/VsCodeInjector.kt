@@ -42,6 +42,8 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.undo.LineChange
 import com.maddyhome.idea.vim.undo.VimKeyBasedUndoService
 import com.maddyhome.idea.vim.undo.VimUndoRedo
+import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
+import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.functions.VimscriptFunctionProvider
 import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
 import kotlin.math.max
@@ -114,10 +116,20 @@ open class VsCodeInjector(
     if (activeEditor === editor) activeEditor = openEditors.lastOrNull()
   }
 
-  // ---- Pure engine. Nothing about a host in any of these; the `*Base` classes are complete.
+  // ---- Engine, or nearly. Nothing about a host in these beyond the ex commands this one adds.
 
   override val parser: VimStringParser by lazy { object : VimStringParserBase() {} }
-  override val vimscriptParser: VimscriptParser by lazy { object : VimscriptParserBase() {} }
+
+  /**
+   * Almost pure engine: the base class is complete, but `commandProviders` is the hook it leaves
+   * open for a host with ex commands of its own, and this one has [VsCodeExCommandProvider].
+   */
+  override val vimscriptParser: VimscriptParser by lazy {
+    object : VimscriptParserBase() {
+      override val commandProviders: List<ExCommandProvider> =
+        listOf(engineExCommandProvider, VsCodeExCommandProvider)
+    }
+  }
 
   /**
    * Running vimscript, which is what a `:` command *is* once it has been typed.

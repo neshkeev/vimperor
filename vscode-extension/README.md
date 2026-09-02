@@ -361,6 +361,35 @@ at the status bar. It is applied against whichever editor is active and tracked 
 as well as against the mode, because VS Code gives each editor its own options and one opened while
 in Normal mode would otherwise keep the user's default bar.
 
+## The tutor
+
+`vimtutor` is how most people learned Vim, and it is here: Vim's own thirty-three lessons, opened
+into an untitled document so that the ones saying "delete this word" work on the real thing.
+
+Four doors, because the reader might come from either side:
+
+    :vimtutor
+    :tutor
+    :vimperortutor
+    Command Palette -> Vimperor: Open Vim Tutor
+
+The lessons live in `vim-engine` and are shared with IdeaVim - a tutor teaching `dw` is teaching Vim
+rather than teaching an editor, and only fourteen of its nine hundred lines were about the host.
+Those fourteen are supplied per host through a `TutorHost`, and where this one's wording differs
+from IdeaVim's it is because the fact differs: there is no `'showcmd'` here to watch a pending `d`
+appear in, no status bar icon to create a vimrc from, and no plugin support to recommend one with.
+Vim's own lessons on `:q`, `:w FILENAME`, `:r FILENAME`, `:!` and `:help` stay in the appendix but
+are marked as working here, which was checked by running them rather than assumed.
+
+The three ex commands are this host's rather than the engine's, registered through the
+`commandProviders` hook `VimscriptParserBase` leaves open. They are not `:command` aliases: the
+engine implements Vim's rule that a user-defined command starts with an uppercase letter, so a
+lowercase `:tutor` could never have been one.
+
+The tutor text is under the **Vim license**, not MIT - see `ThirdPartyLicenses.md` here, which is
+inside the packaged extension because that license requires its text to travel with the
+distribution.
+
 ## What only a real window found
 
 The extension ran in a real VS Code for the first time and the first keystroke failed:

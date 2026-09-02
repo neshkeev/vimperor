@@ -147,6 +147,76 @@ class TutorTest {
     assertTrue("It is not allowed to remove this license" in licenses, "in full, not summarised")
   }
 
+  // The three ex commands, which are this host's rather than the engine's.
+
+  /**
+   * Typing one of them opens the tutor.
+   *
+   * The stub records what `openTextDocument` was asked for, which is the only way to see this
+   * without a window: the command returns before the promise resolves, so what is asserted is that
+   * VS Code was asked, and asked with the right text.
+   */
+  @Test
+  fun `test each of the tutor commands opens it`() {
+    for (command in listOf("vimtutor", "tutor", "vimperortutor")) {
+      val before = openedDocuments().size
+
+      val errors = runEx(command)
+
+      assertEquals(emptyList(), errors, "`:$command` should be a command this host knows")
+      assertEquals(before + 1, openedDocuments().size, "`:$command` should have opened a document")
+      val content = openedDocuments().last().getText() as String
+      assertTrue("Welcome to the Vimperor Tutor" in content, "`:$command` should open the tutor")
+    }
+  }
+
+  /**
+   * They are not abbreviated, and `:t` still belongs to `:copy`.
+   *
+   * Registering `tutor` with an optional part would have taken `:t` with it, which is Vim's copy
+   * command and one people actually use.
+   */
+  @Test
+  fun `test the tutor commands did not steal an abbreviation`() {
+    val fake = FakeEditor("one\ntwo")
+    val sink = RecordingSink()
+    val host = VimHost(sink = sink).also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(fake))
+
+    ":t 1".forEach { host.type(fake, it.toString()) }
+    host.key(fake, "<CR>")
+
+    assertEquals(emptyList(), sink.errors, "`:t` should still be `:copy`")
+    assertEquals("one\none\ntwo", fake.document.content, "and should still copy a line")
+  }
+
+  @Test
+  fun `test an unknown neighbour of theirs is still unknown`() {
+    // Guards the registration itself: if the names were added as a prefix match rather than whole,
+    // this would quietly succeed.
+    assertTrue(runEx("tut").isNotEmpty(), "`:tut` is not registered and should report so")
+  }
+
+  /**
+   * What the stub was asked to open.
+   *
+   * Read straight out of the module rather than through a declaration, because this is the stub's
+   * own bookkeeping and has no counterpart in the real VS Code - declaring it in `VsCodeApi.kt`
+   * would make `checkVsCodeApiDeclarations` fail, correctly.
+   */
+  private fun openedDocuments(): Array<dynamic> =
+    js("require('vscode').openedDocuments").unsafeCast<Array<dynamic>>()
+
+  private fun runEx(command: String): List<String> {
+    val fake = FakeEditor("hello\nworld")
+    val sink = RecordingSink()
+    val host = VimHost(sink = sink).also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(fake))
+    ":$command".forEach { host.type(fake, it.toString()) }
+    host.key(fake, "<CR>")
+    return sink.errors
+  }
+
   private class RecordingSink : MessageSink {
     val errors = mutableListOf<String>()
     override fun message(text: String?) {}
