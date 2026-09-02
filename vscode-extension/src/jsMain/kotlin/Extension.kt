@@ -10,7 +10,6 @@
 
 // No `package` declaration, deliberately - see the note below.
 
-import com.maddyhome.idea.vim.vscode.CommandLineDisplay
 import com.maddyhome.idea.vim.vscode.DecorationHighlighter
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
@@ -20,6 +19,7 @@ import com.maddyhome.idea.vim.vscode.OutputChannel
 import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
 import com.maddyhome.idea.vim.vscode.StatusBarAlignment
 import com.maddyhome.idea.vim.vscode.StatusBarItem
+import com.maddyhome.idea.vim.vscode.StatusBarPrompt
 import com.maddyhome.idea.vim.vscode.TextEditor
 import com.maddyhome.idea.vim.vscode.VimHost
 import com.maddyhome.idea.vim.vscode.VsCodeClipboard
@@ -289,19 +289,6 @@ private inline fun reporting(output: OutputChannel, what: String, block: () -> U
   } catch (e: Throwable) {
     output.appendLine("Vimperor: " + what + " failed - " + e::class.simpleName + ": " + e.message)
     output.show(preserveFocus = true)
-  }
-}
-
-/** The `:` and `/` prompts, on the status bar - the closest thing VS Code has to Vim's last line. */
-private class StatusBarPrompt(private val item: StatusBarItem) : CommandLineDisplay {
-  override fun show(text: String) {
-    item.text = text
-    item.show()
-  }
-
-  override fun hide() {
-    item.text = ""
-    item.hide()
   }
 }
 

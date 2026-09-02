@@ -167,6 +167,14 @@ this VS Code does not have is reported at the `:` prompt rather than failing sil
 command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
 each one - VS Code has no API that reads its own keybindings.
 
+The prompt draws a caret, so a typed command can be edited rather than only retyped. `<Left>`,
+`<Right>`, `<Home>`/`<C-B>`, `<End>`/`<C-E>` and `<S-Left>`/`<S-Right>` all worked already - they
+are assignments to an offset the engine owns - and what was missing was any way to see where that
+offset was. A status bar item is text and takes no styling, so the caret is a thin bar spliced into
+the string rather than a block drawn over the character under it, and the display is handed the
+offset apart from the text so that something painting this into the editor one day can do better.
+It also makes a trailing space visible: `:e ` and `:e` are different commands and looked identical.
+
 `Cmd+V` pastes into the `:` and `/` prompts, and `Ctrl+Shift+V` does off the Mac - not plain
 `Ctrl+V`, which is Vim's own and inserts the next character literally. The work is Vim's `<C-R>+`,
 which the engine already had; what the host adds is that a system chord is a keybinding rather than

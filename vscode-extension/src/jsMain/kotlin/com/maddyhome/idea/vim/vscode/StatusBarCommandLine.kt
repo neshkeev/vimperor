@@ -45,7 +45,7 @@ internal class StatusBarCommandLine(
   private var content: StringBuilder = StringBuilder(initialText)
   private var promptCharacter: Char? = null
 
-  override val caret: VimCommandLineCaret = Caret(initialText.length)
+  override val caret: VimCommandLineCaret = Caret(initialText.length) { render() }
 
   override val text: String get() = content.toString()
 
@@ -73,6 +73,16 @@ internal class StatusBarCommandLine(
     append(content)
     promptCharacter?.let { append(it) }
   }
+
+  /**
+   * Where the caret is in [getRenderedText], or null when there is nothing to draw.
+   *
+   * Null while a prompt character is showing, because that character *is* the caret: Vim draws the
+   * `"` of a pending `<C-R>` where the cursor was, and a second marker beside it would say the
+   * cursor is somewhere it is not.
+   */
+  private fun caretInRenderedText(): Int? =
+    if (promptCharacter != null) null else label.length + caret.offset.coerceIn(0, content.length)
 
   override val modelessSelection: String get() = ""
 
@@ -152,19 +162,70 @@ internal class StatusBarCommandLine(
   override fun focus() {}
 
   fun render() {
-    display.show(getRenderedText())
+    display.show(getRenderedText(), caretInRenderedText())
     preview?.update(editor, label, text)
   }
 
-  private class Caret(offset: Int) : VimCommandLineCaret {
+  /**
+   * The command line's caret, which redraws when it moves.
+   *
+   * Nothing else would. The engine's command-line motions - `<Left>`, `<Home>`, `<S-Right>` and the
+   * rest - are pure assignments to this offset, because IntelliJ's command line is a text field
+   * that draws its own caret and needs no telling. A status bar draws a string, so the string has
+   * to change when the caret does.
+   */
+  private class Caret(offset: Int, private val onMove: () -> Unit) : VimCommandLineCaret {
     override var offset: Int = offset
+      set(value) {
+        val moved = field != value
+        field = value
+        if (moved) onMove()
+      }
   }
 }
 
-/** Where the command line is drawn. Separated so a test can read it without a status bar. */
+/**
+ * Where the command line is drawn. Separated so a test can read it without a status bar.
+ *
+ * The caret is passed apart from the text rather than drawn into it, because where it goes is the
+ * display's business: a status bar can only splice a character in, and something drawing this into
+ * the editor one day could paint a real block. Null means there is nothing to draw - see
+ * [StatusBarCommandLine.caretInRenderedText].
+ */
 interface CommandLineDisplay {
-  fun show(text: String)
+  fun show(text: String, caret: Int?)
   fun hide()
+}
+
+/**
+ * The `:` and `/` prompts, on the status bar - the closest thing VS Code has to Vim's last line.
+ *
+ * The caret is a character spliced into the string, because a status bar item is text and nothing
+ * else: it takes no styling, so a block drawn over the character under the cursor - which is what
+ * Vim does - is not available. A thin bar between characters is what is left, and it is what every
+ * other editor draws anyway.
+ *
+ * It also makes a space at the end of the line visible, which it was not: `:e ` and `:e` looked the
+ * same on the status bar and only one of them was going to open a file.
+ */
+internal class StatusBarPrompt(private val item: StatusBarItem) : CommandLineDisplay {
+  override fun show(text: String, caret: Int?) {
+    item.text = if (caret == null) text else {
+      val at = caret.coerceIn(0, text.length)
+      text.substring(0, at) + CARET + text.substring(at)
+    }
+    item.show()
+  }
+
+  override fun hide() {
+    item.text = ""
+    item.hide()
+  }
+
+  private companion object {
+    /** U+258F, a one-eighth block: thin enough to read as a caret and not as something typed. */
+    const val CARET = "\u258f"
+  }
 }
 
 /**
@@ -216,7 +277,7 @@ internal class VsCodeCommandLineService(
 
   /** Clears [active] when the command line it belongs to closes, so nothing outlives its prompt. */
   private inner class ClosingDisplay : CommandLineDisplay {
-    override fun show(text: String) = display.show(text)
+    override fun show(text: String, caret: Int?) = display.show(text, caret)
 
     override fun hide() {
       active = null

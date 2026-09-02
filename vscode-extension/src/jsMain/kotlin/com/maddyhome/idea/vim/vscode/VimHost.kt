@@ -448,7 +448,7 @@ private fun environmentVariable(name: String): String? = injector.systemInfoServ
 
 /** For a host that has nowhere to draw a command line yet. */
 internal object NoCommandLineDisplay : CommandLineDisplay {
-  override fun show(text: String) {}
+  override fun show(text: String, caret: Int?) {}
   override fun hide() {}
 }
 

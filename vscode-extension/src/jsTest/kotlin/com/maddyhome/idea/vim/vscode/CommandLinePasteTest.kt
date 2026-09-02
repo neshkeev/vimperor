@@ -79,12 +79,17 @@ class CommandLinePasteTest {
     var shown: String? = null
       private set
 
-    override fun show(text: String) {
+    var caret: Int? = null
+      private set
+
+    override fun show(text: String, caret: Int?) {
       shown = text
+      this.caret = caret
     }
 
     override fun hide() {
       shown = null
+      caret = null
     }
   }
 

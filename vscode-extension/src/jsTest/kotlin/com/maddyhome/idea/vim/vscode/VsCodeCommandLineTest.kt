@@ -30,12 +30,17 @@ class VsCodeCommandLineTest {
     var shown: String? = null
       private set
 
-    override fun show(text: String) {
+    var caret: Int? = null
+      private set
+
+    override fun show(text: String, caret: Int?) {
       shown = text
+      this.caret = caret
     }
 
     override fun hide() {
       shown = null
+      caret = null
     }
   }
 
@@ -259,5 +264,186 @@ class VsCodeCommandLineTest {
 
     assertEquals("one AND two and three and four", session.content)
     assertNull(session.display.shown)
+  }
+
+  // The caret, which is the difference between typing a command and editing one.
+
+  /**
+   * Where the caret is, told apart from what the line says.
+   *
+   * A status bar item is text and takes no styling, so the caret has to be a character spliced into
+   * the string - and that would have made every assertion in this file read around a glyph. The
+   * display is handed the two separately instead, which is also the honest shape: where a caret
+   * goes is the drawing's business, and something painting this into the editor one day could draw
+   * a real block over the character the way Vim does.
+   */
+  @Test
+  fun `test the caret starts after what has been typed`() {
+    val session = Session("one two")
+    session.type(":")
+    session.type("set nu")
+
+    assertEquals(":set nu", session.display.shown)
+    assertEquals(7, session.display.caret, "at the end, which is where the next character goes")
+  }
+
+  @Test
+  fun `test Left and Right move it`() {
+    val session = Session("one two")
+    session.type(":set nu")
+    session.key("<Left>")
+    session.key("<Left>")
+
+    assertEquals(5, session.display.caret)
+
+    session.key("<Right>")
+
+    assertEquals(6, session.display.caret)
+  }
+
+  /**
+   * The caret is what the next character is typed at, which is the point of moving it.
+   *
+   * This worked before the caret was drawn - the engine's command-line motions are assignments to
+   * an offset and `handleKey` has always inserted there. What was missing was any way to see where
+   * that offset was, which made editing a typed command a guess.
+   */
+  @Test
+  fun `test typing goes in at the caret`() {
+    val session = Session("one two")
+    session.type(":set nu")
+    session.key("<Left>")
+    session.key("<Left>")
+    session.type("relative")
+
+    assertEquals(":set relativenu", session.display.shown)
+    assertEquals(13, session.display.caret)
+  }
+
+  @Test
+  fun `test Home and End go to the ends`() {
+    val session = Session("one two")
+    session.type(":set nu")
+
+    session.key("<Home>")
+    assertEquals(1, session.display.caret, "after the `:`, which is a label and not text")
+
+    session.key("<End>")
+    assertEquals(7, session.display.caret)
+  }
+
+  @Test
+  fun `test Ctrl-B and Ctrl-E are the same two`() {
+    // Vim's own names for them, and the reason `<C-E>` on the command line is not a scroll.
+    val session = Session("one two")
+    session.type(":set nu")
+
+    session.key("<C-B>")
+    assertEquals(1, session.display.caret)
+
+    session.key("<C-E>")
+    assertEquals(7, session.display.caret)
+  }
+
+  @Test
+  fun `test Shift-Left and Shift-Right move by a word`() {
+    val session = Session("one two")
+    session.type(":set number")
+
+    session.key("<S-Left>")
+    assertEquals(5, session.display.caret, "to the start of `number`")
+
+    session.key("<S-Right>")
+    assertEquals(11, session.display.caret)
+  }
+
+  @Test
+  fun `test backspace takes the character before the caret`() {
+    val session = Session("one two")
+    session.type(":set nu")
+    session.key("<Left>")
+    session.key("<BS>")
+
+    // The caret is between `n` and `u`, so backspace takes the `n` and not the `u`.
+    assertEquals(":set u", session.display.shown)
+    assertEquals(5, session.display.caret, "and the caret comes back with the text")
+  }
+
+  @Test
+  fun `test recalling a command puts the caret at its end`() {
+    val session = Session("one two")
+    session.type(":set nu")
+    session.key("<CR>")
+    session.type(":")
+    session.key("<Up>")
+
+    assertEquals(":set nu", session.display.shown)
+    assertEquals(7, session.display.caret)
+  }
+
+  /**
+   * A pending `<C-R>` draws its own caret, so this one gets out of the way.
+   *
+   * Vim replaces the cursor with the `"` while it waits for a register name. Two markers beside
+   * each other would say the cursor is somewhere it is not.
+   */
+  @Test
+  fun `test a prompt character stands in for the caret`() {
+    val session = Session("one two")
+    session.type(":e ")
+    session.key("<C-R>")
+
+    assertEquals(":e \"", session.display.shown)
+    assertEquals(null, session.display.caret)
+  }
+
+  // What a status bar actually shows, which is the one place the caret becomes a character.
+
+  @Test
+  fun `test the status bar splices a caret into the line`() {
+    val item = FakeStatusBarItem()
+    val prompt = StatusBarPrompt(item)
+
+    prompt.show(":set nu", 5)
+
+    assertEquals(":set \u258fnu", item.text)
+  }
+
+  @Test
+  fun `test the status bar shows a trailing space that would otherwise be invisible`() {
+    // `:e ` and `:e` are different commands and looked identical on the status bar.
+    val item = FakeStatusBarItem()
+    val prompt = StatusBarPrompt(item)
+
+    prompt.show(":e ", 3)
+
+    assertEquals(":e \u258f", item.text)
+  }
+
+  @Test
+  fun `test the status bar draws no caret when there is none`() {
+    val item = FakeStatusBarItem()
+    val prompt = StatusBarPrompt(item)
+
+    prompt.show(":e \"", null)
+
+    assertEquals(":e \"", item.text)
+  }
+
+  private class FakeStatusBarItem : StatusBarItem {
+    override var text: String = ""
+    override var tooltip: String? = null
+    var visible: Boolean = false
+      private set
+
+    override fun show() {
+      visible = true
+    }
+
+    override fun hide() {
+      visible = false
+    }
+
+    override fun dispose() {}
   }
 }

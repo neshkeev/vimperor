@@ -1350,7 +1350,7 @@ private object DiscardingPanel : VimOutputPanel {
 
 /** For a host with nowhere to draw a command line. The text still exists; nobody sees it. */
 private object NoDisplay : CommandLineDisplay {
-  override fun show(text: String) {}
+  override fun show(text: String, caret: Int?) {}
   override fun hide() {}
 }
 

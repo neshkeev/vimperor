@@ -47,7 +47,8 @@ internal class StatusBarModalInput(
   override fun focus() {}
 
   fun render() {
-    display.show(label)
+    // One keystroke and no line to edit, so there is no caret to draw.
+    display.show(label, null)
   }
 
   private class Caret : VimCommandLineCaret {
