@@ -235,7 +235,16 @@ internal object VsCodeScrollGroup : VimScrollGroup {
    * scroll and the correction behind it fight, and the correction wins because it is last.
    *
    * Vim does not have this problem because `update_topline` returns immediately when the cursor is
-   * inside the window, which is what the guard below is.
+   * inside the window, which is what the first guard below is.
+   *
+   * The second is Vim's rule for how far to scroll once it has to. A motion that steps off an edge
+   * - `j` on the last line of the window - scrolls by the one line that puts it back, and a jump
+   * that lands somewhere else entirely puts the line it landed on in the middle of the window.
+   * `scroll_cursor_bot` in Vim's `move.c` decides between them by the distance: a scroll of a whole
+   * window or more is not a scroll, it is arriving somewhere, and arriving somewhere with the line
+   * you asked for pinned to the bottom row is a bad place to read from. `G`, `n`, `` ` ``, `%` and
+   * a `:` line number all land centred; `j`, `k` and `}` a few lines on do not move the view any
+   * more than they have to.
    */
   override fun scrollCaretIntoView(editor: VimEditor) {
     val vsCode = editor as? VsCodeEditor ?: return
@@ -246,9 +255,12 @@ internal object VsCodeScrollGroup : VimScrollGroup {
     val height = vsCode.screenHeight
     if (position.line >= top && position.line <= top + height - 1) return
 
-    // The smallest scroll that puts the caret back on screen, which is what Vim does when a motion
-    // has taken it off one edge - a jump that lands far away is centred by whoever made the jump.
-    vsCode.scrollViewTo(if (position.line < top) position.line else position.line - height + 1)
+    val minimal = if (position.line < top) position.line else position.line - height + 1
+    if (abs(minimal - top) >= height) {
+      vsCode.scrollLineToMiddle(position.line)
+    } else {
+      vsCode.scrollViewTo(minimal)
+    }
   }
 
   /**

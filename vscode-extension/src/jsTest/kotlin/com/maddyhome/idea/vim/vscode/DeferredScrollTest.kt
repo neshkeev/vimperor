@@ -170,6 +170,67 @@ class DeferredScrollTest {
     assertEquals(37, session.top)
   }
 
+  // Where a caret that has left the window is put back, which is not the same question as how far
+  // the view has to move to do it.
+
+  /**
+   * A jump puts the line it landed on in the middle.
+   *
+   * The alternative - the smallest scroll that puts the line back on screen - leaves `G` reading
+   * the last line of a file off the bottom row of the window and `n` reading a match off the
+   * bottom row, with nothing after it. Vim scrolls the minimum for a step off an edge and centres
+   * for anything a window or more away; `scroll_cursor_bot` is where it decides.
+   */
+  @Test
+  fun `test a jump lands in the middle of the window`() {
+    val session = Session(lines = 200, caretLine = 0, height = 21, top = 0)
+    session.type("100G")
+    assertEquals(99, session.caretLine)
+    assertEquals(89, session.top, "line 100 should be the eleventh of twenty-one rows")
+  }
+
+  @Test
+  fun `test a step off the bottom edge still scrolls one line`() {
+    // The caret is on the last row of the window, so `j` has to move the view - by one line, not by
+    // half a window. This is the case centring must not swallow: it is most of what scrolling is.
+    val session = Session(lines = 200, caretLine = 20, height = 21, top = 0)
+    session.type("j")
+    assertEquals(21, session.caretLine)
+    assertEquals(1, session.top)
+  }
+
+  @Test
+  fun `test a jump that lands just past the window scrolls rather than centring`() {
+    // Four lines past the bottom row: Vim brings it on screen and no further.
+    val session = Session(lines = 200, caretLine = 0, height = 21, top = 0)
+    session.type("25G")
+    assertEquals(24, session.caretLine)
+    assertEquals(4, session.top)
+  }
+
+  @Test
+  fun `test a jump backwards lands in the middle too`() {
+    val session = Session(lines = 200, caretLine = 150, height = 21, top = 140)
+    session.type("20G")
+    assertEquals(19, session.caretLine)
+    assertEquals(9, session.top)
+  }
+
+  @Test
+  fun `test a jump to the top of the file has nowhere to centre and goes to the top`() {
+    val session = Session(lines = 200, caretLine = 150, height = 21, top = 140)
+    session.type("gg")
+    assertEquals(0, session.caretLine)
+    assertEquals(0, session.top)
+  }
+
+  @Test
+  fun `test the centring is asked for once, of a window that never reports moving`() {
+    val session = UnpaintedSession(lines = 200, caretLine = 0, height = 21)
+    session.type("100G")
+    assertEquals(listOf(89), session.topsAskedFor(), "one scroll, to the centred top line")
+  }
+
   // <C-E> and <C-Y>, the two that were reported.
 
   @Test
@@ -372,13 +433,15 @@ class DeferredScrollTest {
   /** ...and the caret is still brought back when it really has gone off screen. */
   @Test
   fun `test a caret off screen is still brought back`() {
+    // Two lines past the bottom of a ten-line window, so this is the smallest-scroll case rather
+    // than the centring one - see `test a jump lands in the middle of the window` for that.
     val session = UnpaintedSession(lines = 200, caretLine = 0)
     session.fake.scrolls.clear()
-    session.type("100G")
+    session.type("12G")
     assertEquals(
-      listOf(90),
+      listOf(2),
       session.fake.scrolls.toList(),
-      "a jump past the window has to bring the caret back to the bottom line",
+      "a caret two lines past the window has to bring the view two lines after it",
     )
   }
 
