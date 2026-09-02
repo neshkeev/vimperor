@@ -55,6 +55,12 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
   /** Line start offsets, plus a final entry at the end of the text. */
   private var lineStarts: IntArray = lineStartsOf(text)
 
+  init {
+    // So the editor group can list it. Anything that walks the open editors - the mark service on
+    // every edit, for one - sees nothing at all otherwise.
+    (injector.editorGroup as? HeadlessEditorGroup)?.register(this)
+  }
+
   private fun lineStartsOf(text: String): IntArray = buildList {
     add(0)
     text.forEachIndexed { index, c -> if (c == '\n') add(index + 1) }

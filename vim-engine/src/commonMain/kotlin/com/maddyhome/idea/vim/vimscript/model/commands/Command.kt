@@ -259,6 +259,16 @@ sealed class Command(
     val flags: Set<Flag>,
   )
 
+  /**
+   * The script this command was parsed as part of, or null when nothing set one.
+   *
+   * [vimContext] is a `lateinit var`, and Kotlin only allows `isInitialized` to be asked inside the
+   * class that declares it - so a command in another file that wants to pass its context on to a
+   * nested execution has no way to check first. The modifier commands do exactly that.
+   */
+  protected val vimContextOrNull: VimLContext?
+    get() = if (this::vimContext.isInitialized) vimContext else null
+
   protected fun flags(
     rangeFlag: RangeFlag,
     argumentFlag: ArgumentFlag,

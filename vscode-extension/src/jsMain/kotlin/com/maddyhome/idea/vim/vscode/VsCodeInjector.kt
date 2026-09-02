@@ -1079,19 +1079,29 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessages {
   private var statusBar: String? = null
   private var error = false
 
-  override fun showMessage(editor: VimEditor, message: String?) = sink.message(message)
+  override var suppression: MessageSuppression = MessageSuppression.NONE
+
+  override fun showMessage(editor: VimEditor, message: String?) {
+    if (isSilent) return
+    sink.message(message)
+  }
 
   override fun showErrorMessage(editor: VimEditor, message: String?) {
+    // The flag is still set either way: `:silent!` hides the report, not the fact that the command
+    // failed. `:silent` on its own hides nothing here - an error is what it is meant to let through.
     error = true
+    if (isSilentAboutErrors) return
     sink.error(message)
   }
 
   override fun appendErrorMessage(editor: VimEditor, message: String?) {
     error = true
+    if (isSilentAboutErrors) return
     sink.error(message)
   }
 
   override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+    if (isSilent) return
     statusBar = message
     sink.status(message)
   }

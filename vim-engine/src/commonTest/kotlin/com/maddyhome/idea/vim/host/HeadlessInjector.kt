@@ -23,7 +23,18 @@ import com.maddyhome.idea.vim.api.VimCommandLineService
 import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
+import com.maddyhome.idea.vim.api.MessageSuppression
+import com.maddyhome.idea.vim.api.AutoCmdService
+import com.maddyhome.idea.vim.api.ExecutionContextManager
+import com.maddyhome.idea.vim.api.ExecutionContextManagerBase
+import com.maddyhome.idea.vim.autocmd.AutoCmdImpl
 import com.maddyhome.idea.vim.api.VimMessages
+import com.maddyhome.idea.vim.api.VimOutputPanel
+import com.maddyhome.idea.vim.api.VimOutputPanelService
+import com.maddyhome.idea.vim.api.VimOutputPanelServiceBase
+import com.maddyhome.idea.vim.api.VimScriptExecutorBase
+import com.maddyhome.idea.vim.api.VimscriptExecutor
+import com.maddyhome.idea.vim.api.MessageType
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
 import com.maddyhome.idea.vim.api.VimKeyGroup
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
@@ -143,7 +154,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * open windows to apply a changed option to - and "none open" is a truthful answer for a host
    * with no windows, not a placeholder.
    */
-  override val editorGroup: VimEditorGroup by lazy { HeadlessEditorGroup }
+  override val editorGroup: VimEditorGroup by lazy { HeadlessEditorGroup() }
 
   /**
    * Maps keyed by editor. The engine stores per-window, per-buffer and per-tab data here - local
@@ -349,6 +360,41 @@ class HeadlessInjector : HeadlessInjectorBase() {
   override val messages: VimMessages by lazy { HeadlessMessages() }
 
   /**
+   * The panel Vim writes tables and `:echo` to, recorded rather than drawn.
+   *
+   * `VimOutputPanelServiceBase` is the engine's own, and taking it rather than writing a stub is
+   * the point: it is where `:silent` decides whether output is hidden, so a stand-in here would
+   * have tested the stand-in.
+   */
+  override val outputPanel: VimOutputPanelService by lazy { HeadlessOutputPanelService() }
+
+  /** `AutoCmdImpl` is the engine's own and needs no host behind it: it stores commands and runs them. */
+  override val autoCmd: AutoCmdService by lazy { AutoCmdImpl() }
+
+  /**
+   * One context, because there is one of everything here.
+   *
+   * In a real host this carries the project and the data the IDE hands an action; a headless run
+   * has neither, and the commands that ask for one only ever pass it back to the engine.
+   */
+  override val executionContextManager: ExecutionContextManager by lazy {
+    object : ExecutionContextManagerBase() {
+      override fun getEditorExecutionContext(editor: VimEditor) = HeadlessExecutionContext
+    }
+  }
+
+  /**
+   * Vimscript, executed - the engine's own `VimScriptExecutorBase`, with the two hooks a host owns
+   * stubbed out. Nothing here saves files and nothing here loads extensions.
+   */
+  override val vimscriptExecutor: VimscriptExecutor by lazy {
+    object : VimScriptExecutorBase() {
+      override fun ensureFileIsSaved(path: String) {}
+      override fun enableDelayedExtensions() {}
+    }
+  }
+
+  /**
    * No prompt is ever open. `KeyHandler` asks on every keystroke whether one is - `r`, `f` and the
    * digraph entry put one up - and "none" is the answer for a host that never draws one.
    */
@@ -517,16 +563,34 @@ private object HeadlessStatistics : VimStatistics {
   override fun addSourcedFile(path: String) {}
 }
 
-private object HeadlessEditorGroup : VimEditorGroup {
+/**
+ * The editors this host has, which is however many a test made.
+ *
+ * It used to answer "none", and that was cheap until something walked the list: the mark service
+ * adjusts a mark by asking which editors show the file, so with no editors listed no mark ever
+ * moved and `:lockmarks` had nothing to stop. [TestVimEditor] adds itself here as it is built.
+ */
+class HeadlessEditorGroup : VimEditorGroup {
+  private val editors = mutableListOf<VimEditor>()
+
+  fun register(editor: VimEditor) {
+    if (editors.none { it === editor }) editors += editor
+  }
+
   override fun notifyIdeaJoin(editor: VimEditor) {}
-  override fun getEditorsRaw(): Collection<VimEditor> = emptyList()
-  override fun getEditors(): Collection<VimEditor> = emptyList()
-  override fun getEditors(buffer: VimDocument): Collection<VimEditor> = emptyList()
+  override fun getEditorsRaw(): Collection<VimEditor> = editors.toList()
+  override fun getEditors(): Collection<VimEditor> = editors.toList()
+
+  /** One buffer per headless host, so every editor is showing it. */
+  override fun getEditors(buffer: VimDocument): Collection<VimEditor> = editors.toList()
+
   override fun updateCaretsVisualAttributes(editor: VimEditor) {}
   override fun updateCaretsVisualPosition(editor: VimEditor) {}
-  override fun getFocusedEditor(): VimEditor? = null
-  override fun getSelectedEditor(projectId: String): VimEditor? = null
-  override fun getSelectedEditor(): VimEditor? = null
+
+  /** The most recently built one, there being no focus and no window order to consult. */
+  override fun getFocusedEditor(): VimEditor? = editors.lastOrNull()
+  override fun getSelectedEditor(projectId: String): VimEditor? = getFocusedEditor()
+  override fun getSelectedEditor(): VimEditor? = getFocusedEditor()
 }
 
 private class HeadlessStorageService : VimStorageService {
@@ -647,6 +711,40 @@ private class HeadlessTimer(override var delayMillis: Int) : VimTimer {
   }
 }
 
+/**
+ * Everything written to the output panel, kept in a list.
+ *
+ * One panel for the life of the injector, because there is no screen for a second one to replace
+ * the first on. [lines] is what a test reads.
+ */
+class HeadlessOutputPanelService : VimOutputPanelServiceBase() {
+  private val panel = HeadlessOutputPanel()
+
+  val lines: List<String> get() = panel.lines
+
+  override fun create(editor: VimEditor, context: ExecutionContext): VimOutputPanel = panel
+  override fun getCurrentOutputPanel(): VimOutputPanel = panel
+  override fun getActiveOutputPanelHeight(): Int = panel.lines.size
+}
+
+class HeadlessOutputPanel : VimOutputPanel {
+  val lines: MutableList<String> = mutableListOf()
+
+  override val text: String get() = lines.joinToString("\n")
+  override var statusText: String = ""
+
+  override fun addText(text: String, isNewLine: Boolean, messageType: MessageType) {
+    lines += text
+  }
+
+  override fun show(requireHitEnter: Boolean) {}
+  override fun close() {}
+
+  override fun clearText() {
+    lines.clear()
+  }
+}
+
 class HeadlessMessages : VimMessages {
   var lastMessage: String? = null
     private set
@@ -655,21 +753,27 @@ class HeadlessMessages : VimMessages {
   private var statusBar: String? = null
   private var error = false
 
+  override var suppression: MessageSuppression = MessageSuppression.NONE
+
   override fun showMessage(editor: VimEditor, message: String?) {
+    if (isSilent) return
     lastMessage = message
   }
 
   override fun showErrorMessage(editor: VimEditor, message: String?) {
-    lastError = message
     error = true
+    if (isSilentAboutErrors) return
+    lastError = message
   }
 
   override fun appendErrorMessage(editor: VimEditor, message: String?) {
-    lastError = (lastError ?: "") + (message ?: "")
     error = true
+    if (isSilentAboutErrors) return
+    lastError = (lastError ?: "") + (message ?: "")
   }
 
   override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+    if (isSilent) return
     statusBar = message
   }
 

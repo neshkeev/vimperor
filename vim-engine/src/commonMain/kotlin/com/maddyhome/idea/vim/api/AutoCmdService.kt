@@ -23,6 +23,14 @@ import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 interface AutoCmdService {
 
   /**
+   * True while `:noautocmd` runs a command, and [handleEvent] fires nothing while it is.
+   *
+   * Vim's `:noautocmd` is what a config uses when a command it is about to run would otherwise
+   * trigger the very autocommands the config is in the middle of setting up.
+   */
+  var eventsSuppressed: Boolean
+
+  /**
    * Fires [event] and runs any registered handlers whose pattern matches [filePath].
    *
    * [filePath] is a VFS path as returned by `VirtualFile.path` — not a native filesystem path — which is why it is a

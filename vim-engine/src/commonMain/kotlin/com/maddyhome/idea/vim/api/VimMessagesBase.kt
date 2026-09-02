@@ -8,4 +8,6 @@
 
 package com.maddyhome.idea.vim.api
 
-abstract class VimMessagesBase : VimMessages
+abstract class VimMessagesBase : VimMessages {
+  override var suppression: MessageSuppression = MessageSuppression.NONE
+}

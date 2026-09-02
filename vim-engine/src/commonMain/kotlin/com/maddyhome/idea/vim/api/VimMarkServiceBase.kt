@@ -359,7 +359,10 @@ abstract class VimMarkServiceBase : VimMarkService {
     }
   }
 
+  override var adjustmentSuppressed: Boolean = false
+
   override fun updateMarksFromInsert(editor: VimEditor, insertStartOffset: Int, insertLength: Int) {
+    if (adjustmentSuppressed) return
     val caretToMarks = getAllMarksForFile(editor)
     if (caretToMarks.isEmpty()) return
 
@@ -403,6 +406,7 @@ abstract class VimMarkServiceBase : VimMarkService {
   }
 
   override fun updateMarksFromDelete(editor: VimEditor, delStartOffset: Int, delLength: Int, newLength: Int) {
+    if (adjustmentSuppressed) return
     val caretToMarks = getAllMarksForFile(editor)
     if (caretToMarks.isEmpty()) return
 

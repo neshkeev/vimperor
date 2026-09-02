@@ -262,6 +262,13 @@ object Options {
     // TODO: This option doesn't appear to be used anywhere...
     NumberOption("undolevels", GLOBAL_OR_LOCAL_TO_BUFFER, "ul", 1000, -123456)
   )
+  val verbose: NumberOption = addOption(
+    // Vim's message-verbosity level, which `:verbose {command}` raises for the length of one
+    // command. Nothing in the engine consults it yet, so what it buys today is that a config
+    // saying `set verbose=9` is read rather than reported - but it is the real option, in the
+    // place the real one goes, so a feature that wants to be chatty has somewhere to look.
+    UnsignedNumberOption("verbose", GLOBAL, "vbs", 0)
+  )
   val viminfo: StringListOption = addOption(StringListOption("viminfo", GLOBAL, "vi", "'100,<50,s10,h"))
   val virtualedit: StringListOption = addOption(
     StringListOption(

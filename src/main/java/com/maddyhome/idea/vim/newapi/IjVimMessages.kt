@@ -25,17 +25,20 @@ internal class IjVimMessages : VimMessagesBase() {
   private var lastBeepTimeMillis = 0L
 
   override fun showMessage(editor: VimEditor, message: String?) {
+    if (isSilent) return
     injector.outputPanel.clear(editor, injector.executionContextManager.getEditorExecutionContext(editor))
     showMessageInternal(editor, message, MessageType.STANDARD)
   }
 
   override fun showErrorMessage(editor: VimEditor, message: String?) {
+    if (isSilentAboutErrors) return
     injector.outputPanel.clear(editor, injector.executionContextManager.getEditorExecutionContext(editor))
     showMessageInternal(editor, message, MessageType.ERROR)
     indicateError()
   }
 
   override fun appendErrorMessage(editor: VimEditor, message: String?) {
+    if (isSilentAboutErrors) return
     showMessageInternal(editor, message, MessageType.ERROR)
     indicateError()
   }
@@ -54,6 +57,7 @@ internal class IjVimMessages : VimMessagesBase() {
 
   @Suppress("DEPRECATION")
   override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+    if (isSilent) return
     if (editor != null) {
       showMessage(editor, message)
     } else {
@@ -70,7 +74,9 @@ internal class IjVimMessages : VimMessagesBase() {
   }
 
   override fun indicateError() {
+    // The flag is still set: `:silent!` hides the beep, not the fact that something went wrong.
     error = true
+    if (isSilentAboutErrors) return
     if (!ApplicationManager.getApplication().isUnitTestMode) {
       if (!injector.globalOptions().visualbell) {
         // Vim only allows a beep once every half second - :help 'visualbell'

@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanel
 import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.MessageType
+import com.maddyhome.idea.vim.api.injector
 
 /**
  * Where `:registers`, `:marks` and `:!` output go.
@@ -89,6 +90,7 @@ class OutputChannelPanelService(private val channel: OutputChannel) : VimOutputP
     text: String,
     messageType: MessageType,
   ) {
+    if (injector.messages.hides(messageType)) return
     val panel = getOrCreate(editor, context)
     panel.addText(text, isNewLine = true, messageType = messageType)
     panel.show()

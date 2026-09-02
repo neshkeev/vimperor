@@ -299,6 +299,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
     "standardConstructor": false
   },
+  "lockm[arks]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockMarksCommand",
+    "standardConstructor": true
+  },
   "lockv[ar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
     "standardConstructor": true
@@ -350,6 +354,10 @@
   "no[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
+  },
+  "noa[utocmd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoAutoCmdCommand",
+    "standardConstructor": true
   },
   "noh[lsearch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoHLSearchCommand",
@@ -455,6 +463,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShellCommand",
     "standardConstructor": true
   },
+  "sil[ent]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SilentCommand",
+    "standardConstructor": true
+  },
   "smap": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
@@ -542,6 +554,10 @@
   "v[global]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
     "standardConstructor": false
+  },
+  "verb[ose]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VerboseCommand",
+    "standardConstructor": true
   },
   "vm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",

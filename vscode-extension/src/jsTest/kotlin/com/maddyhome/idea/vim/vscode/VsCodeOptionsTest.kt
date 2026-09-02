@@ -460,11 +460,13 @@ class VsCodeOptionsTest {
    * same shape as `VsCodeUnimplementedTest`. Implementing one has to come with taking it off this
    * list, and a command that quietly stops working shows up as a diff.
    *
-   * The first four are not commands at all but *modifiers*, which the engine's grammar does not
-   * have - `:silent!` is the standard way a portable config guards something optional, and it is
-   * the most valuable line here. `:unlet` is Vimscript and belongs beside `:let`. The rest are
-   * windows, buffers and the loops over them, which this host could answer with the VS Code
-   * commands it already sends, and are listed in the order they are worth doing.
+   * `:unlet` is Vimscript and belongs beside `:let`. The rest are windows, buffers and the loops
+   * over them, which this host could answer with the VS Code commands it already sends, and are
+   * listed in the order they are worth doing.
+   *
+   * The four command *modifiers* were here, with the note that the engine's grammar did not have
+   * them. It did not need to: a modifier is spelled like any other ex command and its argument is
+   * the command it modifies, so all four are ordinary `@ExCommand` classes in `vim-engine` now.
    */
   @Test
   fun `test the ex commands a config can use and this host does not have are these`() {
@@ -501,13 +503,44 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * `:silent!` guarding a line that fails, which is the whole reason a config writes it.
+   *
+   * The end of the road the engine's `SilentCommand` starts: this host's messages have to consult
+   * the suppression for the modifier to do anything at all, and nothing about that is checked by
+   * the fact that the command is registered.
+   */
+  @Test
+  fun `test silent bang swallows the error a config was guarding against`() {
+    val session = Session()
+    session.run("set nosuchoptionatall")
+    assertTrue(session.errors.any { "E518" in it }, "the bare line should fail: ${session.errors}")
+
+    session.errors.clear()
+    session.run("silent! set nosuchoptionatall")
+    assertEquals(emptyList(), session.errors)
+  }
+
+  /** ...and `:silent` on its own still reports it, which is the only difference between the two. */
+  @Test
+  fun `test silent without the bang still reports the error`() {
+    val session = Session()
+    session.run("silent set nosuchoptionatall")
+
+    assertTrue(session.errors.any { "E518" in it }, "got ${session.errors}")
+  }
+
+  @Test
+  fun `test the modified command actually runs`() {
+    val session = Session()
+    session.run("silent! set relativenumber")
+
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.lineNumbers)
+  }
+
   private companion object {
     /** See [`the ex commands a config can use and this host does not have are these`]. */
     val STILL_MISSING = """
-      silent! echo 1
-      verbose set nu
-      noautocmd echo 1
-      lockmarks echo 1
       unlet g:x
       enew
       new

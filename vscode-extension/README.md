@@ -186,12 +186,20 @@ forms that ask for something VS Code contradicts, like `:syntax off` and `:cd`, 
 cost is honest: `:set expandtab?` answers with what was set rather than with what the editor is
 doing. IdeaVim's `IjOptions` has the same group for the same reason.
 
+Vim's four command modifiers are implemented, in `vim-engine`, so both hosts have them.
+`silent! colorscheme solarized` is the standard way a portable config guards something optional, and
+without it such a line does not merely fail, it is reported. Vim documents these as modifiers rather
+than commands and that reads like a job for the grammar; it is not one. A modifier is spelled like
+any other ex command and its argument is the command it modifies, so `:silent`, `:verbose`,
+`:noautocmd` and `:lockmarks` are four ordinary `@ExCommand` classes that set one thing, run the
+rest of the line, and put it back. What each one sets is real: `:silent` a suppression the messages
+and the output panel consult, `:noautocmd` a flag `handleEvent` reads, `:lockmarks` a flag that
+stops a mark following the text, `:verbose` the `'verbose'` option.
+
 What a config can still say and this host reports `E492` for is a list in `VsCodeOptionsTest`,
-measured by typing every candidate at the prompt rather than guessed at. `:silent!` is the one worth
-having next - it is the standard way a portable config guards something optional, and it is a
-grammar-level *modifier* rather than a command, so it belongs in `vim-engine` beside `:verbose` and
-`:noautocmd`. After that `:unlet`, and then the window and buffer commands - `:enew`, `:tabnew`,
-`:wincmd`, `:bufdo` - which this host could answer with the VS Code commands it already sends.
+measured by typing every candidate at the prompt rather than guessed at. `:unlet` is next, and then
+the window and buffer commands - `:enew`, `:tabnew`, `:wincmd`, `:bufdo` - which this host could
+answer with the VS Code commands it already sends.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

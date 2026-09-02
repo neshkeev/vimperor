@@ -11,7 +11,55 @@ package com.maddyhome.idea.vim.api
 import com.maddyhome.idea.vim.helper.EngineMessageHelper
 import com.maddyhome.idea.vim.annotations.PropertyKey
 
+/**
+ * How much of what a command has to say reaches the user, as `:silent` sets it.
+ *
+ * Vim draws the line between a message and an error: `:silent` hides the first and lets the second
+ * through, and only `:silent!` hides both. That is the whole of the difference between the two, so
+ * it is the whole of what this enum has to say.
+ */
+enum class MessageSuppression {
+  NONE,
+
+  /** `:silent` - the command's own output, and nothing it got wrong. */
+  MESSAGES,
+
+  /** `:silent!` - errors as well, which is what a config uses to guard something optional. */
+  EVERYTHING,
+}
+
 interface VimMessages {
+
+  /**
+   * What is being hidden while a `:silent` command runs, or [MessageSuppression.NONE] outside one.
+   *
+   * A promise rather than a mechanism: a message does not pass through any one place in the engine
+   * on its way to a host, so every implementation of this interface has to consult it in its own
+   * `show*` methods. `SilentCommand` sets it and puts it back.
+   */
+  var suppression: MessageSuppression
+
+  /** True when a message would be thrown away, so a caller can skip the work of building one. */
+  val isSilent: Boolean
+    get() = suppression != MessageSuppression.NONE
+
+  /** True when an *error* would be thrown away - only `:silent!` goes that far. */
+  val isSilentAboutErrors: Boolean
+    get() = suppression == MessageSuppression.EVERYTHING
+
+  /**
+   * Whether output of this kind is being hidden, for the panel rather than the status line.
+   *
+   * `:echo` and the tables (`:registers`, `:marks`, ...) write to the output panel and never touch
+   * a `show*` method, so an implementation of [VimOutputPanelService] has to ask this on its own
+   * behalf - and it has to ask with the kind, because plain `:silent` hides output and lets errors
+   * through.
+   */
+  fun hides(messageType: MessageType): Boolean = when (messageType) {
+    MessageType.ERROR -> isSilentAboutErrors
+    else -> isSilent
+  }
+
   /**
    * Displays an informational message to the user.
    * The message panel closes on any keystroke and passes the key through to the editor.

@@ -31,6 +31,8 @@ class AutoCmdImpl : AutoCmdService {
   private val eventHandlers: MutableMap<AutoCmdEvent, MutableList<AuCommand>> = mutableMapOf()
   private var currentAugroup: String? = null
 
+  override var eventsSuppressed: Boolean = false
+
   override fun registerEventCommand(command: String, event: AutoCmdEvent, pattern: String) {
     eventHandlers.getOrPut(event.canonical) { mutableListOf() }
       .add(AuCommand(command, currentAugroup, AutoCmdPattern(pattern)))
@@ -60,6 +62,7 @@ class AutoCmdImpl : AutoCmdService {
   }
 
   override fun handleEvent(event: AutoCmdEvent, filePath: String?, editor: VimEditor?) {
+    if (eventsSuppressed) return
     val resolvedEditor = editor ?: injector.editorGroup.getSelectedEditor() ?: return
     val path = filePath ?: resolvedEditor.getPath()
     val handlers = eventHandlers[event.canonical] ?: return

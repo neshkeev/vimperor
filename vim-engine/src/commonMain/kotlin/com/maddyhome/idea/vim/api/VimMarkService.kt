@@ -39,6 +39,17 @@ interface VimMarkService {
   /**
    * Get global mark
    */
+  /**
+   * True while `:lockmarks` runs a command, and no mark follows the text while it is.
+   *
+   * Vim's `:lockmarks` is "without adjusting marks" - an edit that would normally drag every mark
+   * below it up or down leaves them where they were. [updateMarksFromInsert] and
+   * [updateMarksFromDelete] are the only two places a mark moves on its own, so this is the whole
+   * of it. Marks the command *sets* are still set, which is Vim's rule for `'[` and `']` and turns
+   * out to be the same rule for every other mark.
+   */
+  var adjustmentSuppressed: Boolean
+
   fun getGlobalMark(char: Char): Mark?
 
   /**

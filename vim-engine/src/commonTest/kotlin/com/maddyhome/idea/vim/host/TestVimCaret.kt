@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.api.SelectionInfo
+import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.group.visual.VisualChange
 import com.maddyhome.idea.vim.api.CaretRegisterStorage
@@ -97,7 +98,17 @@ class TestVimCaret(
   override fun removeSelection() {}
 
   override fun moveToVisualPosition(position: VimVisualPosition): Unit = TODO("TestVimCaret.moveToVisualPosition is not implemented yet")
-  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret = TODO("TestVimCaret.setVimLastColumnAndGetCaret is not implemented yet")
+  /**
+   * The remembered column, which `j` and `k` walk down from and every line-wise edit resets.
+   *
+   * A `TODO` until `:delete` reached it: the deletion happened and then this threw, so the buffer
+   * changed and the command reported a failure. Nothing here replaces the caret, so the caret this
+   * returns is this one.
+   */
+  override fun setVimLastColumnAndGetCaret(col: Int): VimCaret {
+    vimLastColumn = col
+    return this
+  }
   /**
    * The column `j` and `k` try to return to. Vim remembers it across vertical motions so that
    * moving through a short line and out the other side lands back where you started.
@@ -127,9 +138,14 @@ class TestVimCaret(
 
   override val vimLine: Int get() = TODO("TestVimCaret.vimLine is not implemented yet")
   override val visualLineStart: Int get() = TODO("TestVimCaret.visualLineStart is not implemented yet")
-  override var lastSelectionInfo: SelectionInfo
-    get() = TODO("TestVimCaret.lastSelectionInfo is not implemented yet")
-    set(_) = TODO("TestVimCaret.lastSelectionInfo is not implemented yet")
+  /**
+   * The `'<` and `'>` marks, which every caret has whether or not it has ever been in Visual.
+   *
+   * Two ends that were never set, to begin with - which is what the mark service reads it as when
+   * it walks the marks of a file. A `TODO` here made every such walk throw, and the mark service
+   * walks on any edit.
+   */
+  override var lastSelectionInfo: SelectionInfo = SelectionInfo(null, null, SelectionType.CHARACTER_WISE)
   /**
    * Per-caret registers, which is what multiple cursors need: each caret yanks into its own copy so
    * that `"ayiw` on three carets does not have them overwrite each other.
