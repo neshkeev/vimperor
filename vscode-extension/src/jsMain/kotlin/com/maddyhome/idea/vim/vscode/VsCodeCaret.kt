@@ -31,7 +31,14 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
 class VsCodeCaret(
   private val vimEditor: VsCodeEditor,
   offset: Int,
-  override val isPrimary: Boolean,
+  /**
+   * Which caret the engine means when it says "the caret", and it moves between them.
+   *
+   * Laying out a blockwise Visual selection hands the flag to whichever caret sits on the block's
+   * active end, because that is the one the engine moves next - see
+   * [VsCodeEditor.vimSetSystemBlockSelectionSilently], which is where the flag is set.
+   */
+  override var isPrimary: Boolean,
 ) : VimCaret {
 
   /** Mutable, because editing and motion both move it, and this caret is never replaced. */

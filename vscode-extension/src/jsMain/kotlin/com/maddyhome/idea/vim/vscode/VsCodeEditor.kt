@@ -586,6 +586,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
     val survivor = vimCarets.firstOrNull { it.isPrimary } ?: vimCarets.firstOrNull()
     val survivorLine = survivor?.getBufferPosition()?.line?.coerceIn(firstBlockLine, lastBlockLine)
+    // The block's *active* end - the corner the last motion moved - as opposed to its anchor.
+    val activeLine = end.line.coerceIn(firstBlockLine, lastBlockLine)
 
     val rebuilt = (firstBlockLine..lastBlockLine).map { line ->
       val lineStart = getLineStartOffset(line)
@@ -595,12 +597,31 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       val caret = if (survivor != null && line == survivorLine) survivor else VsCodeCaret(this, to, isPrimary = false)
       caret.moveToOffsetNative(to)
       caret.setSelection(from, to)
-      caret
+      line to caret
     }
 
-    val removed = vimCarets.filter { existing -> rebuilt.none { it === existing } }
+    // Which of them the engine will call "the caret", and it is not free to choose.
+    //
+    // `setVisualSelection` ends with `editor.primaryCaret().moveToInlayAwareOffset(selectionEnd)`,
+    // where `selectionEnd` is the block's active corner - so whichever caret answers `primaryCaret`
+    // is about to be dragged there. This host used to keep the flag on the caret it reused, which
+    // is the one standing on the block's *first* line, so `<C-V>j` moved the top line's caret to
+    // the bottom of the block: `caret expected [15, 46], actual [46, 46]`. IntelliJ's selection
+    // model replaces every caret here and makes the one at `end` primary, which the engine's own
+    // comment on that call describes - "WARNING! This can invalidate the primary caret".
+    //
+    // The anchor goes with the flag. `vimSelectionStart` is stored on the instance and is read from
+    // the primary, so handing the flag to a different caret without it would lose the corner the
+    // block is being drawn from.
+    val anchor = survivor?.vimSelectionStart
+    val primary = rebuilt.firstOrNull { (line, _) -> line == activeLine }?.second ?: rebuilt.last().second
+    for ((_, caret) in rebuilt) caret.isPrimary = caret === primary
+    if (anchor != null) primary.vimSelectionStart = anchor
+
+    val carets = rebuilt.map { it.second }
+    val removed = vimCarets.filter { existing -> carets.none { it === existing } }
     vimCarets.clear()
-    vimCarets += rebuilt
+    vimCarets += carets
     caretListeners.forEach { listener -> removed.forEach { listener.caretRemoved(it) } }
   }
 
