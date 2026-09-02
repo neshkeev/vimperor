@@ -385,7 +385,16 @@ is the full list of synonyms.
 License
 -------
 
-IdeaVim is licensed under the MIT license.
+This repository is licensed under the MIT license.
+
+It holds two things under that licence: IdeaVim, the IntelliJ plugin this README
+describes, and [Vimperor](vscode-extension/README.md), a VS Code extension forked
+from it. Both run on the same `vim-engine`.
+
+Copyright is held by the IdeaVim authors for the work up to the fork, and by the
+fork's author for what has been written since - both notices are in
+[LICENSE.txt](LICENSE.txt), and [AUTHORS.md](AUTHORS.md) is the record of who the
+IdeaVim authors are.
 
 Third-party components and licenses are listed in [ThirdPartyLicenses.md](ThirdPartyLicenses.md).
 
