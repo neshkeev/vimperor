@@ -452,8 +452,8 @@ kotlin {
     }
     val jvmTest by getting {
       dependencies {
-        implementation("org.junit.jupiter:junit-jupiter-api:6.0.0")
-        runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.0.0")
+        implementation("org.junit.jupiter:junit-jupiter-api:6.1.3")
+        runtimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.3")
         runtimeOnly("org.junit.vintage:junit-vintage-engine:6.1.2")
         implementation("org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
         implementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
