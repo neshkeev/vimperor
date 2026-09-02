@@ -413,7 +413,7 @@ kotlin {
         // rather than `api`, matching the visibility this had when it sat in jvmMain.
         implementation(project(":api"))
         implementation(project(":vim-annotations"))
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
         // Multiplatform, unlike the -jvm artifact jvmMain uses. compileOnly to match the rest of
         // the project: the IDE provides it at runtime and it must not be bundled.
         compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationVersion")
@@ -426,7 +426,7 @@ kotlin {
         compileOnly(project(":annotation-processors"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$kotlinxSerializationVersion")
         compileOnly(kotlin("reflect"))
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0")
       }
     }
     val commonTest by getting {

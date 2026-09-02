@@ -32,7 +32,7 @@ kotlin {
     val jvmMain by getting {
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0")
       }
     }
   }

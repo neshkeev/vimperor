@@ -34,7 +34,7 @@ dependencies {
   testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
   testImplementation("org.kodein.di:kodein-di-jvm:7.33.0")
-  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+  testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0")
 
   intellijPlatform {
     var useInstaller = "EAP-SNAPSHOT" !in ideaVersion
