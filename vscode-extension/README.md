@@ -184,6 +184,14 @@ extension point, which is not a `VimInjector` service at all, so it has never ap
 The map of the gap was itself understating the gap, from the one direction it cannot see: a thing
 that was never a service.
 
+The thing worth knowing before building that registry is that the mechanism is not finished upstream
+either. The one thin-API extension has a test class marked `@Disabled("The test is flaky because of
+an unknown reason")`, and the two halves of its registration do not meet - the annotation processor
+writes `ksp-generated/ideavim_extensions.json` and the scanner looks for `META-INF/extensions.json`,
+which is the path a third-party plugin uses. The generated-registry shape is the right answer here,
+as it was for commands and functions; the time to apply it is when there is one extension that
+demonstrably runs.
+
 That has now happened often enough to be the pattern rather than the exception. `'incsearch'`, the
 incsearch caret, `:s///c`'s prompt, `:e newfile`, `U`, and range markers were each ruled out in a
 comment in this repository, and every one of those comments was wrong - usually about which VS Code

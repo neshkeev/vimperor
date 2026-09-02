@@ -95,6 +95,16 @@ class UnimplementedServicesTest {
      * blind spot this whole file exists to have less of, arriving from the one direction it cannot
      * see: a thing that was never a service.
      *
+     * The thing to know before starting that work is that the mechanism is not finished upstream
+     * either. IdeaVim's single thin-API extension is `ReplaceWithRegisterNew`, its test class is
+     * `@Disabled("The test is flaky because of an unknown reason")`, and the two halves of the
+     * registration do not meet: the annotation processor writes `ksp-generated/ideavim_extensions
+     * .json` while `IjPluginExtensionsScanner` looks for `META-INF/extensions.json`, which is the
+     * path a *third-party* plugin uses. So building the JavaScript half now would be building
+     * against a moving target with no working example to check it against. The generated-registry
+     * shape is the right answer; the time to apply it is when there is one extension that demonstrably
+     * runs.
+     *
      * `pluginActivator` has no caller anywhere in `vim-engine`. It exists so that IdeaVim can be
      * switched off and on from its status-bar icon; this host's on and off are VS Code's own
      * `activate` and `deactivate`, in `Extension.kt`.
