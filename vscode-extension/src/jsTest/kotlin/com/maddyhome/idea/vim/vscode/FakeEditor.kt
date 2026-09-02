@@ -82,8 +82,22 @@ data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
 class FakeEditor(text: String) : TextEditor {
   override val document: FakeDocument = FakeDocument(text)
-  override var selection: Selection = Selection(Position(0, 0), Position(0, 0))
-  override var selections: Array<Selection> = arrayOf(selection)
+  override var selections: Array<Selection> = arrayOf(Selection(Position(0, 0), Position(0, 0)))
+
+  /**
+   * The primary selection, which VS Code documents as "shorthand for `TextEditor.selections[0]`" -
+   * in both directions. Its setter is `this._selections = [value]`, so assigning it *discards* every
+   * other caret.
+   *
+   * A plain field here for a long time, which is why a real window was the first thing to notice
+   * that `flushCarets` pushed a whole block selection and then threw all but one line of it away on
+   * the very next line. A fake that is more forgiving than the real thing is a fake that hides bugs.
+   */
+  override var selection: Selection
+    get() = selections.first()
+    set(value) {
+      selections = arrayOf(value)
+    }
 
   val recordedEdits: MutableList<RecordedEdit> = mutableListOf()
 

@@ -136,7 +136,8 @@ class VimFixtureReplayTest {
           val position = fake.document.positionAt(offset)
           Selection(position, position)
         }.toTypedArray()
-        fake.selection = fake.selections[0]
+        // No `fake.selection =` here: it is shorthand for `selections[0]` in both directions, so
+        // assigning it would collapse a multi-caret fixture to its first caret.
         editor.syncCaretsFromEditor()
         editor.flush()
         val handler = KeyHandler.getInstance()

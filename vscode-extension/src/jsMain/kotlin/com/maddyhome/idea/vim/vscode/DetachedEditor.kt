@@ -31,8 +31,14 @@ internal class DetachedTextEditor : TextEditor {
 
   override val document: TextDocument = DetachedDocument()
 
-  override var selection: Selection = Selection(Position(0, 0), Position(0, 0))
-  override var selections: Array<Selection> = arrayOf(selection)
+  override var selections: Array<Selection> = arrayOf(Selection(Position(0, 0), Position(0, 0)))
+
+  /** The primary selection, which VS Code defines as `selections[0]` in both directions. */
+  override var selection: Selection
+    get() = selections.first()
+    set(value) {
+      selections = arrayOf(value)
+    }
 
   override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
     val document = document as DetachedDocument

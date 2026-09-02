@@ -150,14 +150,21 @@ class VsCodeVisualModeTest {
     val session = Session("one two three")
     session.type("v")
     session.type("e")
-    val afterMotion = session.selection
+    val caret = session.editor.primaryCaret()
+    val afterMotion = caret.selectionStart to caret.selectionEnd
 
-    // What an applied edit reports: new selections, and no kind.
+    // What an applied edit reports: new selections, and no kind. Asserted on the *engine's* carets
+    // rather than on the fake's selections, which is what this test is overwriting.
     session.fake.selections = arrayOf(Selection(Position(0, 9), Position(0, 9)))
     session.host.selectionChanged(session.fake, kind = null)
 
     assertEquals("VISUAL", session.host.modeName())
-    assertEquals(afterMotion, session.selection, "an unattributed change is this host's own")
+    val after = session.editor.primaryCaret()
+    assertEquals(
+      afterMotion,
+      after.selectionStart to after.selectionEnd,
+      "an unattributed change is this host's own and must not move the engine's carets",
+    )
   }
 
   @Test

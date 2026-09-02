@@ -367,6 +367,25 @@ error. The `.ideavimrc` line was absent: the config was loaded inside `window.ac
 was never read, silently, because the message saying so was inside the same block. It runs against
 the fallback window now, which is what that editor is for.
 
+A fourth had the same shape and took a second round in the window to find, because the first fix
+uncovered it. `flushCarets` pushed a whole blockwise Visual selection correctly and then ran one more
+line: `nativeEditor.selection = selections[0]`. That looks like setting the primary caret and is
+not. VS Code documents `TextEditor.selection` as "shorthand for `TextEditor.selections[0]`", and its
+setter is `this._selections = [value]` - so it *discards* every other caret. Every flush pushed an
+N-line block and immediately threw all but one line of it away. The fake and the stub both kept
+`selection` as a plain field, which is more forgiving than the real thing, which is the definition of
+a fake that hides a bug; both implement it as the shorthand it is now, in both directions. That
+change immediately caught the fixture harness doing `fake.selection = fake.selections[0]` after
+setting up a multi-caret fixture, which under the real semantics collapses it to one caret.
+
+That is the pattern in all of them, and it is worth naming as its own kind of blind spot: every one
+was a place where a stub was *more permissive* than VS Code. An interface where the API has a class,
+a field where the API has a shorthand, an event nothing fires, an editor that is always focused. The
+offline half of this port is strong at what the engine does with a keystroke and was systematically
+weak at what VS Code does with what the host hands it. The two changes that matter most from this
+round are not the fixes: they are that `checkVsCodeApiDeclarations` compares kind as well as name,
+and that the fakes now behave like the API rather than like the code under test.
+
 And a third, which is a lesson about instrumentation rather than about VS Code. A keystroke that
 threw was swallowed: VS Code catches the exception from a command handler, shows a generic
 notification, and writes the detail to the extension host log - a different window from the one this

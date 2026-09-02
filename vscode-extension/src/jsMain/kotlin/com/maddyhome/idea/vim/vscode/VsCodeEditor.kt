@@ -398,8 +398,14 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
         Selection(position, position)
       }
     }
+    // `selections` and nothing else. Assigning `selection` afterwards looks like setting the primary
+    // and is not: VS Code documents it as "shorthand for TextEditor.selections[0]", and its setter
+    // is `this._selections = [value]` - so it *discards* every other caret. A block selection was
+    // therefore pushed correctly and then thrown away one line at a time, on every flush. Nothing
+    // offline could see it, because the fake and the stub both keep `selection` as a plain field
+    // rather than as the shorthand it is. The primary is already first in this list, which is where
+    // VS Code takes it from.
     nativeEditor.selections = selections.toTypedArray()
-    selections.firstOrNull()?.let { nativeEditor.selection = it }
     pushedSelections = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
   }
 
