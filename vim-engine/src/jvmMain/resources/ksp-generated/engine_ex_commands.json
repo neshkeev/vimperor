@@ -539,6 +539,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
     "standardConstructor": false
   },
+  "unl[et]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnletCommand",
+    "standardConstructor": true
+  },
   "unlo[ckvar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnlockVarCommand",
     "standardConstructor": true

@@ -460,9 +460,8 @@ class VsCodeOptionsTest {
    * same shape as `VsCodeUnimplementedTest`. Implementing one has to come with taking it off this
    * list, and a command that quietly stops working shows up as a diff.
    *
-   * `:unlet` is Vimscript and belongs beside `:let`. The rest are windows, buffers and the loops
-   * over them, which this host could answer with the VS Code commands it already sends, and are
-   * listed in the order they are worth doing.
+   * What is left is windows, buffers and the loops over them, which this host could answer with the
+   * VS Code commands it already sends, and are listed in the order they are worth doing.
    *
    * The four command *modifiers* were here, with the note that the engine's grammar did not have
    * them. It did not need to: a modifier is spelled like any other ex command and its argument is
@@ -541,7 +540,6 @@ class VsCodeOptionsTest {
   private companion object {
     /** See [`the ex commands a config can use and this host does not have are these`]. */
     val STILL_MISSING = """
-      unlet g:x
       enew
       new
       vnew

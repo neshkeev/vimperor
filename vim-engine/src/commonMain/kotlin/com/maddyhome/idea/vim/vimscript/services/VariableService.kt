@@ -43,6 +43,20 @@ interface VariableService {
   )
 
   /**
+   * Removes a variable, as `:unlet` does.
+   *
+   * @return true when there was one to remove, so the caller can report `E108` for a name that was
+   * never set. `:unlet!` is the same call with the answer ignored.
+   * @throws ExException for a scope whose variables cannot be deleted - `v:` in Vim, `E795`.
+   */
+  fun removeVariable(
+    variable: VariableExpression,
+    editor: VimEditor,
+    context: ExecutionContext,
+    vimContext: VimLContext,
+  ): Boolean
+
+  /**
    * Stores global scope variable value.
    * @param name variable name
    * @param value variable value

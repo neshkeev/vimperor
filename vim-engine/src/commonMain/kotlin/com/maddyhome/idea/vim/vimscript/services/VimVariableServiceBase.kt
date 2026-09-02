@@ -119,6 +119,37 @@ abstract class VimVariableServiceBase : VariableService {
     }
   }
 
+  override fun removeVariable(
+    variable: VariableExpression,
+    editor: VimEditor,
+    context: ExecutionContext,
+    vimContext: VimLContext,
+  ): Boolean {
+    val scope = variable.scope ?: getDefaultVariableScope(vimContext)
+    val name = variable.name.evaluate(editor, context, vimContext).value
+    return when (scope) {
+      Scope.GLOBAL_VARIABLE -> globalVariables.remove(name) != null
+      Scope.SCRIPT_VARIABLE -> vimContext.getScript()?.scriptVariables?.remove(name) != null
+      Scope.WINDOW_VARIABLE -> getWindowVariables(editor).remove(name) != null
+      Scope.TABPAGE_VARIABLE -> getTabVariables(editor).remove(name) != null
+      Scope.BUFFER_VARIABLE -> getBufferVariables(editor).remove(name) != null
+      Scope.FUNCTION_VARIABLE -> enclosingFunction(vimContext)?.functionVariables?.remove(name) != null
+      Scope.LOCAL_VARIABLE -> enclosingFunction(vimContext)?.localVariables?.remove(name) != null
+      // Vim's own answer, and the reason it has an error of its own: `v:` variables are the
+      // interpreter's, not the script's, so there is nothing there that deleting could mean.
+      Scope.VIM_VARIABLE -> throw exExceptionMessage("E795", "v:$name")
+    }
+  }
+
+  /** The function whose body [vimContext] sits in, if it sits in one - where `a:` and `l:` live. */
+  private fun enclosingFunction(vimContext: VimLContext): FunctionDeclaration? {
+    var node: VimLContext = vimContext
+    while (!(node.isFirstParentContext() || node is FunctionDeclaration)) {
+      node = node.getPreviousParentContext()
+    }
+    return node as? FunctionDeclaration
+  }
+
   @Throws(ExException::class)
   override fun getNullableVariableValue(
     variable: VariableExpression,

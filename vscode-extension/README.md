@@ -196,10 +196,14 @@ rest of the line, and put it back. What each one sets is real: `:silent` a suppr
 and the output panel consult, `:noautocmd` a flag `handleEvent` reads, `:lockmarks` a flag that
 stops a mark following the text, `:verbose` the `'verbose'` option.
 
+`:unlet` is implemented too, in the engine beside `:let`: `:unlet {name} ...` removes each name in
+any scope, `E108` for one that was never set, and `:unlet!` for the form a config that may be
+sourced twice actually writes.
+
 What a config can still say and this host reports `E492` for is a list in `VsCodeOptionsTest`,
-measured by typing every candidate at the prompt rather than guessed at. `:unlet` is next, and then
-the window and buffer commands - `:enew`, `:tabnew`, `:wincmd`, `:bufdo` - which this host could
-answer with the VS Code commands it already sends.
+measured by typing every candidate at the prompt rather than guessed at - the window and buffer
+commands, `:enew`, `:tabnew`, `:wincmd`, `:bufdo`, which this host could answer with the VS Code
+commands it already sends.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
