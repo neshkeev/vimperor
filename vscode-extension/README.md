@@ -173,6 +173,16 @@ belongs with the plugin services and is reachable from nowhere else.
 
 Nine services are left, and each carries a line saying what it needs.
 
+The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
+The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test
+of behaviour that reaches users on a platform the test never touches. 430 of its tests run on both
+targets and 221 run only on the JVM - and nearly every one of those is JVM-only *by construction*,
+because the JDK is the reference implementation it checks against. A differential test of
+`Character.isLetter` cannot run where there is no `Character`. Exactly one file was there for no
+reason at all, put there by the habit of typing `org.junit`, and it has moved. `JvmOnlyTestsTest`
+now pins the list in both directions with a reason for each, and marks the two that could move if
+somebody rewrote their JUnit 5 features.
+
 ## Checking it against somebody else's expectations
 
 Every test in this module was written by whoever wrote the code under it, and they all share that
