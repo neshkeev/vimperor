@@ -684,7 +684,20 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * What `R` overwrote, so that backspace in replace mode puts it back. Held per editor because
    * replace mode is per window; the engine builds and clears it.
    */
+  /**
+   * Vim's replace stack, and the markers that go with it.
+   *
+   * The setter is what makes this more than a field. A mask keeps one live marker per character it
+   * has overwritten, and every marker in this buffer is moved on every edit - so a mask left behind
+   * when replace mode ends is not only memory, it is work added to every keystroke afterwards, for
+   * ever. `forgetAllReplaceMasks` sets this to null and is the moment the engine says they are done
+   * with.
+   */
   override var replaceMask: VimEditorReplaceMask? = null
+    set(value) {
+      if (value == null) field?.markers?.forEach { buffer.removeMarker(it) }
+      field = value
+    }
   /** What the last visual selection was, which is what `gv` restores and `p` consults. */
   override var vimLastSelectionType: SelectionType? = null
   /** Markers and change notifications, both of which the buffer is the only exact source for. */

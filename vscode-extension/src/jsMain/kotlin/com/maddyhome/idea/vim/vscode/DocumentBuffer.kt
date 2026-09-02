@@ -107,6 +107,14 @@ class DocumentBuffer(private val editor: TextEditor) {
   // fact and describe a document the engine has already moved past.
 
   private val markers: MutableList<TrackedRange> = mutableListOf()
+
+  /**
+   * How many markers are being kept alive, which a test can assert does not grow without bound.
+   *
+   * Every one of these is moved on every edit, so a marker nobody will read again is not merely
+   * memory - it is work added to every keystroke for the rest of the session.
+   */
+  val markerCount: Int get() = markers.size
   private val listeners: MutableList<ChangesListener> = mutableListOf()
 
   fun createMarker(start: Int, end: Int): LiveRange = TrackedRange(start, end).also { markers += it }

@@ -204,6 +204,18 @@ same version - otherwise the API check passes while checking a version users are
 goes through Node's `fs` so that `:source` can return with the contents, and yes in an untrusted
 one, because the configuration comes from your home directory and never from the workspace.
 
+One thing here is a performance test, which is unusual and is the right shape for what it caught.
+Markers - the offsets that follow edits, so that insert mode can say where it began - are moved one
+by one on every change to the buffer. A marker nobody will read again is therefore not merely
+memory: it is work added to every keystroke for the rest of the session, so the cost of typing grows
+with how long the editor has been open, and no test that presses ten keys would ever see it. Three
+things were leaking them. Replace mode kept one per overwritten character and dropped the stack
+without dropping them. The engine's backspace *looked up* an entry by building a marker and throwing
+it away - free in IntelliJ, tracked for ever here - and it now searches instead, which also retires
+a trap: the lookup used to depend on two markers over the same span comparing equal, and a phase
+went by where they did not. And every caret made one eagerly, while carets are rebuilt from VS
+Code's selections each time the mouse moves.
+
 The same question was then asked of `vim-engine` itself, and it has a better answer than expected.
 The engine ships to VS Code compiled to JavaScript, so a test in its `jvmTest` source set is a test
 of behaviour that reaches users on a platform the test never touches. 430 of its tests run on both

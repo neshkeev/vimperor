@@ -164,8 +164,25 @@ class VsCodeCaret(
    * `.` repeats an insertion by replaying what was typed, and `u` undoes one as a unit, so the
    * engine has to be able to ask afterwards how much of the buffer the session produced - which
    * only works if the start moved as characters went in ahead of it.
+   *
+   * Made on demand rather than with the caret. Carets are rebuilt from VS Code's selections every
+   * time one changes - a mouse click, a drag, a selection an extension made - and every marker in
+   * the buffer is moved on every edit, so building one eagerly meant a mouse leaking work into
+   * every keystroke that followed. Insert mode sets this before it reads it, so the collapsed
+   * marker at the caret is only a starting value.
    */
-  override var vimInsertStart: LiveRange = vimEditor.createLiveMarker(offset, offset)
+  private var insertStart: LiveRange? = null
+
+  override var vimInsertStart: LiveRange
+    get() = insertStart ?: vimEditor.createLiveMarker(offset, offset).also { insertStart = it }
+    set(value) {
+      // The engine makes a fresh marker at the start of every insert session, and the one it
+      // replaces is dropped here and nowhere else - so without this a caret leaves one behind for
+      // every `i` the user has ever pressed, each of them still being moved on every edit.
+      val previous = insertStart
+      if (previous != null && previous !== value) vimEditor.buffer.removeMarker(previous)
+      insertStart = value
+    }
   /**
    * The shape of the last visual operation - how many lines, how many columns, which kind - so that
    * `.` can repeat it on a different piece of text. Stored per caret because each one repeats its
