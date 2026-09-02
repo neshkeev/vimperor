@@ -68,6 +68,13 @@ class VimHost(
     // ...and the handful of Vim commands the engine leaves to its host. See [VsCodeCommandProvider].
     VsCodeCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
     vimInjector.functionService.registerHandlers()
+    // Before the `.ideavimrc` runs, because an option that is not registered yet is
+    // `E518: Unknown option` rather than an option with no effect. Not from `VsCodeInjector`'s own
+    // `init`, which is too early: `Options` is a Kotlin object that has not been initialised at
+    // that point, and `addOption` on it goes to `undefined` - the same declaration-order rule that
+    // `VsCodeEditor.pushedSelections` and the tutor's host both had to be moved for.
+    VsCodeOptions.initialise()
+    watchLineNumbers()
   }
 
   /**
@@ -93,6 +100,9 @@ class VimHost(
     } finally {
       vimInjector.optionGroup.endInitVimRc()
     }
+    // The config is where `'number'` and `'relativenumber'` are set, and it runs before any key is
+    // pressed, so nothing else would apply them until one was.
+    editors.values.forEach { applyLineNumbers(it) }
     return path
   }
 
@@ -125,6 +135,10 @@ class VimHost(
     existing?.let { vimInjector.unregister(it) }
     editors[identity] = editor
     vimInjector.register(editor)
+    // A window-local option applies to a window that did not exist when it was set. `'number'` and
+    // `'relativenumber'` come from the `.ideavimrc`, which runs once, and every editor opened after
+    // it has to be told - the change listener only fires when the value changes.
+    applyLineNumbers(editor)
     return editor
   }
 
@@ -242,6 +256,9 @@ class VimHost(
         sink.error("Vimperor: the document changed while a command was running, so it was not applied.")
       }
     }
+    // Vim owns the gutter, so the host writes it whenever Vim's answer has changed - which the
+    // option listener alone cannot guarantee. See [watchLineNumbers].
+    applyLineNumbers(editor)
   }
 
   // ---- Commands that only VS Code can run.

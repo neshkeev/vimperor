@@ -369,6 +369,29 @@ external interface TextEditorOptions {
    * indentation settings beside it, because this is the one editor option a Vim emulator owns.
    */
   var cursorStyle: Int
+
+  /**
+   * Whether the gutter shows line numbers, and whether they count from the caret.
+   *
+   * Vim's `'number'` and `'relativenumber'` in one setting, and writable per editor - which is what
+   * makes them implementable here at all. VS Code's user setting is `editor.lineNumbers`, and
+   * writing that would change every window the user has; this changes the one they are looking at,
+   * for as long as it is open, which is what a window-local Vim option means.
+   */
+  var lineNumbers: Int
+}
+
+/**
+ * VS Code's `TextEditorLineNumbersStyle`: `Off = 0`, `On = 1`, `Relative = 2`.
+ *
+ * There is no fourth. Vim's `'relativenumber'` without `'number'` puts a `0` on the caret's line
+ * and VS Code's `Relative` puts the absolute number there, which is Vim with both set - so the two
+ * spellings of relative land in the same place. See [applyLineNumbers].
+ */
+external object TextEditorLineNumbersStyle {
+  val Off: Int
+  val On: Int
+  val Relative: Int
 }
 
 /** VS Code's `TextEditorCursorStyle`, a numeric enum on the module object. */

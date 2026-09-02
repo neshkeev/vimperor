@@ -53,6 +53,9 @@ const TextEditorSelectionChangeKind = { Keyboard: 1, Mouse: 2, Command: 3 }
 /* The caret's shape. Vim draws a block in Normal, a bar in Insert, an underline in Replace. */
 const TextEditorCursorStyle = { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 }
 
+/* Whether the gutter numbers lines, and from where. Vim's `'number'` and `'relativenumber'`. */
+const TextEditorLineNumbersStyle = { Off: 0, On: 1, Relative: 2 }
+
 const TextEditorRevealType = {
   Default: 0,
   InCenter: 1,
@@ -228,4 +231,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, openedDocuments }
+module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, openedDocuments }

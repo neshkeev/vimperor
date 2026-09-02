@@ -185,25 +185,3 @@ data class TutorCommand(val range: Range, val modifier: CommandModifier, val arg
     return ExecutionResult.Success
   }
 }
-
-/**
- * The ex commands this host adds to the engine's.
- *
- * The names carry no `[...]`, so each is registered whole and nothing shorter resolves to it. That
- * is deliberate: `:t` is Vim's `:copy`, and an abbreviation here would be a poor trade for a
- * command nobody types twice.
- */
-internal object VsCodeExCommandProvider : ExCommandProvider {
-  override fun getCommands(): Map<String, LazyExCommandInstance> = mapOf(
-    "vimtutor,tutor,vimperortutor" to LazyExCommandInstance(
-      TutorCommand::class,
-      { range, modifier, argument -> TutorCommand(range, modifier, argument) },
-    ),
-    // `actionl[ist]`, spelled the way IdeaVim spells it, so `:actionl` is enough and `:action`
-    // stays the engine's. See [ActionListCommand].
-    "actionl[ist]" to LazyExCommandInstance(
-      ActionListCommand::class,
-      { range, modifier, argument -> ActionListCommand(range, modifier, argument) },
-    ),
-  )
-}

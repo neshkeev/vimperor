@@ -199,6 +199,9 @@ class FakeEditor(text: String) : TextEditor {
   /** The caret's shape, which a Vim emulator writes and a test reads back. */
   var cursorStyle: Int = TextEditorCursorStyle.Line
 
+  /** The gutter, which `'number'` and `'relativenumber'` write. */
+  var lineNumbers: Int = TextEditorLineNumbersStyle.On
+
   override val options: TextEditorOptions
     get() = object : TextEditorOptions {
       override val tabSize: dynamic get() = indentWidth
@@ -210,6 +213,12 @@ class FakeEditor(text: String) : TextEditor {
         get() = this@FakeEditor.cursorStyle
         set(value) {
           this@FakeEditor.cursorStyle = value
+        }
+
+      override var lineNumbers: Int
+        get() = this@FakeEditor.lineNumbers
+        set(value) {
+          this@FakeEditor.lineNumbers = value
         }
     }
 

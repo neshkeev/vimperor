@@ -78,6 +78,9 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   internal val scrollLog: MutableList<String> = mutableListOf()
 
+  /** The gutter style last written, so that re-writing the same one is not a round trip. */
+  internal var lastLineNumbers: Int? = null
+
   /**
    * What was last pushed to VS Code, so that the event it fires in response is not read back.
    *

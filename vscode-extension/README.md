@@ -159,6 +159,22 @@ meant to be separate from the clipboard - doing it to the clipboard would wipe i
 `html` and `exclude:{pattern}` are X11 and GUI concerns and are no-ops for the same reason, which is
 what Vim does on a build without `+X11`. `ideaput` is IntelliJ's.
 
+`'number'` and `'relativenumber'` work, with their short forms: they write `lineNumbers` on the
+editor, which VS Code lets an extension set per window - exactly what a window-local Vim option is.
+Vim has four states there and VS Code has three, so `set rnu` without `nu` gets the absolute number
+on the caret's line rather than a `0`. A window opened *after* the value was set starts from the
+option's default, which is not what Vim does and is written down in `VsCodeOptionsTest`.
+
+The rest of a `~/.vimrc` is accepted rather than implemented, and that distinction is the whole of
+`VsCodeOptions`. `set expandtab`, `set laststatus=2` and `syntax on` name things VS Code has already
+decided - indentation it resolves per language and per file, a status bar and a highlighter it draws
+itself - and an option or command that is not declared is not ignored, it is `E518` or `E492`. A
+`~/.vimrc` sourced from an `.ideavimrc` is thirty of those, which is a config that stops being read.
+So 58 options and 9 commands are declared, do nothing, and say nothing; the exceptions are the forms
+that ask for something VS Code contradicts, like `:syntax off`, which say so. The cost is honest:
+`:set expandtab?` answers with what was set rather than with what the editor is doing. IdeaVim's
+`IjOptions` has the same group for the same reason.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

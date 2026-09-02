@@ -137,7 +137,7 @@ function makeEditor(text) {
     // spaces rather than VS Code's default four, so that a scenario asserting the indent is
     // asserting that this was read and not that a constant happened to match.
     // `cursorStyle` is written by the extension - Vim's mode is drawn on the caret.
-    options: { tabSize: 2, insertSpaces: true, cursorStyle: 1 },
+    options: { tabSize: 2, insertSpaces: true, cursorStyle: 1, lineNumbers: 1 },
 
     // A viewport, ten lines tall, because `visibleRanges` is half of VS Code's scrolling API and
     // the commands that use it read the view back to work out where to scroll next.
@@ -244,6 +244,7 @@ const vscode = {
   EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorSelectionChangeKind: { Keyboard: 1, Mouse: 2, Command: 3 },
   TextEditorCursorStyle: { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 },
+  TextEditorLineNumbersStyle: { Off: 0, On: 1, Relative: 2 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,

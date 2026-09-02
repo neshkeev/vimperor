@@ -79,6 +79,7 @@ internal class DetachedTextEditor : TextEditor {
 
     /** Nothing is on screen, so the caret has no shape; it is written and never read. */
     override var cursorStyle: Int = TextEditorCursorStyle.Block
+    override var lineNumbers: Int = TextEditorLineNumbersStyle.On
   }
 
   override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {}
