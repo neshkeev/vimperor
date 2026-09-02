@@ -551,8 +551,9 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     updateSearchHighlights(false)
 
     val startOffset: Int = caret.offset
-    var offset = findItOffset(editor, startOffset, count, dir)?.first ?: -1
-    if (offset == startOffset) {
+    var wrapped = false
+    var offset = findItOffset(editor, startOffset, count, dir) { wrapped = it }?.first ?: -1
+    if (offset == startOffset && !wrapped) {
       /* Avoid getting stuck on the current cursor position, which can
        * happen when an offset is given and the cursor is on the last char
        * in the buffer: Repeat with count + 1. */
@@ -1473,6 +1474,8 @@ abstract class VimSearchGroupBase : VimSearchGroup {
    * @param startOffset   The offset to search from
    * @param count         Find the nth occurrence
    * @param dir           The direction to search in
+   * @param wrapped       Called with whether the search went round the end of the file to find its match. Only
+   *                      [searchNextWithDirection] asks, and only because Vim's `nv_next` does - see there.
    * @return              Pair containing the offset to the next occurrence of the pattern, and the [MotionType] based
    *                      on the search offset. The value will be `null` if no result is found.
    */
@@ -1481,6 +1484,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     startOffset: Int,
     count: Int,
     dir: Direction,
+    wrapped: (Boolean) -> Unit = {},
   ): Pair<Int, MotionType>? {
 
     var startOffsetMutable = startOffset
@@ -1553,6 +1557,25 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     // Uses last pattern. We know this is always set before being called
     val range =
       injector.searchHelper.findPattern(editor, pattern, startOffsetMutable, count, searchOptions) ?: return null
+
+    /*
+     * Whether the search wrapped, which nothing in the search API reports, so it is read off the
+     * match's position: a forward search that lands at or before where it started has been round
+     * the end of the file, because a match after the start would have been found without wrapping.
+     * The one match that can sit exactly on the start without wrapping is `/pat/e`, which asks to
+     * match at the current location - hence the two comparisons.
+     *
+     * With a count large enough to lap the file this can say "did not wrap" for a search that did.
+     * The only caller uses it to decide whether a search that came back to the caret should be
+     * repeated, and a search that laps the file does not come back to the caret.
+     */
+    wrapped(
+      if (dir === Direction.FORWARDS) {
+        if (hasEndOffset) range.startOffset < startOffsetMutable else range.startOffset <= startOffsetMutable
+      } else {
+        if (hasEndOffset) range.startOffset > startOffsetMutable else range.startOffset >= startOffsetMutable
+      }
+    )
 
     var res = range.startOffset
     if (offsetIsLineOffset) {
