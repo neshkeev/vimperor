@@ -296,4 +296,48 @@ class VsCodeInsertModeTest {
     assertEquals(Mode.INSERT, session.editor.mode)
     assertEquals(1, session.editor.primaryCaret().offset, "the bang must not have moved the caret to the line end")
   }
+
+  // `:startreplace`, which is the same command in the other mode.
+
+  @Test
+  fun `test startreplace leaves the editor in replace mode`() {
+    val session = Session("abc", 1)
+    session.type(":startreplace<CR>")
+
+    assertEquals(Mode.REPLACE, session.editor.mode)
+  }
+
+  @Test
+  fun `test what is typed after startreplace overwrites`() {
+    val session = Session("abc", 0)
+    session.type(":startreplace<CR>XY<Esc>")
+
+    assertEquals("XYc", session.fake.document.content)
+  }
+
+  /** The bang starts at the end of the line, as `:startinsert!` does. */
+  @Test
+  fun `test startreplace bang starts at the end of the line`() {
+    val session = Session("abc\nnext", 0)
+    session.type(":startreplace!<CR>X<Esc>")
+
+    assertEquals("abcX\nnext", session.fake.document.content)
+  }
+
+  /**
+   * `:startgreplace` is Vim's *virtual* replace mode, which this engine does not have.
+   *
+   * It types over the columns a tab occupies rather than over the tab, and differs from Replace
+   * only in a buffer that uses them. Registered as Replace rather than left reporting `E492`, and
+   * said out loud here so that a real virtual Replace arriving later is a change to this test.
+   */
+  @Test
+  fun `test startgreplace is replace mode`() {
+    val session = Session("abc", 0)
+    session.type(":startgreplace<CR>")
+    assertEquals(Mode.REPLACE, session.editor.mode)
+
+    session.type("X<Esc>")
+    assertEquals("Xbc", session.fake.document.content)
+  }
 }

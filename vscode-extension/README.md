@@ -290,6 +290,25 @@ working and the other reporting `E492` reads as an oversight rather than as a di
 and an editor with tabs. The `s`-prefixed ones are written as what they mean - split, then run the
 command - so `:sbuffer 3` reports `E86` from the same place `:buffer 3` does.
 
+`:fold`, `:foldopen` and `:foldclose` are `zf`, `zo` and `zc` addressed by line rather than by
+caret, and they go the same road the keys go - `editor.fold` and `editor.unfold` through the action
+executor - so a host that gains folding gains it for both at once. What is lost against Vim is the
+span: both hosts fold by "the region the caret is in" rather than by a pair of offsets, so a range
+opens the fold it starts in. `:redraw` and `:redrawstatus` reach the redraw service the status line
+already uses; `:sleep` and `:checktime` are registered and return at once, the first because nothing
+here can stop the thread that draws the editor and the second because both hosts watch the
+filesystem without being asked. `:startreplace` is `:startinsert` in the other mode.
+
+Some commands Vim only has when it was built with the feature, and this fork answers those the way
+a `vim` without `+python3` answers `:python` - `E319: Sorry, the command is not available in this
+version` rather than `E492: Not an editor command`. The two mean different things to whoever reads
+them: `E492` says "no such command, check your spelling" and `E319` says "that command, and this
+build does not have it". Thirty are on that list - the language interfaces, the GUI-only commands,
+`:stop` and `:suspend`, the swap file, the viminfo and undo files, `:mksession`, `:undolist` - and
+every one of them is a command whose *subject* is missing rather than one that could be written and
+has not been. That distinction is the whole of the rule, and it is asserted: a test checks that
+`:mkvimrc` and `:tselect` still report `E492`, so the line cannot quietly move.
+
 The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
 empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
 up as a failure rather than as a bug report.

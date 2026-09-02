@@ -200,6 +200,32 @@ class NewWindowCommandTest {
     )
   }
 
+  // `:fold`, `:foldopen` and `:foldclose`, which are `zf`, `zo` and `zc` addressed by line.
+
+  /**
+   * The same VS Code commands the keys send, which is the point of writing them that way.
+   *
+   * `zo` and `zc` reach `editor.unfold` and `editor.fold` through the action executor; the ex
+   * commands move the caret to the range and take the same road, so a host that gains folding
+   * gains it for both at once.
+   */
+  @Test
+  fun `test foldopen and foldclose send the commands the keys send`() {
+    val session = Session("one\ntwo\nthree")
+
+    assertEquals(listOf(VsCodeCommands.UNFOLD), session.commandsFor("foldopen"))
+    assertEquals(listOf(VsCodeCommands.FOLD), session.commandsFor("foldclose"))
+  }
+
+  /** The bang is the recursive form, as `zO` and `zC` are. */
+  @Test
+  fun `test the bang is the recursive fold command`() {
+    val session = Session("one\ntwo\nthree")
+
+    assertEquals(listOf(VsCodeCommands.UNFOLD_RECURSIVELY), session.commandsFor("foldopen!"))
+    assertEquals(listOf(VsCodeCommands.FOLD_RECURSIVELY), session.commandsFor("foldclose!"))
+  }
+
   /**
    * An argument nobody has a `<C-W>` command for does nothing, rather than something else.
    *

@@ -24,6 +24,9 @@ import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
+import com.maddyhome.idea.vim.api.VimCommandGroup
+import com.maddyhome.idea.vim.api.VimCommandGroupBase
+import com.maddyhome.idea.vim.api.VimRedrawService
 import com.maddyhome.idea.vim.api.VimRegexServiceBase
 import com.maddyhome.idea.vim.api.VimRegexpService
 import com.maddyhome.idea.vim.api.ExecutionContextManager
@@ -378,6 +381,23 @@ class HeadlessInjector : HeadlessInjectorBase() {
    */
   override val regexpService: VimRegexpService by lazy { VimRegexServiceBase() }
 
+  /**
+   * The user's `:command` aliases, of which a headless host has none.
+   *
+   * `VimCommandGroupBase` leaves nothing abstract - an alias is a name and a replacement, kept in a
+   * map. It is here because an *unknown* command is looked up among the aliases before it is
+   * reported, so without it every unknown command was "Not implemented yet" instead of `E492`.
+   */
+  override val commandGroup: VimCommandGroup by lazy { object : VimCommandGroupBase() {} }
+
+  /**
+   * Redraws are counted rather than drawn, since nothing is displayed.
+   *
+   * `:redraw` and `:redrawstatus` are the two commands that ask, and counting is what lets a test
+   * say they reached the service rather than merely returning without an error.
+   */
+  override val redrawService: VimRedrawService by lazy { HeadlessRedrawService() }
+
   /** `AutoCmdImpl` is the engine's own and needs no host behind it: it stores commands and runs them. */
   override val autoCmd: AutoCmdService by lazy { AutoCmdImpl() }
 
@@ -727,6 +747,21 @@ private class HeadlessTimer(override var delayMillis: Int) : VimTimer {
  * One panel for the life of the injector, because there is no screen for a second one to replace
  * the first on. [lines] is what a test reads.
  */
+class HeadlessRedrawService : VimRedrawService {
+  var redraws: Int = 0
+    private set
+  var statusLineRedraws: Int = 0
+    private set
+
+  override fun redraw() {
+    redraws++
+  }
+
+  override fun redrawStatusLine() {
+    statusLineRedraws++
+  }
+}
+
 class HeadlessOutputPanelService : VimOutputPanelServiceBase() {
   private val panel = HeadlessOutputPanel()
 

@@ -68,21 +68,15 @@ class HeadlessModifierCommandTest {
     assertEquals(listOf("loud"), s.output, "the second echo should not have reached the panel")
   }
 
-  /**
-   * The bang is the whole difference between the two, so it is the thing to pin.
-   *
-   * `:set` on an option that does not exist, rather than a command that does not exist: an unknown
-   * *command* is looked up among the user's aliases before it is reported, and a headless host has
-   * no alias list. The failing line only has to fail.
-   */
+  /** The bang is the whole difference between the two, so it is the thing to pin. */
   @Test
   fun `test silent still reports an error and silent bang does not`() {
     val s = session()
-    s.run("silent set nosuchoptionatall")
-    assertTrue(s.messages.lastError?.contains("E518") == true, "got ${s.messages.lastError}")
+    s.run("silent nosuchcommandatall")
+    assertTrue(s.messages.lastError?.contains("E492") == true, "got ${s.messages.lastError}")
 
     val bang = session()
-    bang.run("silent! set nosuchoptionatall")
+    bang.run("silent! nosuchcommandatall")
     assertNull(bang.messages.lastError, "`:silent!` is how a config guards a line that may fail")
   }
 
@@ -90,8 +84,8 @@ class HeadlessModifierCommandTest {
   @Test
   fun `test silent bang reports success whatever happened`() {
     val s = session()
-    assertEquals(ExecutionResult.Error, s.run("silent set nosuchoptionatall"))
-    assertEquals(ExecutionResult.Success, s.run("silent! set nosuchoptionatall"))
+    assertEquals(ExecutionResult.Error, s.run("silent nosuchcommandatall"))
+    assertEquals(ExecutionResult.Success, s.run("silent! nosuchcommandatall"))
   }
 
   @Test
