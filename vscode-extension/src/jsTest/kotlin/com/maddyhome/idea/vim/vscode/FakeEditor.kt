@@ -120,6 +120,38 @@ class FakeEditor(text: String) : TextEditor {
   var topLine: Int = 0
 
   /**
+   * Whether a reveal moves the view at once.
+   *
+   * VS Code's does not. `revealRange` schedules a scroll and `visibleRanges` goes on describing the
+   * old view until the editor paints, so a command that reveals and then reads the view back gets
+   * the answer it had before. Applying it immediately, as this fake did unconditionally, is a
+   * convenient lie - and it is the one that let `<C-E>` and `<C-Y>` pass every test here while
+   * doing nothing at all in a real window.
+   *
+   * Set this false to model the real editor; [paint] then applies what was scheduled, the way a
+   * rendered frame would.
+   */
+  var revealsTakeEffectImmediately: Boolean = true
+  private var pendingTopLine: Int? = null
+
+  /**
+   * Where the editor has scrolled to, painted or not.
+   *
+   * The lag is in `visibleRanges`, which is the snapshot an *extension* reads; the editor widget
+   * itself moves when it is asked. So a second reveal in the same tick computes from where the
+   * first one sent it, and only a reader outside the editor sees the old view. Modelling it the
+   * other way makes a following `scrollCaretIntoView` undo the scroll that was just requested,
+   * which is not what a real window does.
+   */
+  private val scrollTop: Int get() = pendingTopLine ?: topLine
+
+  /** Applies a reveal that was deferred, as painting a frame would. */
+  fun paint() {
+    pendingTopLine?.let { topLine = it }
+    pendingTopLine = null
+  }
+
+  /**
    * How this file is indented, which VS Code resolves and an extension only reads.
    *
    * Defaulted to VS Code's own defaults so that every other test keeps the behaviour it asserted
@@ -159,18 +191,20 @@ class FakeEditor(text: String) : TextEditor {
     revealedRanges += range
     val start = range.start.line
     val end = range.end.line
-    topLine = when (revealType) {
+    val current = scrollTop
+    val newTop = when (revealType) {
       TextEditorRevealType.AtTop -> start
       TextEditorRevealType.InCenter -> start - (viewportHeight - 1) / 2
       TextEditorRevealType.InCenterIfOutsideViewport ->
-        if (start < topLine || end > topLine + viewportHeight - 1) start - (viewportHeight - 1) / 2 else topLine
+        if (start < current || end > current + viewportHeight - 1) start - (viewportHeight - 1) / 2 else current
       // Default: the smallest scroll that brings the range on screen.
       else -> when {
-        start < topLine -> start
-        end > topLine + viewportHeight - 1 -> end - viewportHeight + 1
-        else -> topLine
+        start < current -> start
+        end > current + viewportHeight - 1 -> end - viewportHeight + 1
+        else -> current
       }
     }.coerceIn(0, lastLine)
+    if (revealsTakeEffectImmediately) topLine = newTop else pendingTopLine = newTop
   }
 
   /** What each decoration type currently paints, which is what VS Code's replace-not-add model is. */

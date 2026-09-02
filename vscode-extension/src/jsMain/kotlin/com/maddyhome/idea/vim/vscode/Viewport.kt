@@ -95,14 +95,22 @@ private fun VsCodeEditor.scrollOffset(): Int =
 /**
  * Vim's rule that the caret stays on screen, with `'scrolloff'` lines to spare.
  *
- * The scroll commands move the view first and drag the caret afterwards; this is the dragging.
- * It returns the line the caret should be on, which is its own line whenever that is already a
- * comfortable place to be.
+ * The scroll commands move the view and drag the caret after it; this is the dragging. It returns
+ * the line the caret should be on, which is its own line whenever that is already a comfortable
+ * place to be.
+ *
+ * [newTop] is passed in rather than read, and that is the whole point of this function's shape.
+ * `revealRange` is asynchronous: VS Code scrolls on a later frame, so `visibleRanges` goes on
+ * describing where the view *was* until then. Anything that reveals and then asks where the view is
+ * gets the old answer, in a real window, every time. So the caller works out where the view is
+ * going and everything downstream is told rather than asking.
  */
-private fun VsCodeEditor.caretLineWithinView(): Int {
+private fun VsCodeEditor.caretLineForView(newTop: Int, height: Int): Int {
+  val lastLine = max(0, lineCount() - 1)
+  val newBottom = min(newTop + height - 1, lastLine)
   val offset = scrollOffset()
-  val top = if (screenTopLine > 0) screenTopLine + offset else screenTopLine
-  val bottom = if (screenBottomLine < lineCount() - 1) screenBottomLine - offset else screenBottomLine
+  val top = if (newTop > 0) newTop + offset else newTop
+  val bottom = if (newBottom < lastLine) newBottom - offset else newBottom
   val line = primaryCaret().getBufferPosition().line
   return line.coerceIn(min(top, bottom), max(top, bottom))
 }
@@ -142,12 +150,18 @@ internal object RevealingScrollGroup : VimScrollGroup {
   override fun scrollFullPage(editor: VimEditor, caret: VimCaret, pages: Int): Boolean {
     val vsCode = editor as? VsCodeEditor ?: return false
     if (pages == 0) return false
-    val step = max(1, vsCode.screenHeight - 2)
+    val height = vsCode.screenHeight
+    val step = max(1, height - 2)
+    val lastLine = max(0, editor.lineCount() - 1)
     val oldTop = vsCode.screenTopLine
-    val newTop = (oldTop + pages * step).coerceIn(0, max(0, editor.lineCount() - 1))
+    val newTop = (oldTop + pages * step).coerceIn(0, lastLine)
     if (newTop == oldTop) return false
+
+    // From `newTop` rather than from the editor. Asking where the view is, immediately after asking
+    // it to move, gets the old answer in a real window - see [scrollLines].
+    val caretLine = if (pages > 0) newTop else min(newTop + height - 1, lastLine)
     vsCode.scrollLineToTop(newTop)
-    vsCode.moveCaretToLine(if (pages > 0) vsCode.screenTopLine else vsCode.screenBottomLine)
+    vsCode.moveCaretToLine(caretLine)
     return true
   }
 
@@ -174,14 +188,29 @@ internal object RevealingScrollGroup : VimScrollGroup {
     return true
   }
 
-  /** `<C-E>` and `<C-Y>`: the view by [lines], the caret only if it would be left behind. */
+  /**
+   * `<C-E>` and `<C-Y>`: the view by [lines], the caret only if it would be left behind.
+   *
+   * This used to reveal the new top line and then ask whether the view had moved, treating "it has
+   * not" as the scroll having nowhere to go. In a real window the answer is always "it has not" -
+   * `revealRange` scrolls on a later frame - so both keys reported failure and never dragged the
+   * caret. Every test passed, because [FakeEditor] applies a reveal the moment it is asked.
+   *
+   * Whether the scroll has anywhere to go is now decided by arithmetic, before anything is
+   * revealed, which is also the only way to answer it honestly: it is a question about the file's
+   * length, not about what the editor has finished painting.
+   */
   override fun scrollLines(editor: VimEditor, lines: Int): Boolean {
     val vsCode = editor as? VsCodeEditor ?: return false
     if (lines == 0) return false
+    val lastLine = max(0, editor.lineCount() - 1)
     val oldTop = vsCode.screenTopLine
-    vsCode.scrollLineToTop(oldTop + lines)
-    if (vsCode.screenTopLine == oldTop) return false
-    vsCode.moveCaretToLine(vsCode.caretLineWithinView())
+    val newTop = (oldTop + lines).coerceIn(0, lastLine)
+    if (newTop == oldTop) return false
+
+    val caretLine = vsCode.caretLineForView(newTop, vsCode.screenHeight)
+    vsCode.scrollLineToTop(newTop)
+    vsCode.moveCaretToLine(caretLine)
     return true
   }
 
