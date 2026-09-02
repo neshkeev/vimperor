@@ -186,15 +186,26 @@ forms that ask for something VS Code contradicts, like `:syntax off` and `:cd`, 
 cost is honest: `:set expandtab?` answers with what was set rather than with what the editor is
 doing. IdeaVim's `IjOptions` has the same group for the same reason.
 
-Vim's four command modifiers are implemented, in `vim-engine`, so both hosts have them.
+Vim's eight command modifiers are implemented, in `vim-engine`, so both hosts have them.
 `silent! colorscheme solarized` is the standard way a portable config guards something optional, and
 without it such a line does not merely fail, it is reported. Vim documents these as modifiers rather
 than commands and that reads like a job for the grammar; it is not one. A modifier is spelled like
 any other ex command and its argument is the command it modifies, so `:silent`, `:verbose`,
 `:noautocmd` and `:lockmarks` are four ordinary `@ExCommand` classes that set one thing, run the
 rest of the line, and put it back. What each one sets is real: `:silent` a suppression the messages
-and the output panel consult, `:noautocmd` a flag `handleEvent` reads, `:lockmarks` a flag that
-stops a mark following the text, `:verbose` the `'verbose'` option.
+and the output panel consult, `:noautocmd` a flag `handleEvent` reads, `:lockmarks` and
+`:keepmarks` a flag that stops a mark following the text, `:keepjumps` one that stops
+`saveJumpLocation` recording, `:keeppatterns` one that stops a search remembering its pattern,
+`:verbose` the `'verbose'` option. `:keepalt` is the exception and says so: the alternate file is
+IntelliJ's last tab and VS Code's previous editor, decided outside anything the engine could
+suppress, so it runs the command and the alternate file changes anyway.
+
+The `keep*` four were not on the measured list of missing commands, because they never reported an
+error - they were worse than missing. `:k{mark}` is spelled with no space, so the catch-all parser
+rule turned any name starting with `k` into a mark command, and did it before asking the registry
+back when `:k` was the only command that started with one. `:keepjumps {cmd}` therefore set a mark
+named `e` and ran nothing, in silence. The registry is asked first now, which is the order Vim
+resolves in, and `:ka` is still a mark.
 
 `:unlet` is implemented too, in the engine beside `:let`: `:unlet {name} ...` removes each name in
 any scope, `E108` for one that was never set, and `:unlet!` for the form a config that may be

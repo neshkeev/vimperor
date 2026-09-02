@@ -464,15 +464,20 @@ class VsCodeOptionsTest {
    * asserted rather than printed, so that implementing one had to come with taking it off. It is
    * the same test with nothing left on it: a command that stops resolving shows up here.
    *
-   * The first four are not commands at all but *modifiers*, and the last few change the buffer or
+   * The first eight are not commands at all but *modifiers*, and the last few change the buffer or
    * the window, which is why this runs them for real rather than only asking the registry - a name
    * that resolves to a command that then throws is not a command a config can use.
+   *
+   * The four `keep*` ones never reported `E492` and were the worse for it: the parser turned any
+   * name starting with `k` into `:k{mark}` before asking the registry, so `:keepjumps {cmd}` set a
+   * mark called `e` and ran nothing, in silence. A sweep that looks for errors cannot find that.
    */
   @Test
   fun `test every ex command a config can use resolves`() {
     val session = Session()
     val candidates = listOf(
       "silent! echo 1", "verbose set nu", "noautocmd echo 1", "lockmarks echo 1",
+      "keepmarks echo 1", "keepjumps echo 1", "keeppatterns echo 1", "keepalt echo 1",
       "unlet g:x",
       "enew", "new", "vnew", "tabnew", "tabedit", "wincmd l", "bfirst", "blast", "pwd",
       "bufdo echo 1", "windo echo 1", "tabdo echo 1", "argdo echo 1",

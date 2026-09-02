@@ -15,6 +15,15 @@ import com.maddyhome.idea.vim.ex.ranges.LineRange
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 
 interface VimSearchGroup {
+  /**
+   * True while `:keeppatterns` runs a command, and no search remembers its pattern while it is.
+   *
+   * Vim's `:keeppatterns` is "'hlsearch' is not changed and the search pattern history is not
+   * added to" - the last pattern, the `/` register and the history all stay as they were. The one
+   * place all three are written from is where this is read.
+   */
+  var patternRecordingSuppressed: Boolean
+
 
   /**
    * Last used pattern to perform a search.

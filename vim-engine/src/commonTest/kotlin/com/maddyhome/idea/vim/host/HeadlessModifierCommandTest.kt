@@ -190,4 +190,92 @@ class HeadlessModifierCommandTest {
     injector.markService.updateMarksFromDelete(s.editor, 0, 4)
     assertEquals(1, injector.markService.getMark(s.caret, 'a')?.line, "only the flag was holding it")
   }
+
+  // The `keep*` four, which were being read as `:k`.
+
+  /**
+   * The bug that found these: `:keepjumps {cmd}` used to set a mark named `e`.
+   *
+   * `:k{mark}` is spelled with no space, so the catch-all parser rule turned any name starting with
+   * `k` into a mark command - and did it *before* asking the registry, back when `:k` was the only
+   * command that started with one. Nothing was reported, because setting a mark is a perfectly good
+   * thing to have done, so the command simply never ran.
+   */
+  @Test
+  fun `test the keep commands are commands rather than marks`() {
+    injector = HeadlessInjector()
+    for ((line, expected) in listOf(
+      "keepjumps echo 1" to "KeepJumpsCommand",
+      "keepalt echo 1" to "KeepAltCommand",
+      "keepmarks echo 1" to "KeepMarksCommand",
+      "keeppatterns echo 1" to "KeepPatternsCommand",
+      "kee echo 1" to "KeepMarksCommand",
+    )) {
+      assertEquals(expected, injector.vimscriptParser.parseCommand(line)?.let { it::class.simpleName }, line)
+    }
+  }
+
+  /** ...and `:k{mark}` still is one, which is the half the fix could have broken. */
+  @Test
+  fun `test a mark set with k is still a mark`() {
+    injector = HeadlessInjector()
+    for (line in listOf("ka", "k b", "kz")) {
+      assertEquals("MarkCommand", injector.vimscriptParser.parseCommand(line)?.let { it::class.simpleName }, line)
+    }
+  }
+
+  @Test
+  fun `test keepjumps runs the command and stops the jump being recorded`() {
+    val s = session()
+    s.run("""keepjumps echo "ran"""")
+
+    assertEquals(listOf("ran"), s.output)
+    assertEquals(false, injector.jumpService.recordingSuppressed)
+
+    injector.jumpService.recordingSuppressed = true
+    injector.jumpService.saveJumpLocation(s.editor)
+    assertEquals(emptyList(), injector.jumpService.getJumps(s.editor.projectId), "nothing should have been recorded")
+
+    injector.jumpService.recordingSuppressed = false
+    injector.jumpService.saveJumpLocation(s.editor)
+    assertEquals(1, injector.jumpService.getJumps(s.editor.projectId).size, "only the flag was stopping it")
+  }
+
+  /** `:keeppatterns` leaves `n` repeating whatever it was repeating before. */
+  @Test
+  fun `test keeppatterns leaves the last pattern alone`() {
+    val s = session()
+    s.run("s/one/1/")
+    assertEquals("one", injector.searchGroup.lastSubstitutePattern, "the control: `:s` remembers its pattern")
+
+    s.run("keeppatterns s/two/2/")
+
+    assertEquals("one", injector.searchGroup.lastSubstitutePattern, "`:keeppatterns` should not have replaced it")
+    assertEquals(false, injector.searchGroup.patternRecordingSuppressed)
+  }
+
+  /** ...and the substitution still happened, which is the half a suppression could have eaten. */
+  @Test
+  fun `test keeppatterns still runs the substitution`() {
+    val s = session("one\ntwo\nthree")
+
+    s.run("keeppatterns %s/two/2/")
+
+    assertEquals("one\n2\nthree", s.editor.text)
+  }
+
+  /**
+   * `:keepalt` is the one this fork cannot honour, and runs the command anyway.
+   *
+   * The alternate file is IntelliJ's last tab and VS Code's previous editor, decided outside
+   * anything the engine could suppress. Running the command and changing the alternate file is
+   * still better than the silent mark this used to set.
+   */
+  @Test
+  fun `test keepalt runs the command`() {
+    val s = session()
+    s.run("""keepalt echo "ran"""")
+
+    assertEquals(listOf("ran"), s.output)
+  }
 }

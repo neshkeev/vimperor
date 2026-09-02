@@ -191,6 +191,8 @@ abstract class VimSearchGroupBase : VimSearchGroup {
    */
   private var doCount = false
 
+  override var patternRecordingSuppressed: Boolean = false
+
   override var lastSearchPattern: String? = null
   override var lastSubstitutePattern: String? = null
 
@@ -1432,6 +1434,7 @@ abstract class VimSearchGroupBase : VimSearchGroup {
     patternType: PatternType,
     isNewPattern: Boolean,
   ) {
+    if (patternRecordingSuppressed) return
     // Only update the last pattern with a new input pattern. Do not update if we're reusing the last pattern
     if (isNewPattern) {
       if (patternType == PatternType.SEARCH || patternType == PatternType.BOTH) {

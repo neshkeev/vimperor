@@ -49,7 +49,10 @@ abstract class VimJumpServiceBase : VimJumpService {
     }
   }
 
+  override var recordingSuppressed: Boolean = false
+
   override fun saveJumpLocation(editor: VimEditor) {
+    if (recordingSuppressed) return
     addJump(editor, true)
     injector.markService.setMark(editor, '\'')
     includeCurrentCommandAsNavigation(editor)

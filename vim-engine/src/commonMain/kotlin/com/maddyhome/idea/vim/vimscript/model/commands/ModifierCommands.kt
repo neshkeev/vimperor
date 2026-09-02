@@ -189,3 +189,104 @@ data class LockMarksCommand(val range: Range, val modifier: CommandModifier, val
     }
   }
 }
+
+/**
+ * see "h :keepmarks"
+ *
+ * The same flag as [LockMarksCommand]. Vim draws a line between the two - `:keepmarks` keeps the
+ * marks *in the lines a `:move` or `:copy` touched*, `:lockmarks` keeps all of them - and this
+ * engine adjusts marks in one place with no notion of which lines a command claimed, so the
+ * narrower one is answered with the wider. It keeps what `:keepmarks` asks to keep and some more
+ * besides, which is the failure worth having of the two.
+ */
+@ExCommand(command = "kee[pmarks]")
+data class KeepMarksCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val previous = injector.markService.adjustmentSuppressed
+    injector.markService.adjustmentSuppressed = true
+    try {
+      return runModified(editor, context)
+    } finally {
+      injector.markService.adjustmentSuppressed = previous
+    }
+  }
+}
+
+/**
+ * see "h :keepjumps"
+ *
+ * "The jumplist, the alternate file mark and the changelist are not changed" - which is what a
+ * mapping wants when it moves the caret about to do its work and does not want `''` to lead back
+ * into the middle of that.
+ */
+@ExCommand(command = "keepj[umps]")
+data class KeepJumpsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val previous = injector.jumpService.recordingSuppressed
+    injector.jumpService.recordingSuppressed = true
+    try {
+      return runModified(editor, context)
+    } finally {
+      injector.jumpService.recordingSuppressed = previous
+    }
+  }
+}
+
+/**
+ * see "h :keeppatterns"
+ *
+ * The last search pattern, the `/` register and the search history all stay as they were, so a
+ * mapping that searches to find something does not leave that search behind for `n` to repeat.
+ */
+@ExCommand(command = "keepp[atterns]")
+data class KeepPatternsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val previous = injector.searchGroup.patternRecordingSuppressed
+    injector.searchGroup.patternRecordingSuppressed = true
+    try {
+      return runModified(editor, context)
+    } finally {
+      injector.searchGroup.patternRecordingSuppressed = previous
+    }
+  }
+}
+
+/**
+ * see "h :keepalt"
+ *
+ * The one of the five this fork cannot honour yet. Vim's `:keepalt` keeps the alternate file - the
+ * `#` that `:e #` and `<C-^>` go back to - and neither host tracks that through the engine: it is
+ * IntelliJ's last tab and VS Code's previous editor, decided outside anything this could suppress.
+ *
+ * So this runs the command and the alternate file changes anyway. That is worth having over the
+ * alternative: without it, `:keepalt {cmd}` is parsed as `:k eepalt`, sets a mark named `e`, and
+ * never runs the command at all - silently, which is how this was found.
+ */
+@ExCommand(command = "keepa[lt]")
+data class KeepAltCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult = runModified(editor, context)
+}

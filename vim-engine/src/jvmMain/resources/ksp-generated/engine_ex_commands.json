@@ -307,6 +307,22 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
     "standardConstructor": true
   },
+  "kee[pmarks]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepMarksCommand",
+    "standardConstructor": true
+  },
+  "keepa[lt]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepAltCommand",
+    "standardConstructor": true
+  },
+  "keepj[umps]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepJumpsCommand",
+    "standardConstructor": true
+  },
+  "keepp[atterns]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepPatternsCommand",
+    "standardConstructor": true
+  },
   "la[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
     "standardConstructor": true

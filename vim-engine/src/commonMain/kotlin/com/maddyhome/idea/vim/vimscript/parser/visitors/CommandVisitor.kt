@@ -340,10 +340,14 @@ object CommandVisitor : VimscriptBaseVisitor<Command?>() {
     // Special case for `:k{mark}`, with no whitespace between command and argument. The `:k` command (shorthand for
     // `:mark`) is already recognised and handled as a command. That parser rule allows optional whitespace, so
     // `:k{mark}` should work. However, the catch-all "other" rule is greedier and accepts a command name starting with
-    // `k` and containing alpha marks. This is the only command that starts with `k`, so we can handle it here, passing
-    // the rest of the command name as an argument. (Note that the whitespace between end of command name and what the
-    // parser thinks of as the argument isn't necessarily correct, but this is an error anyway)
-    if (name.startsWith("k")) {
+    // `k` and containing alpha marks, so the rest of the name is passed as an argument here. (Note that the whitespace
+    // between end of command name and what the parser thinks of as the argument isn't necessarily correct, but this is
+    // an error anyway)
+    //
+    // `k` is no longer the only command that starts with one, which is why the registry is asked first: this used to
+    // run before the lookup, and `:keepjumps {cmd}` therefore set a mark named `e` and never ran the command - with no
+    // error, because setting a mark is a perfectly good thing to have done. Vim resolves the same way round.
+    if (name.startsWith("k") && findExCommand(name) == null) {
       val command = MarkCommand(range, CommandModifier.NONE, name.substring(1) + " " + argument)
       command.rangeInScript = ctx.getTextRange()
       return command

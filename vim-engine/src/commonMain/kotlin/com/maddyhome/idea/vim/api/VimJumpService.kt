@@ -30,6 +30,15 @@ interface VimJumpService {
   fun getJumps(projectId: String): List<Jump>
   fun getJumpSpot(projectId: String): Int
 
+  /**
+   * True while `:keepjumps` runs a command, and [saveJumpLocation] records nothing while it is.
+   *
+   * Vim's `:keepjumps` is "the jumplist, the alternate file mark and the changelist are not
+   * changed". [saveJumpLocation] is the one place the first two are written from, so this is the
+   * whole of it here.
+   */
+  var recordingSuppressed: Boolean
+
   fun addJump(projectId: String, jump: Jump, reset: Boolean)
   fun saveJumpLocation(editor: VimEditor)
 
