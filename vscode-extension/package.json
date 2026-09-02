@@ -36,7 +36,13 @@
     "onStartupFinished"
   ],
   "contributes": {
-    "commands": [],
+    "commands": [
+      {
+        "command": "vimperor.tutor",
+        "title": "Open Vim Tutor",
+        "category": "Vimperor"
+      }
+    ],
     "keybindings": [
       {
         "key": "escape",

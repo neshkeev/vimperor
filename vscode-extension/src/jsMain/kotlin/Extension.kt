@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.vscode.DecorationHighlighter
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.MessageSink
+import com.maddyhome.idea.vim.vscode.openTutor
 import com.maddyhome.idea.vim.vscode.OutputChannel
 import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
 import com.maddyhome.idea.vim.vscode.StatusBarAlignment
@@ -214,10 +215,18 @@ fun activate(context: ExtensionContext) {
     }
   })
 
+  // Vim's `vimtutor`, as a Command Palette entry. It opens an untitled document the reader is
+  // meant to edit to pieces, which is what `vimtutor` does with a copy of Vim's own tutor file.
+  val tutor = commands.registerCommand("vimperor.tutor") {
+    reporting(output, "the tutor") {
+      openTutor { failure -> output.appendLine("Vimperor: the tutor could not be opened - $failure") }
+    }
+  }
+
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
-    output, status, commandLine, typing, namedKey, activeEditorChanged, selectionChanged, windowStateChanged,
-    documentClosed, documentSaved,
+    output, status, commandLine, typing, namedKey, tutor, activeEditorChanged, selectionChanged,
+    windowStateChanged, documentClosed, documentSaved,
   )) {
     subscriptions.push(registration)
   }

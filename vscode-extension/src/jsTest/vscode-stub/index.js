@@ -127,6 +127,7 @@ const tabGroups = {
 
 const window = {
   activeTextEditor: undefined,
+  showTextDocument: (document) => Promise.resolve({ document, selections: [], options: {} }),
   visibleTextEditors: [],
   tabGroups,
   createStatusBarItem: () => ({ text: '', tooltip: '', show() {}, hide() {}, dispose() {} }),
@@ -168,8 +169,27 @@ const env = {
   },
 }
 
+/*
+ * Documents opened by `openTextDocument`, so a test can see what was put in front of the user.
+ *
+ * Both of these return a real promise rather than a value. VS Code's are `Thenable`, and a stub
+ * that resolved synchronously would let code through that deadlocks against the real one.
+ */
+const openedDocuments = []
+
 const workspace = {
   onDidChangeTextDocument: () => ({ dispose() {} }),
+  openTextDocument: (options) => {
+    const document = {
+      getText: () => options.content ?? '',
+      languageId: options.language ?? 'plaintext',
+      uri: Uri.parse('untitled:Untitled-1'),
+      eol: 1,
+      isUntitled: true,
+    }
+    openedDocuments.push(document)
+    return Promise.resolve(document)
+  },
   // No folder open, which is a real state - a single loose file has an editor and no workspace -
   // and the one that keeps `:e` tests honest: every path they use has to be absolute, so nothing
   // passes because a stub happened to root it somewhere convenient.
@@ -193,4 +213,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env }
+module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, openedDocuments }

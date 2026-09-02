@@ -47,6 +47,9 @@ external interface OutputChannel : Disposable {
 
 external object window {
   val activeTextEditor: TextEditor?
+
+  /** Puts a document in front of the user. The other half of [workspace.openTextDocument]. */
+  fun showTextDocument(document: TextDocument): Thenable<TextEditor>
   val visibleTextEditors: Array<TextEditor>
 
   /**
@@ -172,6 +175,19 @@ external object workspace {
    * than about Vim, and there is one: whether to write what each keystroke did to the output
    * channel, which is the only way a bug that only happens in a real window can be reported.
    */
+  /**
+   * A document that is not on disk, which is what the tutor is opened into.
+   *
+   * Vim's `vimtutor` copies its file somewhere writable before opening it, because the reader is
+   * meant to take the text apart. An untitled document is that copy: editable, never saved unless
+   * the reader asks, and gone when the tab closes.
+   *
+   * Asynchronous, unlike almost everything this host asks VS Code for. That is fine here and only
+   * here - opening the tutor is a command the user invoked, not a keystroke the engine is waiting
+   * to finish.
+   */
+  fun openTextDocument(options: UntitledDocumentOptions): Thenable<TextDocument>
+
   fun getConfiguration(section: String): WorkspaceConfiguration
 
   /**
@@ -433,6 +449,12 @@ external object TextEditorRevealType {
 }
 
 /** VS Code's promise type. Named as VS Code names it. */
+/** What [workspace.openTextDocument] is given when it is asked for an untitled document. */
+external interface UntitledDocumentOptions {
+  var content: String
+  var language: String
+}
+
 external interface Thenable<T> {
   /**
    * The rejection half is not optional here.

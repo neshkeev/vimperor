@@ -1,19 +1,22 @@
-This project is licensed under MIT license except the following parts of it:
+Third-party licenses
+====================
 
-* File [ScrollViewHelper.kt](src/main/java/com/maddyhome/idea/vim/helper/ScrollViewHelper.kt) is licensed under Vim
-  License.
-* File [VimTutor.kt](vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt) is licensed under Vim
-  License. It holds the tutor text, which used to be in `src/main/java/com/maddyhome/idea/vim/ui/Tutor.kt` and moved
-  when a second host wanted it. Both hosts supply their own wording around it: see
-  [Tutor.kt](src/main/java/com/maddyhome/idea/vim/ui/Tutor.kt) for IdeaVim and
-  [Tutor.kt](vscode-extension/src/jsMain/kotlin/com/maddyhome/idea/vim/vscode/Tutor.kt) for Vimperor. Those two carry
-  no Vim-licensed text themselves.
-* File [CodeWrapper.kt](vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/helper/CodeWrapper.kt) is licensed
-  under Vim License.
+Vimperor is licensed under the MIT license (see LICENSE.txt) except for the
+following part of it:
 
-The Vim License requires its text to travel with any distribution of those parts. The VS Code extension is packaged
-from `vscode-extension/` alone, so it carries its own copy in
-[vscode-extension/ThirdPartyLicenses.md](vscode-extension/ThirdPartyLicenses.md).
+* The Vim tutor text, adapted from Vim's own `runtime/tutor/tutor`, is licensed
+  under the **Vim License**. It is built into the extension bundle from
+  `vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt`
+  in this project's repository, and is what the "Vimperor: Open Vim Tutor"
+  command puts on screen.
+
+  The text was adapted for IdeaVim by Alex Plate and adapted again for Vimperor.
+  The complete source of both adaptations, and of the extension around them, is
+  at https://github.com/neshkeev/vimperor.
+
+The Vim License requires that its text accompany any distribution of that work,
+which is why this file is inside the packaged extension rather than only in the
+repository.
 
 ```
 VIM LICENSE
@@ -95,8 +98,3 @@ IV)  It is not allowed to remove this license from the distribution of the Vim
      license for previous Vim releases instead of the license that they came
      with, at your option.
 ```
-
----
-
-File [sneakIcon.png](doc/images/sneakIcon.svg), which is originally an icon of the ideavim-sneak plugin,
-is merged icons of IdeaVim plugin and a random sneaker by FreePic from flaticon.com.
