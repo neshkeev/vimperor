@@ -4,6 +4,14 @@
   "description": "A complete Vim for VS Code: modes, operators, text objects, registers, macros, marks and Vimscript.",
   "version": "0.0.1",
   "publisher": "neshkeev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neshkeev/vimperator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neshkeev/vimperator/issues"
+  },
+  "homepage": "https://github.com/neshkeev/vimperator#readme",
   "license": "MIT",
   "icon": "icon.png",
   "engines": {
