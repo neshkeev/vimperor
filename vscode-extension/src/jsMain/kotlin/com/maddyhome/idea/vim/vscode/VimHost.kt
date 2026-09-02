@@ -345,6 +345,34 @@ class VimHost(
   fun rememberActions(ids: Collection<String>) = vimInjector.rememberActions(ids)
 
   /**
+   * The system paste chord at the `:` and `/` prompts - `Cmd+V`, or `Ctrl+Shift+V` elsewhere.
+   *
+   * Vim's own way to do this is `<C-R>+`, which inserts the clipboard register into the command
+   * line, and that is exactly what this sends: the engine already implements it, with the register
+   * arriving as the argument to `<C-R>` rather than through `getchar()`, so there is nothing here
+   * but the gesture. What VS Code adds is that `Cmd+V` is not a key an extension can be handed
+   * as a keystroke - it is a keybinding, and one that has to be claimed only while the prompt is
+   * open, or it would take paste away from the editor.
+   *
+   * The clipboard is re-read first, and this is the one place that is worth a promise. Everywhere
+   * else a register read happens mid-keystroke and has to answer from the mirror; a paste is a
+   * gesture of its own, so it can wait for the true answer - which is what makes pasting something
+   * copied in the integrated terminal work, where the window never lost focus and the mirror was
+   * never refreshed.
+   *
+   * [onDone] runs after the keys have been handled, for the trace and the mode indicator.
+   */
+  fun pasteIntoCommandLine(textEditor: TextEditor, onDone: () -> Unit = {}) {
+    clipboard.refresh {
+      // The `when` clause on the keybinding is what keeps this out of the editor's way, so by the
+      // time it fires the mode is already CMD_LINE. Checked again because a stale context key would
+      // otherwise turn a paste into `<C-R>` in Normal mode, which is redo.
+      if (injector.vimState.mode is Mode.CMD_LINE) key(textEditor, "<C-R>+")
+      onDone()
+    }
+  }
+
+  /**
    * What the last keystroke left behind, for `ideavim.trace`.
    *
    * The mode, every caret with its selection, and what was handed to VS Code - which is the set of

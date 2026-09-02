@@ -229,10 +229,26 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // The system paste chord at the `:` and `/` prompts. A command rather than a `vimperor.key`
+  // binding because it waits for the clipboard to be re-read before it types anything - see
+  // [VimHost.pasteIntoCommandLine]. The manifest claims the chord only while the prompt is open, so
+  // in every other mode VS Code's own paste is what runs.
+  val pasteInCommandLine = commands.registerCommand("vimperor.pasteInCommandLine") {
+    val editor = window.activeTextEditor
+    if (editor != null) {
+      reporting(output, "pasting into the command line") {
+        vim.pasteIntoCommandLine(editor) {
+          refreshMode()
+          trace(output, vim, editor, "paste")
+        }
+      }
+    }
+  }
+
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
-    output, status, commandLine, typing, namedKey, tutor, activeEditorChanged, selectionChanged,
-    windowStateChanged, documentClosed, documentSaved,
+    output, status, commandLine, typing, namedKey, tutor, pasteInCommandLine, activeEditorChanged,
+    selectionChanged, windowStateChanged, documentClosed, documentSaved,
   )) {
     subscriptions.push(registration)
   }

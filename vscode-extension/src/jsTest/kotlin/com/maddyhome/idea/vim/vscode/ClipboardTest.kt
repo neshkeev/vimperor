@@ -36,14 +36,19 @@ class ClipboardTest {
       system = text
     }
 
-    override fun refresh() {
+    override fun refresh(onDone: () -> Unit) {
       pendingReads++
+      pending += onDone
     }
+
+    private val pending = mutableListOf<() -> Unit>()
 
     /** The promise resolving, which is what a window-focus refresh eventually does. */
     fun completeRefresh() {
       pendingReads = 0
       mirror = system
+      pending.forEach { it() }
+      pending.clear()
     }
   }
 

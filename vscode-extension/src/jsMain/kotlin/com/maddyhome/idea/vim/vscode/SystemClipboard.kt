@@ -30,8 +30,16 @@ interface SystemClipboard {
 
   fun write(text: String)
 
-  /** Asks the system for the current contents, updating [read] when the answer arrives. */
-  fun refresh()
+  /**
+   * Asks the system for the current contents, updating [read] when the answer arrives.
+   *
+   * [onDone] runs once the answer has landed, whether it landed or failed. It is what makes a
+   * paste that the *user* asked for exact rather than approximately current: the mirror is refreshed
+   * on window focus, which covers copying in another application and switching back, and a paste
+   * gesture can afford to wait a promise for the case that does not - copying in the integrated
+   * terminal, say, which never takes focus away from the window.
+   */
+  fun refresh(onDone: () -> Unit = {})
 
   /** For a host with no system clipboard: an in-memory one, which is what tests want too. */
   class InMemory(private var contents: String? = null) : SystemClipboard {
@@ -41,7 +49,9 @@ interface SystemClipboard {
       contents = text
     }
 
-    override fun refresh() {}
+    override fun refresh(onDone: () -> Unit) {
+      onDone()
+    }
   }
 }
 
@@ -57,7 +67,15 @@ class VsCodeClipboard : SystemClipboard {
     env.clipboard.writeText(text)
   }
 
-  override fun refresh() {
-    env.clipboard.readText().then({ text -> mirror = text })
+  override fun refresh(onDone: () -> Unit) {
+    env.clipboard.readText().then(
+      { text ->
+        mirror = text
+        onDone()
+      },
+      // A clipboard that will not be read is not a reason to drop the gesture: the caller carries
+      // on with whatever the mirror last said, which is what every other read here does.
+      { onDone() },
+    )
   }
 }

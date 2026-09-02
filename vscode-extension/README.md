@@ -167,6 +167,14 @@ this VS Code does not have is reported at the `:` prompt rather than failing sil
 command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
 each one - VS Code has no API that reads its own keybindings.
 
+`Cmd+V` pastes into the `:` and `/` prompts, and `Ctrl+Shift+V` does off the Mac - not plain
+`Ctrl+V`, which is Vim's own and inserts the next character literally. The work is Vim's `<C-R>+`,
+which the engine already had; what the host adds is that a system chord is a keybinding rather than
+a key an extension can be handed, and one claimed only while `vimperor.mode` is `COMMAND` so that
+every other mode keeps the editor's own paste. The clipboard is re-read before anything is typed,
+which is the one register read here that can afford a promise - a paste is a gesture of its own,
+where every other read happens mid-keystroke.
+
 `:registers` and `:marks` print to the *IdeaVim* output channel. Vim's output panel takes over the
 screen and then takes keys - space pages, `q` closes - and VS Code has no equivalent that does not
 fight the editor for focus, so this prints and gets out of the way. Typing carries on working while

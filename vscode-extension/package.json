@@ -385,6 +385,12 @@
         "command": "vimperor.key",
         "args": "<C-^>",
         "when": "editorTextFocus && vimperor.mode != 'INSERT' && vimperor.mode != 'REPLACE'"
+      },
+      {
+        "key": "ctrl+shift+v",
+        "mac": "cmd+v",
+        "command": "vimperor.pasteInCommandLine",
+        "when": "editorTextFocus && vimperor.mode == 'COMMAND'"
       }
     ],
     "configuration": {
