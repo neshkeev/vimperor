@@ -24,7 +24,12 @@ import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
+import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.api.VimCommandGroup
+import com.maddyhome.idea.vim.api.ExecutionContext as ExecutionContextApi
+import com.maddyhome.idea.vim.api.VimBuffer
+import com.maddyhome.idea.vim.api.VimFile
+import com.maddyhome.idea.vim.api.VimFileBase
 import com.maddyhome.idea.vim.api.VimCommandGroupBase
 import com.maddyhome.idea.vim.api.VimRedrawService
 import com.maddyhome.idea.vim.api.VimRegexServiceBase
@@ -380,6 +385,22 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * `:filter` does for every line it is about to print.
    */
   override val regexpService: VimRegexpService by lazy { VimRegexServiceBase() }
+
+  /**
+   * Opening a file is recorded rather than done, since there is nowhere to open one.
+   *
+   * Everything that jumps somewhere - `:cnext`, `:buffer`, `:bmodified` - goes through
+   * `openFile`, so recording the calls is what lets a test say a command went to the right place
+   * without a host that has places. Every other member is still a `TODO`, so a test that starts
+   * needing one says which.
+   */
+  override val file: VimFile by lazy { HeadlessFile() }
+
+  init {
+    // A new injector is a new session, and the quickfix list belongs to a session. Without this a
+    // list one test filled is still there for the next one.
+    Quickfix.reset()
+  }
 
   /**
    * The user's `:command` aliases, of which a headless host has none.
@@ -747,6 +768,32 @@ private class HeadlessTimer(override var delayMillis: Int) : VimTimer {
  * One panel for the life of the injector, because there is no screen for a second one to replace
  * the first on. [lines] is what a test reads.
  */
+/** Every file this host was asked to open, in order. See [HeadlessInjector.file]. */
+class HeadlessFile : VimFileBase() {
+  val opened: MutableList<String> = mutableListOf()
+
+  override fun openFile(filename: String, context: ExecutionContextApi, focusEditor: Boolean): String? {
+    opened += filename
+    return null
+  }
+
+  /** A path is taken at its word: there is no filesystem to check it against. */
+  override fun findFile(filename: String, context: ExecutionContextApi): String = filename
+
+  override fun displayFileInfo(vimEditor: VimEditor, fullPath: Boolean): String? = null
+  override fun getBuffers(context: ExecutionContextApi): List<VimBuffer> = emptyList()
+  override fun selectPreviousTab(context: ExecutionContextApi): Boolean = false
+  override fun saveFile(editor: VimEditor, context: ExecutionContextApi) {}
+  override fun saveFiles(editor: VimEditor, context: ExecutionContextApi) {}
+  override fun closeFile(editor: VimEditor, context: ExecutionContextApi) {}
+  override fun closeFile(number: Int, context: ExecutionContextApi) {}
+  override fun selectFile(count: Int, context: ExecutionContextApi): Boolean = false
+  override fun selectNextFile(count: Int, context: ExecutionContextApi) {}
+  override fun createFile(filename: String, context: ExecutionContextApi, content: String?, editor: VimEditor) {}
+  override fun getProjectId(project: Any): String = "headless"
+  override fun selectEditor(projectId: String, documentPath: String, protocol: String): VimEditor? = null
+}
+
 class HeadlessRedrawService : VimRedrawService {
   var redraws: Int = 0
     private set

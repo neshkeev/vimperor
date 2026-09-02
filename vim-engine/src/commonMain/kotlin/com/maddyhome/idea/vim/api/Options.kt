@@ -262,6 +262,23 @@ object Options {
     // TODO: This option doesn't appear to be used anywhere...
     NumberOption("undolevels", GLOBAL_OR_LOCAL_TO_BUFFER, "ul", 1000, -123456)
   )
+  val makeprg: StringOption = addOption(StringOption("makeprg", GLOBAL_OR_LOCAL_TO_BUFFER, "mp", "make"))
+  val grepprg: StringOption = addOption(
+    // Vim's own default, `/dev/null` included: it is there so that grep prints a file name even
+    // when it was given exactly one file to search, which is what the quickfix parser needs.
+    StringOption("grepprg", GLOBAL_OR_LOCAL_TO_BUFFER, "gp", "grep -n $* /dev/null")
+  )
+  val errorformat: StringOption = addOption(
+    // Declared and not read. Vim's `'errorformat'` is a pattern language of its own, with
+    // multi-line and nested entries; `parseQuickfixLines` reads the four shapes that cover a
+    // compiler, a linter and `grep -n` instead. A config that sets this is read rather than
+    // reported, and what it set has no effect - which is worth knowing and is why it says so here.
+    StringOption("errorformat", GLOBAL_OR_LOCAL_TO_BUFFER, "efm", "%f:%l:%c:%m,%f:%l:%m,%f(%l):%m")
+  )
+  val grepformat: StringOption = addOption(
+    /** As [errorformat]: declared so a config loads, and not consulted. */
+    StringOption("grepformat", GLOBAL, "gfm", "%f:%l:%m,%f:%l%m,%f  %l%m")
+  )
   val verbose: NumberOption = addOption(
     // Vim's message-verbosity level, which `:verbose {command}` raises for the length of one
     // command. Nothing in the engine consults it yet, so what it buys today is that a config

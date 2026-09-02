@@ -309,9 +309,28 @@ every one of them is a command whose *subject* is missing rather than one that c
 has not been. That distinction is the whole of the rule, and it is asserted: a test checks that
 `:mkvimrc` and `:tselect` still report `E492`, so the line cannot quietly move.
 
+The quickfix list is here too, and the location list beside it. `:make` and `:grep` run `'makeprg'`
+and `'grepprg'` through the same process group `:!` uses, `:cexpr`, `:cfile` and `:cbuffer` fill the
+list from an expression, a file or the buffer, `:cnext`, `:cprevious`, `:cfirst`, `:clast` and `:cc`
+walk it, and every one of those has an `l` twin over the window's own list - which is the entire
+difference between the two families. Two places it is not Vim, both written down where they happen:
+`'errorformat'` is declared and never read, because Vim's is a pattern language of its own and this
+reads the four shapes that cover a compiler, a linter and `grep -n` instead; and `:copen` prints the
+list into the output panel rather than opening a buffer holding it, because neither host lets an
+extension make a buffer out of nothing. `:cnext` and `:cc` are how you move through it.
+
+`:smagic` and `:snomagic` are `:s` with `'magic'` decided rather than inherited - two characters
+inserted in front of the pattern, which is what `\m` and `\M` mean and where Vim puts them, so
+everything else about them is `:s` because it is `:s`.
+
 The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
 empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
-up as a failure rather than as a bug report.
+up as a failure rather than as a bug report. Sweeping the whole of Vim's command list rather than
+what a config reaches for leaves twenty-six: tags (`:tag` and its eight relatives), diff mode,
+spell, `:ball` and `:unhide`, `:mkvimrc`, `:match`, `:changes` and `:vimgrep`. Each of those needs
+something this fork has not built - a symbol search an extension can drive, a diff view it can
+reach hunk by hunk, a way to walk the files of a project - rather than a command that has not been
+written.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

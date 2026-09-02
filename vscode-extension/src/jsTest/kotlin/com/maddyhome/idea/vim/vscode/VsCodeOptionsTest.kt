@@ -489,6 +489,10 @@ class VsCodeOptionsTest {
       "sbuffer", "snext", "sprevious", "sfind", "sview", "rewind",
       "fold", "foldopen", "foldclose", "redraw", "redrawstatus", "sleep 1m", "checktime",
       "startreplace", "startgreplace",
+      "cexpr 'x'", "caddexpr 'x'", "lexpr 'x'", "laddexpr 'x'", "cbuffer", "lbuffer",
+      "clist", "copen", "cwindow", "cclose", "llist", "lopen", "lwindow", "lclose",
+      "cnext", "cprevious", "cfirst", "clast", "cc", "lnext", "lprevious", "lfirst", "llast", "ll",
+      "cfile", "lfile", "smagic/x/y/", "snomagic/x/y/",
       "enew", "new", "vnew", "tabnew", "tabedit", "wincmd l", "bfirst", "blast", "pwd",
       "bufdo echo 1", "windo echo 1", "tabdo echo 1", "argdo echo 1",
       "startinsert", "doautocmd BufRead", "earlier 1", "later 1",
@@ -568,6 +572,7 @@ class VsCodeOptionsTest {
       selectmode slm shell sh shellcmdflag shcf shellxescape sxe shellxquote sxq showcmd sc showmode
       smd sidescroll ss sidescrolloff siso smartcase scs startofline sol timeout to timeoutlen tm
       undolevels ul viminfo vi virtualedit ve visualbell vb whichwrap ww wrapscan ws
+      verbose vbs makeprg mp grepprg gp errorformat efm grepformat gfm
     """
 
     /** Every option [VsCodeOptions] declares, by name. */

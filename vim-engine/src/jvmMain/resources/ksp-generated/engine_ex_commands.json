@@ -163,6 +163,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
     "standardConstructor": true
   },
+  "cN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
+    "standardConstructor": true
+  },
   "ca[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
     "standardConstructor": false
@@ -171,16 +175,52 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
     "standardConstructor": false
   },
+  "cadde[xpr]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CAddExprCommand",
+    "standardConstructor": true
+  },
   "cal[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CallCommand",
     "standardConstructor": false
+  },
+  "cb[uffer]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CBufferCommand",
+    "standardConstructor": true
+  },
+  "cc": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CCCommand",
+    "standardConstructor": true
+  },
+  "ccl[ose]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CCloseCommand",
+    "standardConstructor": true
   },
   "ce[nter]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CenterAlignCommand",
     "standardConstructor": true
   },
+  "cex[pr]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CExprCommand",
+    "standardConstructor": true
+  },
+  "cf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFileCommand",
+    "standardConstructor": true
+  },
+  "cfir[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFirstCommand",
+    "standardConstructor": true
+  },
   "checkt[ime]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CheckTimeCommand",
+    "standardConstructor": true
+  },
+  "cl[ist]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
+    "standardConstructor": true
+  },
+  "cla[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CLastCommand",
     "standardConstructor": true
   },
   "cle[arjumps]": {
@@ -198,6 +238,10 @@
   "cmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
     "standardConstructor": false
+  },
+  "cn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CNextCommand",
+    "standardConstructor": true
   },
   "cno[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
@@ -219,8 +263,28 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdClearCommand",
     "standardConstructor": true
   },
+  "comp[iler]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CompilerCommand",
+    "standardConstructor": true
+  },
   "conf[irm]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ConfirmCommand",
+    "standardConstructor": true
+  },
+  "cope[n]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
+    "standardConstructor": true
+  },
+  "cp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
+    "standardConstructor": true
+  },
+  "cq[uit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CQuitCommand",
+    "standardConstructor": true
+  },
+  "crewind": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFirstCommand",
     "standardConstructor": true
   },
   "cu[nmap]": {
@@ -230,6 +294,10 @@
   "cuna[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
     "standardConstructor": false
+  },
+  "cw[indow]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
+    "standardConstructor": true
   },
   "d[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteLinesCommand",
@@ -351,6 +419,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
     "standardConstructor": true
   },
+  "gr[ep]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.GrepCommand",
+    "standardConstructor": true
+  },
   "gu[i]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GuiCommand",
     "standardConstructor": true
@@ -365,6 +437,10 @@
   },
   "ha[rdcopy]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HardcopyCommand",
+    "standardConstructor": true
+  },
+  "helpg[rep]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpGrepCommand",
     "standardConstructor": true
   },
   "hid[e]": {
@@ -387,6 +463,14 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
     "standardConstructor": false
   },
+  "ij[ump]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeJumpCommand",
+    "standardConstructor": true
+  },
+  "il[ist]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeListCommand",
+    "standardConstructor": true
+  },
   "im[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
@@ -405,6 +489,14 @@
   },
   "int[ro]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IntroCommand",
+    "standardConstructor": true
+  },
+  "is[earch]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeSearchCommand",
+    "standardConstructor": true
+  },
+  "isp[lit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeSplitCommand",
     "standardConstructor": true
   },
   "iu[nmap]": {
@@ -443,6 +535,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepPatternsCommand",
     "standardConstructor": true
   },
+  "lN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousCommand",
+    "standardConstructor": true
+  },
   "l[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ListCommand",
     "standardConstructor": true
@@ -451,8 +547,20 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
     "standardConstructor": true
   },
+  "ladde[xpr]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LAddExprCommand",
+    "standardConstructor": true
+  },
   "lat[er]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LaterCommand",
+    "standardConstructor": true
+  },
+  "lb[uffer]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LBufferCommand",
+    "standardConstructor": true
+  },
+  "lcl[ose]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LCloseCommand",
     "standardConstructor": true
   },
   "le[ft]": {
@@ -467,9 +575,41 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LetCommand",
     "standardConstructor": false
   },
+  "lex[pr]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LExprCommand",
+    "standardConstructor": true
+  },
+  "lf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFileCommand",
+    "standardConstructor": true
+  },
+  "lfir[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFirstCommand",
+    "standardConstructor": true
+  },
+  "lgr[ep]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LGrepCommand",
+    "standardConstructor": true
+  },
+  "ll": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LLCommand",
+    "standardConstructor": true
+  },
+  "lla[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LLastCommand",
+    "standardConstructor": true
+  },
+  "lli[st]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
+    "standardConstructor": true
+  },
   "lm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
+  },
+  "lmak[e]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LMakeCommand",
+    "standardConstructor": true
   },
   "lmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
@@ -478,6 +618,10 @@
   "ln[oremap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
+  },
+  "lne[xt]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LNextCommand",
+    "standardConstructor": true
   },
   "loadk[eymap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
@@ -489,6 +633,18 @@
   },
   "lockv[ar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
+    "standardConstructor": true
+  },
+  "lop[en]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
+    "standardConstructor": true
+  },
+  "lp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousCommand",
+    "standardConstructor": true
+  },
+  "lrewind": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFirstCommand",
     "standardConstructor": true
   },
   "ls": {
@@ -503,12 +659,20 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LuaCommand",
     "standardConstructor": true
   },
+  "lw[indow]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
+    "standardConstructor": true
+  },
   "m[ove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MoveTextCommand",
     "standardConstructor": true
   },
   "ma[rk]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
+    "standardConstructor": true
+  },
+  "mak[e]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeCommand",
     "standardConstructor": true
   },
   "map": {
@@ -607,6 +771,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
     "standardConstructor": false
   },
+  "ow[nsyntax]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.OwnSyntaxCommand",
+    "standardConstructor": true
+  },
   "p[rint]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
     "standardConstructor": true
@@ -615,12 +783,24 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackaddCommand",
     "standardConstructor": true
   },
+  "pc[lose]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewCloseCommand",
+    "standardConstructor": true
+  },
   "pe[rl]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PerlCommand",
     "standardConstructor": true
   },
+  "ped[it]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewEditCommand",
+    "standardConstructor": true
+  },
   "prev[ious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
+    "standardConstructor": true
+  },
+  "ps[earch]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewSearchCommand",
     "standardConstructor": true
   },
   "pu[t]": {
@@ -751,6 +931,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SleepCommand",
     "standardConstructor": true
   },
+  "sm[agic]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteMagicCommand",
+    "standardConstructor": true
+  },
   "smap": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
@@ -765,6 +949,10 @@
   },
   "sn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitNextCommand",
+    "standardConstructor": true
+  },
+  "sno[magic]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteNoMagicCommand",
     "standardConstructor": true
   },
   "snor[emap]": {
@@ -893,6 +1081,10 @@
   },
   "to[pleft]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TopLeftCommand",
+    "standardConstructor": true
+  },
+  "trus[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TrustCommand",
     "standardConstructor": true
   },
   "tu[nmenu]": {

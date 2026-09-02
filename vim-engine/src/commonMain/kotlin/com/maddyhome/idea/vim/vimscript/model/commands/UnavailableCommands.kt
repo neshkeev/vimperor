@@ -213,3 +213,102 @@ data class MakeSessionCommand(val range: Range, val modifier: CommandModifier, v
 @ExCommand(command = "breaka[dd]")
 data class BreakAddCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
+
+// The preview window. Vim keeps a small window at the top showing a definition without leaving
+// where you are, and neither host has one: a VS Code peek and an IntelliJ quick-documentation popup
+// are the IDE's own, opened by the IDE, and not a window an extension can put a buffer in.
+
+/** see "h :pclose" */
+@ExCommand(command = "pc[lose]")
+data class PreviewCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :pedit" */
+@ExCommand(command = "ped[it]")
+data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :psearch" */
+@ExCommand(command = "ps[earch]")
+data class PreviewSearchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+// `'include'` and `'path'`. Vim follows `#include` lines through a search path to find a definition;
+// this engine has neither option and neither host would use them if it did, since both index the
+// project themselves and answer "go to definition" from that.
+
+/** see "h :isearch" */
+@ExCommand(command = "is[earch]")
+data class IncludeSearchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ijump" */
+@ExCommand(command = "ij[ump]")
+data class IncludeJumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ilist" */
+@ExCommand(command = "il[ist]")
+data class IncludeListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :isplit" */
+@ExCommand(command = "isp[lit]")
+data class IncludeSplitCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+// The rest, each for a reason of its own.
+
+/**
+ * see "h :ownsyntax"
+ *
+ * Sets the syntax for *this window* while the buffer keeps its own, so the same file can be shown
+ * two ways at once. Both hosts hang the language off the document, and every view of a document
+ * shows it the same way; `:setlocal syntax=` is the whole of what they can do.
+ */
+@ExCommand(command = "ow[nsyntax]")
+data class OwnSyntaxCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
+ * see "h :compiler"
+ *
+ * Reads `compiler/{name}.vim` out of the runtime directory and sets `'makeprg'` and
+ * `'errorformat'` from it. There is no runtime directory: `:runtime` is accepted and finds nothing,
+ * and the plugin files Vim ships with are not here to be read. `:set makeprg=` is what to write
+ * instead, and `:make` reads it.
+ */
+@ExCommand(command = "comp[iler]")
+data class CompilerCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
+ * see "h :helpgrep"
+ *
+ * Searches Vim's own help files, of which there are none here - `:help` opens the documentation in
+ * a browser rather than in a buffer, so there is nothing on disk to grep.
+ */
+@ExCommand(command = "helpg[rep]")
+data class HelpGrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
+ * see "h :cquit"
+ *
+ * Quits Vim with a non-zero exit code, which is how `git commit` learns that you changed your mind.
+ * Neither host is a process you leave with a status: closing an editor tells the IDE nothing, and
+ * the IDE is not what launched you.
+ */
+@ExCommand(command = "cq[uit]")
+data class CQuitCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
+ * see "h :trust"
+ *
+ * Vim 9's list of files it will source without asking, which is what makes a project-local `.vimrc`
+ * safe. This fork reads one config, from one place the user chose; there is no list to add to.
+ */
+@ExCommand(command = "trus[t]")
+data class TrustCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)

@@ -30,6 +30,7 @@ import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
@@ -88,6 +89,13 @@ open class VsCodeInjector(
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
   private val openEditors: MutableList<VsCodeEditor> = mutableListOf()
+
+  init {
+    // The quickfix list belongs to the session, and this object is built once per session. In a
+    // running window that is a no-op at activation; in a test run it is what keeps one test's list
+    // out of the next one's.
+    Quickfix.reset()
+  }
 
   /**
    * The one with focus, which several services need and none can work out for themselves.

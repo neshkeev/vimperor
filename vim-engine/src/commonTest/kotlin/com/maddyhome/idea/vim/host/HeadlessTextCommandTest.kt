@@ -219,6 +219,40 @@ class HeadlessTextCommandTest {
     assertEquals("two\nthree", s.printed)
   }
 
+  // `:smagic` and `:snomagic`, which are `:s` with `'magic'` decided rather than inherited.
+
+  /**
+   * `:snomagic` makes `.` an ordinary character, which is the whole reason a script writes it.
+   *
+   * The atom goes in front of the pattern rather than into an option, which is Vim's own rule - and
+   * means the rest of the command, delimiters and flags and all, is `:s` because it is `:s`.
+   */
+  @Test
+  fun `test snomagic makes a dot literal`() {
+    val s = session("a.c abc")
+    s.run("""snomagic/a.c/X/""")
+
+    assertEquals("X abc", s.editor.text)
+  }
+
+  /** ...and `:smagic` makes it special again, whatever `'magic'` was set to. */
+  @Test
+  fun `test smagic makes a dot match anything`() {
+    val s = session("abc")
+    s.run("""smagic/a.c/X/""")
+
+    assertEquals("X", s.editor.text)
+  }
+
+  /** The flags are `:s`'s flags, because it is `:s` underneath. */
+  @Test
+  fun `test the substitute flags still work`() {
+    val s = session("a.c a.c")
+    s.run("""snomagic/a.c/X/g""")
+
+    assertEquals("X X", s.editor.text)
+  }
+
   @Test
   fun `test a z mark is reported rather than taken for the plain form`() {
     val s = session("one\ntwo")

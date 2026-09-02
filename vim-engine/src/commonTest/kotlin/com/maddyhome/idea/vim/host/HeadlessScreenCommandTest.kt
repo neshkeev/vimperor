@@ -90,6 +90,8 @@ class HeadlessScreenCommandTest {
       "winpos 0 0", "winsize 80 24", "options", "intro", "exusage", "viusage",
       "stop", "suspend", "open",
       "recover", "rviminfo", "wviminfo", "rundo x", "wundo x", "undolist", "mksession", "breakadd here",
+      "pclose", "pedit x", "psearch x", "isearch x", "ijump x", "ilist x", "isplit x",
+      "ownsyntax java", "compiler gcc", "helpgrep x", "cquit", "trust",
     )
 
     for (line in unavailable) {
@@ -103,9 +105,9 @@ class HeadlessScreenCommandTest {
    * A command that is merely not written yet still reports `E492`, which is what makes `E319` mean
    * something.
    *
-   * `:tag` and `:make` are the two nearest the line: both hosts could answer them - IntelliJ has a
-   * symbol index and both have a way to run a process - so claiming the build does not have them
-   * would be a claim about the work rather than about the feature.
+   * `:tselect` and `:mkvimrc` are the two nearest the line. Both hosts index the project's symbols
+   * and both know their own mappings and options, so claiming the build does not have these would
+   * be a claim about the work rather than about the feature.
    */
   @Test
   fun `test a command that could be written still reports E492`() {
