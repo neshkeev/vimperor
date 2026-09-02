@@ -38,6 +38,9 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  * is fetched once at activation and remembered here. Until it arrives every name is accepted, which
  * is the right way round: a `:action` that runs and fails names the command in its error, and one
  * refused because a list had not loaded yet would be a lie.
+ *
+ * The other half of the vocabulary is [IdeaActionAliases]: a name this window does not have may
+ * still be one IntelliJ does, and an `.ideavimrc` is full of them. See [resolve].
  */
 internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimActionExecutor {
 
@@ -46,6 +49,46 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
   /** Called once at activation, when VS Code has answered what commands it has. */
   fun remember(ids: Collection<String>) {
     known = ids.toSet()
+  }
+
+  /**
+   * What a name means: this window's command, IntelliJ's word for one, or neither.
+   *
+   * This window is asked first. A name it actually has is the name the user meant, and no table
+   * should be able to take that away - the two vocabularies do not collide in practice (VS Code's
+   * ids are dotted and lowercase, IntelliJ's are not), but the order is what guarantees it rather
+   * than the observation.
+   *
+   * Before the id list arrives the table is still consulted, because `GotoClass` is not going to
+   * turn out to be a VS Code command; anything the table has never heard of is passed through, for
+   * the same reason [getAction] accepts everything then.
+   */
+  private fun resolve(name: String): ResolvedAction {
+    val id = name.trim()
+    if (id.isEmpty()) return ResolvedAction.Unknown
+
+    val ids = known
+    if (ids != null && id in ids) return ResolvedAction.Command(id)
+    // The extension's own ids, whatever the window has said. These are checked against the real
+    // VS Code by their own activation pass, and the engine reaches them for `zo`, `zR` and `gd`
+    // through [ACTION_EXPAND_REGION] and its neighbours - a list that had not arrived, or a stub
+    // host with a short one, must not be able to turn those off.
+    if (id in VsCodeCommands.all) return ResolvedAction.Command(id)
+
+    if (IdeaActionAliases.contains(id)) {
+      val command = IdeaActionAliases.commandFor(id)
+      return if (command == null) ResolvedAction.IntelliJOnly(id) else ResolvedAction.Command(command)
+    }
+
+    return if (ids == null) ResolvedAction.Command(id) else ResolvedAction.Unknown
+  }
+
+  private fun report(editor: VimEditor?, ideaId: String) {
+    val where = editor ?: injector.fallbackWindow
+    injector.messages.showErrorMessage(
+      where,
+      "$ideaId is one of IntelliJ's actions and this VS Code has nothing that does it.",
+    )
   }
   override val ACTION_EDITOR_NEXT_TEMPLATE_VARIABLE: String = ""
   override val ACTION_COLLAPSE_ALL_REGIONS: String = VsCodeCommands.FOLD_ALL
@@ -87,6 +130,10 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
       host.run(action.id)
       return true
     }
+    if (action is IntelliJOnlyAction) {
+      report(editor, action.ideaId)
+      return false
+    }
     val vsCode = editor as? VsCodeEditor ?: return false
     return when (action) {
       is InsertNewLineAction -> {
@@ -120,7 +167,15 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
    */
   override fun executeAction(editor: VimEditor, name: String, context: ExecutionContext): Boolean {
     if (name.isEmpty()) return false
-    host.run(name)
+    val resolved = resolve(name)
+    if (resolved is ResolvedAction.IntelliJOnly) {
+      report(editor, resolved.ideaId)
+      return false
+    }
+    // A name this host cannot place is still sent. The window is the authority on what it has and
+    // says so when a command is missing - refusing here instead would mean a stale or unfinished
+    // id list could silently disable a mapping that works.
+    host.run(if (resolved is ResolvedAction.Command) resolved.id else name.trim())
     return true
   }
 
@@ -141,11 +196,11 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
    *
    * Before the id list has arrived nothing can be ruled out, so nothing is - see [known].
    */
-  override fun getAction(actionId: String): NativeAction? {
-    val id = actionId.trim()
-    if (id.isEmpty()) return null
-    val ids = known ?: return HostCommandAction(id)
-    return if (id in ids) HostCommandAction(id) else null
+  override fun getAction(actionId: String): NativeAction? = when (val resolved = resolve(actionId)) {
+    is ResolvedAction.Command -> HostCommandAction(resolved.id)
+    // Found, so that `:action` reports what is actually wrong with it rather than "not found".
+    is ResolvedAction.IntelliJOnly -> IntelliJOnlyAction(resolved.ideaId)
+    ResolvedAction.Unknown -> null
   }
 
   /**
@@ -175,6 +230,24 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
  */
 private data class HostCommandAction(val id: String) : NativeAction {
   override val action: Any get() = id
+}
+
+/**
+ * An IntelliJ action this editor has no version of.
+ *
+ * A found action rather than a missing one, deliberately. `:action MakeGradleModule` reporting
+ * "Action not found" would send the reader looking for a typo; what they need to hear is that the
+ * name is right and the feature is IntelliJ's.
+ */
+private data class IntelliJOnlyAction(val ideaId: String) : NativeAction {
+  override val action: Any get() = ideaId
+}
+
+/** What a name turned out to mean. See [VsCodeActionExecutor.resolve]. */
+private sealed interface ResolvedAction {
+  data class Command(val id: String) : ResolvedAction
+  data class IntelliJOnly(val ideaId: String) : ResolvedAction
+  object Unknown : ResolvedAction
 }
 
 /**

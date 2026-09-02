@@ -53,7 +53,12 @@ class ActionCommandTest {
         override fun error(text: String?) { errors += text.orEmpty() }
         override fun status(text: String?) {}
       },
-      runCommand = { command, _, onDone -> dispatched += command; onDone(true) },
+      // Answers the way VS Code does: a command it does not have is a rejected promise, which is
+      // what [VimHost.run] turns into the message the user sees.
+      runCommand = { command, _, onDone ->
+        dispatched += command
+        onDone(known == null || command in known || command in IdeaActionAliases.targets)
+      },
       outputPanel = OutputChannelPanelService(channel),
     ).also { it.start() }
 
@@ -111,16 +116,156 @@ class ActionCommandTest {
   /**
    * The list is what decides whether a name is an action.
    *
-   * `:action GotoClass` in a config written for IdeaVim names an IntelliJ action, and this is what
-   * makes that say so instead of silently doing nothing.
+   * A name that is neither a command this window has nor one of IntelliJ's says so, rather than
+   * being dispatched into the dark and failing somewhere the user is not looking.
    */
   @Test
-  fun `test action reports a name this VS Code does not have`() {
+  fun `test action reports a name nothing has heard of`() {
+    val session = Session()
+    session.run("action NoSuchThingAnywhere")
+
+    assertEquals(emptyList(), session.dispatched, "nothing should have been sent to VS Code")
+    assertEquals(listOf("Action not found: NoSuchThingAnywhere"), session.errors)
+  }
+
+  // IntelliJ's names, which is what an `.ideavimrc` is written in.
+
+  /**
+   * `:action GotoClass` is not a typo, it is a different editor's word for the same thing.
+   *
+   * The whole point of [IdeaActionAliases]: a config carried over from IdeaVim is full of these and
+   * every one of them failed, the ones in mappings silently. The engine passes a name through
+   * without caring whose vocabulary it is in, so the translation belongs here.
+   */
+  @Test
+  fun `test an IntelliJ action name runs the VS Code command that does the same job`() {
     val session = Session()
     session.run("action GotoClass")
 
-    assertEquals(emptyList(), session.dispatched, "nothing should have been sent to VS Code")
-    assertEquals(listOf("Action not found: GotoClass"), session.errors)
+    assertEquals(listOf("workbench.action.showAllSymbols"), session.dispatched)
+    assertEquals(emptyList(), session.errors)
+  }
+
+  @Test
+  fun `test an Action mapping written for IdeaVim works too`() {
+    val session = Session()
+    session.run("nmap <C-o> <Action>(Back)")
+    session.key("<C-O>")
+
+    assertEquals(listOf("workbench.action.navigateBack"), session.dispatched)
+  }
+
+  /**
+   * An action that is IntelliJ's and nothing else says which of the two it is.
+   *
+   * "Action not found" would send the reader looking for a typo. The name is right; the feature is
+   * the IDE's build model, and no command id is going to fix that.
+   */
+  @Test
+  fun `test an IntelliJ-only action says so rather than reporting a typo`() {
+    val session = Session()
+    session.run("action MakeGradleModule")
+
+    assertEquals(emptyList(), session.dispatched)
+    assertEquals(
+      listOf("MakeGradleModule is one of IntelliJ's actions and this VS Code has nothing that does it."),
+      session.errors,
+    )
+  }
+
+  /**
+   * A command this window really has wins over the table.
+   *
+   * The two vocabularies do not collide in practice - VS Code's ids are dotted and lowercase and
+   * IntelliJ's are not - so this is the order guaranteeing it rather than the observation.
+   */
+  @Test
+  fun `test a real command name is never translated`() {
+    val session = Session(known = SOME_COMMANDS + "GotoClass")
+    session.run("action GotoClass")
+
+    assertEquals(listOf("GotoClass"), session.dispatched, "the user named a command this window has")
+  }
+
+  /**
+   * A mapping naming nothing is still sent, and the window is what says so.
+   *
+   * Not refused here, which is the tempting version: the id list arrives over a promise and a stub
+   * host runs on a deliberately short one, so a host that refused what it could not place would let
+   * an incomplete list silently disable a mapping that works. `zo` in the stub host is exactly that
+   * case, and it is how this was found.
+   */
+  @Test
+  fun `test an Action mapping that names nothing is reported by the window`() {
+    val session = Session()
+    session.run("nmap <Leader>z <Action>(NoSuchThingAnywhere)")
+    session.type("\\z")
+
+    assertEquals(listOf("NoSuchThingAnywhere"), session.dispatched)
+    assertEquals(listOf("Vimperor: VS Code has no command 'NoSuchThingAnywhere'."), session.errors)
+  }
+
+  /** ...and the extension's own ids are never in doubt, whatever the window has answered. */
+  @Test
+  fun `test a command the extension itself uses is always an action`() {
+    val session = Session(known = emptyList())
+    session.run("action editor.unfold")
+
+    assertEquals(listOf("editor.unfold"), session.dispatched)
+  }
+
+  /**
+   * Every action the reported `.ideavimrc` names is answered.
+   *
+   * This is the acceptance test for "so `~/.ideavimrc` can be picked up without modifications" -
+   * the list is that file's, verbatim. Answered means one of two things, and both count: a VS Code
+   * command that does the job, or a sentence saying the job is IntelliJ's. What must not happen is
+   * `Action not found`, which is the report that sends someone looking for a mistake they did not
+   * make.
+   */
+  @Test
+  fun `test every action in the reported config is answered`() {
+    val fromTheReport = listOf(
+      "GotoClass", "GotoFile", "RecentFiles", "GotoImplementation", "GotoRelated", "QuickJavaDoc",
+      "TypeHierarchy", "Back", "Forward", "MakeGradleModule", "Maven.ReimportProject",
+      "Maven.Reimport", "CloseAllEditorsButActive", "HideAllWindows", "editRunConfigurations",
+      "GotoSuperMethod", "Annotate", "StructuralSearchPlugin.StructuralSearchAction",
+      "XDebugger.MuteBreakpoints", "ActivateInspectionResultsToolWindow", "JumpToLastChange",
+    )
+
+    val unanswered = fromTheReport.filterNot { IdeaActionAliases.contains(it) }
+
+    assertEquals(emptyList(), unanswered, "every name in that file has to resolve to something")
+  }
+
+  // The table itself.
+
+  @Test
+  fun `test no alias is blank on either side`() {
+    val blank = IdeaActionAliases.all.filter { (key, value) -> key.isBlank() || value?.isBlank() == true }
+    assertEquals(emptyMap(), blank)
+  }
+
+  /**
+   * No name is its own translation.
+   *
+   * A key that is also a target would mean the table had been filled in with VS Code ids on the
+   * left, which is the mistake this file's whole ordering is built to survive - and one worth
+   * catching where it is written rather than where it fails.
+   */
+  @Test
+  fun `test no IntelliJ name is also a VS Code command this table sends`() {
+    val confused = IdeaActionAliases.all.keys.filter { it in IdeaActionAliases.targets }
+    assertEquals(emptyList(), confused)
+  }
+
+  @Test
+  fun `test the activation check notices a target this window lacks`() {
+    val missing = IdeaActionAliases.missingFrom(listOf("workbench.action.quickOpen"))
+
+    assertTrue("workbench.action.showAllSymbols" in missing, "the ones that are gone should be named")
+    assertTrue("workbench.action.quickOpen" !in missing, "and the one that is there should not be")
+    assertTrue(missing.size < IdeaActionAliases.targets.size, "the comparison has to be able to pass")
   }
 
   @Test

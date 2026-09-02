@@ -126,6 +126,158 @@ internal object VsCodeCommands {
 }
 
 /**
+ * IntelliJ action ids, and the VS Code command that does the same job.
+ *
+ * The point of this is one line of a bug report: "so `~/.ideavimrc` can be picked up without
+ * modifications". A config written for IdeaVim is full of `:action GotoClass` and
+ * `<Action>(Back)`, those are IntelliJ's names, and this host speaks VS Code's - so every one of
+ * them failed, and the ones in mappings failed silently. The engine does not care which vocabulary
+ * a host uses; it hands the name through. This is the translation.
+ *
+ * A null value is a real answer and not a gap: some of these are IntelliJ and nothing else.
+ * `MakeGradleModule` and `Maven.ReimportProject` are the IDE's build model, `Annotate` is its VCS
+ * integration, `StructuralSearchPlugin.StructuralSearchAction` is a feature VS Code has no version
+ * of. Saying so at the `:` prompt is worth more than a command id that does not exist, and much
+ * more than nothing happening.
+ *
+ * Every mapping here is a judgement about what two editors mean by the same word, and some are
+ * closer than others - `HideAllWindows` against a sidebar toggle is a practical answer rather than
+ * an exact one. The ids themselves are strings typed from documentation, which is this module's
+ * least checkable kind of fact, so [missingFrom] compares them against the real window at
+ * activation the way [VsCodeCommands.missingFrom] does.
+ */
+internal object IdeaActionAliases {
+
+  private val aliases: Map<String, String?> = mapOf(
+    // Navigation. IntelliJ separates "go to class" from "go to file"; VS Code separates "symbol in
+    // workspace" from "file", which is the same cut in a different place.
+    "GotoClass" to "workbench.action.showAllSymbols",
+    "GotoSymbol" to "workbench.action.showAllSymbols",
+    "GotoFile" to "workbench.action.quickOpen",
+    "SearchEverywhere" to "workbench.action.quickOpen",
+    "GotoAction" to "workbench.action.showCommands",
+    "GotoLine" to "workbench.action.gotoLine",
+    "FileStructurePopup" to "workbench.action.gotoSymbol",
+    "RecentFiles" to "workbench.action.openRecent",
+    "RecentChangedFiles" to "workbench.action.openRecent",
+    // `:e` with no argument reaches this one from the engine, so a bare `:e` opens the picker.
+    "OpenFile" to "workbench.action.quickOpen",
+
+    "GotoDeclaration" to "editor.action.revealDefinition",
+    "GotoTypeDeclaration" to "editor.action.goToTypeDefinition",
+    "GotoImplementation" to "editor.action.goToImplementation",
+    "QuickImplementations" to "editor.action.peekDefinition",
+    "FindUsages" to "editor.action.goToReferences",
+    "ShowUsages" to "editor.action.goToReferences",
+    "CallHierarchy" to "references-view.showCallHierarchy",
+    "TypeHierarchy" to "references-view.showTypeHierarchy",
+    // IntelliJ walks up to the overridden method. VS Code goes down to implementations and has
+    // nothing that goes up.
+    "GotoSuperMethod" to null,
+    "GotoRelated" to null,
+
+    "Back" to "workbench.action.navigateBack",
+    "Forward" to "workbench.action.navigateForward",
+    "JumpToLastChange" to "workbench.action.navigateToLastEditLocation",
+    "GotoNextError" to "editor.action.marker.next",
+    "GotoPreviousError" to "editor.action.marker.prev",
+
+    // Editing and refactoring.
+    "RenameElement" to "editor.action.rename",
+    "ReformatCode" to "editor.action.formatDocument",
+    "Refactorings.QuickListPopupAction" to "editor.action.refactor",
+    "ShowIntentionActions" to "editor.action.quickFix",
+    "CommentByLineComment" to "editor.action.commentLine",
+    "CommentByBlockComment" to "editor.action.blockComment",
+    "OptimizeImports" to "editor.action.organizeImports",
+    "ExpandRegion" to "editor.action.smartSelect.expand",
+    "ShrinkRegion" to "editor.action.smartSelect.shrink",
+    "EditorSelectWord" to "editor.action.smartSelect.expand",
+    "EditorUnSelectWord" to "editor.action.smartSelect.shrink",
+    "ParameterInfo" to "editor.action.triggerParameterHints",
+    "CodeCompletion" to "editor.action.triggerSuggest",
+    "SmartTypeCompletion" to "editor.action.triggerSuggest",
+    "QuickJavaDoc" to "editor.action.showHover",
+    "MoveLineUp" to "editor.action.moveLinesUpAction",
+    "MoveLineDown" to "editor.action.moveLinesDownAction",
+    "EditorDuplicate" to "editor.action.copyLinesDownAction",
+
+    // The `$`-prefixed ones are IntelliJ's own editor actions, which people bind when a Vim key is
+    // in the way of something they still want.
+    "\$Undo" to "undo",
+    "\$Redo" to "redo",
+    "\$Copy" to "editor.action.clipboardCopyAction",
+    "\$Cut" to "editor.action.clipboardCutAction",
+    "\$Paste" to "editor.action.clipboardPasteAction",
+    "\$SelectAll" to "editor.action.selectAll",
+
+    // Editors, splits and tool windows.
+    "CloseContent" to "workbench.action.closeActiveEditor",
+    "CloseAllEditorsButActive" to "workbench.action.closeOtherEditors",
+    "CloseAllEditors" to "workbench.action.closeAllEditors",
+    "NextTab" to "workbench.action.nextEditor",
+    "PreviousTab" to "workbench.action.previousEditor",
+    // IntelliJ names a split by the divider's direction and VS Code by where the new editor lands,
+    // so these read as swapped and are not: a vertical divider puts the new editor to the right.
+    "SplitVertically" to "workbench.action.splitEditorRight",
+    "SplitHorizontally" to "workbench.action.splitEditorDown",
+    "ToggleFullScreen" to "workbench.action.toggleFullScreen",
+    "ToggleDistractionFreeMode" to "workbench.action.toggleZenMode",
+    // Not exact. IntelliJ hides every tool window at once; the sidebar is the one that is usually
+    // in the way, and toggling it is what people bind this to.
+    "HideAllWindows" to "workbench.action.toggleSidebarVisibility",
+    "ActivateProjectToolWindow" to "workbench.view.explorer",
+    "ActivateTerminalToolWindow" to "workbench.action.terminal.toggleTerminal",
+    "ActivateVersionControlToolWindow" to "workbench.view.scm",
+    "ActivateDebugToolWindow" to "workbench.view.debug",
+    "ActivateFindToolWindow" to "workbench.view.search",
+    "ActivateInspectionResultsToolWindow" to "workbench.actions.view.problems",
+
+    // Run and debug.
+    "Run" to "workbench.action.debug.run",
+    "Debug" to "workbench.action.debug.start",
+    "Stop" to "workbench.action.debug.stop",
+    "Resume" to "workbench.action.debug.continue",
+    "StepOver" to "workbench.action.debug.stepOver",
+    "StepInto" to "workbench.action.debug.stepInto",
+    "StepOut" to "workbench.action.debug.stepOut",
+    "ToggleLineBreakpoint" to "editor.debug.action.toggleBreakpoint",
+    "editRunConfigurations" to "workbench.action.debug.configure",
+    // VS Code enables or disables all breakpoints with two separate commands and has no toggle.
+    "XDebugger.MuteBreakpoints" to null,
+
+    // Version control.
+    "Vcs.UpdateProject" to "git.pull",
+    "Vcs.Push" to "git.push",
+    "CheckinProject" to "workbench.view.scm",
+    "Git.Branches" to "git.checkout",
+    // Blame. VS Code has none built in - it is what people install GitLens for.
+    "Annotate" to null,
+
+    // The IDE's own model of a project, which is where the two editors stop resembling each other.
+    "MakeGradleModule" to null,
+    "CompileDirty" to "workbench.action.tasks.build",
+    "Maven.ReimportProject" to null,
+    "Maven.Reimport" to null,
+    "StructuralSearchPlugin.StructuralSearchAction" to null,
+  )
+
+  /** Whether this is a name this table has an answer for, including "nothing does this". */
+  fun contains(ideaId: String): Boolean = ideaId in aliases
+
+  /** The VS Code command for [ideaId], or null when nothing in VS Code does that job. */
+  fun commandFor(ideaId: String): String? = aliases[ideaId]
+
+  /** The whole table, for the tests that hold it to the shape it claims. */
+  val all: Map<String, String?> get() = aliases
+
+  /** Every command this table can send, so activation can check them against the real window. */
+  val targets: List<String> = aliases.values.filterNotNull().distinct().sorted()
+
+  fun missingFrom(available: Collection<String>): List<String> = targets.filterNot { it in available }
+}
+
+/**
  * Colours by the id the user's theme gives them, so highlights match what the editor's own find
  * does. A literal colour is unreadable in half of the themes people use.
  */

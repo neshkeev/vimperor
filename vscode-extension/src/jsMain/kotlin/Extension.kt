@@ -13,6 +13,7 @@
 import com.maddyhome.idea.vim.vscode.DecorationHighlighter
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
+import com.maddyhome.idea.vim.vscode.IdeaActionAliases
 import com.maddyhome.idea.vim.vscode.MessageSink
 import com.maddyhome.idea.vim.vscode.openTutor
 import com.maddyhome.idea.vim.vscode.OutputChannel
@@ -221,6 +222,18 @@ fun activate(context: ExtensionContext) {
       output.appendLine(
         "This VS Code does not have ${missing.size} of the ${VsCodeCommands.all.size} commands Vimperor " +
           "uses, so the Vim commands that need them will do nothing: " + missing.joinToString(", "),
+      )
+    }
+
+    // The same check for the table that translates IntelliJ's action names, which is a page of
+    // strings typed from documentation and the least checkable thing in the module now. Only the
+    // missing ones are printed: a window with the Git extension turned off is a real window and
+    // does not need a paragraph about it every time it starts.
+    val missingAliases = IdeaActionAliases.missingFrom(available.toList())
+    if (missingAliases.isNotEmpty()) {
+      output.appendLine(
+        "${missingAliases.size} of the ${IdeaActionAliases.targets.size} IntelliJ action aliases point at " +
+          "commands this VS Code does not have: " + missingAliases.joinToString(", "),
       )
     }
   })

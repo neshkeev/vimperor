@@ -167,6 +167,18 @@ this VS Code does not have is reported at the `:` prompt rather than failing sil
 command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
 each one - VS Code has no API that reads its own keybindings.
 
+An `.ideavimrc` written for IdeaVim names IntelliJ's actions - `:action GotoClass`,
+`<Action>(Back)` - and those are translated. 90 of them, with 8 answering that the job is
+IntelliJ's and nothing in VS Code does it: `MakeGradleModule` and `Maven.ReimportProject` are the
+IDE's build model, `Annotate` is its VCS integration, `GotoSuperMethod` goes up an override chain
+VS Code has no way to walk. Saying which of the two it is matters, because "Action not found" sends
+the reader looking for a typo they did not make.
+
+A name this window really has always wins over the table, which is what stops the two vocabularies
+from colliding. The table is a page of ids typed from documentation - this module's least checkable
+kind of fact - so activation compares them against the real window and names the ones that are
+wrong, the same way it checks the commands the extension uses itself.
+
 `:action git<Tab>` completes, and cycles on each Tab with `<S-Tab>` going back. The engine had all
 of this - a completion session, a parser that says whether the caret is in a command name or its
 argument, and a type per command saying what the argument completes against - and it knew about file
