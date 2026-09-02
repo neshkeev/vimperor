@@ -11,10 +11,12 @@ package com.maddyhome.idea.vim.vimscript.model.commands
 import com.intellij.vim.annotations.ExCommand
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.MessageSuppression
+import com.maddyhome.idea.vim.api.OutputFilter
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.options.OptionAccessScope
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
@@ -56,14 +58,16 @@ sealed class ModifierCommand(range: Range, modifier: CommandModifier, argument: 
   /**
    * The rest of the line, executed.
    *
-   * Nothing to run is not an error: `:silent` on its own is a no-op in Vim too.
+   * Nothing to run is not an error: `:silent` on its own is a no-op in Vim too. [argument] is here
+   * for `:filter`, which is the one modifier that takes something of its own before the command.
    */
   protected fun runModified(
     editor: VimEditor,
     context: ExecutionContext,
     indicateErrors: Boolean = true,
+    argument: String = commandArgument,
   ): ExecutionResult {
-    val modified = commandArgument.trim()
+    val modified = argument.trim()
     if (modified.isEmpty()) return ExecutionResult.Success
     return injector.vimscriptExecutor.execute(
       modified,
@@ -290,3 +294,119 @@ data class KeepAltCommand(val range: Range, val modifier: CommandModifier, val a
     operatorArguments: OperatorArguments,
   ): ExecutionResult = runModified(editor, context)
 }
+
+/**
+ * see "h :unsilent"
+ *
+ * The way out of a `:silent` that is wrapped around a whole block - a function called under
+ * `:silent` can still say the one thing it needs to. So it clears the suppression rather than
+ * setting one, and puts back whatever was there.
+ */
+@ExCommand(command = "uns[ilent]")
+data class UnsilentCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val previous = injector.messages.suppression
+    injector.messages.suppression = MessageSuppression.NONE
+    try {
+      return runModified(editor, context)
+    } finally {
+      injector.messages.suppression = previous
+    }
+  }
+}
+
+/**
+ * see "h :filter"
+ *
+ * `:filter {pat} {command}` shows only the lines of the command's output that match, and
+ * `:filter! {pat} {command}` only the ones that do not. `:filter /pat/ {command}` is the same with
+ * the pattern delimited, which is how you write one containing a space.
+ *
+ * The unit is the line, as it is in Vim, so `:filter /vim/ registers` prints the rows of that table
+ * that mention vim and no others - the header included, since Vim filters that too. It is read
+ * where the output panel is written, which is the one place every table and every `:echo` passes
+ * through.
+ */
+@ExCommand(command = "filt[er]")
+data class FilterCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val (pattern, command) = split(argument.trim()) ?: throw exExceptionMessage("E471")
+
+    val previous = injector.messages.outputFilter
+    injector.messages.outputFilter = OutputFilter(pattern, invert = modifier == CommandModifier.BANG)
+    try {
+      return runModified(editor, context, argument = command)
+    } finally {
+      injector.messages.outputFilter = previous
+    }
+  }
+
+  /**
+   * The pattern and the command it filters.
+   *
+   * Vim allows any non-identifier character as the delimiter, not only `/`, and a bare pattern with
+   * no delimiter at all - which then runs to the first space, because that is the only thing that
+   * could end it.
+   */
+  private fun split(text: String): Pair<String, String>? {
+    if (text.isEmpty()) return null
+    val delimiter = text.first()
+    if (!delimiter.isLetterOrDigit() && delimiter != '_' && delimiter != '\\') {
+      val end = text.indexOf(delimiter, startIndex = 1)
+      if (end < 0) return null
+      return text.substring(1, end) to text.substring(end + 1).trim()
+    }
+    val space = text.indexOfFirst { it == ' ' || it == '\t' }
+    if (space < 0) return null
+    return text.substring(0, space) to text.substring(space).trim()
+  }
+}
+
+/**
+ * The modifiers that name something this fork does not have, and run the command anyway.
+ *
+ * `:confirm` asks before losing a change; both hosts ask on their own account and neither lets an
+ * extension put the question. `:sandbox` runs an expression with side effects forbidden, which is
+ * for `'foldexpr'` and modelines out of files you do not trust, and nothing here evaluates one.
+ * `:noswapfile` opens a file without a swap file, and there are no swap files.
+ *
+ * Each of these is a promise about *how* the command runs rather than a change to what it does, so
+ * running the command and not keeping the promise is closer to right than refusing the line - and
+ * in the two cases where it matters the host is already keeping its own version of the promise.
+ */
+sealed class AcceptedModifierCommand(range: Range, modifier: CommandModifier, argument: String) :
+  ModifierCommand(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult = runModified(editor, context)
+}
+
+/** see "h :confirm" - the host asks its own question; see [AcceptedModifierCommand]. */
+@ExCommand(command = "conf[irm]")
+data class ConfirmCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  AcceptedModifierCommand(range, modifier, argument)
+
+/** see "h :sandbox" - nothing here evaluates an untrusted expression; see [AcceptedModifierCommand]. */
+@ExCommand(command = "san[dbox]")
+data class SandboxCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  AcceptedModifierCommand(range, modifier, argument)
+
+/** see "h :noswapfile" - there are no swap files; see [AcceptedModifierCommand]. */
+@ExCommand(command = "noswapf[ile]")
+data class NoSwapFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  AcceptedModifierCommand(range, modifier, argument)

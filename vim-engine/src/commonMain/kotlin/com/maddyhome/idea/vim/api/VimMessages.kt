@@ -28,6 +28,16 @@ enum class MessageSuppression {
   EVERYTHING,
 }
 
+/**
+ * The lines `:filter` lets through: those the pattern matches, or those it does not for `:filter!`.
+ *
+ * Vim's own wording is that `:filter` "only shows lines matching {pat}", and the unit really is the
+ * line - a command that prints a table is filtered row by row, header included.
+ */
+data class OutputFilter(val pattern: String, val invert: Boolean) {
+  fun keeps(line: String): Boolean = injector.regexpService.matches(pattern, line) != invert
+}
+
 interface VimMessages {
 
   /**
@@ -58,6 +68,25 @@ interface VimMessages {
   fun hides(messageType: MessageType): Boolean = when (messageType) {
     MessageType.ERROR -> isSilentAboutErrors
     else -> isSilent
+  }
+
+  /**
+   * The filter `:filter` is holding, or null outside one. Set and put back by `FilterCommand`.
+   *
+   * Alongside [suppression] because it answers the same question - what reaches the user - and is
+   * read in the same place, [VimOutputPanelService.output].
+   */
+  var outputFilter: OutputFilter?
+
+  /**
+   * [text] with the lines the filter drops removed, or null when it drops all of them.
+   *
+   * Null rather than an empty string so that a panel is not opened to show nothing.
+   */
+  fun filterOutput(text: String): String? {
+    val filter = outputFilter ?: return text
+    val kept = text.split("\n").filter { it.isNotEmpty() && filter.keeps(it) }
+    return if (kept.isEmpty()) null else kept.joinToString("\n", postfix = "\n")
   }
 
   /**

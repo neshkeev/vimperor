@@ -6,9 +6,5 @@
   "res[ize]": {
     "class": "com.maddyhome.idea.vim.resize.ResizeCommand",
     "standardConstructor": true
-  },
-  "vert[ical]": {
-    "class": "com.maddyhome.idea.vim.resize.VerticalCommand",
-    "standardConstructor": true
   }
 }

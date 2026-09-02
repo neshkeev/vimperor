@@ -10,4 +10,5 @@ package com.maddyhome.idea.vim.api
 
 abstract class VimMessagesBase : VimMessages {
   override var suppression: MessageSuppression = MessageSuppression.NONE
+  override var outputFilter: OutputFilter? = null
 }

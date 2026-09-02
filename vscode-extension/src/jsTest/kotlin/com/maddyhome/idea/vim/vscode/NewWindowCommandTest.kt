@@ -110,6 +110,61 @@ class NewWindowCommandTest {
     assertEquals(listOf(VsCodeCommands.OPEN), session.commandsFor("tabedit /test/other.txt"))
   }
 
+  // `:vertical` and `:horizontal`, which say which way the split goes.
+
+  /**
+   * `:vertical split` splits beside rather than below - the modifier wins over the name.
+   *
+   * The pair of them is why `:vertical` had to move out of the IntelliJ plugin and into the engine.
+   * IdeaVim's copy accepted `:vertical resize` and reported `E492` for anything else, so it was not
+   * really the modifier at all; it is one now, and `:resize` reads the flag it raises.
+   */
+  @Test
+  fun `test vertical split splits to the right`() {
+    val session = Session()
+
+    assertEquals(listOf(VsCodeCommands.SPLIT_EDITOR_RIGHT), session.commandsFor("vertical split"))
+  }
+
+  @Test
+  fun `test horizontal vsplit splits downwards`() {
+    val session = Session()
+
+    assertEquals(listOf(VsCodeCommands.SPLIT_EDITOR_DOWN), session.commandsFor("horizontal vsplit"))
+  }
+
+  @Test
+  fun `test vertical new opens the new buffer beside`() {
+    val session = Session()
+
+    assertEquals(
+      listOf(VsCodeCommands.SPLIT_EDITOR_RIGHT, VsCodeCommands.NEW_UNTITLED_FILE),
+      session.commandsFor("vertical new"),
+    )
+  }
+
+  /** ...and an unmodified `:split` is still horizontal afterwards. */
+  @Test
+  fun `test the modifier lasts exactly one command`() {
+    val session = Session()
+    session.commandsFor("vertical split")
+
+    assertEquals(listOf(VsCodeCommands.SPLIT_EDITOR_DOWN), session.commandsFor("split"))
+  }
+
+  /**
+   * A placement this host cannot honour still gets you the split.
+   *
+   * `:topleft` and the other four name a corner, and neither host lets an extension choose one.
+   * Refusing the whole line would lose the split as well as the preference.
+   */
+  @Test
+  fun `test botright split still splits`() {
+    val session = Session()
+
+    assertEquals(listOf(VsCodeCommands.SPLIT_EDITOR_DOWN), session.commandsFor("botright split"))
+  }
+
   // `:wincmd`, which is `<C-W>` spelled as a command.
 
   @Test

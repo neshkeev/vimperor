@@ -1075,11 +1075,9 @@ interface MessageSink {
   }
 }
 
-private class VsCodeMessages(private val sink: MessageSink) : VimMessages {
+private class VsCodeMessages(private val sink: MessageSink) : VimMessagesBase() {
   private var statusBar: String? = null
   private var error = false
-
-  override var suppression: MessageSuppression = MessageSuppression.NONE
 
   override fun showMessage(editor: VimEditor, message: String?) {
     if (isSilent) return

@@ -478,7 +478,11 @@ class VsCodeOptionsTest {
     val candidates = listOf(
       "silent! echo 1", "verbose set nu", "noautocmd echo 1", "lockmarks echo 1",
       "keepmarks echo 1", "keepjumps echo 1", "keeppatterns echo 1", "keepalt echo 1",
+      "vertical split", "horizontal split", "topleft split", "botright split", "aboveleft split",
+      "belowright split", "leftabove split", "rightbelow split", "tab split",
+      "confirm echo 1", "sandbox echo 1", "noswapfile echo 1", "unsilent echo 1", "filter /x/ echo 1",
       "unlet g:x",
+      "echomsg 'x'", "echoerr 'x'", "echon 'x'", "echohl None", "eval 1", "undojoin",
       "enew", "new", "vnew", "tabnew", "tabedit", "wincmd l", "bfirst", "blast", "pwd",
       "bufdo echo 1", "windo echo 1", "tabdo echo 1", "argdo echo 1",
       "startinsert", "doautocmd BufRead", "earlier 1", "later 1",

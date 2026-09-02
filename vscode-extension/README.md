@@ -186,7 +186,7 @@ forms that ask for something VS Code contradicts, like `:syntax off` and `:cd`, 
 cost is honest: `:set expandtab?` answers with what was set rather than with what the editor is
 doing. IdeaVim's `IjOptions` has the same group for the same reason.
 
-Vim's eight command modifiers are implemented, in `vim-engine`, so both hosts have them.
+Vim's command modifiers are implemented, in `vim-engine`, so both hosts have them.
 `silent! colorscheme solarized` is the standard way a portable config guards something optional, and
 without it such a line does not merely fail, it is reported. Vim documents these as modifiers rather
 than commands and that reads like a job for the grammar; it is not one. A modifier is spelled like
@@ -199,6 +199,24 @@ and the output panel consult, `:noautocmd` a flag `handleEvent` reads, `:lockmar
 `:verbose` the `'verbose'` option. `:keepalt` is the exception and says so: the alternate file is
 IntelliJ's last tab and VS Code's previous editor, decided outside anything the engine could
 suppress, so it runs the command and the alternate file changes anyway.
+
+`:vertical` and `:horizontal` name an axis, and an axis is something both hosts have: a split is
+either beside the window or below it. `:vertical split` splits beside, `:horizontal vsplit` splits
+below - the modifier wins over the name, which is the whole reason Vim has both spellings. This is
+also where `:vertical` moved out of the IntelliJ plugin: IdeaVim's copy accepted `:vertical resize`
+and reported `E492` for anything else, so it was not really the modifier; `:resize` reads the flag
+now, and both hosts get the general case.
+
+The five that name a *place* - `:topleft`, `:botright`, `:aboveleft`, `:belowright`, `:tab` - run
+the command and let the host put the window where it puts windows. Neither IntelliJ nor VS Code
+lets an extension choose a corner, and `botright split` in a mapping is asking for a split, mostly.
+`:confirm`, `:sandbox` and `:noswapfile` are the same shape: promises about *how* a command runs
+that this fork cannot keep, where the host is already keeping its own version of two of them.
+
+`:filter /pat/ {command}` is real, and reads at the same place `:silent` does: the output panel
+keeps the lines the pattern matches, or the ones it does not for `:filter!`. The unit is the line,
+as it is in Vim, so `:filter /vim/ registers` prints the rows of that table that mention vim.
+`:unsilent` is the way out of a `:silent` wrapped round a whole block.
 
 The `keep*` four were not on the measured list of missing commands, because they never reported an
 error - they were worse than missing. `:k{mark}` is spelled with no space, so the catch-all parser
@@ -244,9 +262,18 @@ by state, by file write or by elapsed time, and VS Code's is a line, so `:earlie
 right whenever nothing has branched - while `:earlier 5m` reports `E475` rather than answering a
 question about time with a number of undos.
 
+`:echomsg`, `:echoerr`, `:echon` and `:eval` are the rest of the `:echo` family. Only `:echo` has a
+rule of its own in the grammar, so these arrive as a string where it arrives as parsed expressions -
+and rather than parse that string a second way, they hand it back to the parser as an `:echo` and
+take the expressions off it, so everything `:echo` understands they understand too. `:echoerr`
+throws, which is what makes `silent! echoerr` a way of testing something and what lets `:try` catch
+it. `:echohl` and `:undojoin` are registered and do nothing, with the reason written at each.
+
 The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
 empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
-up as a failure rather than as a bug report.
+up as a failure rather than as a bug report. Sweeping the *whole* of Vim's command list rather than
+what a config reaches for leaves 114 - quickfix, tags, sessions, and the ones that need a language
+runtime.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

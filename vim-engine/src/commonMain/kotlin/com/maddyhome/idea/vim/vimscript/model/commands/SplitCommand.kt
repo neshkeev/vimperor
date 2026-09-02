@@ -32,7 +32,10 @@ data class SplitCommand(val range: Range, val argument: String, val splitType: S
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     val expandedPath = injector.pathExpansion.expandPath(argument)
-    if (splitType == SplitType.VERTICAL) {
+    // `:vertical split` is a vertical split and `:horizontal vsplit` a horizontal one - the
+    // modifier wins over the name, which is the whole reason Vim has both spellings.
+    val vertical = injector.window.verticalModifier ?: (splitType == SplitType.VERTICAL)
+    if (vertical) {
       injector.window.splitWindowVertical(context, expandedPath)
     } else {
       injector.window.splitWindowHorizontal(context, expandedPath)

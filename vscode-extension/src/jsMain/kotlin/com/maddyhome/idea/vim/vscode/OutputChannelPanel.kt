@@ -91,8 +91,9 @@ class OutputChannelPanelService(private val channel: OutputChannel) : VimOutputP
     messageType: MessageType,
   ) {
     if (injector.messages.hides(messageType)) return
+    val shown = injector.messages.filterOutput(text) ?: return
     val panel = getOrCreate(editor, context)
-    panel.addText(text, isNewLine = true, messageType = messageType)
+    panel.addText(shown, isNewLine = true, messageType = messageType)
     panel.show()
   }
 

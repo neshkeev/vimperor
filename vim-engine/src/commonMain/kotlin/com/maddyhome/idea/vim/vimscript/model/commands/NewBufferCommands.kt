@@ -64,7 +64,7 @@ data class NewWindowCommand(val range: Range, val modifier: CommandModifier, val
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    injector.window.splitWindowHorizontal(context, "")
+    splitForNewWindow(context, vertical = false)
     return openNewWindowContents(context, argument)
   }
 }
@@ -82,8 +82,17 @@ data class NewVerticalWindowCommand(val range: Range, val modifier: CommandModif
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    injector.window.splitWindowVertical(context, "")
+    splitForNewWindow(context, vertical = true)
     return openNewWindowContents(context, argument)
+  }
+}
+
+/** `:vertical new` is a vertical split, as it is for `:split` - the modifier wins over the name. */
+private fun splitForNewWindow(context: ExecutionContext, vertical: Boolean) {
+  if (injector.window.verticalModifier ?: vertical) {
+    injector.window.splitWindowVertical(context, "")
+  } else {
+    injector.window.splitWindowHorizontal(context, "")
   }
 }
 

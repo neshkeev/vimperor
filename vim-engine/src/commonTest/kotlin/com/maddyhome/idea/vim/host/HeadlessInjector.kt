@@ -23,12 +23,14 @@ import com.maddyhome.idea.vim.api.VimCommandLineService
 import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
-import com.maddyhome.idea.vim.api.MessageSuppression
 import com.maddyhome.idea.vim.api.AutoCmdService
+import com.maddyhome.idea.vim.api.VimRegexServiceBase
+import com.maddyhome.idea.vim.api.VimRegexpService
 import com.maddyhome.idea.vim.api.ExecutionContextManager
 import com.maddyhome.idea.vim.api.ExecutionContextManagerBase
 import com.maddyhome.idea.vim.autocmd.AutoCmdImpl
 import com.maddyhome.idea.vim.api.VimMessages
+import com.maddyhome.idea.vim.api.VimMessagesBase
 import com.maddyhome.idea.vim.api.VimOutputPanel
 import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.VimOutputPanelServiceBase
@@ -367,6 +369,14 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * have tested the stand-in.
    */
   override val outputPanel: VimOutputPanelService by lazy { HeadlessOutputPanelService() }
+
+  /**
+   * `VimRegexServiceBase` is the engine's own regex engine with nothing host-shaped in it.
+   *
+   * Asked whenever a Vim pattern is matched against a string rather than against a buffer, which
+   * `:filter` does for every line it is about to print.
+   */
+  override val regexpService: VimRegexpService by lazy { VimRegexServiceBase() }
 
   /** `AutoCmdImpl` is the engine's own and needs no host behind it: it stores commands and runs them. */
   override val autoCmd: AutoCmdService by lazy { AutoCmdImpl() }
@@ -745,15 +755,13 @@ class HeadlessOutputPanel : VimOutputPanel {
   }
 }
 
-class HeadlessMessages : VimMessages {
+class HeadlessMessages : VimMessagesBase() {
   var lastMessage: String? = null
     private set
   var lastError: String? = null
     private set
   private var statusBar: String? = null
   private var error = false
-
-  override var suppression: MessageSuppression = MessageSuppression.NONE
 
   override fun showMessage(editor: VimEditor, message: String?) {
     if (isSilent) return

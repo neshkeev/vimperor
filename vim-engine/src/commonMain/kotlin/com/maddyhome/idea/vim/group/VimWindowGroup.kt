@@ -28,6 +28,20 @@ interface VimWindowGroup {
   fun closeAll(context: ExecutionContext)
 
   /**
+   * Which axis the next window command works on, as `:vertical` and `:horizontal` set it.
+   *
+   * Null outside one of those modifiers, which is not the same as false: `:split` is horizontal and
+   * `:vsplit` vertical of their own accord, and a modifier is what overrides that. `:vertical
+   * resize 30` sets the width where a bare `:resize 30` sets the height, which is the same rule
+   * read on a different command.
+   *
+   * State rather than an action, and here rather than in the commands, because the command that
+   * sets it and the commands that read it are three files apart and both ends already reach the
+   * window group.
+   */
+  var verticalModifier: Boolean?
+
+  /**
    * `:enew` - a new, empty, unnamed buffer, in the window that is already focused.
    *
    * Vim's is a buffer with no file behind it, waiting for a `:w` to give it a name. Both hosts have

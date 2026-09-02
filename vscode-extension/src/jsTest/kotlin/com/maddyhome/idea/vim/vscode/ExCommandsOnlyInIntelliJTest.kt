@@ -88,8 +88,14 @@ class ExCommandsOnlyInIntelliJTest {
      * kept, which is all the command needed. It is this host's own now, declared through
      * `commandProviders` next to the tutor, so it is registered above and not listed here.
      *
-     * `:resize` and `:vertical` size a split. VS Code has no API for the size of an editor group -
-     * only commands to grow or shrink one by an unspecified amount.
+     * `:resize` sizes a split. VS Code has no API for the size of an editor group - only commands
+     * to grow or shrink one by an unspecified amount.
+     *
+     * `:vertical` was here beside it, and was not really the same thing: IdeaVim's copy accepted
+     * `:vertical resize` and reported `E492` for everything else, where Vim's `:vertical` is a
+     * modifier that says which axis the *following* command works on. It is that in `vim-engine`
+     * now - it raises a flag and runs the rest of the line - so `:resize` reads the flag, this host
+     * gets `:vertical split`, and IdeaVim keeps `:vertical resize` by the same route.
      *
      * `:buffer`, `:ls`, `:files` and `:buffers` were on this list, with the reason that "VS Code has
      * tabs rather than buffers, and its tab model does not carry the modified/loaded state Vim
@@ -101,7 +107,6 @@ class ExCommandsOnlyInIntelliJTest {
      */
     val EXPECTED = """
       res[ize]
-      vert[ical]
     """.trimIndent()
   }
 }
