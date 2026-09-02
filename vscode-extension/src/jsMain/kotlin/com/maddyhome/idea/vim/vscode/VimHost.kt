@@ -352,7 +352,13 @@ class VimHost(
     val pushed = textEditor.selections.joinToString(", ") {
       "(${it.anchor.line},${it.anchor.character})-(${it.active.line},${it.active.character})"
     }
-    return "${modeName()} carets=[$carets] pushed=[$pushed]"
+    // The viewport as the extension can see it. `visibleRanges` is a snapshot VS Code refreshes
+    // when it paints, and every scroll command reasons from it - so when scrolling misbehaves, the
+    // first question is whether this says what the window looks like. An empty array is worth
+    // seeing too: the fallbacks for it claim the whole file is on screen.
+    val ranges = textEditor.visibleRanges
+    val view = if (ranges.isEmpty()) "none" else ranges.joinToString(",") { "${it.start.line}..${it.end.line}" }
+    return "${modeName()} carets=[$carets] pushed=[$pushed] view=[$view] of ${editor.lineCount()}"
   }
 
   /**
