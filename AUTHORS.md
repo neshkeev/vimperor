@@ -1,22 +1,19 @@
-IdeaVim Authors
+Vimperor Authors
 ===============
+* [![icon][mail]](mailto:kastolom@gmail.com)
+  [![icon][github]](https://github.com/neshkeev)
+  &nbsp;
+  Nikita Eshkeev
 
-The original author:
-
+IdeaVim Contributors:
 * [![icon][mail]](mailto:rmaddy@maddyhome.com)
   [![icon][github-off]](#)
   &nbsp;
   Rick Maddy    
-
-The current maintainers:
-
 * [![icon][mail]](mailto:alexpl292@gmail.com)
   [![icon][github]](https://github.com/AlexPl292)
   &nbsp;
   Alex Plate (JetBrains employee)
-
-Previous maintainers:
-
 * [![icon][mail]](mailto:oleg.shpynov@jetbrains.com)
   [![icon][github]](https://github.com/olegs)
   &nbsp;
@@ -25,16 +22,10 @@ Previous maintainers:
   [![icon][github]](https://github.com/vlasovskikh)
   &nbsp;
   Andrey Vlasovskikh (JetBrains employee)
-
-Previous support members:
-
 * [![icon][mail]](mailto:lejia.chen@jetbrains.com)
   [![icon][github-off]](#)
   &nbsp;
   Lejia Chen (JetBrains employee)
-
-Contributors:
-
 * [![icon][mail]](mailto:tony.kay@gmail.com)
   [![icon][github]](https://github.com/awkay)
   &nbsp;
@@ -642,9 +633,6 @@ and contributors who have signed a Contributor License Agreement (CLA).*
   [![icon][github]](https://github.com/zuberol)
   &nbsp;
   Jakub Zuber (JetBrains contractor)
-
-Previous contributors:
-
 * [![icon][mail]](mailto:hild@b4mad.net)
   [![icon][github-off]](#)
   &nbsp;
@@ -653,10 +641,6 @@ Previous contributors:
   [![icon][github]](https://github.com/kevin70)
   &nbsp;
   kk
-
-                        
-If you are a contributor and your name is not listed here, feel free to
-contact the maintainers.
 
 <a href="https://icons8.com">Icons by Icons8</a>
 
