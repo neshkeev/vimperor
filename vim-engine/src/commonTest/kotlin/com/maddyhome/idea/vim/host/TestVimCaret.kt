@@ -136,7 +136,13 @@ class TestVimCaret(
   /** Always. A caret becomes invalid when its editor closes, and this one never closes. */
   override val isValid: Boolean get() = true
 
-  override val vimLine: Int get() = TODO("TestVimCaret.vimLine is not implemented yet")
+  /**
+   * The line the caret is on, counting from one, which is what Vimscript counts in.
+   *
+   * A `TODO` until `line('.')` reached it - and `line()` is the function half the position family
+   * is built on, so `getpos()`, `cursor()` and `setline()` were all reaching it at once.
+   */
+  override val vimLine: Int get() = getBufferPosition().line + 1
   override val visualLineStart: Int get() = TODO("TestVimCaret.visualLineStart is not implemented yet")
   /**
    * The `'<` and `'>` marks, which every caret has whether or not it has ever been in Visual.

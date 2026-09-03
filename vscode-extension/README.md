@@ -563,6 +563,37 @@ have made both of those functions lie. `matchaddpos()` is the fast one and the s
 too: a match made from positions is already ranges, so the repaint after every keystroke has
 nothing to search for.
 
+Twenty-four more take it to 173: the position family, the two line-writing functions, and the
+buffer questions.
+
+`getpos()` and `setpos()` speak in lists, which is what makes them the pair a plugin uses - save
+the cursor, move around, put it back, without ever writing down what a position is made of. So the
+list has to be Vim's exact four-element shape, and `setpos('.', getpos('.'))` has to be a no-op in
+code that never looks inside it. `getcurpos()` adds a fifth element, and it is the whole reason
+that function is not `getpos('.')`: it carries the column the caret is *trying* to be in, so a
+restore does not leave the caret looking right and behaving wrong on the next keystroke.
+
+`virtcol()` and `indent()` count screen columns rather than characters, which only tabs make
+visible - two tabs and a letter is three characters and seventeen columns. That is what makes
+`indent()` usable at all: a file indented with tabs and one indented with spaces compare equal.
+
+`setline()` and `append()` write to the buffer without a register, a motion or a mode. They are
+kept apart the way Vim keeps them: `setline()` stops at the end of the buffer and `append()` grows
+it, so a wrong line number cannot silently add text.
+
+The buffer functions are over the one list this fork has, and the divergence is worth stating: Vim
+numbers a buffer once for the life of a session, while both hosts here have lists that *shrink*
+when something closes. `bufnr('%')` saved before a tab closes may name a different file afterwards.
+The two that appear in real configuration - `bufname('%')` and `bufnr('%')` - are about this
+buffer and cannot go stale, and the numbers agree with the ones `:ls` prints. The window functions
+answer about the window you are in, because neither host lets an extension enumerate its splits;
+`winnr()` in a status line gets a number that means something, and a config that loops over windows
+visits one.
+
+Writing them turned up one more headless-host gap: `TestVimCaret.vimLine` was a `TODO`, and
+`line()` is what half the position family is built on - so `getpos()`, `cursor()` and `setline()`
+were all reaching it at once.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes
