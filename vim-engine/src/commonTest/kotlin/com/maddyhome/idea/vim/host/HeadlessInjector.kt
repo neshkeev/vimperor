@@ -30,6 +30,8 @@ import com.maddyhome.idea.vim.api.VimCommandGroup
 import com.maddyhome.idea.vim.api.ExecutionContext as ExecutionContextApi
 import com.maddyhome.idea.vim.api.VimBuffer
 import com.maddyhome.idea.vim.api.VimFile
+import com.maddyhome.idea.vim.api.VimFileReadException
+import com.maddyhome.idea.vim.api.VimFileSystem
 import com.maddyhome.idea.vim.api.VimFileBase
 import com.maddyhome.idea.vim.api.VimCommandGroupBase
 import com.maddyhome.idea.vim.api.VimRedrawService
@@ -396,6 +398,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * needing one says which.
    */
   override val file: VimFile by lazy { HeadlessFile() }
+  override val fileSystem: VimFileSystem by lazy { HeadlessFileSystem() }
 
   init {
     // A new injector is a new session, and the quickfix list belongs to a session. Without this a
@@ -793,8 +796,38 @@ class HeadlessFile : VimFileBase() {
   override fun selectFile(count: Int, context: ExecutionContextApi): Boolean = false
   override fun selectNextFile(count: Int, context: ExecutionContextApi) {}
   override fun createFile(filename: String, context: ExecutionContextApi, content: String?, editor: VimEditor) {}
+
+  /** One, so that a relative path in `:mkvimrc` has something to be relative to. */
+  override fun getWorkingDirectory(context: ExecutionContextApi): String = "/work"
+
   override fun getProjectId(project: Any): String = "headless"
   override fun selectEditor(projectId: String, documentPath: String, protocol: String): VimEditor? = null
+}
+
+/**
+ * Files, in memory.
+ *
+ * `:mkvimrc` writes one and `:source` reads one, and a test that wrote to the machine running it
+ * would be a test that behaves differently on a laptop with a `.ideavimrc` already in the
+ * directory. Writing to a map keeps `E189` - the refusal to overwrite - assertable rather than
+ * dangerous.
+ */
+class HeadlessFileSystem : VimFileSystem {
+  val written: MutableMap<String, String> = mutableMapOf()
+
+  /** Set to a message to make the next write fail, which is the only way to reach `E212`. */
+  var writeFailure: String? = null
+
+  override fun readText(path: String): String =
+    written[path] ?: throw VimFileReadException(path, "no such file or directory")
+
+  override fun writeText(path: String, content: String): String? {
+    writeFailure?.let { return it }
+    written[path] = content
+    return null
+  }
+
+  override fun exists(path: String): Boolean = path in written
 }
 
 class HeadlessRedrawService : VimRedrawService {

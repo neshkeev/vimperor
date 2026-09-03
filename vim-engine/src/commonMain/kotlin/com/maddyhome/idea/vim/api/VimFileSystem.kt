@@ -21,6 +21,23 @@ interface VimFileSystem {
    * @throws VimFileReadException if the file cannot be read, for any reason.
    */
   fun readText(path: String): String
+
+  /**
+   * Writes [content] to [path], replacing whatever was there.
+   *
+   * Returns the reason it could not, rather than throwing, because both callers print it: `:mkvimrc`
+   * reports `E739` naming the file. Directories are not created - Vim writes into a directory that
+   * is already there and says so when it is not.
+   */
+  fun writeText(path: String, content: String): String?
+
+  /**
+   * Whether there is a file at [path].
+   *
+   * Asked before writing rather than after, because Vim's `E189` is a refusal and not a report: a
+   * `:mkvimrc` with no `!` must leave the file that is already there completely alone.
+   */
+  fun exists(path: String): Boolean
 }
 
 /**

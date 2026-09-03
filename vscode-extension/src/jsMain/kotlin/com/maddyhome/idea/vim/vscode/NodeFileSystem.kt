@@ -42,7 +42,7 @@ class NodeFileSystem : VimFileSystem {
     throw VimFileReadException(path, e.message)
   }
 
-  fun exists(path: String): Boolean = try {
+  override fun exists(path: String): Boolean = try {
     fs.existsSync(path) as Boolean
   } catch (e: Throwable) {
     false
@@ -55,7 +55,7 @@ class NodeFileSystem : VimFileSystem {
    * has to report `E212` when the write fails, and a promise cannot answer a command that has
    * already returned. Returns the failure rather than throwing, because Vim prints it.
    */
-  fun writeText(path: String, content: String): String? = try {
+  override fun writeText(path: String, content: String): String? = try {
     fs.writeFileSync(path, content)
     null
   } catch (e: Throwable) {

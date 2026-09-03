@@ -12,7 +12,9 @@ import com.maddyhome.idea.vim.api.VimFileReadException
 import com.maddyhome.idea.vim.api.VimFileSystem
 import java.io.IOException
 import kotlin.io.path.Path
+import kotlin.io.path.exists
 import kotlin.io.path.readText
+import kotlin.io.path.writeText
 
 internal class IjVimFileSystem : VimFileSystem {
   override fun readText(path: String): String =
@@ -22,4 +24,14 @@ internal class IjVimFileSystem : VimFileSystem {
       // The engine used to catch this itself; the message it built is now the exception's.
       throw VimFileReadException(path, e.message)
     }
+
+  override fun writeText(path: String, content: String): String? =
+    try {
+      Path(path).writeText(content)
+      null
+    } catch (e: IOException) {
+      e.message ?: "write failed"
+    }
+
+  override fun exists(path: String): Boolean = Path(path).exists()
 }

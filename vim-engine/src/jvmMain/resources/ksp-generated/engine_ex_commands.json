@@ -691,8 +691,16 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarksCommand",
     "standardConstructor": true
   },
+  "mk[exrc]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkExrcCommand",
+    "standardConstructor": true
+  },
   "mks[ession]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeSessionCommand",
+    "standardConstructor": true
+  },
+  "mkv[imrc]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkVimrcCommand",
     "standardConstructor": true
   },
   "n[ext]": {
