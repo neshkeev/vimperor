@@ -503,6 +503,37 @@ there are two and the sentence is true of both. `:version` is not one of the qui
 question that has an answer worth printing. `:setfiletype` stays here, because in this host it does
 real work through the language mode.
 
+### Vimscript functions
+
+`has()` was the IntelliJ plugin's alone, which meant that in this host `has('unix')` was
+`E117: Unknown function` - and a `~/.vimrc` whose first ten lines are `if has(...)` blocks did not
+take the wrong branch, it stopped. It is the engine's now, and what it claims is only what is true:
+`has('signs')` became 1 the week `:sign` was written, `has('quickfix')` because `:copen` is real,
+`has('folding')` because folds are the editor's and the commands reach them. Nothing is claimed
+because a config would prefer it - no `python`, no `terminal`, no `timers` while `timer_start()`
+does not exist, no `patch-9.1.0`, because this is not Vim and a patch number is a claim about Vim's
+source.
+
+`gui_running` is the interesting no. Both hosts are unmistakably graphical, so 1 is the
+honest-looking answer and the wrong one: a config guards `set guifont=` and `set guioptions-=T`
+behind it, neither option exists here, and claiming the feature turns one skipped block into two
+`E518`s. The operating system, and `spell` - which IntelliJ has and VS Code does not - come from a
+new `hostFeatures` on the injector, because the engine has no way to ask what platform it is on and
+no business guessing.
+
+Twenty-seven string functions came with it, taking the engine's list from 93 to 121. `printf()` is
+the one that could not be delegated: `String.format` is a JVM method, so `commonMain` cannot use it
+and the specification had to be implemented - flags, width, precision, `*`, positional arguments
+and eleven conversions, including `%e` and `%g` written out by hand. `substitute()` shares its
+replacement grammar with `:s` rather than reimplementing it, because `\0`, `\1`, `&`, `~`, `\U`
+and `\L` are a small language and a second copy of it would be a second copy to drift.
+`execute()` is the function form of `:redir` and is built on it, which is why the awkward part -
+catching output that `:silent` is hiding - was already solved.
+
+The measurement functions are where UTF-16 shows through. Vim counts bytes, characters and screen
+columns, and *none* of the three is a Kotlin string's `length`: `strlen('héllo')` is 6, `strchars`
+is 5, and a CJK ideograph is one character, three bytes and two columns.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

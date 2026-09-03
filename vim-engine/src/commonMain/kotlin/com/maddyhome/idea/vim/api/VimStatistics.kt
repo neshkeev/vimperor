@@ -18,4 +18,13 @@ interface VimStatistics {
   fun setIfMapExprUsed(value: Boolean)
   fun addExtensionEnabledWithPlug(extension: String)
   fun addSourcedFile(path: String)
+
+  /**
+   * Records that the configuration asked `has('ide')`, which is how IdeaVim counts IDE-aware
+   * `.ideavimrc` files.
+   *
+   * Defaulted so that only a host which reports statistics has to implement it. `has()` moved into
+   * the engine and this is the one thing the IntelliJ version of it did that the engine cannot.
+   */
+  fun setIdeSpecificConfigurationUsed(value: Boolean) {}
 }

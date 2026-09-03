@@ -12,6 +12,8 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceIfCreated
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.textarea.TextComponentEditorImpl
+import com.intellij.openapi.util.SystemInfoRt
+import com.intellij.util.system.CpuArch
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.changelist.VimChangeList
@@ -208,6 +210,38 @@ internal class IjVimInjector : VimInjectorBase() {
     get() = service()
   override val statisticsService: VimStatistics
     get() = service()
+
+  /**
+   * What `has()` answers 1 for beyond the engine's own list: this platform, and a spellchecker.
+   *
+   * The operating system is the host's to know - the engine has no API for it and no business
+   * guessing - and IntelliJ has `SystemInfoRt` right here. The names are Vim's, including the ones
+   * that overlap: a Mac is `mac`, `macunix`, `osx` and `osxdarwin` at once, because configs in the
+   * wild test all four.
+   */
+  override val hostFeatures: Set<String> by lazy {
+    buildSet {
+      add("spell")
+      when {
+        SystemInfoRt.isWindows -> {
+          add("win32")
+          if (CpuArch.CURRENT.width == 64) add("win64")
+        }
+
+        SystemInfoRt.isLinux -> add("linux")
+        SystemInfoRt.isMac -> {
+          add("mac")
+          add("macunix")
+          add("osx")
+          add("osxdarwin")
+        }
+
+        SystemInfoRt.isFreeBSD -> add("bsd")
+        SystemInfoRt.isSolaris -> add("sun")
+      }
+      if (SystemInfoRt.isUnix) add("unix")
+    }
+  }
   /** `:match` and its two twins, over IntelliJ's markup model. */
   override val matchHighlighter: VimMatchHighlighter = IjMatchHighlighter()
   override val signDisplay: VimSignDisplay = IjSignDisplay()

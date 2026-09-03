@@ -20,7 +20,8 @@ import kotlin.test.assertTrue
  * Vimscript expressions evaluated end to end, on both targets, with no editor involved.
  *
  * This reaches further than anything before it: the expression visitor, the builtin function
- * registry - 93 handlers, read from a JSON resource on the JVM and a generated registry on JS - and
+ * registry - over a hundred handlers, read from a JSON resource on the JVM and a generated
+ * registry on JS - and
  * the `VimInt`/`VimString`/`VimFloat` datatypes, including the float formatting written by hand
  * earlier in this port against a golden table.
  */
@@ -92,15 +93,17 @@ class HeadlessExpressionTest {
   @Test
   fun `test the function registry holds the engine's builtins`() {
     install()
-    // `strlen` is deliberately not here: it is registered by the IntelliJ side, and the engine's own
-    // list is the 93 functions in `engine_vimscript_functions.json`.
-    for (name in listOf("len", "max", "min", "toupper", "tolower", "abs", "empty")) {
+    for (name in listOf("len", "max", "min", "toupper", "tolower", "abs", "empty", "strlen", "printf", "has")) {
       val handler = injector.functionService.getFunctionHandlerOrNull(null, name, CommandLineVimLContext)
       assertTrue(handler != null, "$name is not registered")
     }
+    // The check has to fail in both directions or it would pass just as well against a registry
+    // that held everything. `pumvisible()` asks the IDE's completion popup a question and is the
+    // IntelliJ side's alone; `has()` was too until it moved here, and this note used to name
+    // `strlen`, which turned out to be registered by nobody at all.
     assertTrue(
-      injector.functionService.getFunctionHandlerOrNull(null, "strlen", CommandLineVimLContext) == null,
-      "strlen is an IntelliJ-side function and should not be in the engine's list",
+      injector.functionService.getFunctionHandlerOrNull(null, "pumvisible", CommandLineVimLContext) == null,
+      "pumvisible is an IntelliJ-side function and should not be in the engine's list",
     )
   }
 }

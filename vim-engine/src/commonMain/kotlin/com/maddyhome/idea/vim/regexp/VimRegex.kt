@@ -372,6 +372,21 @@ class VimRegex(pattern: String) {
     }
   }
 
+  /**
+   * The replacement for one match, built the way `:s` builds it.
+   *
+   * Exposed so that the `substitute()` *function* - which works on a plain string and has no editor
+   * or line to speak of - gets the same substitution grammar `:s` has. That grammar is not small:
+   * `&` and `\0` for the whole match, `\1`..`\9` for the groups, `~` for the previous
+   * replacement, and `\u`, `\U`, `\l`, `\L`, `\e`, `\E` for case. Writing a second copy of it
+   * for the function would have been a second copy to drift.
+   */
+  internal fun replacementFor(
+    match: VimMatchResult.Success,
+    substituteString: String,
+    lastSubstituteString: String,
+  ): String = buildSubstituteString(match, substituteString, lastSubstituteString)
+
   private fun buildSubstituteString(
     matchResult: VimMatchResult.Success,
     substituteString: String,

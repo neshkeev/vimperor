@@ -88,6 +88,29 @@ object Redirection {
     return true
   }
 
+  /**
+   * Takes the redirection off, without writing to it, and hands it back for [restore].
+   *
+   * `execute()` needs this and nothing else does. It opens a redirection of its own around one
+   * command, and a config that calls it *inside* a `:redir` - which
+   * `:redir => x | echo execute('map') | redir END` is - would otherwise have its own redirection
+   * ended by the inner one and lose everything it had caught.
+   */
+  fun take(): Pair<Sink, String>? {
+    val current = sink ?: return null
+    val held = current to captured.toString()
+    sink = null
+    captured.clear()
+    return held
+  }
+
+  /** Puts back what [take] removed. */
+  fun restore(held: Pair<Sink, String>?) {
+    sink = held?.first
+    captured.clear()
+    held?.let { captured.append(it.second) }
+  }
+
   @TestOnly
   fun reset() {
     sink = null

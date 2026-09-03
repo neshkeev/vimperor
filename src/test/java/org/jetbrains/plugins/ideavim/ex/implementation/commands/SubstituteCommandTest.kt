@@ -1098,9 +1098,14 @@ class SubstituteCommandTest : VimTestCase() {
     )
   }
 
+  /**
+   * This test used to assert `E117: Unknown function: printf`, and its expected buffer was what a
+   * *failed* substitution leaves behind - every number replaced with nothing. `printf()` is
+   * implemented now, so the same command does what it was always written to do.
+   */
   @Test
   @TestWithoutNeovim(reason = SkipNeovimReason.OPTION)
-  fun `test exception during expression evaluation`() {
+  fun `test printf in a substitute expression`() {
     configureByText(
       """
       val str = "first"
@@ -1112,18 +1117,33 @@ class SubstituteCommandTest : VimTestCase() {
       """.trimIndent(),
     )
     enterCommand("%s/\\d\\+/\\=printf('0x%04x', submatch(0))")
-    assertPluginError(true)
-    assertPluginErrorMessage("E117: Unknown function: printf")
+    assertPluginError(false)
     assertState(
       """
       val str = "first"
-      
-      
-      
-      
-      val str = "second"
+      0x3f00
+      0x3f04
+      0x3f08
+      0x3f0c
+      val str0x0002 = "second"
       """.trimIndent(),
     )
+  }
+
+  /** The failure path the test above used to cover, with a name that really is unknown. */
+  @Test
+  @TestWithoutNeovim(reason = SkipNeovimReason.OPTION)
+  fun `test exception during expression evaluation`() {
+    configureByText(
+      """
+      val str = "first"
+      16128
+      val str2 = "second"
+      """.trimIndent(),
+    )
+    enterCommand("%s/\\d\\+/\\=nosuchfunction(submatch(0))")
+    assertPluginError(true)
+    assertPluginErrorMessage("E117: Unknown function: nosuchfunction")
   }
 
   @Test

@@ -221,6 +221,51 @@ open class VsCodeInjector(
   /** `:match` and its two twins, over decorations. See [VsCodeMatchHighlighter]. */
   override val matchHighlighter: VimMatchHighlighter get() = matchPainter
   override val signDisplay: VimSignDisplay get() = signPainter
+
+  /**
+   * What `has()` answers 1 for beyond the engine's own list, which here is the platform and no more.
+   *
+   * `spell` is deliberately absent: VS Code has no spellchecker of its own, the popular ones are
+   * extensions, and an extension cannot ask another extension for a word list. `NoSpellchecker`
+   * says as much where `z=` reaches it, and `has('spell')` says it a line earlier.
+   *
+   * The names are Vim's, including the ones that overlap - a Mac is `mac`, `macunix`, `osx` and
+   * `osxdarwin` at once, because configs in the wild test all four.
+   */
+  override val hostFeatures: Set<String> by lazy {
+    buildSet {
+      when (process.platform as String) {
+        "win32" -> {
+          add("win32")
+          // Node reports `win32` on 64-bit Windows too; the architecture is a separate question.
+          if (process.arch as String == "x64" || process.arch as String == "arm64") add("win64")
+        }
+
+        "darwin" -> {
+          add("mac")
+          add("macunix")
+          add("osx")
+          add("osxdarwin")
+          add("unix")
+        }
+
+        "linux" -> {
+          add("linux")
+          add("unix")
+        }
+
+        "freebsd", "openbsd" -> {
+          add("bsd")
+          add("unix")
+        }
+
+        "sunos" -> {
+          add("sun")
+          add("unix")
+        }
+      }
+    }
+  }
   /**
    * `~` and `$VAR` in a path, which `:sp`, `:e` and `:source` all hand to this first.
    *

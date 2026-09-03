@@ -141,6 +141,19 @@ interface VimInjector {
    */
   val signDisplay: VimSignDisplay get() = NoSignDisplay
 
+  /**
+   * The features `has()` answers 1 for, beyond the ones the engine provides for itself.
+   *
+   * Two kinds of thing live here and neither belongs in the engine. The first is the operating
+   * system - `has('mac')`, `has('unix')` - which each host already has an API for and the engine
+   * has none. The second is whatever that host genuinely does and the other does not: a
+   * spellchecker, for one.
+   *
+   * Defaulted to nothing, so a host that has not said anything is only ever missing features
+   * rather than claiming ones it has not got.
+   */
+  val hostFeatures: Set<String> get() = emptySet()
+
   val put: VimPut
 
   val window: VimWindowGroup
