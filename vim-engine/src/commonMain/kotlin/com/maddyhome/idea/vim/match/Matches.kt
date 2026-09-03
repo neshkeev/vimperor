@@ -37,15 +37,95 @@ import com.maddyhome.idea.vim.regexp.VimRegexOptions
  */
 object Matches {
 
-  /** A channel's pattern, and the highlight group it is painted in. */
-  data class Match(val group: String, val pattern: String)
+  /**
+   * One standing highlight: what is lit, in what colour, and how loudly.
+   *
+   * Either a [pattern] or a list of [positions], never both, which is the difference between
+   * `matchadd()` and `matchaddpos()`. The second exists for speed: a plugin that already knows
+   * which words it wants lit should not make the engine find them again with a regex.
+   */
+  data class Match(
+    val id: Int,
+    val group: String,
+    val pattern: String?,
+    val positions: List<TextRange>? = null,
+    val priority: Int = DEFAULT_PRIORITY,
+  )
+
+  /**
+   * Vim's default `matchadd()` priority, and the one `:match` sits at.
+   *
+   * Which is why `:match` and a `matchadd()` at the default overlap in whichever order the host
+   * decides - Vim breaks that tie by id, and neither host here paints one decoration "under"
+   * another in a way an extension can choose.
+   */
+  const val DEFAULT_PRIORITY: Int = 10
+
+  /**
+   * The ids `:match`, `:2match` and `:3match` occupy, which `matchadd()` may not use.
+   *
+   * Vim reserves exactly these three, and this is the reason the two features are one table rather
+   * than two: `getmatches()` lists a `:match` alongside everything a plugin added, and
+   * `clearmatches()` takes them all off together.
+   */
+  const val RESERVED_IDS: Int = 3
 
   private val channels = mutableMapOf<String, MutableMap<Int, Match>>()
 
   fun set(editor: VimEditor, channel: Int, group: String, pattern: String) {
     val path = editor.getPath() ?: return
-    channels.getOrPut(path) { mutableMapOf() }[channel] = Match(group, pattern)
+    channels.getOrPut(path) { mutableMapOf() }[channel] = Match(channel, group, pattern)
     repaint(editor)
+  }
+
+  /**
+   * `matchadd()` and `matchaddpos()`. Returns the id, or -1 when [wantedId] is taken or reserved.
+   *
+   * Vim refuses rather than reassigning, which is right for a function whose whole purpose is to
+   * hand back a handle: a plugin that asked for id 7 and silently got 8 would delete somebody
+   * else's match later.
+   */
+  fun add(
+    editor: VimEditor,
+    group: String,
+    pattern: String?,
+    positions: List<TextRange>? = null,
+    priority: Int = DEFAULT_PRIORITY,
+    wantedId: Int = -1,
+  ): Int {
+    val path = editor.getPath() ?: return -1
+    val here = channels.getOrPut(path) { mutableMapOf() }
+
+    val id = if (wantedId > 0) {
+      if (wantedId <= RESERVED_IDS || here.containsKey(wantedId)) return -1
+      wantedId
+    } else {
+      ((here.keys.maxOrNull() ?: RESERVED_IDS) + 1).coerceAtLeast(RESERVED_IDS + 1)
+    }
+
+    here[id] = Match(id, group, pattern, positions, priority)
+    repaint(editor)
+    return id
+  }
+
+  /** `matchdelete()`. False when there was no such id, which the function reports as `E803`. */
+  fun delete(editor: VimEditor, id: Int): Boolean {
+    val path = editor.getPath() ?: return false
+    if (channels[path]?.remove(id) == null) return false
+    injector.matchHighlighter.clearMatches(editor, id)
+    return true
+  }
+
+  /** `getmatches()` - everything showing here, highest priority first, as Vim orders it. */
+  fun all(editor: VimEditor): List<Match> =
+    channels[editor.getPath()].orEmpty().values.sortedWith(compareByDescending<Match> { it.priority }.thenBy { it.id })
+
+  /** `clearmatches()` - every one of them, `:match` included. */
+  fun clearAll(editor: VimEditor) {
+    val path = editor.getPath() ?: return
+    val ids = channels[path]?.keys?.toList().orEmpty()
+    channels.remove(path)
+    ids.forEach { injector.matchHighlighter.clearMatches(editor, it) }
   }
 
   fun clear(editor: VimEditor, channel: Int) {
@@ -72,8 +152,10 @@ object Matches {
     if (injector.globalOptions().ignorecase) options.add(VimRegexOptions.IGNORE_CASE)
 
     for ((channel, match) in showing) {
-      val ranges = try {
-        VimRegex(match.pattern).findAll(editor, 0, editor.text().length, options)
+      // A match made from positions is already ranges; only a pattern has to be found again. That
+      // is the whole performance argument for `matchaddpos()` and it lives on this line.
+      val ranges = match.positions ?: try {
+        VimRegex(match.pattern ?: "").findAll(editor, 0, editor.text().length, options)
           .map { TextRange(it.range.startOffset, it.range.endOffset) }
       } catch (e: Throwable) {
         // A pattern that no longer compiles paints nothing rather than throwing on every keystroke,

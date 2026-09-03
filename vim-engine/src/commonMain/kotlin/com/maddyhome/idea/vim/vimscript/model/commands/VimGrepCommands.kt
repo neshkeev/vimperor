@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.maddyhome.idea.vim.path.Glob
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.helper.enumSetOf
@@ -209,83 +210,16 @@ sealed class VimGrepCommandBase(
     /**
      * A file pattern, as the list of files it names.
      *
-     * Vim's rule, and the one thing worth getting right: a single star matches inside one path
-     * segment and a double star matches across them, so `src/` + star + `.kt` is one directory and
-     * a double star in the middle is a whole tree. A pattern with no wildcard in it is the file
-     * itself, existing or not - `:vimgrep /x/ nofile` should complain about the file rather than
-     * silently search nothing.
+     * The globbing itself moved to [com.maddyhome.idea.vim.path.Glob] when `glob()` and
+     * `globpath()` were written, because those ask the same question and two implementations of a
+     * glob would eventually disagree about a double star. These two names stay as the way this
+     * command reaches it.
      */
-    fun expandGlob(pattern: String, workingDirectory: String?): List<String> {
-      val absolute = when {
-        pattern.startsWith("/") || pattern.startsWith("~") -> pattern
-        pattern.length > 2 && pattern[1] == ':' -> pattern
-        workingDirectory != null -> "${workingDirectory.trimEnd('/', '\\')}/$pattern"
-        else -> pattern
-      }
+    fun expandGlob(pattern: String, workingDirectory: String?): List<String> =
+      Glob.expand(pattern, workingDirectory)
 
-      if ('*' !in absolute && '?' !in absolute) return listOf(absolute)
-
-      val segments = absolute.split("/").filter { it.isNotEmpty() }
-      val root = if (absolute.startsWith("/")) "" else "."
-      return walk(root, segments, 0).sorted()
-    }
-
-    private fun walk(at: String, segments: List<String>, index: Int): List<String> {
-      if (index >= segments.size) return if (injector.fileSystem.exists(at)) listOf(at) else emptyList()
-
-      val segment = segments[index]
-
-      // A double star matches here and at every depth below here, which is why it recurses on the
-      // same segment index as well as on the next one.
-      if (segment == "**") {
-        val here = walk(at, segments, index + 1)
-        val deeper = injector.fileSystem.listDirectory(at)
-          .map { "$at/$it" }
-          .filter { injector.fileSystem.isDirectory(it) }
-          .flatMap { walk(it, segments, index) }
-        return here + deeper
-      }
-
-      if ('*' !in segment && '?' !in segment) return walk("$at/$segment", segments, index + 1)
-
-      return injector.fileSystem.listDirectory(at)
-        .filter { matchesSegment(it, segment) }
-        .flatMap { walk("$at/$it", segments, index + 1) }
-    }
-
-    /** One path segment against one wildcard segment; a star stops at the separator by never seeing one. */
-    fun matchesSegment(name: String, pattern: String): Boolean {
-      // The classic two-pointer glob, which handles `*` without backtracking into exponential time.
-      var nameAt = 0
-      var patternAt = 0
-      var starAt = -1
-      var nameAtStar = 0
-
-      while (nameAt < name.length) {
-        when {
-          patternAt < pattern.length && (pattern[patternAt] == '?' || pattern[patternAt] == name[nameAt]) -> {
-            nameAt++
-            patternAt++
-          }
-
-          patternAt < pattern.length && pattern[patternAt] == '*' -> {
-            starAt = patternAt
-            nameAtStar = nameAt
-            patternAt++
-          }
-
-          starAt >= 0 -> {
-            patternAt = starAt + 1
-            nameAtStar++
-            nameAt = nameAtStar
-          }
-
-          else -> return false
-        }
-      }
-      while (patternAt < pattern.length && pattern[patternAt] == '*') patternAt++
-      return patternAt == pattern.length
-    }
+    /** One path segment against one wildcard segment. See [Glob.matchesSegment]. */
+    fun matchesSegment(name: String, pattern: String): Boolean = Glob.matchesSegment(name, pattern)
   }
 }
 

@@ -534,6 +534,35 @@ The measurement functions are where UTF-16 shows through. Vim counts bytes, char
 columns, and *none* of the three is a Kotlin string's `length`: `strlen('héllo')` is 6, `strchars`
 is 5, and a CJK ideograph is one character, three bytes and two columns.
 
+Twenty-eight more take the list to 149: the path family, the register pair, and the `match*()`
+functions that add a highlight.
+
+`expand()` leads it, because `expand('%:p:h')` is how every configuration in the world asks for the
+directory of the file it is looking at and it was `E117` in both hosts. Vim's filename modifiers
+are their own small language - applied left to right and repeatable, so `:h:h` is the grandparent -
+and they live in one place, shared with `fnamemodify()`, which is the same feature pointed at a
+string. `:.` and `:~` are relative to the directory `:cd` owns, which is what makes them agree with
+`:pwd`.
+
+`glob()` and `globpath()` share their globber with `:vimgrep`, which is the point rather than an
+economy: a config that writes `glob()` over a tree and one that writes `:vimgrep` over the same
+tree should be looking at the same files, and two implementations would eventually disagree about a
+double star. The shared one gained character classes on the way. `glob2regpat()` touches no files
+at all - it exists because Vim has no `fnmatch()`, so a config turns the glob into a pattern and
+uses `=~`.
+
+`getreg()` and `setreg()` are what let a mapping *borrow* a register: yank into it, use it, put it
+back. The type travels with the text, because a line-wise register restored characterwise is a
+mangled buffer rather than a wrong colour.
+
+`matchadd()` and its family are `:match` reached from Vimscript, and they share its table. Vim
+reserves ids 1, 2 and 3 for `:match`, `:2match` and `:3match` and starts `matchadd()` at 4; so does
+this fork, which is why `getmatches()` lists a `:match` alongside everything a plugin added and
+`clearmatches()` takes them all off together. Two tables would have been easier to write and would
+have made both of those functions lie. `matchaddpos()` is the fast one and the speed is real here
+too: a match made from positions is already ranges, so the repaint after every keystroke has
+nothing to search for.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes
