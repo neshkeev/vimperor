@@ -297,4 +297,32 @@ internal object VsCodeThemeColors {
   const val FIND_MATCH = "editor.findMatchBackground"
   const val FIND_MATCH_HIGHLIGHT = "editor.findMatchHighlightBackground"
   const val SELECTION_HIGHLIGHT = "editor.selectionHighlightBackground"
+
+  /** `:match ErrorMsg /.../` and its neighbours - see [VsCodeMatchHighlighter]. */
+  const val ERROR_BACKGROUND = "inputValidation.errorBackground"
+  const val WARNING_BACKGROUND = "inputValidation.warningBackground"
+  const val WORD_HIGHLIGHT = "editor.wordHighlightBackground"
+  const val SELECTION = "editor.selectionBackground"
+  const val MATCH_BRACKET = "editorBracketMatch.background"
+
+  /**
+   * Vim's highlight groups, in the nearest colour this editor already has.
+   *
+   * This fork has no `:highlight` to define a group, so a name is only ever one of Vim's standard
+   * ones - and each of these has an obvious counterpart here. A name not on the list falls back to
+   * the find colour, which lights the text up and lets the reader see that the pattern worked.
+   *
+   * Theme colours rather than literals, for the same reason the search highlighting uses them: a
+   * hardcoded yellow is unreadable in half the themes people use.
+   */
+  val VIM_HIGHLIGHT_GROUPS: Map<String, String> = mapOf(
+    "Search" to FIND_MATCH_HIGHLIGHT,
+    "IncSearch" to FIND_MATCH,
+    "ErrorMsg" to ERROR_BACKGROUND,
+    "WarningMsg" to WARNING_BACKGROUND,
+    "Todo" to WARNING_BACKGROUND,
+    "Underlined" to WORD_HIGHLIGHT,
+    "Visual" to SELECTION,
+    "MatchParen" to MATCH_BRACKET,
+  )
 }

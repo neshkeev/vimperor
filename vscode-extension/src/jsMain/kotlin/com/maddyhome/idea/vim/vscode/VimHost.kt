@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.api.VimExternalOpener
 import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.api.VimProcessGroup
@@ -46,10 +47,14 @@ class VimHost(
   processes: VimProcessGroup = NodeProcessGroup(),
   /** How `gx` opens a URL. The operating system's own handler, in a real window. */
   opener: VimExternalOpener = VsCodeExternalOpener(),
+  /** Where `:match` is painted. Decorations, in a real window; a recorder, in a test. */
+  matchHighlighter: VimMatchHighlighter = VsCodeMatchHighlighter(),
 ) : HostCommandRunner {
 
   private val vimInjector =
-    VsCodeInjector(sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener)
+    VsCodeInjector(
+      sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener, matchHighlighter,
+    )
 
   /**
    * Editors by buffer identity rather than by object.

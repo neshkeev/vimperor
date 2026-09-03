@@ -12,7 +12,9 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceIfCreated
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.textarea.TextComponentEditorImpl
+import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.changelist.VimChangeList
+import com.maddyhome.idea.vim.group.IjMatchHighlighter
 import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.api.EngineEditorHelper
 import com.maddyhome.idea.vim.api.ExecutionContextManager
@@ -204,6 +206,9 @@ internal class IjVimInjector : VimInjectorBase() {
     get() = service()
   override val statisticsService: VimStatistics
     get() = service()
+  /** `:match` and its two twins, over IntelliJ's markup model. */
+  override val matchHighlighter: VimMatchHighlighter = IjMatchHighlighter()
+
   override val spellcheckerService: SpellcheckerService
     get() = service()
   override val commandGroup: VimCommandGroup

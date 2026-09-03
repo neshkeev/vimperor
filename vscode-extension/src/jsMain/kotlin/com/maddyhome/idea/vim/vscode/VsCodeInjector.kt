@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.autocmd.AutoCmdImpl
 import com.maddyhome.idea.vim.api.SpellcheckerService
+import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.api.*
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
@@ -86,6 +87,8 @@ open class VsCodeInjector(
   private val processes: VimProcessGroup = NodeProcessGroup(),
   /** How `gx` opens a URL. Injectable so a test can assert on one without opening a browser. */
   private val opener: VimExternalOpener = VsCodeExternalOpener(),
+  /** Where `:match` is painted. Injectable so a test can read the ranges instead of the colours. */
+  private val matchPainter: VimMatchHighlighter = VsCodeMatchHighlighter(),
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -198,6 +201,9 @@ open class VsCodeInjector(
 
   /** There is no spell checker in VS Code, and this is what says so. See [NoSpellchecker]. */
   override val spellcheckerService: SpellcheckerService get() = NoSpellchecker
+
+  /** `:match` and its two twins, over decorations. See [VsCodeMatchHighlighter]. */
+  override val matchHighlighter: VimMatchHighlighter get() = matchPainter
   /**
    * `~` and `$VAR` in a path, which `:sp`, `:e` and `:source` all hand to this first.
    *

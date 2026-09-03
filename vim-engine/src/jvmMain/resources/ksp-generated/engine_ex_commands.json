@@ -739,6 +739,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarksCommand",
     "standardConstructor": true
   },
+  "mat[ch]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MatchCommand",
+    "standardConstructor": true
+  },
   "mk[exrc]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkExrcCommand",
     "standardConstructor": true

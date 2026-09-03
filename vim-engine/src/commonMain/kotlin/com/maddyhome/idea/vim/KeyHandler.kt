@@ -7,6 +7,7 @@
  */
 package com.maddyhome.idea.vim
 
+import com.maddyhome.idea.vim.match.Matches
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.getLineEndOffset
@@ -135,6 +136,10 @@ class KeyHandler {
     if (result is KeyProcessResult.Executable) {
       result.execute(editor, context)
     }
+    // `:match` is a standing highlight - the pattern stays lit while you edit - so its ranges have
+    // to be recomputed after anything that could have moved them. This returns on its first line
+    // when nothing is matching, which is every session that has not typed `:match`.
+    Matches.repaint(editor)
   }
 
   // Deprecated. Has external usages

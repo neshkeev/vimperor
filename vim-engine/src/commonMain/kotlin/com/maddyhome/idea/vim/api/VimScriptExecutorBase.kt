@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.maddyhome.idea.vim.match.Matches
 import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.ExException
@@ -88,6 +89,11 @@ abstract class VimScriptExecutorBase : VimscriptExecutor {
           }
         }
       }
+
+      // The second of `:match`'s two repaint hooks. The key handler covers what a reader types; a
+      // `:s` from a script or a mapping never goes through it, and a standing highlight that only
+      // followed typed edits would be exactly as wrong as one that followed none.
+      Matches.repaint(editor)
 
       if (!skipHistory && myScript.units.size == 1 && myScript.units[0] is Command && myScript.units[0] !is RepeatCommand) {
         injector.registerGroup.storeTextSpecial(LAST_COMMAND_REGISTER, script)

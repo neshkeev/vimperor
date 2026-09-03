@@ -121,6 +121,15 @@ interface VimInjector {
 
   val spellcheckerService: SpellcheckerService
 
+  /**
+   * Painting `:match`, `:2match` and `:3match`.
+   *
+   * Defaulted rather than abstract, because a host that does not paint still answers `:match`: the
+   * pattern is engine state, and a config line that sets one should not throw in a host that shows
+   * nothing. See [NoMatchHighlighting].
+   */
+  val matchHighlighter: VimMatchHighlighter get() = NoMatchHighlighting
+
   val put: VimPut
 
   val window: VimWindowGroup

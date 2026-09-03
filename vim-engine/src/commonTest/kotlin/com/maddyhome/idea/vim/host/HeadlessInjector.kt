@@ -30,6 +30,8 @@ import com.maddyhome.idea.vim.group.VimWindowGroup
 import com.maddyhome.idea.vim.group.WindowGroupBase
 import com.maddyhome.idea.vim.api.VimPathExpansion
 import com.maddyhome.idea.vim.api.SpellcheckerService
+import com.maddyhome.idea.vim.api.VimMatchHighlighter
+import com.maddyhome.idea.vim.match.Matches
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.tags.Tags
@@ -407,6 +409,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
   override val file: VimFile by lazy { HeadlessFile() }
   override val window: VimWindowGroup by lazy { HeadlessWindowGroup() }
   override val spellcheckerService: SpellcheckerService by lazy { HeadlessSpellchecker() }
+  override val matchHighlighter: VimMatchHighlighter by lazy { HeadlessMatchHighlighter() }
 
   /**
    * Paths, unexpanded.
@@ -431,6 +434,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     Tags.reset()
     SourcedScripts.reset()
     Diff.reset()
+    Matches.reset()
   }
 
   /**
@@ -931,6 +935,27 @@ class HeadlessSpellchecker : SpellcheckerService {
 
   override fun selectSuggestion(word: String, editor: VimEditor, caret: VimCaret) {
     suggested += word
+  }
+}
+
+/**
+ * What `:match` painted, per channel, so a test can read the ranges back.
+ *
+ * The ranges are what matters: `:match` is a standing highlight and the whole question about it is
+ * whether the right text is lit after the buffer has changed, which is a question about ranges and
+ * not about colours.
+ */
+class HeadlessMatchHighlighter : VimMatchHighlighter {
+  val shown: MutableMap<Int, Pair<String, List<TextRange>>> = mutableMapOf()
+  val cleared: MutableList<Int> = mutableListOf()
+
+  override fun showMatches(editor: VimEditor, channel: Int, group: String, ranges: List<TextRange>) {
+    shown[channel] = group to ranges
+  }
+
+  override fun clearMatches(editor: VimEditor, channel: Int) {
+    shown.remove(channel)
+    cleared += channel
   }
 }
 
