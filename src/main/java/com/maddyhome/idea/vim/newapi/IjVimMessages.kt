@@ -24,20 +24,20 @@ internal class IjVimMessages : VimMessagesBase() {
   private var error = false
   private var lastBeepTimeMillis = 0L
 
-  override fun showMessage(editor: VimEditor, message: String?) {
+  override fun displayMessage(editor: VimEditor, message: String?) {
     if (isSilent) return
     injector.outputPanel.clear(editor, injector.executionContextManager.getEditorExecutionContext(editor))
     showMessageInternal(editor, message, MessageType.STANDARD)
   }
 
-  override fun showErrorMessage(editor: VimEditor, message: String?) {
+  override fun displayErrorMessage(editor: VimEditor, message: String?) {
     if (isSilentAboutErrors) return
     injector.outputPanel.clear(editor, injector.executionContextManager.getEditorExecutionContext(editor))
     showMessageInternal(editor, message, MessageType.ERROR)
     indicateError()
   }
 
-  override fun appendErrorMessage(editor: VimEditor, message: String?) {
+  override fun appendDisplayedErrorMessage(editor: VimEditor, message: String?) {
     if (isSilentAboutErrors) return
     showMessageInternal(editor, message, MessageType.ERROR)
     indicateError()
@@ -56,10 +56,12 @@ internal class IjVimMessages : VimMessagesBase() {
   }
 
   @Suppress("DEPRECATION")
-  override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+  override fun displayStatusBarMessage(editor: VimEditor?, message: String?) {
     if (isSilent) return
     if (editor != null) {
-      showMessage(editor, message)
+      // `displayMessage` and not `showMessage`: the base has already recorded this one, and going
+      // back through the public method would record it a second time.
+      displayMessage(editor, message)
     } else {
       // Legacy path for when editor is null - just store the message
       this.message = message

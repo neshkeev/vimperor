@@ -389,6 +389,27 @@ and neither host highlights syntax - IntelliJ has a lexer and VS Code has a gram
 what a comment looks like without asking. Defining `Comment` here colours no comment. That is not a
 gap to close; it is two editors doing their own job.
 
+`:redir` catches what a command printed - into a register, a variable or a file, appending with
+`@A`, `=>>` or `>>`, and refusing to clobber a file without a bang. A register and a variable are
+one code path, because both are `LValueExpression` and both already knew how to be assigned to. The
+one thing that had to be got right is the order: the capture sits *before* the `:silent` check in
+`VimOutputPanelServiceBase.output`, because `:redir => x | silent map | redir END` is the entire
+reason anybody types this command, and a tap on the other side of that check returns an empty
+string every time. Unlike Vim it writes through on every message rather than buffering until
+`:redir END`, so a script that threw halfway - which is when somebody is redirecting output to find
+out why - keeps what it caught. It also does not reproduce Vim's leading empty line, which is an
+artifact of writing a screen line-break; a config that strips one still works.
+
+`:messages` needed something the engine did not have: a single place a message passes through.
+`VimMessages` said outright that there wasn't one, which is why every host consulted `:silent` on
+its own - a flag each host reads can answer "should I draw this?" and nothing can answer "what was
+said?". `VimMessagesBase` is that place now: its four `show*` methods are final and record before
+delegating to a `display*` each host implements, with the same bodies and the same silence checks.
+What is kept is what Vim keeps - `:echomsg` and not `:echo`, errors, and the one-line reports that
+go to the status line, since "E486: Pattern not found" and "3 substitutions on 2 lines" are the
+same kind of thing. A message `:silent` hid is remembered; an error `:silent!` swallowed is not,
+because it is never reported at all, in Vim's `emsg_core` and in this executor alike.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

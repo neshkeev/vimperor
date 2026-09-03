@@ -55,8 +55,6 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     // which is exactly what happened to eight of them, and what `ExCommandOverlapTest` now
     // prevents.
     "packl[oadall]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "mes[sages]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "redi[r]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "mkvie[w]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "loadv[iew]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "sign" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },

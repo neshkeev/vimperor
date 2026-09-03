@@ -35,6 +35,8 @@ import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.highlight.HighlightGroup
 import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.match.Matches
+import com.maddyhome.idea.vim.message.MessageHistory
+import com.maddyhome.idea.vim.redirect.Redirection
 import com.maddyhome.idea.vim.profile.Profile
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.script.SourcedScripts
@@ -440,6 +442,8 @@ class HeadlessInjector : HeadlessInjectorBase() {
     Diff.reset()
     Matches.reset()
     Highlights.reset()
+    Redirection.reset()
+    MessageHistory.reset()
     Profile.reset()
     WorkingDirectory.reset()
   }
@@ -1017,24 +1021,24 @@ class HeadlessMessages : VimMessagesBase() {
   private var statusBar: String? = null
   private var error = false
 
-  override fun showMessage(editor: VimEditor, message: String?) {
+  override fun displayMessage(editor: VimEditor, message: String?) {
     if (isSilent) return
     lastMessage = message
   }
 
-  override fun showErrorMessage(editor: VimEditor, message: String?) {
+  override fun displayErrorMessage(editor: VimEditor, message: String?) {
     error = true
     if (isSilentAboutErrors) return
     lastError = message
   }
 
-  override fun appendErrorMessage(editor: VimEditor, message: String?) {
+  override fun appendDisplayedErrorMessage(editor: VimEditor, message: String?) {
     error = true
     if (isSilentAboutErrors) return
     lastError = (lastError ?: "") + (message ?: "")
   }
 
-  override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+  override fun displayStatusBarMessage(editor: VimEditor?, message: String?) {
     if (isSilent) return
     statusBar = message
   }

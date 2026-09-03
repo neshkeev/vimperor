@@ -34,6 +34,8 @@ import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.highlight.Highlights
+import com.maddyhome.idea.vim.message.MessageHistory
+import com.maddyhome.idea.vim.redirect.Redirection
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
@@ -107,6 +109,8 @@ open class VsCodeInjector(
     // And the highlight groups: `:highlight` defines them for the session, so a group one test
     // defined would otherwise still be painting in the next.
     Highlights.reset()
+    Redirection.reset()
+    MessageHistory.reset()
   }
 
   /**
@@ -1108,12 +1112,12 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessagesBase() 
   private var statusBar: String? = null
   private var error = false
 
-  override fun showMessage(editor: VimEditor, message: String?) {
+  override fun displayMessage(editor: VimEditor, message: String?) {
     if (isSilent) return
     sink.message(message)
   }
 
-  override fun showErrorMessage(editor: VimEditor, message: String?) {
+  override fun displayErrorMessage(editor: VimEditor, message: String?) {
     // The flag is still set either way: `:silent!` hides the report, not the fact that the command
     // failed. `:silent` on its own hides nothing here - an error is what it is meant to let through.
     error = true
@@ -1121,13 +1125,13 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessagesBase() 
     sink.error(message)
   }
 
-  override fun appendErrorMessage(editor: VimEditor, message: String?) {
+  override fun appendDisplayedErrorMessage(editor: VimEditor, message: String?) {
     error = true
     if (isSilentAboutErrors) return
     sink.error(message)
   }
 
-  override fun showStatusBarMessage(editor: VimEditor?, message: String?) {
+  override fun displayStatusBarMessage(editor: VimEditor?, message: String?) {
     if (isSilent) return
     statusBar = message
     sink.status(message)

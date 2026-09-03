@@ -763,6 +763,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MatchCommand",
     "standardConstructor": true
   },
+  "mes[sages]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MessagesCommand",
+    "standardConstructor": true
+  },
   "mk[exrc]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkExrcCommand",
     "standardConstructor": true
@@ -973,6 +977,10 @@
   },
   "red[o]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedoCommand",
+    "standardConstructor": true
+  },
+  "redi[r]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedirCommand",
     "standardConstructor": true
   },
   "redr[aw]": {

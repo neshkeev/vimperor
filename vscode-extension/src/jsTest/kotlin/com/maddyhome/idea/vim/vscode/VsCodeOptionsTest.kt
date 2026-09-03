@@ -554,7 +554,9 @@ class VsCodeOptionsTest {
       // `:highlight` is the engine's now and does something, so it is given a line that defines a
       // group rather than one that lists an undefined one - which is `E411` and would be right.
       "highlight Todo guifg=Red", "runtime x", "scriptencoding utf-8", "language en", "behave xterm",
-      "packloadall", "scriptnames", "messages", "redir => x", "mkview", "loadview", "sign define x",
+      // `:redir` is real too, so it is closed again rather than left capturing the rest of the list.
+      "packloadall", "scriptnames", "messages", "redir => x", "redir END", "mkview", "loadview",
+      "sign define x",
       "profile start x", "menu", "unmenu", "diffthis", "diffoff", "cd /tmp", "lcd /tmp",
     )) {
       session.errors.clear()

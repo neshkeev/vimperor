@@ -11,7 +11,9 @@ package com.maddyhome.idea.vim.vimscript.model.commands
 import com.intellij.vim.annotations.ExCommand
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.MessageType
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.message.MessageHistory
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.ex.exExceptionMessage
@@ -39,8 +41,9 @@ private fun Command.render(argument: String, editor: VimEditor, context: Executi
  * see "h :echomsg"
  *
  * Vim's difference from `:echo` is that the text is kept in the message history, which `:messages`
- * prints. Nothing here keeps one - `:messages` is accepted and does nothing - so what is left of
- * the difference is nothing, and `:echomsg` prints exactly what `:echo` would.
+ * prints - and that is the difference here too, now that there is a history to keep it in. The
+ * recording is explicit rather than inherited: `:echo` and `:echomsg` both print through the output
+ * panel, so a history built from the panel would remember both and Vim remembers only this one.
  */
 @ExCommand(command = "echom[sg]")
 data class EchoMessageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
@@ -54,7 +57,9 @@ data class EchoMessageCommand(val range: Range, val modifier: CommandModifier, v
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    injector.outputPanel.output(editor, context, render(argument, editor, context) + "\n")
+    val text = render(argument, editor, context)
+    MessageHistory.record(text, MessageType.STANDARD)
+    injector.outputPanel.output(editor, context, text + "\n")
     return ExecutionResult.Success
   }
 }
