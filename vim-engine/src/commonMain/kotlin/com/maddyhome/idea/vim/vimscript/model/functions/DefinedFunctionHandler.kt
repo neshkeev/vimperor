@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.vimscript.model.functions
 
+import com.maddyhome.idea.vim.profile.Profile
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
@@ -62,7 +63,9 @@ data class DefinedFunctionHandler(val function: FunctionDeclaration) :
 
     initializeFunctionVariables(arguments, lineRange, editor, context, vimContext)
 
-    val returnValue = executeFunctionBody(exceptionsCaught, editor, context)
+    // The one place a user-defined function is called, which is why `:profile` measures here and
+    // nowhere else. Costs one boolean when profiling is off - see [Profile.timing].
+    val returnValue = Profile.timing(function.name) { executeFunctionBody(exceptionsCaught, editor, context) }
 
     if (exceptionsCaught.isNotEmpty()) {
       injector.messages.appendErrorMessage(editor, exceptionsCaught.last().message)

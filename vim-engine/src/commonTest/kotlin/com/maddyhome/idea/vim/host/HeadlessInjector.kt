@@ -32,6 +32,7 @@ import com.maddyhome.idea.vim.api.VimPathExpansion
 import com.maddyhome.idea.vim.api.SpellcheckerService
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.match.Matches
+import com.maddyhome.idea.vim.profile.Profile
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.tags.Tags
@@ -435,6 +436,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     SourcedScripts.reset()
     Diff.reset()
     Matches.reset()
+    Profile.reset()
   }
 
   /**

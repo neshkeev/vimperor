@@ -105,15 +105,15 @@ class HeadlessScreenCommandTest {
    * A command that is merely not written yet still reports `E492`, which is what makes `E319` mean
    * something.
    *
-   * `:profile` and `:debug` are the two nearest the line now that `:mkvimrc` and the tag commands
-   * are written. This engine evaluates Vimscript, so it could time a function and it could stop
-   * before each line of one; claiming the build does not have those would be a claim about the work
-   * rather than about the feature.
+   * `:debug` and `:redir` are the two nearest the line now that `:profile` is written too. This
+   * engine evaluates Vimscript, so it could stop before each line of a function and it could
+   * capture what a command printed; claiming the build does not have those would be a claim about
+   * the work rather than about the feature.
    */
   @Test
   fun `test a command that could be written still reports E492`() {
     val s = session()
-    for (line in listOf("profile start x", "debug echo 1")) {
+    for (line in listOf("debug echo 1", "redir @a")) {
       s.messages.clearError()
       s.run(line)
       assertTrue(

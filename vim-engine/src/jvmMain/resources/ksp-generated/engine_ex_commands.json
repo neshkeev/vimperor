@@ -871,6 +871,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
     "standardConstructor": true
   },
+  "prof[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ProfileCommand",
+    "standardConstructor": true
+  },
   "ps[earch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewSearchCommand",
     "standardConstructor": true
