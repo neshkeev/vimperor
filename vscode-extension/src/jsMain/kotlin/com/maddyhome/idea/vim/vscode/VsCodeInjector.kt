@@ -35,6 +35,8 @@ import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.message.MessageHistory
+import com.maddyhome.idea.vim.sign.Signs
+import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.redirect.Redirection
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.macro.VimMacro
@@ -93,6 +95,7 @@ open class VsCodeInjector(
   private val opener: VimExternalOpener = VsCodeExternalOpener(),
   /** Where `:match` is painted. Injectable so a test can read the ranges instead of the colours. */
   private val matchPainter: VimMatchHighlighter = VsCodeMatchHighlighter(),
+  private val signPainter: VimSignDisplay = VsCodeSignDisplay(),
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -111,6 +114,7 @@ open class VsCodeInjector(
     Highlights.reset()
     Redirection.reset()
     MessageHistory.reset()
+    Signs.reset()
   }
 
   /**
@@ -216,6 +220,7 @@ open class VsCodeInjector(
 
   /** `:match` and its two twins, over decorations. See [VsCodeMatchHighlighter]. */
   override val matchHighlighter: VimMatchHighlighter get() = matchPainter
+  override val signDisplay: VimSignDisplay get() = signPainter
   /**
    * `~` and `$VAR` in a path, which `:sp`, `:e` and `:source` all hand to this first.
    *

@@ -1071,6 +1071,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShellCommand",
     "standardConstructor": true
   },
+  "sign": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SignCommand",
+    "standardConstructor": true
+  },
   "sil[ent]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SilentCommand",
     "standardConstructor": true

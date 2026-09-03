@@ -410,6 +410,27 @@ go to the status line, since "E486: Pattern not found" and "3 substitutions on 2
 same kind of thing. A message `:silent` hid is remembered; an error `:silent!` swallowed is not,
 because it is never reported at all, in Vim's `emsg_core` and in this executor alike.
 
+`:sign` keeps Vim's split between a *definition* - what a mark looks like - and a *placement* -
+where one is, with groups, priorities and `:sign jump`. Placements belong to a path rather than to
+a buffer number: this fork has no buffers, `:ls` numbers what the host has open, and those numbers
+shift when a tab closes, so a sign that remembered one would end up on a different file. `buffer=`
+is still accepted and resolved through that list.
+
+Each host draws what its gutter allows, and they allow different things. IntelliJ gets a
+`RangeHighlighter` over the line carrying the `linehl` colour, plus a `GutterIconRenderer` that
+*paints* the sign's one or two characters, since there is no image to load for `>>`. VS Code has no
+way at all to put text in that column - `gutterIconPath` takes an image and nothing else - so the
+characters are drawn into an SVG and handed over as a `data:` URI. Neither host draws `numhl`,
+which colours the line *number*: IntelliJ's numbers come from the gutter component and VS Code's
+from a theme colour, and in both the number is out of an extension's reach. It is carried rather
+than dropped, so `:sign list` still reports it.
+
+Signs repaint on a different rule from `:match`, and the difference is the point. A standing
+highlight is recomputed after every keystroke because its ranges come from the text. A sign sits on
+a line, and both hosts' markers already follow that line as text is inserted above it - so the
+engine hands a host a new list only when the list has changed, and handing over an unchanged one
+would move every sign back to where it was placed.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

@@ -36,6 +36,9 @@ import com.maddyhome.idea.vim.highlight.HighlightGroup
 import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.match.Matches
 import com.maddyhome.idea.vim.message.MessageHistory
+import com.maddyhome.idea.vim.sign.PlacedSign
+import com.maddyhome.idea.vim.sign.Signs
+import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.redirect.Redirection
 import com.maddyhome.idea.vim.profile.Profile
 import com.maddyhome.idea.vim.quickfix.Quickfix
@@ -416,6 +419,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
   override val window: VimWindowGroup by lazy { HeadlessWindowGroup() }
   override val spellcheckerService: SpellcheckerService by lazy { HeadlessSpellchecker() }
   override val matchHighlighter: VimMatchHighlighter by lazy { HeadlessMatchHighlighter() }
+  override val signDisplay: VimSignDisplay by lazy { HeadlessSignDisplay() }
 
   /**
    * Paths, unexpanded.
@@ -444,6 +448,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     Highlights.reset()
     Redirection.reset()
     MessageHistory.reset()
+    Signs.reset()
     Profile.reset()
     WorkingDirectory.reset()
   }
@@ -967,6 +972,24 @@ class HeadlessMatchHighlighter : VimMatchHighlighter {
   override fun clearMatches(editor: VimEditor, channel: Int) {
     shown.remove(channel)
     cleared += channel
+  }
+}
+
+/**
+ * What `:sign` handed over, per file, so a test can read it back.
+ *
+ * [calls] counts them as well as keeping the last, because the interesting question about signs is
+ * not only what was painted but *how often*: the engine is supposed to hand a host a list only when
+ * the list changed, and a count is the only way to see that it did not hand one over on every key.
+ */
+class HeadlessSignDisplay : VimSignDisplay {
+  val shown: MutableMap<String, List<PlacedSign>> = mutableMapOf()
+  var calls: Int = 0
+    private set
+
+  override fun showSigns(editor: VimEditor, signs: List<PlacedSign>) {
+    calls++
+    shown[editor.getPath() ?: ""] = signs
   }
 }
 

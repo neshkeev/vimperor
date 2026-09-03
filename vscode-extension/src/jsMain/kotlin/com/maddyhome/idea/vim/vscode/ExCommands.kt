@@ -57,7 +57,6 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "packl[oadall]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "mkvie[w]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "loadv[iew]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "sign" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "menu" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "unme[nu]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
   )

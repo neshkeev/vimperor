@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
+import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.api.VimExternalOpener
 import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.api.VimProcessGroup
@@ -49,11 +50,14 @@ class VimHost(
   opener: VimExternalOpener = VsCodeExternalOpener(),
   /** Where `:match` is painted. Decorations, in a real window; a recorder, in a test. */
   matchHighlighter: VimMatchHighlighter = VsCodeMatchHighlighter(),
+  /** Where `:sign` is drawn. Gutter icons and line decorations, in a real window. */
+  signDisplay: VimSignDisplay = VsCodeSignDisplay(),
 ) : HostCommandRunner {
 
   private val vimInjector =
     VsCodeInjector(
       sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener, matchHighlighter,
+      signDisplay,
     )
 
   /**

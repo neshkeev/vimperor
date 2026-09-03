@@ -18,6 +18,8 @@ import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.put.VimPut
 import com.maddyhome.idea.vim.register.VimRegisterGroup
+import com.maddyhome.idea.vim.sign.NoSignDisplay
+import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.thinapi.VimHighlightingService
 import com.maddyhome.idea.vim.thinapi.VimPluginService
@@ -129,6 +131,15 @@ interface VimInjector {
    * nothing. See [NoMatchHighlighting].
    */
   val matchHighlighter: VimMatchHighlighter get() = NoMatchHighlighting
+
+  /**
+   * Drawing `:sign` - a mark in the gutter and a colour on the line.
+   *
+   * Defaulted for the same reason [matchHighlighter] is: the definitions and the placements are
+   * engine state, so `:sign define` and `:sign place` work in a host that draws nothing, and
+   * `:sign place` still lists what is there. See [NoSignDisplay].
+   */
+  val signDisplay: VimSignDisplay get() = NoSignDisplay
 
   val put: VimPut
 

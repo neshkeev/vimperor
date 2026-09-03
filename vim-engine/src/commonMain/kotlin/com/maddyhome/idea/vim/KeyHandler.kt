@@ -8,6 +8,7 @@
 package com.maddyhome.idea.vim
 
 import com.maddyhome.idea.vim.match.Matches
+import com.maddyhome.idea.vim.sign.Signs
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.getLineEndOffset
@@ -140,6 +141,11 @@ class KeyHandler {
     // to be recomputed after anything that could have moved them. This returns on its first line
     // when nothing is matching, which is every session that has not typed `:match`.
     Matches.repaint(editor)
+    // `:sign` rides along here so that a file opened after the signs were placed gets them on its
+    // first keystroke. It is not the same job: this one hands the host a list only when the list
+    // has changed, because a host's own markers already follow a line as text is inserted above it
+    // and repainting an unchanged sign would move it back to where it was placed.
+    Signs.repaint(editor)
   }
 
   // Deprecated. Has external usages
