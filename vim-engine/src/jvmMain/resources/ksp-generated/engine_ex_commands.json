@@ -211,6 +211,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFirstCommand",
     "standardConstructor": true
   },
+  "changes": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangesCommand",
+    "standardConstructor": true
+  },
   "checkt[ime]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CheckTimeCommand",
     "standardConstructor": true

@@ -12,6 +12,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.components.serviceIfCreated
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.textarea.TextComponentEditorImpl
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.api.EngineEditorHelper
 import com.maddyhome.idea.vim.api.ExecutionContextManager
@@ -104,6 +105,14 @@ fun initInjector() {
 }
 
 internal class IjVimInjector : VimInjectorBase() {
+  init {
+    // The platform's `RecentPlacesListener` feeds the change list here, over
+    // `CHANGE_LIST_REMOTE_TOPIC`, and it sees changes the engine never made - a refactoring, a
+    // quick-fix. The engine's own `.`-mark recording would be the same edit arriving twice, so it
+    // stands down. See `VimChangeList.fedByHost`.
+    VimChangeList.fedByHost = true
+  }
+
   override fun <T : Any> getLogger(clazz: KClass<T>): VimLogger = IjVimLogger(Logger.getInstance(clazz.java))
 
   override val fallbackWindow: VimEditor by lazy {

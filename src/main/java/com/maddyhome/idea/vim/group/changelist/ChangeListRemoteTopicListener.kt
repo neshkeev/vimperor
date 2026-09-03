@@ -8,19 +8,19 @@
 
 package com.maddyhome.idea.vim.group.changelist
 
-import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.platform.project.projectId
 import com.intellij.platform.rpc.topics.ProjectRemoteTopic
 import com.intellij.platform.rpc.topics.ProjectRemoteTopicListener
+import com.maddyhome.idea.vim.changelist.VimChangeList
 
 internal class ChangeListRemoteTopicListener : ProjectRemoteTopicListener<ChangeListInfo> {
   override val topic: ProjectRemoteTopic<ChangeListInfo> = CHANGE_LIST_REMOTE_TOPIC
 
   override fun handleEvent(project: Project, event: ChangeListInfo) {
-    service<ChangeListService>().addChange(
+    VimChangeList.addChange(
       project.projectId().serializeToString(),
-      ChangeListService.Change(event.line, event.col, event.filepath, event.protocol),
+      VimChangeList.Change(event.line, event.col, event.filepath, event.protocol),
     )
   }
 }

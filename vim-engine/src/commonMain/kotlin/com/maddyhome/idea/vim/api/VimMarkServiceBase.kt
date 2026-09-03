@@ -23,6 +23,7 @@ import com.maddyhome.idea.vim.api.VimMarkService.Companion.SELECTION_START_MARK
 import com.maddyhome.idea.vim.api.VimMarkService.Companion.SENTENCE_END_MARK
 import com.maddyhome.idea.vim.api.VimMarkService.Companion.SENTENCE_START_MARK
 import com.maddyhome.idea.vim.api.VimMarkService.Companion.UPPERCASE_MARKS
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.diagnostic.debug
@@ -231,6 +232,18 @@ abstract class VimMarkServiceBase : VimMarkService {
           if (mark.key == BEFORE_JUMP_MARK) {
             val jump = Jump(mark.line, mark.col, mark.filepath, mark.protocol)
             injector.jumpService.addJump(editor, jump, true)
+          }
+          // Vim's changelist is defined as where the `.` mark has been, and this is the one place
+          // `.` is written from - so a host without a recorder of its own gets `g;` from here. Not
+          // under `:keepjumps`, which is "the jumplist, the alternate file mark and the changelist
+          // are not changed"; the third of those three is this. See [VimChangeList.fedByHost].
+          if (markChar == LAST_CHANGE_MARK && !VimChangeList.fedByHost &&
+            !injector.jumpService.recordingSuppressed
+          ) {
+            VimChangeList.addChange(
+              editor.projectId,
+              VimChangeList.Change(mark.line, mark.col, mark.filepath, mark.protocol),
+            )
           }
           getLocalMarks(mark.filepath)[markChar] = mark
         } else {

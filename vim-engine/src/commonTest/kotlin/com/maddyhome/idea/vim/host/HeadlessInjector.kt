@@ -24,6 +24,7 @@ import com.maddyhome.idea.vim.api.VimModalInput
 import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.api.VimCommandGroup
 import com.maddyhome.idea.vim.api.ExecutionContext as ExecutionContextApi
@@ -400,6 +401,8 @@ class HeadlessInjector : HeadlessInjectorBase() {
     // A new injector is a new session, and the quickfix list belongs to a session. Without this a
     // list one test filled is still there for the next one.
     Quickfix.reset()
+    // And so does the change list, for the same reason.
+    VimChangeList.reset()
   }
 
   /**

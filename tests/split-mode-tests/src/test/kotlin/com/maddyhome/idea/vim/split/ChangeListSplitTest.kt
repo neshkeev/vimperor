@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test
  *
  * In split mode the change list is fed by the backend's `RecentPlacesListener`
  * over `CHANGE_LIST_REMOTE_TOPIC`. These tests verify the full pipeline:
- * edit on backend → topic broadcast → frontend `ChangeListService` → `g;` reads it.
+ * edit on backend → topic broadcast → frontend `VimChangeList` → `g;` reads it.
  *
  * Index logic and error paths are covered by `MotionGotoChangeActionTest` in the
  * monolith suite; here we only check that the RPC topic delivers events at all.

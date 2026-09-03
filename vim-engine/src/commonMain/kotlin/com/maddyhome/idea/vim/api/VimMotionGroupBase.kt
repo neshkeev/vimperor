@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.action.motion.leftright.TillCharacterMotionType
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.command.OperatorArguments
@@ -312,9 +313,40 @@ abstract class VimMotionGroupBase : VimMotionGroup {
     return offset.toMotionOrError()
   }
 
-  // Engine has no change list (it lives on the frontend). Frontend MotionGroup overrides.
+  /**
+   * `g;` and `g,`, over the change list both hosts now share. See [VimChangeList].
+   *
+   * The count arrives already signed - negative for `g;` and positive for `g,` - so one walk serves
+   * both, which is how Vim's own `nv_g_cmd` does it.
+   */
   override fun moveCaretToChange(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Motion {
-    injector.messages.showErrorMessage(editor, injector.messages.message("E664"))
+    return when (val result = VimChangeList.goToChange(editor.projectId, count)) {
+      VimChangeList.MoveResult.Empty -> reportChangeListError(editor, "E664")
+      VimChangeList.MoveResult.AtStart -> reportChangeListError(editor, "E662")
+      VimChangeList.MoveResult.AtEnd -> reportChangeListError(editor, "E663")
+      is VimChangeList.MoveResult.At -> motionToChange(editor, result.change)
+    }
+  }
+
+  private fun reportChangeListError(editor: VimEditor, code: String): Motion {
+    injector.messages.showErrorMessage(editor, injector.messages.message(code))
+    return Motion.Error
+  }
+
+  /**
+   * A change in another file is opened and jumped to here rather than returned as a motion, and the
+   * motion then fails - which reads wrong and is what the jump list does too. A `Motion` is an
+   * offset into *this* editor, and there is nothing to say about an offset in a different one.
+   */
+  private fun motionToChange(editor: VimEditor, change: VimChangeList.Change): Motion {
+    val target = BufferPosition(change.line, change.col, false)
+    if (editor.getPath() == change.filepath) {
+      return AbsoluteOffset(editor.bufferPositionToOffset(target))
+    }
+    injector.file.selectEditor(editor.projectId, change.filepath, change.protocol)?.let { newEditor ->
+      val offset = newEditor.bufferPositionToOffset(target)
+      newEditor.currentCaret().moveToOffset(newEditor.normalizeOffset(offset, false))
+    }
     return Motion.Error
   }
 

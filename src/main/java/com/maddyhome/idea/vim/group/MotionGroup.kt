@@ -38,7 +38,6 @@ import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.MotionType
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
-import com.maddyhome.idea.vim.group.changelist.ChangeListService
 import com.maddyhome.idea.vim.handler.ExternalActionHandler
 import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.Motion.AbsoluteOffset
@@ -64,38 +63,6 @@ import kotlin.math.min
  */
 
 class MotionGroup : VimMotionGroupBase() {
-
-  override fun moveCaretToChange(
-    editor: VimEditor,
-    caret: ImmutableVimCaret,
-    count: Int,
-  ): Motion {
-    val project = editor.ij.project ?: return Motion.Error
-    val result = service<ChangeListService>().goToChange(project.projectId().serializeToString(), count)
-    return when (result) {
-      ChangeListService.MoveResult.Empty -> reportChangeListError(editor, "E664")
-      ChangeListService.MoveResult.AtStart -> reportChangeListError(editor, "E662")
-      ChangeListService.MoveResult.AtEnd -> reportChangeListError(editor, "E663")
-      is ChangeListService.MoveResult.At -> motionToChange(editor, result.change)
-    }
-  }
-
-  private fun reportChangeListError(editor: VimEditor, code: String): Motion {
-    injector.messages.showErrorMessage(editor, injector.messages.message(code))
-    return Motion.Error
-  }
-
-  private fun motionToChange(editor: VimEditor, change: ChangeListService.Change): Motion {
-    val target = BufferPosition(change.line, change.col, false)
-    if (editor.getPath() == change.filepath) {
-      return AbsoluteOffset(editor.bufferPositionToOffset(target))
-    }
-    injector.file.selectEditor(editor.projectId, change.filepath, change.protocol)?.let { newEditor ->
-      val offset = newEditor.bufferPositionToOffset(target)
-      newEditor.currentCaret().moveToOffset(newEditor.normalizeOffset(offset, false))
-    }
-    return Motion.Error
-  }
 
   override fun moveCaretToFirstDisplayLine(
     editor: VimEditor,
