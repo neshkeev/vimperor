@@ -40,10 +40,6 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
       ActionListCommand::class,
       { range, modifier, argument -> ActionListCommand(range, modifier, argument) },
     ),
-    "sy[ntax]" to command { range, modifier, argument -> SyntaxCommand(range, modifier, argument) },
-    "filet[ype]" to command { range, modifier, argument -> FiletypeCommand(range, modifier, argument) },
-    "colo[rscheme]" to command { range, modifier, argument -> ColorschemeCommand(range, modifier, argument) },
-    "ru[ntime]" to command { range, modifier, argument -> RuntimeCommand(range, modifier, argument) },
     "setf[iletype]" to command { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
 
     // The rest of what a `~/.vimrc` reaches for and VS Code answers for itself. Measured rather
@@ -54,9 +50,6 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     // the engine's, so a name in both silently replaces the real command with an accepted no-op -
     // which is exactly what happened to eight of them, and what `ExCommandOverlapTest` now
     // prevents.
-    "packl[oadall]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "mkvie[w]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "loadv[iew]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "menu" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "unme[nu]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
   )
@@ -69,16 +62,10 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
 /**
  * A command VS Code has already answered, which exists so that a `~/.vimrc` loads.
  *
- * Every one of these names something the editor decides for itself: what highlighting looks like,
- * which colours are used, which files get which language, where a plugin's files are. There is
- * nothing for the command to do, and there is a great deal for it to *not* do - a `~/.vimrc`
- * sourced from an `.ideavimrc` is full of them, and an unknown command is `E492`, one line of red
- * per line of config.
- *
- * Saying nothing is deliberate and it is only half the story. [contradiction] is the other half:
- * `:syntax off` and `:filetype off` ask for something VS Code will not do, and those are worth a
- * word precisely because they are rare. A message on every `syntax on` would be the wall of errors
- * again in a different colour.
+ * Most of this family moved into the engine, where both hosts get it - see `EditorDecidesCommand`
+ * there, which carries the argument for why these accept quietly. What is left here is the handful
+ * whose answer is genuinely VS Code's alone: a menu it does not have, and a language mode that is
+ * one setting rather than Vim's two.
  */
 internal abstract class AcceptedCommand(
   range: Range,
@@ -101,50 +88,6 @@ internal abstract class AcceptedCommand(
     return ExecutionResult.Success
   }
 }
-
-/**
- * `:syntax`, which is on and cannot be turned off.
- *
- * VS Code highlights with a grammar and a language server and offers an extension no way to stop
- * it for one editor. `syntax on` is the line this was written for: it is in most `~/.vimrc` files
- * and it was `E492: Not an editor command`.
- */
-internal class SyntaxCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument) {
-  override fun contradiction(argument: String): String? =
-    if (argument == "off" || argument == "clear") {
-      "VS Code highlights with its own grammars and cannot be told to stop, so `:syntax $argument` did nothing."
-    } else {
-      null
-    }
-}
-
-/** `:filetype`, which VS Code decides from the file and its language extensions. */
-internal class FiletypeCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument) {
-  override fun contradiction(argument: String): String? =
-    if (argument.split(" ").any { it == "off" }) {
-      "VS Code works out a file's language itself, so `:filetype $argument` did nothing."
-    } else {
-      null
-    }
-}
-
-/** `:colorscheme`, which is VS Code's colour theme and a user setting rather than a buffer's. */
-internal class ColorschemeCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument) {
-  override fun contradiction(argument: String): String? =
-    if (argument.isEmpty()) {
-      null
-    } else {
-      "VS Code's colour theme is a setting rather than a buffer's, so `:colorscheme $argument` did nothing. " +
-        "The Command Palette changes it: Preferences: Color Theme."
-    }
-}
-
-/** `:runtime`, which loads Vim script files this host cannot run. */
-internal class RuntimeCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument)
 
 
 

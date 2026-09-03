@@ -295,6 +295,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
     "standardConstructor": true
   },
+  "colo[rscheme]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ColorschemeCommand",
+    "standardConstructor": true
+  },
   "com[mand]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdCommand",
     "standardConstructor": true
@@ -459,6 +463,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
     "standardConstructor": true
   },
+  "filet[ype]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FiletypeCommand",
+    "standardConstructor": true
+  },
   "filt[er]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FilterCommand",
     "standardConstructor": true
@@ -521,6 +529,10 @@
   },
   "helpg[rep]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpGrepCommand",
+    "standardConstructor": true
+  },
+  "helpt[ags]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpTagsCommand",
     "standardConstructor": true
   },
   "hi[ghlight]": {
@@ -727,6 +739,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
     "standardConstructor": false
   },
+  "loadv[iew]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LoadViewCommand",
+    "standardConstructor": true
+  },
   "lockm[arks]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockMarksCommand",
     "standardConstructor": true
@@ -823,6 +839,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkVimrcCommand",
     "standardConstructor": true
   },
+  "mkvie[w]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeViewCommand",
+    "standardConstructor": true
+  },
   "n[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
     "standardConstructor": true
@@ -879,6 +899,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.OpenModeCommand",
     "standardConstructor": true
   },
+  "ol[dfiles]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.OldFilesCommand",
+    "standardConstructor": true
+  },
   "om[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
     "standardConstructor": false
@@ -913,6 +937,10 @@
   },
   "pa[ckadd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackaddCommand",
+    "standardConstructor": true
+  },
+  "packl[oadall]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackLoadAllCommand",
     "standardConstructor": true
   },
   "pc[lose]": {
@@ -1051,6 +1079,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BelowRightCommand",
     "standardConstructor": true
   },
+  "ru[ntime]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RuntimeCommand",
+    "standardConstructor": true
+  },
   "rub[y]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RubyCommand",
     "standardConstructor": true
@@ -1069,6 +1101,10 @@
   },
   "san[dbox]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SandboxCommand",
+    "standardConstructor": true
+  },
+  "sav[eas]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SaveAsCommand",
     "standardConstructor": true
   },
   "sb[uffer]": {
@@ -1235,6 +1271,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitViewCommand",
     "standardConstructor": true
   },
+  "sy[ntax]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SyntaxCommand",
+    "standardConstructor": true
+  },
   "t": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
     "standardConstructor": true
@@ -1391,6 +1431,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnhideCommand",
     "standardConstructor": true
   },
+  "uni[q]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UniqCommand",
+    "standardConstructor": true
+  },
   "unl[et]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnletCommand",
     "standardConstructor": true
@@ -1414,6 +1458,10 @@
   "v[global]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
     "standardConstructor": false
+  },
+  "ve[rsion]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VersionCommand",
+    "standardConstructor": true
   },
   "verb[ose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.VerboseCommand",

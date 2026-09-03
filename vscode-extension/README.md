@@ -476,6 +476,33 @@ only half of that pair could ever have been tested; and `createRangeMarker` was 
 marker per matching line before it runs anything, so every `:g/pattern/command` in the engine's own
 suite was reaching it.
 
+`:uniq` is Unix `uniq` over a range: *adjacent* duplicates, which is the whole difference from
+`:sort u`. It removes a repeat only where it sits directly under the line it repeats, so a log or
+an already-sorted list is deduplicated without being reordered. All of Vim's flags, including the
+one worth reading twice - the bang keeps "lines that are immediately followed by a duplicate",
+which in a run of three means the first two survive.
+
+`:saveas` writes the buffer somewhere else and leaves you editing *there*, which is the difference
+from `:write {file}` and the reason both exist. Vim does it by renaming the buffer; neither host
+lets an extension rename what an editor is showing, so this writes the file and opens it - the
+reader ends up where Vim would leave them, with one more tab than Vim would leave open.
+
+`:oldfiles` lists the jump list's files, newest first. Vim reads its list from viminfo, and there
+is none here: no host offers an extension the files a user edited last week, and inventing a file
+to keep them in would be a larger decision than this command is worth. Vim's own index calls this
+"files that have marks in the viminfo file" and a jump is a mark, so it is the same kind of list
+starting empty at each launch instead of being read from disk - which the command says out loud,
+because someone expecting last week's files should be able to tell.
+
+Nine of the *editor decides for itself* family moved out of this host and into the engine:
+`:syntax`, `:filetype`, `:colorscheme`, `:runtime`, `:packloadall`, `:helptags`, `:mkview`,
+`:loadview` and `:version`. That was not tidying. They lived here, so the **IntelliJ plugin
+reported `E492` for every one of them**, `:syntax on` included - which is the first line of a great
+many `~/.vimrc` files. Their messages now say "the editor" rather than naming VS Code, because
+there are two and the sentence is true of both. `:version` is not one of the quiet ones: it asks a
+question that has an answer worth printing. `:setfiletype` stays here, because in this host it does
+real work through the language mode.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes
