@@ -30,6 +30,7 @@ import com.maddyhome.idea.vim.api.VimIndentConfig
 import com.maddyhome.idea.vim.common.VimEditorReplaceMask
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.api.VimDocument
+import com.maddyhome.idea.vim.common.ChangesListener
 
 /**
  * A real, in-memory [VimEditor] over a fixed string, for the regex tests.
@@ -325,7 +326,20 @@ class TestVimEditor(
     set(_) = TODO("TestVimEditor.vimLastSelectionType is not implemented yet")
   override var insertMode: Boolean = false
 
-  override val document: VimDocument get() = TODO("TestVimEditor.document is not implemented yet")
+  /**
+   * A document with no guards and no listeners, which is the whole of what a headless one is.
+   *
+   * It exists because the put machinery asks a document whether an offset is guarded - notebook
+   * cells have such a guard and a plain buffer does not - and that one question was enough to make
+   * `:put`, `:copy`, `:move`, `:read` and `:append` all report "Not implemented yet :(" here while
+   * working perfectly well in both real hosts.
+   */
+  override val document: VimDocument = object : VimDocument {
+    override fun addChangeListener(listener: ChangesListener) {}
+    override fun removeChangeListener(listener: ChangesListener) {}
+    override fun getOffsetGuard(offset: Int): LiveRange? = null
+    override fun getRangeGuard(start: Int, end: Int): LiveRange? = null
+  }
 }
 
 /** The one buffer a headless test has, named so that marks can be keyed by it. */

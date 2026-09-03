@@ -98,6 +98,11 @@ import com.maddyhome.idea.vim.api.VimJumpServiceBase
 import com.maddyhome.idea.vim.api.VimClipboardManager
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.common.VimCopiedText
+import com.maddyhome.idea.vim.put.PutData
+import com.maddyhome.idea.vim.put.ProcessedTextData
+import com.maddyhome.idea.vim.put.VimPasteProvider
+import com.maddyhome.idea.vim.put.VimPut
+import com.maddyhome.idea.vim.put.VimPutBase
 import com.maddyhome.idea.vim.register.VimRegisterGroup
 import com.maddyhome.idea.vim.register.VimRegisterGroupBase
 import com.maddyhome.idea.vim.history.VimHistory
@@ -303,6 +308,52 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * no meaning here, so it is always empty.
    */
   override val clipboardManager: VimClipboardManager by lazy { HeadlessClipboardManager() }
+
+  /**
+   * Putting text, which is entirely the engine's - `VimPutBase` has no abstract members at all.
+   *
+   * It was a `TODO()` here for as long as nothing headless put anything, and that made a whole
+   * family of commands untestable without saying so: `:put`, `:copy`, `:move`, `:read` and now
+   * `:append` all reach the buffer through this and all reported "Not implemented yet :(" instead
+   * of failing. The VS Code host builds it the same way, from the same nothing.
+   */
+  override val put: VimPut by lazy {
+    object : VimPutBase() {
+      /** There is no IDE here, so there is no IDE paste to route a put through. */
+      override fun getProviderForPasteViaIde(
+        editor: VimEditor,
+        typeInRegister: SelectionType,
+        data: PutData,
+      ): VimPasteProvider? = null
+
+      override fun putTextViaIde(
+        pasteProvider: VimPasteProvider,
+        vimEditor: VimEditor,
+        vimContext: ExecutionContext,
+        text: ProcessedTextData,
+        selectionType: SelectionType,
+        data: PutData,
+        additionalData: Map<String, Any>,
+      ) = TODO("headless host: there is no IDE paste to put through")
+
+      /**
+       * Leaves the pasted lines exactly as they were, which is what plain Vim does.
+       *
+       * The base leaves this a `TODO`, and the executor turns a `NotImplementedError` into
+       * "Not implemented yet :(" - so a `:copy` would insert its text and then abandon the command
+       * half way. The VS Code host learned that from three of IdeaVim's own `:copy` fixtures.
+       */
+      override fun doIndent(
+        editor: VimEditor,
+        caret: VimCaret,
+        context: ExecutionContext,
+        startOffset: Int,
+        endOffset: Int,
+      ): Int = endOffset
+
+      override fun notifyAboutIdeaPut(editor: VimEditor?) {}
+    }
+  }
 
   /** `VimJumpServiceBase` leaves nothing abstract; the jump list is a list of positions. */
   override val jumpService: VimJumpService by lazy {

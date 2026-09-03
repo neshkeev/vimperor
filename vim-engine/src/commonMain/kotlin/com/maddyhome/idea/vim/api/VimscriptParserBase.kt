@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandTree
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.parser.DeletionInfo
+import com.maddyhome.idea.vim.vimscript.parser.LineEntryBlocks
 import com.maddyhome.idea.vim.vimscript.parser.errors.IdeavimErrorListener
 import com.maddyhome.idea.vim.vimscript.parser.visitors.CommandVisitor
 import com.maddyhome.idea.vim.vimscript.parser.visitors.ExpressionVisitor
@@ -46,7 +47,9 @@ abstract class VimscriptParserBase : com.maddyhome.idea.vim.api.VimscriptParser 
   }
 
   override fun parse(script: String): Script {
-    val preprocessedText = uncommentIdeaVimIgnore(getTextWithoutErrors(script))
+    val preprocessedText = LineEntryBlocks.fold(uncommentIdeaVimIgnore(getTextWithoutErrors(script))) { offset, length ->
+      deletionInfo.registerDeletion(offset, length)
+    }
     linesWithErrors.clear()
     errorMessages.clear()
     val parser = getParser(addNewlineIfMissing(preprocessedText), true)

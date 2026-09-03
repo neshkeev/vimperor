@@ -431,6 +431,26 @@ a line, and both hosts' markers already follow that line as text is inserted abo
 engine hands a host a new list only when the list has changed, and handing over an unchanged one
 would move every sign back to where it was placed.
 
+`:append`, `:insert` and `:change` are the only ex commands whose argument is *the lines that
+follow*, and the grammar has no way to say that - every rule in it ends a command at a newline. A
+lexer rule could swallow the block the way the `lua <<EOF` rules do, but those begin with a word
+nothing else begins with; these begin with `a`, `i` and `c`, and a rule anchored on one letter
+would swallow any `echo a` that happened to have a lone `.` further down the file. So the block is
+folded into the argument by a textual pass before parsing, next to the two the parser already ran.
+Inner newlines become `U+0001`, which the grammar's catch-all rule lexes without complaint and no
+configuration file contains; the fold is anchored on a line that is *only* a range and a command
+word, so nothing with a space in it can be mistaken for one.
+
+That anchoring is not theoretical. `:imap a b |c " Something else` leaves a bare `c` after the
+bar, and `:c` is `:change` - one of IdeaVim's own `:map` tests found a `:change` that had taken
+` " Something else` for its argument and deleted a line of the buffer. These three take no
+argument at all, so anything after the command name is now `E488`, which is Vim's answer too.
+
+Giving them somewhere to write also filled two holes in the headless test host: it had no `put`
+and its editor had no `document`, and between them that made `:put`, `:copy`, `:move` and `:read`
+report "Not implemented yet :(" in every engine test that tried them - silently, because the
+executor turns that into a message rather than a failure.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

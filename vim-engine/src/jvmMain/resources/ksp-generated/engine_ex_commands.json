@@ -47,6 +47,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugCommand",
     "standardConstructor": true
   },
+  "a[ppend]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AppendLinesCommand",
+    "standardConstructor": true
+  },
   "ab[breviate]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
     "standardConstructor": false
@@ -173,6 +177,10 @@
   },
   "cN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
+    "standardConstructor": true
+  },
+  "c[hange]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLinesCommand",
     "standardConstructor": true
   },
   "ca[bbrev]": {
@@ -505,6 +513,10 @@
   },
   "hor[izontal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HorizontalCommand",
+    "standardConstructor": true
+  },
+  "i[nsert]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.InsertLinesCommand",
     "standardConstructor": true
   },
   "ia[bbrev]": {
