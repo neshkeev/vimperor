@@ -807,12 +807,52 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewEditCommand",
     "standardConstructor": true
   },
+  "po[p]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPopCommand",
+    "standardConstructor": true
+  },
   "prev[ious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
     "standardConstructor": true
   },
   "ps[earch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewSearchCommand",
+    "standardConstructor": true
+  },
+  "ptN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagPreviousCommand",
+    "standardConstructor": true
+  },
+  "pt[ag]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagCommand",
+    "standardConstructor": true
+  },
+  "ptf[irst]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagFirstCommand",
+    "standardConstructor": true
+  },
+  "ptj[ump]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagJumpCommand",
+    "standardConstructor": true
+  },
+  "ptl[ast]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagLastCommand",
+    "standardConstructor": true
+  },
+  "ptn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagNextCommand",
+    "standardConstructor": true
+  },
+  "ptp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagPreviousCommand",
+    "standardConstructor": true
+  },
+  "ptr[ewind]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagFirstCommand",
+    "standardConstructor": true
+  },
+  "pts[elect]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagSelectCommand",
     "standardConstructor": true
   },
   "pu[t]": {
@@ -1023,6 +1063,14 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
     "standardConstructor": true
   },
+  "tN[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPreviousCommand",
+    "standardConstructor": true
+  },
+  "ta[g]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagCommand",
+    "standardConstructor": true
+  },
   "tab": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabModifierCommand",
     "standardConstructor": true
@@ -1079,6 +1127,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabsCommand",
     "standardConstructor": true
   },
+  "tags": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagStackCommand",
+    "standardConstructor": true
+  },
   "tc[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TclCommand",
     "standardConstructor": true
@@ -1087,16 +1139,44 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TearOffCommand",
     "standardConstructor": true
   },
+  "tf[irst]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagFirstCommand",
+    "standardConstructor": true
+  },
+  "tj[ump]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagJumpCommand",
+    "standardConstructor": true
+  },
+  "tl[ast]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagLastCommand",
+    "standardConstructor": true
+  },
   "tm[enu]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TipMenuCommand",
+    "standardConstructor": true
+  },
+  "tn[ext]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagNextCommand",
     "standardConstructor": true
   },
   "to[pleft]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TopLeftCommand",
     "standardConstructor": true
   },
+  "tp[revious]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPreviousCommand",
+    "standardConstructor": true
+  },
+  "tr[ewind]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagFirstCommand",
+    "standardConstructor": true
+  },
   "trus[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TrustCommand",
+    "standardConstructor": true
+  },
+  "ts[elect]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagSelectCommand",
     "standardConstructor": true
   },
   "tu[nmenu]": {

@@ -263,6 +263,15 @@ object Options {
     NumberOption("undolevels", GLOBAL_OR_LOCAL_TO_BUFFER, "ul", 1000, -123456)
   )
   val makeprg: StringOption = addOption(StringOption("makeprg", GLOBAL_OR_LOCAL_TO_BUFFER, "mp", "make"))
+
+  /**
+   * Where `:tag` looks for a tags file, in the order it looks.
+   *
+   * Vim's own default. `./tags` is a tags file beside the *current file*, and a bare `tags` is one
+   * in the working directory - the leading `./` is the whole difference and is what makes a tags
+   * file per source tree work.
+   */
+  val tags: StringOption = addOption(StringOption("tags", GLOBAL_OR_LOCAL_TO_BUFFER, "tag", "./tags,tags"))
   val grepprg: StringOption = addOption(
     // Vim's own default, `/dev/null` included: it is there so that grep prints a file name even
     // when it was given exactly one file to search, which is what the quickfix parser needs.

@@ -228,6 +228,51 @@ data class PreviewCloseCommand(val range: Range, val modifier: CommandModifier, 
 data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
+/**
+ * The tag commands that open the preview window rather than jumping.
+ *
+ * The tags themselves are read and jumped to - see [TagCommand] - so what is missing here is only
+ * the window: `:ptag` is `:tag` into a preview window, and there is no preview window. That is the
+ * same absence `:pclose` above reports, which is why these answer the same way rather than
+ * quietly behaving like their non-preview twins - a `:ptag` that moved the caret would have taken
+ * the reader away from the place `:ptag` exists to keep them at.
+ */
+
+/** see "h :ptag" */
+@ExCommand(command = "pt[ag]")
+data class PreviewTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptselect" */
+@ExCommand(command = "pts[elect]")
+data class PreviewTagSelectCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptjump" */
+@ExCommand(command = "ptj[ump]")
+data class PreviewTagJumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptnext" */
+@ExCommand(command = "ptn[ext]")
+data class PreviewTagNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptprevious" */
+@ExCommand(command = "ptp[revious],ptN[ext]")
+data class PreviewTagPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptfirst" */
+@ExCommand(command = "ptf[irst],ptr[ewind]")
+data class PreviewTagFirstCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :ptlast" */
+@ExCommand(command = "ptl[ast]")
+data class PreviewTagLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
 /** see "h :psearch" */
 @ExCommand(command = "ps[earch]")
 data class PreviewSearchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :

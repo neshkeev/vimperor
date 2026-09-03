@@ -448,8 +448,9 @@ class SetlocalCommandTest : VimTestCase() {
     assertCommandOutput(
       "setlocal", """
       |--- Local option values ---
-      |  errorformat=        grepprg=            idearefactormode=   scrolloff=-1
-      |  foldlevel=1       --ideajoin            makeprg=            sidescrolloff=-1
+      |  errorformat=      --ideajoin            scrolloff=-1
+      |  foldlevel=1         idearefactormode=   sidescrolloff=-1
+      |  grepprg=            makeprg=            tags=
       |  fileencoding=utf-8
       |--ideacopypreprocess
       |  undolevels=-123456
@@ -469,7 +470,7 @@ class SetlocalCommandTest : VimTestCase() {
       "setlocal", """
       |--- Local option values ---
       |  errorformat=      --ideajoin            number              sidescrolloff=10
-      |  foldlevel=1         idearefactormode=   relativenumber
+      |  foldlevel=1         idearefactormode=   relativenumber      tags=
       |  grepprg=            makeprg=            scrolloff=10
       |  fileencoding=utf-8
       |--ideacopypreprocess
@@ -515,6 +516,7 @@ class SetlocalCommandTest : VimTestCase() {
       |  makeprg=
       |  scrolloff=-1
       |  sidescrolloff=-1
+      |  tags=
       |  undolevels=-123456
       """.trimMargin()
     )
