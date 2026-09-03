@@ -90,3 +90,8 @@ data class SplitFindCommand(val range: Range, val modifier: CommandModifier, val
 @ExCommand(command = "sv[iew]")
 data class SplitViewCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "view")
+
+/** see "h :stag" - `:tag` in a split, which is how a definition is read without leaving the caller. */
+@ExCommand(command = "sta[g]")
+data class SplitTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  SplitAndDoCommand(range, modifier, argument, "tag")

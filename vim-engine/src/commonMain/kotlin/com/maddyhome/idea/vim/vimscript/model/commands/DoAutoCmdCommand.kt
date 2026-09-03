@@ -32,9 +32,8 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * `E216` for an event nothing here has, which is Vim's error for exactly that.
  *
- * `:doautoall` is deliberately *not* a second name for this. It fires the event for every loaded
- * buffer rather than for one, which is a different command, and registering the name for something
- * that only does half of it would be worse than reporting that it is not there.
+ * `:doautoall` is deliberately *not* a second name for this - see [DoAutoAllCommand], which fires
+ * the same event for every buffer rather than for one.
  */
 @ExCommand(command = "do[autocmd]")
 data class DoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
@@ -63,6 +62,52 @@ data class DoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val
   }
 
   /** Vim's event names are case-insensitive; the enum's are not. */
+  private fun eventNamed(name: String): AutoCmdEvent? =
+    AutoCmdEvent.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
+}
+
+/**
+ * `:doautoall [group] {event} [fname]` - the same event, for every buffer that is open.
+ *
+ * The command a config reaches for after installing handlers, when the answer to "and what about
+ * the files that were already open?" has to be "all of them" rather than "this one". Vim's own
+ * warning applies and is worth repeating: it fires for every buffer, so an event whose handlers
+ * change text will change text in all of them.
+ *
+ * Vim visits each buffer in turn without showing it; there is no such thing here, so each open
+ * editor is passed to the handlers as itself. That is closer to what the handlers expect anyway -
+ * they are given a real editor rather than one that is only notionally current.
+ *
+ * see "h :doautoall"
+ */
+@ExCommand(command = "doautoa[ll]")
+data class DoAutoAllCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_FORBIDDEN, ArgumentFlag.ARGUMENT_REQUIRED, Access.SELF_SYNCHRONIZED)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val words = argument.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (words.isEmpty()) throw exExceptionMessage("E471")
+
+    val eventIndex = words.indexOfFirst { eventNamed(it) != null }
+    if (eventIndex < 0) throw exExceptionMessage("E216", words.first())
+    val event = eventNamed(words[eventIndex])!!
+    val overridePath = words.getOrNull(eventIndex + 1)
+
+    // A copy of the list, because a handler is allowed to open or close a file and iterating the
+    // host's live collection while it does would be a different bug on each host.
+    for (target in injector.editorGroup.getEditors().toList()) {
+      injector.autoCmd.handleEvent(event, overridePath ?: target.getPath(), target)
+    }
+    return ExecutionResult.Success
+  }
+
   private fun eventNamed(name: String): AutoCmdEvent? =
     AutoCmdEvent.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }
 }

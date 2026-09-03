@@ -24,6 +24,7 @@ import com.maddyhome.idea.vim.api.VimCaretListener
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.api.VimFoldRegion
+import com.maddyhome.idea.vim.api.VimRangeMarker
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.api.VimIndentConfig
@@ -86,13 +87,49 @@ class TestVimEditor(
 
   override fun insertText(caret: VimCaret, atPosition: Int, text: CharSequence) {
     val at = atPosition.coerceIn(0, this.text.length)
-    setText(this.text.substring(0, at) + text + this.text.substring(at))
+    edit(at, at, text.toString())
   }
 
   override fun replaceString(start: Int, end: Int, newString: String) {
     val from = start.coerceIn(0, text.length)
     val to = end.coerceIn(from, text.length)
-    setText(text.substring(0, from) + newString + text.substring(to))
+    edit(from, to, newString)
+  }
+
+  /**
+   * The markers a test has taken out on this buffer. See [TestRangeMarker].
+   *
+   * Live rather than a snapshot: `:global`, `:folddoopen` and `:folddoclosed` collect one marker
+   * per line *before* running anything, precisely because the command they run can move the lines
+   * underneath them.
+   */
+  private val markers: MutableList<TestRangeMarker> = mutableListOf()
+
+  internal fun addMarker(marker: TestRangeMarker) {
+    markers += marker
+  }
+
+  internal fun removeMarker(marker: TestRangeMarker) {
+    markers -= marker
+  }
+
+  /**
+   * Replaces `[from, to)` with [replacement], and moves the markers the way a document would.
+   *
+   * The rule is IntelliJ's, because the commands that use markers were written against it: an
+   * offset at or before the edit stays put, an offset at or after its end shifts by the change in
+   * length, and an offset *strictly inside* a deleted span is invalidated. That last one is what
+   * lets `:global d` step over a line another `:global d` already took.
+   */
+  private fun edit(from: Int, to: Int, replacement: String) {
+    setText(text.substring(0, from) + replacement + text.substring(to))
+    val delta = replacement.length - (to - from)
+    for (marker in markers) {
+      when {
+        marker.offset in (from + 1) until to -> marker.invalidate()
+        marker.offset >= to -> marker.offset += delta
+      }
+    }
   }
 
   /**
@@ -101,7 +138,7 @@ class TestVimEditor(
    */
   override fun addLine(atPosition: Int): Int {
     val insertAt = getLineStartOffset(atPosition)
-    setText(text.substring(0, insertAt) + "\n" + text.substring(insertAt))
+    edit(insertAt, insertAt, "\n")
     return insertAt
   }
 
@@ -271,9 +308,26 @@ class TestVimEditor(
    * ones that found it.
    */
   override fun createIndentBySize(size: Int): String = " ".repeat(size.coerceAtLeast(0))
-  override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? = null
+  /**
+   * The folds a test has asked for, which is the only way a headless buffer has any.
+   *
+   * Nothing here folds by itself - there is no display to fold - so a fold is something a test
+   * states. `:folddoopen` and `:folddoclosed` are the commands that need it, and without this they
+   * would only ever be tested against a buffer where every line is open, which tests one of the
+   * two.
+   */
+  val collapsedFolds: MutableList<TestFoldRegion> = mutableListOf()
 
-  override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> = emptyList()
+  /** Collapses the lines [first]..[last], counting from zero. */
+  fun collapseLines(first: Int, last: Int) {
+    collapsedFolds += TestFoldRegion(getLineStartOffset(first), getLineEndOffset(last))
+  }
+
+  override fun getCollapsedFoldRegionAtOffset(offset: Int): VimFoldRegion? =
+    collapsedFolds.firstOrNull { !it.isExpanded && offset >= it.startOffset && offset <= it.endOffset }
+
+  override fun getFoldRegionsAtOffset(offset: Int): List<VimFoldRegion> =
+    collapsedFolds.filter { offset >= it.startOffset && offset <= it.endOffset }
 
   override fun getFoldRegionAtLine(line: Int): VimFoldRegion? = TODO("TestVimEditor.getFoldRegionAtLine is not implemented yet")
   /** Nothing is folded, because nothing is displayed. */
@@ -346,4 +400,33 @@ class TestVimEditor(
 internal data class TestVirtualFile(override val path: String) : VimVirtualFile {
   override val protocol: String = "headless"
   override val extension: String? = null
+}
+
+/** A fold a test asked for. See [TestVimEditor.collapsedFolds]. */
+class TestFoldRegion(override val startOffset: Int, override val endOffset: Int) : VimFoldRegion {
+  override var isExpanded: Boolean = false
+}
+
+/**
+ * A marker that follows edits, which is the whole point of a marker.
+ *
+ * The headless host had none - `createRangeMarker` was a `TODO` reading "nothing here needs that
+ * yet" - and that was true right up until `:folddoopen` was written. It was never only about the
+ * fold commands: `:global` collects one of these per matching line before it runs anything, so
+ * every `:g/pattern/command` in the engine's own test suite was reaching a `TODO` too.
+ */
+class TestRangeMarker(private val editor: TestVimEditor, internal var offset: Int) : VimRangeMarker {
+  private var valid = true
+
+  override val startOffset: Int get() = offset
+  override val endOffset: Int get() = offset
+  override val isValid: Boolean get() = valid
+
+  internal fun invalidate() {
+    valid = false
+  }
+
+  override fun dispose() {
+    editor.removeMarker(this)
+  }
 }

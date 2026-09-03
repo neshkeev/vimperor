@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.exExceptionMessage
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 
@@ -174,3 +175,99 @@ data class TabsCommand(val range: Range, val modifier: CommandModifier, val argu
     return ExecutionResult.Success
   }
 }
+
+/**
+ * see "h :argedit"
+ *
+ * Vim adds the file to the argument list *and* opens it, which is the difference from `:argadd`.
+ * Here the list is the open files, so adding and opening are the same act and this is `:edit` with
+ * one extra thing: Vim accepts several names and edits the first, so several are accepted.
+ */
+@ExCommand(command = "arge[dit]")
+data class ArgEditCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_OPTIONAL, ArgumentFlag.ARGUMENT_REQUIRED, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val names = argument.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (names.isEmpty()) throw exExceptionMessage("E471")
+
+    // The first one takes the focus and the rest are merely added, which is Vim's rule: "edit file
+    // {name} ... the argument list is set to {name}" and the others join the list behind it.
+    names.forEachIndexed { position, name ->
+      val failure = injector.file.openFile(
+        WorkingDirectory.resolve(injector.pathExpansion.expandPath(name), editor),
+        context,
+        focusEditor = position == 0,
+      )
+      if (failure != null) {
+        injector.messages.showErrorMessage(editor, failure)
+        return ExecutionResult.Error
+      }
+    }
+    return ExecutionResult.Success
+  }
+}
+
+/**
+ * `:argglobal` and `:arglocal` - which argument list this window uses, of the one that exists.
+ *
+ * Vim keeps a global argument list and lets a window take a private copy of it; the two commands
+ * are how a window says which it wants. Neither host here has a second list to switch to - the
+ * files are open or they are not, and every window sees the same ones - so with no argument these
+ * are true by construction and do nothing.
+ *
+ * With names after them Vim *defines* the list, and that half does mean something: the files
+ * become open ones. Which is `:argadd`, so that is what this does rather than inventing a second
+ * meaning for it. What it deliberately does not do is close the files that were already open -
+ * Vim's version replaces a list, and replacing this one would close the reader's editors.
+ *
+ * see "h :argglobal", "h :arglocal"
+ */
+internal sealed class ArgListScopeCommand(
+  range: Range,
+  modifier: CommandModifier,
+  argument: String,
+) : Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_OPTIONAL, ArgumentFlag.ARGUMENT_OPTIONAL, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val names = commandArgument.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (names.isEmpty()) return ExecutionResult.Success
+
+    for (name in names) {
+      val failure = injector.file.openFile(
+        WorkingDirectory.resolve(injector.pathExpansion.expandPath(name), editor),
+        context,
+        focusEditor = false,
+      )
+      if (failure != null) {
+        injector.messages.showErrorMessage(editor, failure)
+        return ExecutionResult.Error
+      }
+    }
+    return ExecutionResult.Success
+  }
+}
+
+/** see "h :argglobal" */
+@ExCommand(command = "argg[lobal]")
+internal data class ArgGlobalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ArgListScopeCommand(range, modifier, argument)
+
+/** see "h :arglocal" */
+@ExCommand(command = "argl[ocal]")
+internal data class ArgLocalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  ArgListScopeCommand(range, modifier, argument)

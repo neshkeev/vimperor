@@ -83,6 +83,18 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgDoCommand",
     "standardConstructor": true
   },
+  "arge[dit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgEditCommand",
+    "standardConstructor": true
+  },
+  "argg[lobal]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgGlobalCommand",
+    "standardConstructor": true
+  },
+  "argl[ocal]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgLocalCommand",
+    "standardConstructor": true
+  },
   "argu[ment]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFileCommand",
     "standardConstructor": true
@@ -383,6 +395,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DoAutoCmdCommand",
     "standardConstructor": true
   },
+  "doautoa[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DoAutoAllCommand",
+    "standardConstructor": true
+  },
   "dr[op]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
     "standardConstructor": true
@@ -461,6 +477,14 @@
   },
   "foldc[lose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldCloseCommand",
+    "standardConstructor": true
+  },
+  "foldd[oopen]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldDoOpenCommand",
+    "standardConstructor": true
+  },
+  "folddoc[losed]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldDoClosedCommand",
     "standardConstructor": true
   },
   "foldo[pen]": {
@@ -725,6 +749,10 @@
   },
   "ls": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
+    "standardConstructor": true
+  },
+  "lt[ag]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationTagCommand",
     "standardConstructor": true
   },
   "lu[nmap]": {
@@ -1171,6 +1199,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopCommand",
     "standardConstructor": true
   },
+  "sta[g]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitTagCommand",
+    "standardConstructor": true
+  },
   "star[tinsert]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StartInsertCommand",
     "standardConstructor": true
@@ -1233,6 +1265,10 @@
   },
   "tabe[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
+    "standardConstructor": true
+  },
+  "tabf[ind]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabFindFileCommand",
     "standardConstructor": true
   },
   "tabfir[st]": {

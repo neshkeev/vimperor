@@ -451,6 +451,31 @@ and its editor had no `document`, and between them that made `:put`, `:copy`, `:
 report "Not implemented yet :(" in every engine test that tried them - silently, because the
 executor turns that into a message rather than a failure.
 
+Nine more commands are each one more turn of machinery that was already here. `:stag` is `:split`
+and then `:tag`, which is the shape `:sbuffer` and `:snext` already had. `:ltag` is `:tag` writing
+its matches into the window's location list instead of only jumping - the difference, for a name
+defined in six files, between six presses of `:tnext` and one look at a list; it costs a file read
+per match, because a tags file stores a search pattern rather than a line and every entry in a
+location list has to be a place. `:doautoall` is `:doautocmd` for every open editor rather than
+one. `:argedit`, `:argglobal` and `:arglocal` join the argument-list family, where the list is the
+open files; the two scope commands are true by construction with no argument, and with names after
+them they open those files rather than *replacing* the list, since replacing this one would close
+the reader's editors. `:tabfind` is `:find`, because both hosts open a file in its own tab already.
+
+`:folddoopen` and `:folddoclosed` are `:global` with a fold instead of a pattern, and they exist
+because a fold hides lines from the reader and not from a command - `:%s/x/y/g` changes text inside
+a collapsed fold as happily as anywhere else. They run over range markers rather than line numbers,
+which is what `:global` does and for the same reason: the command being run can insert and delete
+lines. A host that folds nothing is not a special case - every line is then not in a closed fold, so
+one of the pair runs everywhere and the other runs nowhere, which is what Vim does in a buffer with
+no folds.
+
+Writing them filled two more holes in the headless test host. Its editor had no folds at all, so
+only half of that pair could ever have been tested; and `createRangeMarker` was a `TODO` reading
+"nothing here needs that yet", which was already untrue when it was written - `:global` takes one
+marker per matching line before it runs anything, so every `:g/pattern/command` in the engine's own
+suite was reaching it.
+
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes

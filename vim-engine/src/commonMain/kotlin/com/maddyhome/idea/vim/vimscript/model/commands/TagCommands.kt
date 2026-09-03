@@ -16,6 +16,8 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
+import com.maddyhome.idea.vim.quickfix.Quickfix
+import com.maddyhome.idea.vim.quickfix.QuickfixEntry
 import com.maddyhome.idea.vim.tags.Tags
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 
@@ -347,3 +349,56 @@ data class TagFirstCommand(val range: Range, val modifier: CommandModifier, val 
 @ExCommand(command = "tl[ast]")
 data class TagLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagStepCommand(range, modifier, argument, Step.LAST)
+
+/**
+ * `:ltag[!] [name]` - `:tag`, and the matches go into the window's location list.
+ *
+ * Vim's reason for having both is that `:tag` gives you one place and the tag *stack*, while
+ * `:ltag` gives you the whole list of matches to walk with `:lnext` and read with `:lopen`. For a
+ * name defined in six files that is the difference between six presses of `:tnext` and one look at
+ * a list.
+ *
+ * The lines cost a read each, and that is the one thing worth knowing about this command. A tags
+ * file stores an *address* rather than a line - usually a search pattern - so turning six matches
+ * into six entries a location list can jump to means opening six files. `:tselect` deliberately
+ * does not do that, because it prints a list nobody has chosen from yet; this one has to, because
+ * every entry in a location list is a place.
+ *
+ * see "h :ltag"
+ */
+@ExCommand(command = "lt[ag]")
+data class LocationTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  TagCommandBase(range, modifier, argument) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val name = commandArgument.trim()
+    if (name.isEmpty()) throw exExceptionMessage("E471")
+
+    val matches = Tags.find(name, editor, context)
+    if (matches.isEmpty()) throw exExceptionMessage("E426", name)
+
+    Quickfix.location(editor).replaceWith(matches.map { it.toEntry() })
+    pushStack(editor, name, matches, 0)
+    return jumpTo(editor, context, matches.first(), "tag 1 of ${matches.size}")
+  }
+
+  /**
+   * A match as a place, which means resolving its address.
+   *
+   * Falling back to the first line rather than failing: an address whose pattern no longer matches
+   * means the file has changed since the tags file was written, and taking the reader to the top of
+   * the right file is a better answer than taking them nowhere.
+   */
+  private fun Tags.TagMatch.toEntry(): QuickfixEntry {
+    val line = try {
+      Tags.lineFor(this, injector.fileSystem.readText(path))
+    } catch (e: Throwable) {
+      null
+    } ?: address.toIntOrNull()?.minus(1) ?: 0
+    return QuickfixEntry(path, line, 0, name)
+  }
+}

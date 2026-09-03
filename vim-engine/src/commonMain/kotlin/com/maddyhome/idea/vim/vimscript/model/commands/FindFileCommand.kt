@@ -54,3 +54,30 @@ data class FindFileCommand(val range: Range, val modifier: CommandModifier, val 
     return ExecutionResult.Success
   }
 }
+
+/**
+ * `:tabfind {file}` - `:find`, and in these hosts that is all it is.
+ *
+ * Vim opens the file in a new tab page, which is a window holding windows. Neither host has that
+ * shape: IntelliJ and VS Code both open a file in its own tab already, and a `:find` that landed in
+ * the current one would be the odd behaviour rather than this. So the two commands are the same
+ * journey, and `:tabfind` is registered rather than left as `E492` so that a config written for
+ * Vim reads the same here.
+ *
+ * see "h :tabfind"
+ */
+@ExCommand(command = "tabf[ind]")
+data class TabFindFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  Command.SingleExecution(range, modifier, argument) {
+
+  override val argFlags: CommandHandlerFlags =
+    flags(RangeFlag.RANGE_FORBIDDEN, ArgumentFlag.ARGUMENT_OPTIONAL, Access.READ_ONLY)
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult = FindFileCommand(range, modifier, argument)
+    .also { it.vimContext = vimContext }
+    .processCommand(editor, context, operatorArguments)
+}

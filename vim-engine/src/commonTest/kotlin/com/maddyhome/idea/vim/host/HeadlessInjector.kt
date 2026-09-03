@@ -649,12 +649,17 @@ class HeadlessInjector : HeadlessInjectorBase() {
         editor.getLineEndOffset(visualLine) - editor.getLineStartOffset(visualLine)
 
       /**
-       * A marker that does not track edits. IntelliJ's range markers move as the document changes,
-       * which is what keeps a visual selection anchored across an edit; nothing here needs that yet,
-       * and pretending to it would be worse than saying so.
+       * A marker that follows edits, which is what `:global` and the fold commands need one for.
+       *
+       * This was a `TODO` reading "nothing here needs that yet", and the note was already wrong
+       * when it was written: `:global` takes one of these per matching line before it runs
+       * anything, so every `:g/pattern/command` in this suite was reaching it. See
+       * [TestRangeMarker] for the moving rule, which is IntelliJ's.
        */
-      override fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker =
-        TODO("headless host has no range markers that follow edits")
+      override fun createRangeMarker(editor: VimEditor, startOffset: Int, endOffset: Int): VimRangeMarker {
+        val target = editor as TestVimEditor
+        return TestRangeMarker(target, startOffset).also { target.addMarker(it) }
+      }
     }
   }
 
