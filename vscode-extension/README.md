@@ -172,6 +172,15 @@ hidden fallback window and the first real editor is initialised from it, and eve
 from the one that was active. Before that, every editor was initialised to the option defaults and
 `set nu rnu` numbered exactly one window.
 
+The gutter is written after every keystroke, and only when the editor is not already showing what
+it should be - writing an editor option is a round trip, and doing it per keystroke would be fifty
+for a typed word. The comparison is against what the editor is *showing*, not against what this
+host last wrote, and that distinction is the whole of a bug: `TextEditorOptions` belong to VS Code
+and it resets them without asking - re-showing an editor that was hidden does it, and so does a
+change to the `editor.lineNumbers` setting. A memory of our own writes cannot see that happen, so
+it went on saying "already relative" while the gutter sat empty and never wrote again for the life
+of that editor. The editor's own answer cannot drift from the editor.
+
 `'filetype'` and `'syntax'` work too, and they are one setting here: VS Code's language mode does
 both jobs, so `set syntax=java` gets Java's language server as well as its colours - more than Vim
 would have done, and what a VS Code user means by it. `:setfiletype` is the same thing.

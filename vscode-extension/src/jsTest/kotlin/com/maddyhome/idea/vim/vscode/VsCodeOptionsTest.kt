@@ -210,10 +210,49 @@ class VsCodeOptionsTest {
     injector.optionGroup.setOptionValue(VsCodeOptions.relativenumber, OptionAccessScope.EFFECTIVE(editor), VimInt(1))
     applyLineNumbers(editor)
 
-    session.fake.lineNumbers = -1
+    val writes = session.fake.lineNumberWrites
     applyLineNumbers(editor)
 
-    assertEquals(-1, session.fake.lineNumbers, "nothing had changed, so nothing should have been written")
+    assertEquals(writes, session.fake.lineNumberWrites, "the editor already showed it; nothing to write")
+  }
+
+  /**
+   * A gutter VS Code turned off on its own account is put back.
+   *
+   * This is the bug the check above used to hide. `TextEditorOptions` belong to VS Code and it
+   * resets them without asking - re-showing an editor that was hidden does it, and so does a change
+   * to the `editor.lineNumbers` setting. The old check compared the answer against *what this host
+   * last wrote*, so once that happened it went on saying "already relative" while the gutter sat
+   * empty, and never wrote again for the life of that editor. Comparing against what the editor is
+   * showing cannot drift from the editor.
+   */
+  @Test
+  fun `test a gutter VS Code reset by itself is put back`() {
+    val session = Session()
+    val editor = session.host.editorFor(session.fake)
+    injector.optionGroup.setOptionValue(VsCodeOptions.relativenumber, OptionAccessScope.EFFECTIVE(editor), VimInt(1))
+    applyLineNumbers(editor)
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.fake.lineNumbers)
+
+    // VS Code, not this host.
+    session.fake.lineNumbers = TextEditorLineNumbersStyle.Off
+
+    applyLineNumbers(editor)
+
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.fake.lineNumbers)
+  }
+
+  /** ...and the next keystroke is enough to notice, because that is when the host looks. */
+  @Test
+  fun `test the next keystroke puts it back`() {
+    val session = Session()
+    session.run("set relativenumber")
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.lineNumbers)
+
+    session.fake.lineNumbers = TextEditorLineNumbersStyle.Off
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.lineNumbers)
   }
 
   // The rest: accepted, so a config loads.

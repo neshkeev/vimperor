@@ -414,11 +414,17 @@ internal fun applyLineNumbers(editor: VimEditor) {
     absolute -> TextEditorLineNumbersStyle.On
     else -> TextEditorLineNumbersStyle.Off
   }
-  // Only on a change. This runs after every keystroke - see [VimHost.handle] - and writing an
-  // editor option is a round trip to VS Code, which is not something to do fifty times for a typed
-  // word.
-  if (style == vsCode.lastLineNumbers) return
-  vsCode.lastLineNumbers = style
+  // Only on a change, because this runs after every keystroke - see [VimHost.handle] - and writing
+  // an editor option is a round trip to VS Code, which is not something to do fifty times for a
+  // typed word.
+  //
+  // Compared against what the editor is *showing* rather than against what was last written. VS
+  // Code owns `TextEditorOptions` and resets them on its own account - re-showing an editor that
+  // was hidden is enough, and so is a change to the `editor.lineNumbers` setting - and a memory of
+  // our own writes cannot see that happen. It would go on saying "already relative" while the
+  // gutter sat empty, and never write again for the life of that editor. The editor's own answer
+  // cannot drift from the editor.
+  if (style == vsCode.nativeEditor.options.lineNumbers) return
   vsCode.nativeEditor.options.lineNumbers = style
 }
 

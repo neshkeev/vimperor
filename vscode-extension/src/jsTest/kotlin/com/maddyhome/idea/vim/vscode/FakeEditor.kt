@@ -214,6 +214,14 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
   /** The gutter, which `'number'` and `'relativenumber'` write. */
   var lineNumbers: Int = TextEditorLineNumbersStyle.On
 
+  /**
+   * How many times the gutter has been written through `options`.
+   *
+   * Writing an editor option is a round trip in a real window, so "did not write" is behaviour
+   * worth asserting - and it cannot be seen from the value, which is the same either way.
+   */
+  var lineNumberWrites: Int = 0
+
   override val options: TextEditorOptions
     get() = object : TextEditorOptions {
       override val tabSize: dynamic get() = indentWidth
@@ -231,6 +239,7 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
         get() = this@FakeEditor.lineNumbers
         set(value) {
           this@FakeEditor.lineNumbers = value
+          this@FakeEditor.lineNumberWrites++
         }
     }
 
