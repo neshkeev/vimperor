@@ -99,12 +99,20 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
     "standardConstructor": true
   },
+  "ba[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AllBuffersCommand",
+    "standardConstructor": true
+  },
   "bad[d]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgAddCommand",
     "standardConstructor": true
   },
   "bd[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
+    "standardConstructor": true
+  },
+  "be[have]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BehaveCommand",
     "standardConstructor": true
   },
   "bel[owright]": {
@@ -555,6 +563,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LAddExprCommand",
     "standardConstructor": true
   },
+  "lan[guage]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LanguageCommand",
+    "standardConstructor": true
+  },
   "lat[er]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LaterCommand",
     "standardConstructor": true
@@ -955,6 +967,14 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitBufferCommand",
     "standardConstructor": true
   },
+  "sba[ll]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitAllBuffersCommand",
+    "standardConstructor": true
+  },
+  "scr[iptnames]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ScriptNamesCommand",
+    "standardConstructor": true
+  },
   "scripte[ncoding]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.ScriptEncodingCommand",
     "standardConstructor": true
@@ -1053,6 +1073,10 @@
   },
   "stopi[nsert]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopInsertCommand",
+    "standardConstructor": true
+  },
+  "sun[hide]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitUnhideCommand",
     "standardConstructor": true
   },
   "sunm[ap]": {
@@ -1205,6 +1229,10 @@
   },
   "undol[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UndoListCommand",
+    "standardConstructor": true
+  },
+  "unh[ide]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnhideCommand",
     "standardConstructor": true
   },
   "unl[et]": {

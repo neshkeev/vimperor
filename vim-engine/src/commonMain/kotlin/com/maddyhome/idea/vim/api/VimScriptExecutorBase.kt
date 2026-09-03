@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.ex.FinishException
@@ -114,6 +115,9 @@ abstract class VimScriptExecutorBase : VimscriptExecutor {
         injector.vimscriptExecutor.executingIdeaVimRcConfiguration = true
       }
       ensureFileIsSaved(path)
+      // Before the file runs, not after, so that a script that fails half way through is still
+      // listed - which is exactly when someone types `:scriptnames` to find out what ran.
+      SourcedScripts.record(path)
       execute(injector.fileSystem.readText(path), editor, context, skipHistory = true, indicateErrors)
     } catch (e: VimFileReadException) {
       if (indicateErrors) {

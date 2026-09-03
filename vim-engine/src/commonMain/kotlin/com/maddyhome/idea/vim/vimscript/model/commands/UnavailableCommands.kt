@@ -238,6 +238,19 @@ data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, v
  * the reader away from the place `:ptag` exists to keep them at.
  */
 
+/**
+ * `:language`, which Vim only has when it was built with `+multi_lang`.
+ *
+ * The subject is a locale: Vim's `:language` sets the one its own messages, its `strftime` and its
+ * character classes come from. This engine has no message catalogue to switch and neither host will
+ * let an extension change the process locale - IntelliJ's language pack and VS Code's display
+ * language are settings the IDE reads at startup, not something a buffer can ask for. So this is a
+ * build without the feature rather than a command nobody has written.
+ */
+@ExCommand(command = "lan[guage]")
+data class LanguageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
 /** see "h :ptag" */
 @ExCommand(command = "pt[ag]")
 data class PreviewTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :

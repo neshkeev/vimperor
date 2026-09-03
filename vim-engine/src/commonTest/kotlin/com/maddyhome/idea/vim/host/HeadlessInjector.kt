@@ -26,6 +26,7 @@ import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.quickfix.Quickfix
+import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.tags.Tags
 import com.maddyhome.idea.vim.api.VimCommandGroup
 import com.maddyhome.idea.vim.api.ExecutionContext as ExecutionContextApi
@@ -408,6 +409,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     // And so does the change list, for the same reason. So does the tag stack.
     VimChangeList.reset()
     Tags.reset()
+    SourcedScripts.reset()
   }
 
   /**
@@ -780,6 +782,9 @@ private class HeadlessTimer(override var delayMillis: Int) : VimTimer {
 class HeadlessFile : VimFileBase() {
   val opened: MutableList<String> = mutableListOf()
 
+  /** The buffer list `:ls` and `:ball` read, which a test arranges by name. */
+  var buffers: List<String> = emptyList()
+
   override fun openFile(filename: String, context: ExecutionContextApi, focusEditor: Boolean): String? {
     opened += filename
     return null
@@ -789,7 +794,18 @@ class HeadlessFile : VimFileBase() {
   override fun findFile(filename: String, context: ExecutionContextApi): String = filename
 
   override fun displayFileInfo(vimEditor: VimEditor, fullPath: Boolean): String? = null
-  override fun getBuffers(context: ExecutionContextApi): List<VimBuffer> = emptyList()
+  override fun getBuffers(context: ExecutionContextApi): List<VimBuffer> =
+    buffers.mapIndexed { index, name ->
+      VimBuffer(
+        name = name,
+        displayPath = name,
+        isCurrent = index == 0,
+        isAlternate = false,
+        isReadOnly = false,
+        isModified = false,
+        line = 1,
+      )
+    }
   override fun selectPreviousTab(context: ExecutionContextApi): Boolean = false
   override fun saveFile(editor: VimEditor, context: ExecutionContextApi) {}
   override fun saveFiles(editor: VimEditor, context: ExecutionContextApi) {}
