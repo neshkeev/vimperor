@@ -63,7 +63,7 @@ class HeadlessMatchTest {
     s.run("match Search /one/")
 
     assertEquals(listOf("one", "one"), s.litOn(1))
-    assertEquals("Search", s.painted.shown[1]?.first)
+    assertEquals("Search", s.painted.shown[1]?.first?.name)
   }
 
   @Test
@@ -71,7 +71,7 @@ class HeadlessMatchTest {
     val s = session()
     s.run("match ErrorMsg /two/")
 
-    assertEquals("ErrorMsg", s.painted.shown[1]?.first)
+    assertEquals("ErrorMsg", s.painted.shown[1]?.first?.name)
     assertEquals(listOf("two"), s.litOn(1))
   }
 

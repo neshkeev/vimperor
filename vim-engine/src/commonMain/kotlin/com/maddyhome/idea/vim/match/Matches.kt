@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.helper.enumSetOf
+import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.regexp.VimRegex
 import com.maddyhome.idea.vim.regexp.VimRegexOptions
 
@@ -79,7 +80,7 @@ object Matches {
         // which is what an exception here would become.
         emptyList()
       }
-      injector.matchHighlighter.showMatches(editor, channel, match.group, ranges)
+      injector.matchHighlighter.showMatches(editor, channel, Highlights.group(match.group), ranges)
     }
   }
 

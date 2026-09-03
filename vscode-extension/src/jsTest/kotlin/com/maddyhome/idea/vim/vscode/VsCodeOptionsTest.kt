@@ -551,7 +551,9 @@ class VsCodeOptionsTest {
     val session = Session()
     for (line in listOf(
       "syntax on", "filetype plugin indent on", "setfiletype java", "colorscheme x",
-      "highlight Normal", "runtime x", "scriptencoding utf-8", "language en", "behave xterm",
+      // `:highlight` is the engine's now and does something, so it is given a line that defines a
+      // group rather than one that lists an undefined one - which is `E411` and would be right.
+      "highlight Todo guifg=Red", "runtime x", "scriptencoding utf-8", "language en", "behave xterm",
       "packloadall", "scriptnames", "messages", "redir => x", "mkview", "loadview", "sign define x",
       "profile start x", "menu", "unmenu", "diffthis", "diffoff", "cd /tmp", "lcd /tmp",
     )) {

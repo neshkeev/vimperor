@@ -12,13 +12,20 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.editor.colors.CodeInsightColors
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.colors.TextAttributesKey
+import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.intellij.openapi.editor.markup.RangeHighlighter
+import com.intellij.openapi.editor.markup.TextAttributes
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.highlight.HighlightAttributes
+import com.maddyhome.idea.vim.highlight.HighlightGroup
+import com.maddyhome.idea.vim.highlight.UnderlineStyle
 import com.maddyhome.idea.vim.newapi.ij
+import java.awt.Color
+import java.awt.Font
 
 /**
  * `:match`, over IntelliJ's markup model.
@@ -27,21 +34,22 @@ import com.maddyhome.idea.vim.newapi.ij
  * is what `:match` being a *standing* highlight costs: the pattern is re-run after each keystroke,
  * so the old ranges have to go before the new ones arrive or the editor fills with stale markup.
  *
- * The colours come from the IDE's own scheme rather than from literals - `EditorColors.SEARCH` for
- * Vim's `Search`, the error stripe for `ErrorMsg` - so a match looks like the editor's own
- * highlighting in whatever theme is loaded, and a name this fork does not know falls back to the
- * search colour rather than failing. This fork has no `:highlight` to define a group, so the names
- * are only ever Vim's standard ones.
+ * Two sources of colour, and which one is used is the user's choice rather than this class's. A
+ * group `:highlight` has defined is built from that definition, hex and all, because a config that
+ * wrote `guibg=#503030` meant that colour and not an approximation of it. A group nobody has
+ * defined - which is most of them, including every `:match Search` in a config that never mentioned
+ * `:highlight` - comes from the IDE's own scheme instead, so a match looks like the editor's own
+ * highlighting in whatever theme is loaded.
  */
 internal class IjMatchHighlighter : VimMatchHighlighter {
 
   private val painted = mutableMapOf<Editor, MutableMap<Int, List<RangeHighlighter>>>()
 
-  override fun showMatches(editor: VimEditor, channel: Int, group: String, ranges: List<TextRange>) {
+  override fun showMatches(editor: VimEditor, channel: Int, group: HighlightGroup, ranges: List<TextRange>) {
     val ij = editor.ij
     removeChannel(ij, channel)
 
-    val attributes = ij.colorsScheme.getAttributes(keyFor(group)) ?: return
+    val attributes = attributesFor(ij, group) ?: return
     val highlighters = ranges.map { range ->
       ij.markupModel.addRangeHighlighter(
         range.startOffset.coerceIn(0, ij.document.textLength),
@@ -64,6 +72,51 @@ internal class IjMatchHighlighter : VimMatchHighlighter {
     forEditor.remove(channel)?.forEach { editor.markupModel.removeHighlighter(it) }
     if (forEditor.isEmpty()) painted.remove(editor)
   }
+
+  /**
+   * Null means paint nothing, which happens for `:highlight {group} NONE` and for a scheme that
+   * has no attributes under the key - the second is rare and the first is a thing users ask for.
+   */
+  private fun attributesFor(editor: Editor, group: HighlightGroup): TextAttributes? {
+    val defined = group.attributes ?: return editor.colorsScheme.getAttributes(keyFor(group.name))
+    if (defined.paintsNothing) return null
+    return defined.toIj()
+  }
+
+  /**
+   * A `:highlight` definition as IntelliJ's own attributes.
+   *
+   * `reverse` is the one that cannot be done here the way Vim does it. Vim swaps the foreground and
+   * background at draw time, so it works even when neither was named; IntelliJ wants two colours in
+   * two fields, and the colours to swap are the ones the editor is currently using for text under
+   * a theme this cannot read per-token. So a `reverse` with both colours given swaps them, and a
+   * `reverse` with neither is left alone rather than guessed at.
+   */
+  private fun HighlightAttributes.toIj(): TextAttributes {
+    val swap = reverse && (foreground != null || background != null)
+    val fore = colour(if (swap) background else foreground)
+    val back = colour(if (swap) foreground else background)
+
+    val effect = when (underline) {
+      UnderlineStyle.NONE -> if (strikethrough) EffectType.STRIKEOUT else null
+      UnderlineStyle.CURL -> EffectType.WAVE_UNDERSCORE
+      UnderlineStyle.DOUBLE -> EffectType.BOLD_LINE_UNDERSCORE
+      UnderlineStyle.DOTTED, UnderlineStyle.DASHED -> EffectType.BOLD_DOTTED_LINE
+      UnderlineStyle.STRAIGHT -> EffectType.LINE_UNDERSCORE
+    }
+    // Vim keeps the underline's colour apart from the text's; when it was not given, the effect is
+    // drawn in the text colour, which is what IntelliJ does with a null effect colour anyway.
+    val effectColour = if (effect == null) null else colour(special) ?: fore
+
+    var style = Font.PLAIN
+    if (bold) style = style or Font.BOLD
+    if (italic) style = style or Font.ITALIC
+
+    return TextAttributes(fore, back, effectColour, effect, style)
+  }
+
+  private fun colour(hex: String?): Color? =
+    hex?.let { Color(it.removePrefix("#").toInt(16), false) }
 
   /** Vim's highlight group, as the nearest thing in the IDE's colour scheme. */
   private fun keyFor(group: String): TextAttributesKey = when (group) {

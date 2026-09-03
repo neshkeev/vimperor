@@ -491,6 +491,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpGrepCommand",
     "standardConstructor": true
   },
+  "hi[ghlight]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HighlightCommand",
+    "standardConstructor": true
+  },
   "hid[e]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
     "standardConstructor": true

@@ -33,6 +33,7 @@ import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
@@ -103,6 +104,9 @@ open class VsCodeInjector(
     // And the current directory, which is a session's and not a window's - without this a `:cd` in
     // one test is still in force in the next one.
     WorkingDirectory.reset()
+    // And the highlight groups: `:highlight` defines them for the session, so a group one test
+    // defined would otherwise still be painting in the next.
+    Highlights.reset()
   }
 
   /**

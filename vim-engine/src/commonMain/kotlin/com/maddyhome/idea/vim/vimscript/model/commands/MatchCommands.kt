@@ -26,12 +26,13 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * `:match none` puts it out, and so does `:match` with nothing after it - Vim accepts both.
  *
- * The group is Vim's highlight-group name, and this fork has no `:highlight` to define one. What a
- * host does with `Search` or `ErrorMsg` is find its own nearest colour, and fall back to its
- * find-match colour for a name it has not heard of - see
- * [com.maddyhome.idea.vim.api.VimMatchHighlighter]. Naming a group nobody knows lights the text up
- * in the find colour rather than failing, which is the useful failure: the reader can see that the
- * pattern worked and only the colour was wrong.
+ * The group is Vim's highlight-group name, and it is resolved rather than passed on: `:highlight`
+ * defines what a group looks like, and a group it has defined arrives at the host as colours. A
+ * group nobody defined arrives as a name, and the host finds its own nearest colour for `Search`
+ * or `ErrorMsg` and falls back to its find-match colour for a name it has not heard of - see
+ * [com.maddyhome.idea.vim.api.VimMatchHighlighter]. So naming a group nobody knows lights the text
+ * up in the find colour rather than failing, which is the useful failure: the reader can see that
+ * the pattern worked and only the colour was wrong.
  */
 @ExCommand(command = "mat[ch]")
 data class MatchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :

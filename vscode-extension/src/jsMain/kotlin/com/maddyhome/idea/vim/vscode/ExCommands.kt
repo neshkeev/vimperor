@@ -43,7 +43,6 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "sy[ntax]" to command { range, modifier, argument -> SyntaxCommand(range, modifier, argument) },
     "filet[ype]" to command { range, modifier, argument -> FiletypeCommand(range, modifier, argument) },
     "colo[rscheme]" to command { range, modifier, argument -> ColorschemeCommand(range, modifier, argument) },
-    "hi[ghlight]" to command { range, modifier, argument -> HighlightCommand(range, modifier, argument) },
     "ru[ntime]" to command { range, modifier, argument -> RuntimeCommand(range, modifier, argument) },
     "setf[iletype]" to command { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
 
@@ -145,10 +144,6 @@ internal class ColorschemeCommand(range: Range, modifier: CommandModifier, argum
         "The Command Palette changes it: Preferences: Color Theme."
     }
 }
-
-/** `:highlight`, which is the theme's business for the same reason. */
-internal class HighlightCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument)
 
 /** `:runtime`, which loads Vim script files this host cannot run. */
 internal class RuntimeCommand(range: Range, modifier: CommandModifier, argument: String) :

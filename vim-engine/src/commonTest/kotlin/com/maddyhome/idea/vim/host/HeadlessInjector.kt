@@ -32,6 +32,8 @@ import com.maddyhome.idea.vim.group.WindowGroupBase
 import com.maddyhome.idea.vim.api.VimPathExpansion
 import com.maddyhome.idea.vim.api.SpellcheckerService
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
+import com.maddyhome.idea.vim.highlight.HighlightGroup
+import com.maddyhome.idea.vim.highlight.Highlights
 import com.maddyhome.idea.vim.match.Matches
 import com.maddyhome.idea.vim.profile.Profile
 import com.maddyhome.idea.vim.quickfix.Quickfix
@@ -437,6 +439,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     SourcedScripts.reset()
     Diff.reset()
     Matches.reset()
+    Highlights.reset()
     Profile.reset()
     WorkingDirectory.reset()
   }
@@ -950,10 +953,10 @@ class HeadlessSpellchecker : SpellcheckerService {
  * not about colours.
  */
 class HeadlessMatchHighlighter : VimMatchHighlighter {
-  val shown: MutableMap<Int, Pair<String, List<TextRange>>> = mutableMapOf()
+  val shown: MutableMap<Int, Pair<HighlightGroup, List<TextRange>>> = mutableMapOf()
   val cleared: MutableList<Int> = mutableListOf()
 
-  override fun showMatches(editor: VimEditor, channel: Int, group: String, ranges: List<TextRange>) {
+  override fun showMatches(editor: VimEditor, channel: Int, group: HighlightGroup, ranges: List<TextRange>) {
     shown[channel] = group to ranges
   }
 

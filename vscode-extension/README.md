@@ -190,8 +190,9 @@ The rest of a `~/.vimrc` is accepted rather than implemented, and that distincti
 decided - indentation it resolves per language and per file, a status bar and a highlighter it draws
 itself - and an option or command that is not declared is not ignored, it is `E518` or `E492`. A
 `~/.vimrc` sourced from an `.ideavimrc` is thirty of those, which is a config that stops being read.
-So 134 options and 21 commands are declared, do nothing, and say nothing; the exceptions are the
-forms that ask for something VS Code contradicts, like `:syntax off` and `:cd`, which say so. The
+So 134 options and 12 commands are declared, do nothing, and say nothing; the exceptions are the
+forms that ask for something VS Code contradicts, like `:syntax off` and `:colorscheme desert`,
+which say so. The count keeps falling - it was 21 until `:cd` and `:highlight` were written. The
 cost is honest: `:set expandtab?` answers with what was set rather than with what the editor is
 doing. IdeaVim's `IjOptions` has the same group for the same reason.
 
@@ -346,7 +347,8 @@ the end; Vim gets there by turning a window mode on and neither host has one, so
 itself with this engine's regex, which is the whole difference from `:grep` and its shell. **Spell**
 is the three operations a borrowed checker answers - VS Code has none at all and says so.
 **`:match`** is a standing highlight, recomputed after every keystroke and after every ex command,
-painted in the editor's own colours for the handful of Vim highlight groups people name.
+painted in the colours `:highlight` gave the group and in the editor's own for a group nobody gave
+any.
 **`:mkvimrc`** writes the session back out from the same two places `:map` and `:set` read it from,
 and the test runs the file it wrote back through the parser. **`:changes`** is the change list,
 which moved out of an IntelliJ application service into the engine and brought `g;` and `g,` to
@@ -371,6 +373,21 @@ because a project or a workspace is not a working directory, which is why `:pwd`
 project root and there was nothing for `:cd` to change. A relative path is still handed to the host
 untouched until somebody runs one of them, so no existing config moves; after that the engine
 resolves, and `:e`, `:find`, `:vimgrep`, `:mkvimrc`, `:diffsplit` and the tag files all follow.
+
+`:highlight` defines a group, which is the thing `:match` was written without. Vim's whole grammar
+of it: `guifg`/`guibg`/`guisp` and their `cterm` twins, the attribute lists, `:hi link`, `:hi
+default link`, `:hi clear`, and the listing that reads back what was set. The colours are resolved
+in the engine - a name becomes `#rrggbb` before a host sees it, and `ctermfg=Blue` becomes the
+bright blue Vim means by it and not the dark one, which is Vim's own quirk and easy to get wrong.
+A group nobody defined still reaches the host as a *name*, and the host still maps it to its theme;
+that fallback is not a placeholder, because a literal that reads in Dark+ is invisible in Light+.
+`:hi Search NONE` is kept apart from a `Search` nobody mentioned, since Vim is explicit that
+disabling a group is not the same as putting it back.
+
+What it does not do is Vim's other half. `:highlight` is also how a syntax file colours a language,
+and neither host highlights syntax - IntelliJ has a lexer and VS Code has a grammar, and both decide
+what a comment looks like without asking. Defining `Comment` here colours no comment. That is not a
+gap to close; it is two editors doing their own job.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

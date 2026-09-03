@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.highlight.HighlightGroup
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -34,7 +35,7 @@ class MatchHighlightTest {
   private class RecordingHighlighter : VimMatchHighlighter {
     val shown: MutableMap<Int, List<TextRange>> = mutableMapOf()
 
-    override fun showMatches(editor: VimEditor, channel: Int, group: String, ranges: List<TextRange>) {
+    override fun showMatches(editor: VimEditor, channel: Int, group: HighlightGroup, ranges: List<TextRange>) {
       shown[channel] = ranges
     }
 
