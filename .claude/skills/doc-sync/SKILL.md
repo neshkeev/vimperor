@@ -12,7 +12,8 @@ ones that are real.
 
 | File | What it covers | How fast it goes stale |
 |------|----------------|------------------------|
-| `vscode-extension/README.md` | Vimperor: what works, how it is tested, what only a real window found | **Fast.** The port moves under it weekly |
+| `vscode-extension/DEVELOPMENT.md` | Vimperor: what works, how it is tested, what only a real window found | **Fast.** The port moves under it weekly |
+| `vscode-extension/README.md` | The Marketplace page. What the extension is, for a user | **Slow.** Only when what a user sees changes |
 | `README.md` | The IdeaVim plugin | Slow |
 | `CONTRIBUTING.md` | Architecture, testing guidance, corner cases | Slow, but the architecture section is now partly wrong about module layout |
 | `CLAUDE.md` | Commands and conventions read at the start of every session | **Fast, and costly.** A wrong command here is followed, not read |

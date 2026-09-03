@@ -67,10 +67,43 @@ kotlin {
   }
 }
 
-// The bundle VS Code loads. `package.json` points `main` straight at it, so
-// `code --extensionDevelopmentPath=vscode-extension` runs whatever the last build produced -
-// no packaging step between a Gradle build and a reloaded extension host.
+// Where the Kotlin/JS compiler puts the production bundle. `dist/` below is a copy of it, and
+// `package.json` points `main` there - see `assembleExtension` for why the copy exists.
 val bundleDirectory = layout.buildDirectory.dir("compileSync/js/main/productionExecutable/kotlin")
+
+/**
+ * The directory the published extension is loaded from, and the reason it exists.
+ *
+ * `main` used to point straight into `build/`, which is exactly right for
+ * `code --extensionDevelopmentPath` and exactly wrong for a `.vsix`: `vsce` packages files relative
+ * to the extension root, so shipping from `build/` means shipping the whole Kotlin/JS build - test
+ * output, the incremental caches, the lot. `dist/` is the same seven files and nothing else.
+ *
+ * Seven, not one. Kotlin/JS emits a module per Gradle project plus the standard library and the
+ * ANTLR runtime, and `vimperor.js` `require`s them by name from its own directory - so the whole
+ * directory travels or none of it works.
+ */
+val distDirectory = layout.projectDirectory.dir("dist")
+
+/**
+ * Copies the production bundle into [distDirectory], without the source maps.
+ *
+ * The maps are 2.8MB against 6.6MB of code and they buy one thing: a stack trace in a bug report
+ * that names Kotlin source lines. Kotlin/JS does not minify, so the names survive without them -
+ * a trace still says `VimRegex` and `findAll` - and the cost is on every user's download rather
+ * than on the rare report. They stay in `build/`, where a developer reproducing the report has
+ * them anyway.
+ */
+val assembleExtension by tasks.registering(Sync::class) {
+  description = "Copies the production JavaScript into dist/, which is what the .vsix ships."
+  group = LifecycleBasePlugin.BUILD_GROUP
+
+  dependsOn("jsProductionExecutableCompileSync")
+  from(bundleDirectory) {
+    exclude("**/*.map")
+  }
+  into(distDirectory)
+}
 
 /**
  * Runs the bundle the way VS Code would, in a stubbed extension host.
@@ -91,13 +124,17 @@ val runInStubHost by tasks.registering(Exec::class) {
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
   val nodeSetup = rootProject.tasks.named<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsSetupTask>("kotlinNodeJsSetup")
-  dependsOn("jsProductionExecutableCompileSync", nodeSetup)
+  // Through `assembleExtension` rather than the compile, because this loads the bundle the way VS
+  // Code does - `require` of whatever `main` names - and `main` names `dist/`. Which makes this
+  // check better than it was: it now runs the same files the `.vsix` ships, so a file left out of
+  // `dist/` fails here instead of in somebody's editor.
+  dependsOn(assembleExtension, nodeSetup)
 
   val script = layout.projectDirectory.file("src/hostTest/activate-in-a-stub-host.js")
   val manifest = layout.projectDirectory.file("package.json")
   inputs.file(script)
   inputs.file(manifest)
-  inputs.dir(bundleDirectory)
+  inputs.dir(distDirectory)
   outputs.upToDateWhen { false }
 
   val node = nodeSetup.map { setup ->
@@ -306,4 +343,133 @@ tasks.register("test") {
   dependsOn(runInStubHost)
   dependsOn(checkVsCodeApiDeclarations)
   dependsOn(checkVsCodeCommandIds)
+}
+
+// ---------------------------------------------------------------------------------------------
+// Packaging
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The Node that the Kotlin plugin already downloaded, and the `npx` beside it.
+ *
+ * Nothing here needs Node on the `PATH`, which is the same promise `runInStubHost` makes: a build
+ * that works on a machine with no system Node, and a build that cannot accidentally package with a
+ * different one than it tested with.
+ */
+val nodeBinDirectory = rootProject.tasks
+  .named<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsSetupTask>("kotlinNodeJsSetup")
+  .map { setup ->
+    val home = setup.destinationProvider.get().asFile
+    if (File(home, "bin/node").isFile) File(home, "bin") else home
+  }
+
+/**
+ * The extension's version, which is `package.json`'s and not Gradle's.
+ *
+ * Gradle's `version` here is `SNAPSHOT` - it belongs to the IntelliJ plugin, which this module only
+ * shares a build with. `vsce` reads `package.json` too, so taking the name of the `.vsix` from the
+ * same place is what keeps the file on disk and the version inside it from drifting apart.
+ */
+val extensionVersion: String by lazy {
+  val manifest = layout.projectDirectory.file("package.json").asFile.readText()
+  Regex(""""version"\s*:\s*"([^"]+)"""").find(manifest)?.groupValues?.get(1)
+    ?: error("no version in vscode-extension/package.json")
+}
+
+/** `vsce`, run through `npx` so that nothing has to be installed into this repository. */
+fun Exec.vsce(vararg arguments: String) {
+  dependsOn(assembleExtension)
+  workingDir = layout.projectDirectory.asFile
+  val bin = nodeBinDirectory.get()
+  executable = File(bin, if (File(bin, "npx").isFile) "npx" else "npx.cmd").absolutePath
+  // Pinned, because an unpinned `npx` fetches whatever is newest at the moment somebody runs a
+  // release - which is not a thing a release should depend on.
+  args(listOf("--yes", "@vscode/vsce@3.6.0") + arguments)
+  environment("PATH", bin.absolutePath + File.pathSeparator + (System.getenv("PATH") ?: ""))
+}
+
+/**
+ * Builds the `.vsix`, which is the file the Marketplace takes and the file you can install by hand.
+ *
+ * `code --install-extension vimperor-<version>.vsix` is the whole of testing a release, and it is
+ * worth doing before publishing one: it is the only check that runs the extension the way a user
+ * gets it rather than the way a developer does.
+ */
+val packageExtension by tasks.registering(Exec::class) {
+  description = "Builds the .vsix that the Marketplace takes."
+  group = "distribution"
+  vsce("package", "--out", "build/vimperor-$extensionVersion.vsix")
+}
+
+/**
+ * That the packaged `.vsix` is self-sufficient - the one check `.vscodeignore` can fail.
+ *
+ * `runInStubHost` loads the extension out of the working tree, where every file exists whether or
+ * not it is packaged. This unpacks the archive somewhere else and runs the same script inside it,
+ * so a file left out of the package fails here rather than in the first user's editor. That is a
+ * real risk and not a theoretical one: `.vscodeignore` is a list of exclusions, and the way it goes
+ * wrong is by excluding one file too many.
+ *
+ * The script is copied into the unpacked tree because it locates the extension from its own path -
+ * which is the right thing for it to do, and means it tests whatever tree it is standing in.
+ */
+val unpackExtension by tasks.registering(Sync::class) {
+  description = "Unpacks the .vsix, so that what was packaged can be run rather than trusted."
+  dependsOn(packageExtension)
+
+  from(zipTree(layout.buildDirectory.file("vimperor-$extensionVersion.vsix")))
+  into(layout.buildDirectory.dir("packaged-extension"))
+
+  // The script locates the extension from its own path, which is the right thing for it to do and
+  // means it tests whatever tree it is standing in. So it is put into this one.
+  val script = layout.projectDirectory.file("src/hostTest/activate-in-a-stub-host.js")
+  val destination = layout.buildDirectory.file("packaged-extension/extension/src/hostTest/activate-in-a-stub-host.js")
+  doLast {
+    val into = destination.get().asFile
+    into.parentFile.mkdirs()
+    script.asFile.copyTo(into, overwrite = true)
+  }
+}
+
+/**
+ * Deliberately not on `check` or `test`.
+ *
+ * It builds a `.vsix` first, and paying twenty seconds of packaging on every `./gradlew test` to
+ * check something only a release depends on is the wrong trade. It hangs off `publishExtension`
+ * instead, which is the last moment it is free: after that the archive is on the Marketplace and
+ * the version cannot be reused.
+ */
+val checkPackagedExtension by tasks.registering(Exec::class) {
+  description = "Unpacks the .vsix and activates it, to prove the package is complete."
+  group = LifecycleBasePlugin.VERIFICATION_GROUP
+
+  dependsOn(unpackExtension)
+  outputs.upToDateWhen { false }
+
+  val bin = nodeBinDirectory
+  val script = layout.buildDirectory.file("packaged-extension/extension/src/hostTest/activate-in-a-stub-host.js")
+  executable = File(bin.get(), if (File(bin.get(), "node").isFile) "node" else "node.exe").absolutePath
+  args(script.get().asFile.absolutePath)
+}
+
+/**
+ * Publishes to the Visual Studio Marketplace.
+ *
+ * The token comes from `VSCE_PAT` in the environment and is never written down here or anywhere
+ * else in this repository. It is a personal access token from an Azure DevOps organisation with
+ * Marketplace *manage* scope; the publisher id it belongs to has to match `publisher` in
+ * `package.json`, which is the one thing that cannot be checked until the moment it fails.
+ */
+val publishExtension by tasks.registering(Exec::class) {
+  description = "Publishes the extension to the Visual Studio Marketplace. Needs VSCE_PAT."
+  group = "distribution"
+  doFirst {
+    check(!System.getenv("VSCE_PAT").isNullOrBlank()) {
+      "VSCE_PAT is not set. It is a Marketplace personal access token; see vscode-extension/PUBLISHING.md."
+    }
+  }
+  vsce("publish", "--packagePath", "build/vimperor-$extensionVersion.vsix")
+  // Nothing is published that has not been unpacked and run first. This is the last moment the
+  // check is free; after it, the archive is on the Marketplace and the version cannot be reused.
+  dependsOn(checkPackagedExtension)
 }

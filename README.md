@@ -43,7 +43,7 @@ What does not: anything built on `getchar()`, which blocks on a modal event loop
 until a key arrives. IdeaVim's bundled extensions — surround, commentary, easymotion
 — are built on it, and JavaScript has one thread and no way to stop it.
 
-[`vscode-extension/README.md`](vscode-extension/README.md) is the real account: what
+[`vscode-extension/DEVELOPMENT.md`](vscode-extension/DEVELOPMENT.md) is the real account: what
 works, how it is tested, and what only a real window found.
 
 Running it

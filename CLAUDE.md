@@ -39,6 +39,9 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
 # The plugin, in a dev IDE
 ./gradlew runIde
+
+# The extension, as a .vsix. See vscode-extension/PUBLISHING.md
+./gradlew :vscode-extension:packageExtension
 ```
 
 Avoid running all tests - it takes too long. Prefer a specific test.
@@ -54,7 +57,7 @@ test - while a Kotlin/JS test's `println` never reaches the console, so read
 `vscode-extension/build/test-results/jsNodeTest/*.xml` instead.
 
 See CONTRIBUTING.md for the plugin's architecture and
-`vscode-extension/README.md` for the port's.
+`vscode-extension/DEVELOPMENT.md` for the port's.
 
 ## Notes
 
@@ -85,3 +88,7 @@ carries the reasoning - what was wrong, what Vim does, what was measured. See th
 Every workflow inherited from JetBrains is disabled by living in
 `.github/workflows-disabled/` rather than `.github/workflows/`. Read the README
 there before moving any back.
+
+There is one live workflow, written for this fork:
+`.github/workflows/publish-vimperor.yml`, which packages and publishes the VS
+Code extension on a `vimperor-v*` tag. See `vscode-extension/PUBLISHING.md`.

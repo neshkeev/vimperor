@@ -31,7 +31,10 @@
       "description": "Configuration is read from your home directory - `~/.ideavimrc` and the XDG location - and never from the workspace, so opening an untrusted folder cannot make Vimperor run anything."
     }
   },
-  "main": "./build/compileSync/js/main/productionExecutable/kotlin/vimperor.js",
+  "main": "./dist/vimperor.js",
+  "scripts": {
+    "vscode:prepublish": "cd .. && ./gradlew :vscode-extension:assembleExtension"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],

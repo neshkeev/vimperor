@@ -20,6 +20,12 @@
 **/out/
 **/tmp/
 
+# The VS Code extension's packaging output: `dist/` is a copy of the production bundle that
+# `assembleExtension` makes, and the `.vsix` is built from it. Both are generated, and `dist/`
+# is not under `build/` precisely so that `vsce` can reach it.
+/vscode-extension/dist/
+*.vsix
+
 *.DS_Store
 
 .teamcity/.idea

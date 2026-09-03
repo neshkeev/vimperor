@@ -1,0 +1,33 @@
+# What stays out of the .vsix.
+#
+# `vsce` packages every file under this directory that is not listed here, so the default is to
+# ship the source, the Gradle build and the whole Kotlin/JS output directory - about half a
+# gigabyte. What a user needs is `dist/`, the manifest, the icon, the licences and the two
+# documents the Marketplace renders.
+
+# The build, of which `dist/` is the seven files that matter. See `assembleExtension`.
+build/**
+.gradle/**
+.kotlin/**
+
+# The sources. The extension is compiled Kotlin; nothing here is read at runtime.
+src/**
+*.kts
+.omc/**
+
+# Source maps, which are excluded from `dist/` by the build as well - this is the belt to that
+# braces, in case somebody copies a bundle in by hand.
+**/*.map
+
+# The two documents that are the repository's rather than the Marketplace's: the engineering log,
+# and the notes on how to make a release. The page a user reads is README.md, and the Marketplace
+# also renders CHANGELOG.md - those two stay.
+DEVELOPMENT.md
+PUBLISHING.md
+
+# The vector original of the icon. VS Code renders `icon.png`.
+icon.svg
+
+# Editor and OS leftovers.
+.DS_Store
+**/*.swp
