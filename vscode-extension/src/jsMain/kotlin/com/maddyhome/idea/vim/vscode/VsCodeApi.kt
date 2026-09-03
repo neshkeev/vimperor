@@ -30,6 +30,12 @@ external interface Disposable {
 external interface ExtensionContext {
   /** Push registrations here and VS Code disposes them on deactivation. */
   val subscriptions: Subscriptions
+
+  /**
+   * A directory of this extension's own, and the only fixed point from which the user's
+   * `keybindings.json` can be found - see [userKeybindingsPath]. Nothing is stored in it.
+   */
+  val globalStorageUri: Uri
 }
 
 /**
@@ -134,6 +140,24 @@ external object commands {
   fun getCommands(filterInternal: Boolean): Thenable<Array<String>>
 }
 
+/**
+ * Every extension this window has loaded, which is where the second source of keybindings is.
+ *
+ * The built-in extensions are in here too - Git, the language features, the debuggers - so a
+ * manifest that binds a chord is readable whether the user installed it or VS Code shipped it.
+ */
+external object extensions {
+  val all: Array<Extension>
+}
+
+external interface Extension {
+  /** `publisher.name`. */
+  val id: String
+
+  /** The manifest, parsed. VS Code types it `any` because only the extension knows its own shape. */
+  val packageJSON: dynamic
+}
+
 external object env {
   val clipboard: Clipboard
 
@@ -187,6 +211,14 @@ external object workspace {
    * to finish.
    */
   fun openTextDocument(options: UntitledDocumentOptions): Thenable<TextDocument>
+
+  /**
+   * The same by URI, which for a scheme that is not `file` asks whatever provider serves it.
+   *
+   * One caller: the read-only document holding VS Code's own default keybindings, which is the
+   * only way an extension can find out what is bound to what. See [readDefaultKeybindings].
+   */
+  fun openTextDocument(uri: Uri): Thenable<TextDocument>
 
   fun getConfiguration(section: String): WorkspaceConfiguration
 

@@ -353,6 +353,63 @@ class ActionCommandTest {
     assertEquals(emptyList(), session.dispatched, "`:actionl` is not `:action` with an argument")
   }
 
+  // The chord beside each command, which is the half of IdeaVim's list VS Code will not hand over.
+
+  @Test
+  fun `test actionlist prints the chord bound to a command`() {
+    val session = Session()
+    session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
+    session.run("actionlist git.pull")
+
+    val line = session.printed.lines().single { it.startsWith("git.pull") }
+    assertTrue(line.endsWith("shift+cmd+p"), "the chord should follow the name: '$line'")
+    assertTrue(line.startsWith("git.pull "), "and the name should still be the start of the line")
+  }
+
+  /** A command with nothing bound to it is the name alone, not a name with a column of spaces. */
+  @Test
+  fun `test a command nothing is bound to is printed on its own`() {
+    val session = Session()
+    session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
+    session.run("actionlist")
+
+    assertTrue("cursorDown" in session.printed.lines(), "got ${session.printed}")
+  }
+
+  /**
+   * IdeaVim filters on the whole line rather than on the name, so the list answers the other
+   * question a reader has: not "what is this command called" but "what is this key doing".
+   */
+  @Test
+  fun `test the filter matches the chord as well as the name`() {
+    val session = Session()
+    session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
+    session.run("actionlist cmd+p")
+
+    assertTrue("git.pull" in session.printed)
+    assertTrue("--- 1 of 6 ---" in session.printed, "got ${session.printed}")
+  }
+
+  @Test
+  fun `test both chords are printed when a command has two`() {
+    val session = Session()
+    session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "cmd+g"), Keybinding("git.pull", "cmd+shift+g")))
+    session.run("actionlist git.pull")
+
+    val line = session.printed.lines().single { it.startsWith("git.pull") }
+    assertTrue(line.endsWith("cmd+g  cmd+shift+g"), "got '$line'")
+  }
+
+  /** Nothing read yet is the list as it was before any of this, rather than an error. */
+  @Test
+  fun `test a window whose keybindings could not be read still lists its commands`() {
+    val session = Session()
+    session.run("actionlist")
+
+    assertTrue("git.pull" in session.printed.lines(), "got ${session.printed}")
+    assertTrue("--- 6 of 6 ---" in session.printed)
+  }
+
   @Test
   fun `test actionlist says so when it has not been told anything`() {
     val session = Session(known = null)

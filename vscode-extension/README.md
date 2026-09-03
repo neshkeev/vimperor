@@ -346,8 +346,25 @@ maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. 
 different, so an `.ideavimrc` written for IdeaVim will not carry over: `:action GotoClass` becomes
 `:action workbench.action.quickOpen`, and `:actionlist quickopen` is how you find that out. A name
 this VS Code does not have is reported at the `:` prompt rather than failing silently, from the
-command list fetched once at activation. What `:actionlist` cannot print is the keystroke bound to
-each one - VS Code has no API that reads its own keybindings.
+command list fetched once at activation.
+
+`:actionlist` prints the chord bound to each command beside it, as IdeaVim prints IntelliJ's
+shortcuts - and it has to work for it, because **VS Code has no API that says what is bound to
+what**. There is no `getKeybindings`, for anything. So the three files VS Code builds its own keymap
+out of are read instead, in the order it applies them: its defaults, then each extension's
+`contributes.keybindings`, then the user's `keybindings.json` - which can rebind and, with a leading
+`-`, unbind. Only the middle one is reachable through the documented API. The user's file is found
+two directories above `globalStorageUri`, which is where VS Code always puts it and is the only way
+that holds for Insiders, VSCodium, a portable install and a remote window alike. The defaults are
+read from the document behind `workbench.action.openDefaultKeybindingsFile`, which is the one
+undocumented step in this extension and is written to be allowed to fail: a VS Code that stops
+serving it leaves the other two sources printing and says so in the output channel.
+
+The `when` clause is deliberately not printed. Most bindings have one, an extension cannot evaluate
+them - context keys are write-only to it - and a chord shown without the condition that gates it is
+a promise the list cannot keep. The column says what is bound; whether it applies where the caret
+happens to be is what the Keyboard Shortcuts editor is for. The pattern matches the whole line, so
+`:actionlist shift+cmd+f` answers the other question a reader has.
 
 An `.ideavimrc` written for IdeaVim names IntelliJ's actions - `:action GotoClass`,
 `<Action>(Back)` - and those are translated. 90 of them, with 8 answering that the job is

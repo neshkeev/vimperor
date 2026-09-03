@@ -367,6 +367,16 @@ class VimHost(
   fun rememberActions(ids: Collection<String>) = vimInjector.rememberActions(ids)
 
   /**
+   * The chords bound to those commands, for `:actionlist`'s second column.
+   *
+   * Handed over a source at a time rather than all at once: the extensions' manifests are readable
+   * the moment activation runs, the user's file is a synchronous disk read, and VS Code's own
+   * defaults arrive over a promise. See [KeybindingTable] for why that order does not decide which
+   * of them wins.
+   */
+  val keybindings: KeybindingTable get() = vimInjector.keybindings
+
+  /**
    * The system paste chord at the `:` and `/` prompts - `Cmd+V`, or `Ctrl+Shift+V` elsewhere.
    *
    * Vim's own way to do this is `<C-R>+`, which inserts the clipboard register into the command

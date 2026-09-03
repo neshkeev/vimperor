@@ -858,6 +858,9 @@ open class VsCodeInjector(
   /** What VS Code answered when asked what commands it has. See [VsCodeActionExecutor]. */
   internal fun rememberActions(ids: Collection<String>) = actions.remember(ids)
 
+  /** What VS Code has bound to those commands, for `:actionlist`. See [KeybindingTable]. */
+  internal val keybindings: KeybindingTable get() = actions.keybindings
+
   // ---- Reachable only asynchronously, and therefore not yet reachable at all.
 
   /**

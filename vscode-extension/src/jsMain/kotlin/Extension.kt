@@ -15,6 +15,12 @@ import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.IdeaActionAliases
 import com.maddyhome.idea.vim.vscode.MessageSink
+import com.maddyhome.idea.vim.vscode.NodeFileSystem
+import com.maddyhome.idea.vim.vscode.contributedKeybindings
+import com.maddyhome.idea.vim.vscode.hostPlatform
+import com.maddyhome.idea.vim.vscode.readDefaultKeybindings
+import com.maddyhome.idea.vim.vscode.userKeybindings
+import com.maddyhome.idea.vim.vscode.userKeybindingsPath
 import com.maddyhome.idea.vim.vscode.openTutor
 import com.maddyhome.idea.vim.vscode.OutputChannel
 import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
@@ -237,6 +243,44 @@ fun activate(context: ExtensionContext) {
       )
     }
   })
+
+  /*
+   * What each command is bound to, for `:actionlist`.
+   *
+   * VS Code will not say - there is no API for it - so the three files it builds its own keymap out
+   * of are read instead, and they arrive by three different routes. Two of them are here and now:
+   * every extension's manifest is already parsed, and the user's `keybindings.json` is a file. The
+   * third is VS Code's own defaults, which is where `shift+cmd+f` and the rest of the core chords
+   * live, and it comes over a promise. See [KeybindingTable] for why arriving last does not make it
+   * apply last.
+   */
+  val platform = hostPlatform()
+
+  // Inside a `try`, all of it, because none of it is load-bearing. A column in `:actionlist` is
+  // worth reading three files for and is not worth an activation for: a throw here would take the
+  // tutor, the paste chord and every registration below it down with it.
+  try {
+    vim.keybindings.setContributed(contributedKeybindings(platform))
+
+    val keybindingsFile = userKeybindingsPath(context.globalStorageUri.fsPath)
+    vim.keybindings.setUser(userKeybindings(keybindingsFile, NodeFileSystem(), platform))
+
+    readDefaultKeybindings(
+      platform,
+      onFailure = { reason ->
+        output.appendLine(
+          "This VS Code would not hand over its default keybindings ($reason), so `:actionlist` " +
+            "will only show the chords that extensions and your own keybindings.json bind.",
+        )
+      },
+      onLoaded = { defaults ->
+        vim.keybindings.setDefaults(defaults)
+        output.appendLine("Read the keybindings of ${vim.keybindings.commandCount} commands, for `:actionlist`.")
+      },
+    )
+  } catch (e: Throwable) {
+    output.appendLine("Vimperor could not read this window's keybindings, so `:actionlist` will not show them - ${e.message}")
+  }
 
   // Vim's `vimtutor`, as a Command Palette entry. It opens an untitled document the reader is
   // meant to edit to pieces, which is what `vimtutor` does with a copy of Vim's own tutor file.

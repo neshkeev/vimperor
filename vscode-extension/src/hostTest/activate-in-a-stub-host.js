@@ -321,7 +321,7 @@ const vscode = {
     // here is that it asks, and that it reports what it did not find. A stub returning everything
     // would only prove the reporting can stay silent.
     getCommands() {
-      const known = ['undo', 'redo', 'workbench.action.files.save']
+      const known = ['undo', 'redo', 'workbench.action.files.save', 'git.pull', 'workbench.action.findInFiles']
       return { then: (onFulfilled) => (onFulfilled(known), { then: () => {} }) }
     },
   },
@@ -343,8 +343,36 @@ const vscode = {
       },
     },
   },
+  /*
+   * Extensions, for the keybindings `:actionlist` prints. VS Code has no API that says what is
+   * bound to what, so the extension reads the three files the keymap is built from - and this is
+   * the documented one of the three: every manifest, already parsed, built-ins included.
+   */
+  extensions: {
+    all: [
+      { id: 'vscode.git', packageJSON: { contributes: { keybindings: [{ command: 'git.pull', key: 'ctrl+g p' }] } } },
+      { id: 'nothing.contributed', packageJSON: { name: 'nothing' } },
+    ],
+  },
   workspace: {
     onDidChangeTextDocument: () => disposable(),
+    /*
+     * The read-only document holding VS Code's own default keybindings, which is the only place the
+     * core chords are readable at all. Undocumented, so the extension is written to survive its
+     * absence - what is checked here is the other half, that it uses it when it is there.
+     */
+    openTextDocument: (target) => {
+      const uri = typeof target === 'string' ? target : target && target.path
+      assert.ok(uri && String(uri).includes('keybindings.json'), `openTextDocument was asked for ${uri}`)
+      const defaults = [
+        '// Overwrite key bindings by placing them into your key bindings file.',
+        '[',
+        '  { "key": "shift+cmd+f", "command": "workbench.action.findInFiles" },',
+        '  { "key": "cmd+z", "command": "undo" },',
+        ']',
+      ].join('\n')
+      return { then: (onFulfilled) => (onFulfilled({ getText: () => defaults }), { then: () => {} }) }
+    },
     // Captured, like the active-editor listener: a document closing and a document being saved are
     // both wired in `Extension.kt`, and a test that called the host directly would not see the wire.
     onDidCloseTextDocument: (callback) => {
@@ -392,8 +420,30 @@ const extension = require(path.resolve(extensionRoot, manifest.main))
 assert.strictEqual(typeof extension.activate, 'function', 'the bundle exports no `activate`')
 assert.strictEqual(typeof extension.deactivate, 'function', 'the bundle exports no `deactivate`')
 
+/*
+ * The extension's storage directory, which is where the user's `keybindings.json` is found from:
+ * VS Code puts it at `<user data>/User/globalStorage/<id>`, so the file is two directories up. One
+ * is written here so that the user's half of the keymap - which is what unbinds a default - is read
+ * by this run rather than assumed.
+ */
+const userDirectory = path.join(home, 'User')
+fs.mkdirSync(path.join(userDirectory, 'globalStorage', 'neshkeev.vimperor'), { recursive: true })
+fs.writeFileSync(
+  path.join(userDirectory, 'keybindings.json'),
+  [
+    '// Place your key bindings in this file to override the defaults',
+    '[',
+    '  { "key": "cmd+shift+u", "command": "workbench.action.output.toggleOutput" },',
+    '  { "key": "cmd+z", "command": "-undo" },',
+    ']',
+  ].join('\n'),
+)
+
 const subscriptions = []
-extension.activate({ subscriptions })
+extension.activate({
+  subscriptions,
+  globalStorageUri: { scheme: 'file', path: path.join(userDirectory, 'globalStorage', 'neshkeev.vimperor'), fsPath: path.join(userDirectory, 'globalStorage', 'neshkeev.vimperor') },
+})
 
 // Taking over `type` is how an extension sees ordinary typing at all; without it every letter goes
 // straight into the document and Vim never hears about it.
@@ -728,6 +778,31 @@ assert.ok(
 assert.ok(
   !commandCheck.includes('undo'),
   `a command this stub does have was reported missing. Got: ${commandCheck}`,
+)
+
+/*
+ * `:actionlist`, and the chord beside each command - the whole reason activation reads three files
+ * that VS Code will not summarise. Only a real activation puts all three together, so this is the
+ * only place the merge is checked end to end.
+ */
+output.length = 0
+type(':')
+for (const character of 'actionlist') type(character)
+press('<CR>')
+
+const listed = output.join('\n')
+assert.ok(
+  /workbench\.action\.findInFiles\s+shift\+cmd\+f/.test(listed),
+  `:actionlist did not print the chord VS Code's own defaults bind. Got:\n${listed}`,
+)
+assert.ok(
+  /git\.pull\s+ctrl\+g p/.test(listed),
+  `:actionlist did not print the chord an extension's manifest binds. Got:\n${listed}`,
+)
+// The user's file unbinds `cmd+z`, so the chord VS Code ships is gone rather than printed.
+assert.ok(
+  !listed.includes('cmd+z'),
+  `:actionlist printed a chord the user's keybindings.json takes away. Got:\n${listed}`,
 )
 
 // `'incsearch'`, which is painted from the command line rather than from the search group - the

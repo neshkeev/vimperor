@@ -46,6 +46,15 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
 
   private var known: Set<String>? = null
 
+  /**
+   * What each command is bound to, for `:actionlist`'s second column.
+   *
+   * Filled a source at a time as activation reads them, and correct in between - see
+   * [KeybindingTable]. Empty in a host that never fills it, which is a blank column and not a
+   * missing one.
+   */
+  val keybindings: KeybindingTable = KeybindingTable()
+
   /** Called once at activation, when VS Code has answered what commands it has. */
   fun remember(ids: Collection<String>) {
     known = ids.toSet()
@@ -257,9 +266,11 @@ private sealed interface ResolvedAction {
  * appear in the line, case-insensitively, so `:actionlist git*commit` finds
  * `git.commitStagedAll` - which is IdeaVim's rule and not a glob, whatever it looks like.
  *
- * What IdeaVim prints and this does not is the keystroke bound to each action. VS Code has no API
- * that reads its own keybindings, so a shortcut column here would be blank or invented; the
- * Keyboard Shortcuts editor is where they live and it can be searched by the same id.
+ * The chord bound to each command is printed beside it, as IdeaVim prints IntelliJ's shortcuts.
+ * VS Code has no API that answers what is bound, so the three files it builds its keymap out of are
+ * read instead and the column is as complete as they are - see [KeybindingTable]. The pattern is
+ * matched against the whole line, chord included, so `:actionlist cmd+k` is a question this can
+ * answer as well as `:actionlist git`.
  *
  * A host command rather than an engine one, for the same reason as [TutorCommand]: IdeaVim has its
  * own `:actionlist`, in its own module, over `ActionManager`.
@@ -286,8 +297,14 @@ data class ActionListCommand(val range: Range, val modifier: CommandModifier, va
       return ExecutionResult.Success
     }
 
+    val keybindings = (injector.actionExecutor as? VsCodeActionExecutor)?.keybindings
+    val lines = ids.map { id ->
+      val chords = keybindings?.shortcutsFor(id).orEmpty()
+      if (chords.isEmpty()) id else id.padEnd(NAME_COLUMN) + " " + chords.joinToString("  ")
+    }
+
     val pattern = argument.trim().lowercase().split("*").filter { it.isNotEmpty() }
-    val matching = ids.filter { id -> pattern.all { it in id.lowercase() } }
+    val matching = lines.filter { line -> pattern.all { it in line.lowercase() } }
     val text = buildString {
       appendLine(injector.messages.message("command.action.list.header"))
       matching.forEach { appendLine(it) }
@@ -295,5 +312,10 @@ data class ActionListCommand(val range: Range, val modifier: CommandModifier, va
     }
     injector.outputPanel.output(editor, context, text)
     return ExecutionResult.Success
+  }
+
+  private companion object {
+    /** Where the chords start, which is IdeaVim's column and wide enough for most VS Code ids. */
+    const val NAME_COLUMN = 50
   }
 }

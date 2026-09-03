@@ -207,9 +207,22 @@ const env = {
  */
 const openedDocuments = []
 
+/*
+ * Extensions, whose manifests are one of the three sources `:actionlist` reads its chords from -
+ * VS Code has no API that says what is bound to what. Empty until a test fills it.
+ */
+const extensions = { all: [] }
+
 const workspace = {
   onDidChangeTextDocument: () => ({ dispose() {} }),
+  /* Answers for a URI as well as for options; the default keybindings arrive as the former. */
+  documentsByUri: {},
   openTextDocument: (options) => {
+    if (options && typeof options.path === 'string') {
+      const text = workspace.documentsByUri[options.path]
+      if (text === undefined) return Promise.reject(new Error(`no provider for ${options.path}`))
+      return Promise.resolve({ getText: () => text })
+    }
     const document = {
       getText: () => options.content ?? '',
       languageId: options.language ?? 'plaintext',
@@ -243,4 +256,4 @@ class ThemeColor {
   }
 }
 
-module.exports = { Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }
+module.exports = { extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }
