@@ -86,6 +86,14 @@ internal object VsCodeCommands {
   const val NEW_UNTITLED_FILE = "workbench.action.files.newUntitledFile"
 
   /**
+   * `:diffsplit` and `:diffthis` - VS Code's diff editor, over two files.
+   *
+   * The other built-in that takes arguments, like [OPEN]: two URIs and a title. The view it opens
+   * owns its own hunks from then on, which is why `:diffget` and `:diffput` report `E319`.
+   */
+  const val DIFF = "vscode.diff"
+
+  /**
    * The nth tab of the current group, which VS Code numbers into the command id itself rather than
    * taking as an argument. One through nine; there is no tenth, and `:tabmove 10` has nowhere to go.
    */
@@ -115,7 +123,7 @@ internal object VsCodeCommands {
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,
     SPLIT_EDITOR_DOWN, SPLIT_EDITOR_RIGHT,
     CLOSE_EDITORS_AND_GROUP, CLOSE_EDITORS_IN_OTHER_GROUPS, CLOSE_ALL_GROUPS,
-    NEW_UNTITLED_FILE,
+    NEW_UNTITLED_FILE, DIFF,
   ) + TAB_INDEXES.map { openEditorAtIndex(it) } +
     GROUP_ORDINALS.indices.mapNotNull { focusEditorGroup(it + 1) }
 

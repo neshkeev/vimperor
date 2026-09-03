@@ -239,6 +239,29 @@ data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, v
  */
 
 /**
+ * The two diff commands that move a hunk from one side to the other.
+ *
+ * The rest of diff mode is next door in [DiffThisCommand], and works: opening a view over two files
+ * is something both hosts do. Reaching *into* that view - naming a hunk, taking its lines, putting
+ * them in the other buffer - is something neither lets an extension do at all. The IntelliJ diff
+ * window and the VS Code diff editor both own their hunks completely, and there is no API on either
+ * that hands one over.
+ *
+ * That is an absent subject rather than unfinished work, which is why these two say so and their
+ * five neighbours do not.
+ */
+
+/** see "h :diffget" */
+@ExCommand(command = "diffg[et]")
+data class DiffGetCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :diffput" */
+@ExCommand(command = "diffpu[t]")
+data class DiffPutCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
  * `:language`, which Vim only has when it was built with `+multi_lang`.
  *
  * The subject is a locale: Vim's `:language` sets the one its own messages, its `strftime` and its

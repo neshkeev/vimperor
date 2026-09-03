@@ -8,6 +8,9 @@
 
 package com.maddyhome.idea.vim.group;
 
+import com.intellij.diff.DiffContentFactory;
+import com.intellij.diff.DiffManager;
+import com.intellij.diff.requests.SimpleDiffRequest;
 import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.editor.Caret;
@@ -216,6 +219,38 @@ public class WindowGroup extends WindowGroupBase {
     final var editor = injector.getEditorGroup().getFocusedEditor();
     if (editor == null) return;
     injector.getActionExecutor().executeAction(editor, "NewScratchFile", context);
+  }
+
+  /**
+   * {@code :diffthis}, {@code :diffsplit} and {@code :diffpatch} - IntelliJ's diff window over the
+   * two files.
+   *
+   * The platform's {@code DiffManager} is what the IDE's own "Compare With" opens, so what the
+   * reader gets is the diff viewer they already know, with its own hunks, folding and navigation.
+   * That viewer owning its hunks completely is also why {@code :diffget} and {@code :diffput}
+   * report {@code E319}.
+   *
+   * <p>Both paths arrive absolute; the engine resolves them against the project root before asking.
+   */
+  @Override
+  public boolean showDiff(@NotNull ExecutionContext context, @NotNull String leftPath, @NotNull String rightPath) {
+    final Project project = PlatformDataKeys.PROJECT.getData((DataContext)context.getContext());
+    if (project == null) return false;
+
+    final VirtualFile left = LocalFileSystem.getInstance().refreshAndFindFileByPath(leftPath);
+    final VirtualFile right = LocalFileSystem.getInstance().refreshAndFindFileByPath(rightPath);
+    if (left == null || right == null) return false;
+
+    final DiffContentFactory contents = DiffContentFactory.getInstance();
+    final SimpleDiffRequest request = new SimpleDiffRequest(
+      left.getName() + " \u2194 " + right.getName(),
+      contents.create(project, left),
+      contents.create(project, right),
+      left.getPath(),
+      right.getPath()
+    );
+    DiffManager.getInstance().showDiff(project, request);
+    return true;
   }
 
   @Override

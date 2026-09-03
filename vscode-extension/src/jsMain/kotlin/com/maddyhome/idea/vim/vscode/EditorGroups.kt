@@ -81,6 +81,23 @@ internal class VsCodeWindowGroup(private val host: HostCommandRunner) : WindowGr
    */
   override fun openNewBuffer(context: ExecutionContext) = run(VsCodeCommands.NEW_UNTITLED_FILE)
 
+  /**
+   * `:diffthis`, `:diffsplit` and `:diffpatch` - VS Code's diff editor over the two files.
+   *
+   * Both paths arrive absolute - the engine resolves them against the workspace root before asking,
+   * so that both hosts are handed something they can open rather than something to interpret.
+   *
+   * Reports success from the fact that it asked, like every other command this host dispatches: the
+   * promise resolves long after this has had to answer.
+   */
+  override fun showDiff(context: ExecutionContext, leftPath: String, rightPath: String): Boolean {
+    val left = UriFactory.file(leftPath)
+    val right = UriFactory.file(rightPath)
+    val title = leftPath.substringAfterLast('/') + " ↔ " + rightPath.substringAfterLast('/')
+    host.run(VsCodeCommands.DIFF, arrayOf(left, right, title), waitForIt = false)
+    return true
+  }
+
   override fun closeCurrentWindow(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_AND_GROUP)
 
   override fun closeAllExceptCurrent(context: ExecutionContext) = run(VsCodeCommands.CLOSE_EDITORS_IN_OTHER_GROUPS)

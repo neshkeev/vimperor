@@ -25,6 +25,10 @@ import com.maddyhome.idea.vim.api.VimModalInputService
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.changelist.VimChangeList
+import com.maddyhome.idea.vim.diff.Diff
+import com.maddyhome.idea.vim.group.VimWindowGroup
+import com.maddyhome.idea.vim.group.WindowGroupBase
+import com.maddyhome.idea.vim.api.VimPathExpansion
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.tags.Tags
@@ -400,6 +404,20 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * needing one says which.
    */
   override val file: VimFile by lazy { HeadlessFile() }
+  override val window: VimWindowGroup by lazy { HeadlessWindowGroup() }
+
+  /**
+   * Paths, unexpanded.
+   *
+   * A headless host has no environment and no home directory, so `$VAR` and `~` have nothing to
+   * become. Returning the path untouched is not a stub standing in for the real thing: it is what
+   * expansion *does* when there is nothing to expand, and it keeps the commands that resolve a path
+   * - `:diffsplit`, `:source`, `:e` - testable without inventing an environment for them.
+   */
+  override val pathExpansion: VimPathExpansion = object : VimPathExpansion {
+    override fun expandPath(path: String): String = path
+    override fun expandForOption(value: String): String = value
+  }
   override val fileSystem: VimFileSystem by lazy { HeadlessFileSystem() }
 
   init {
@@ -410,6 +428,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     VimChangeList.reset()
     Tags.reset()
     SourcedScripts.reset()
+    Diff.reset()
   }
 
   /**
@@ -856,6 +875,36 @@ class HeadlessFileSystem : VimFileSystem {
       .filter { it.startsWith("$path/") }
       .map { it.substring(path.length + 1).substringBefore("/") }
       .distinct()
+}
+
+/**
+ * Windows, of which a headless host has one - so what this is for is recording what was asked.
+ *
+ * `:diffthis` and its relatives are the callers: the whole of the engine's share of diff mode is
+ * deciding which two files go into the host's diff view, and that decision is what a test can check.
+ */
+class HeadlessWindowGroup : WindowGroupBase() {
+  val diffs: MutableList<Pair<String, String>> = mutableListOf()
+
+  /** Set to false to make the host refuse, which is the only way to reach the failure message. */
+  var canShowDiff: Boolean = true
+
+  override fun showDiff(context: ExecutionContextApi, leftPath: String, rightPath: String): Boolean {
+    if (!canShowDiff) return false
+    diffs += leftPath to rightPath
+    return true
+  }
+
+  override fun selectWindowInRow(caret: VimCaret, context: ExecutionContextApi, relativePosition: Int, vertical: Boolean) {}
+  override fun selectNextWindow(context: ExecutionContextApi) {}
+  override fun selectWindow(context: ExecutionContextApi, index: Int) {}
+  override fun selectPreviousWindow(context: ExecutionContextApi) {}
+  override fun closeAllExceptCurrent(context: ExecutionContextApi) {}
+  override fun splitWindowVertical(context: ExecutionContextApi, filename: String, focusNew: Boolean) {}
+  override fun splitWindowHorizontal(context: ExecutionContextApi, filename: String, focusNew: Boolean) {}
+  override fun closeCurrentWindow(context: ExecutionContextApi) {}
+  override fun closeAll(context: ExecutionContextApi) {}
+  override fun openNewBuffer(context: ExecutionContextApi) {}
 }
 
 class HeadlessRedrawService : VimRedrawService {

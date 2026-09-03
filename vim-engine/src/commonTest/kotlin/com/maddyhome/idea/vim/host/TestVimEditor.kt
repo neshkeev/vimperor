@@ -43,7 +43,19 @@ import com.maddyhome.idea.vim.api.VimDocument
  * that starts depending on more of the editor says which member it needs instead of matching against
  * a silent default.
  */
-class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEditorBase(), MutableVimEditor {
+class TestVimEditor(
+  text: String,
+  private val carets: List<VimCaret>,
+
+  /**
+   * The file behind this buffer.
+   *
+   * A parameter rather than a constant because two editors with the same path are one buffer as far
+   * as marks and diffs are concerned - and a test that needs two files, like `:diffthis` in two
+   * windows, needs two names.
+   */
+  private val path: String = "headless://buffer",
+) : VimEditorBase(), MutableVimEditor {
 
   /**
    * The buffer. Mutable because editing changes it, and rebuilt line starts with it - the offsets
@@ -205,7 +217,7 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
    * This is the constraint a VS Code host meets first: whatever it uses for buffer identity has to
    * arrive here, and an untitled buffer with no URI would lose marks.
    */
-  override fun getVirtualFile(): VimVirtualFile = TestVirtualFile
+  override fun getVirtualFile(): VimVirtualFile = TestVirtualFile(path)
   override fun deleteString(range: TextRange) {
     replaceString(range.startOffset, range.endOffset, "")
   }
@@ -235,7 +247,7 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
    * hands the engine a scratch buffer: whatever a VS Code host uses for identity, a URI most
    * likely, has to arrive here.
    */
-  override fun getPath(): String = "headless://buffer"
+  override fun getPath(): String = path
   override fun extractProtocol(): String? = TODO("TestVimEditor.extractProtocol is not implemented yet")
   override fun exitInsertMode(context: ExecutionContext): Unit = TODO("TestVimEditor.exitInsertMode is not implemented yet")
   override fun exitSelectModeNative(adjustCaret: Boolean): Unit = TODO("TestVimEditor.exitSelectModeNative is not implemented yet")
@@ -317,8 +329,7 @@ class TestVimEditor(text: String, private val carets: List<VimCaret>) : VimEdito
 }
 
 /** The one buffer a headless test has, named so that marks can be keyed by it. */
-internal object TestVirtualFile : VimVirtualFile {
-  override val path: String = "headless://buffer"
+internal data class TestVirtualFile(override val path: String) : VimVirtualFile {
   override val protocol: String = "headless"
   override val extension: String? = null
 }

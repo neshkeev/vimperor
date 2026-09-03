@@ -57,4 +57,18 @@ interface VimWindowGroup {
    * gets a tab of its own, which is true in both, so the base implementation is the whole of it.
    */
   fun openNewTab(context: ExecutionContext, filename: String)
+
+  /**
+   * `:diffsplit` and `:diffthis` - the two files, side by side, with their differences marked.
+   *
+   * Vim's diff mode is a property of *windows*: two windows both in diff mode are compared, and
+   * `'diffopt'`, the folds and the highlighting all follow from that. Neither host has a window
+   * mode to turn on; both have a diff *view* that is opened over a pair of files and owns itself
+   * from then on. So this is that pair, and the engine's job is only to decide which two files
+   * they are - see [com.maddyhome.idea.vim.diff.Diff].
+   *
+   * Returns false when the host could not open one, so the command can say so rather than appear
+   * to have worked.
+   */
+  fun showDiff(context: ExecutionContext, leftPath: String, rightPath: String): Boolean = false
 }

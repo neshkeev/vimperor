@@ -327,6 +327,34 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteMarksCommand",
     "standardConstructor": true
   },
+  "diffg[et]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffGetCommand",
+    "standardConstructor": true
+  },
+  "diffo[ff]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffOffCommand",
+    "standardConstructor": true
+  },
+  "diffp[atch]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffPatchCommand",
+    "standardConstructor": true
+  },
+  "diffpu[t]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffPutCommand",
+    "standardConstructor": true
+  },
+  "diffs[plit]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffSplitCommand",
+    "standardConstructor": true
+  },
+  "difft[his]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffThisCommand",
+    "standardConstructor": true
+  },
+  "diffu[pdate]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffUpdateCommand",
+    "standardConstructor": true
+  },
   "dig[raphs]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DigraphCommand",
     "standardConstructor": true
