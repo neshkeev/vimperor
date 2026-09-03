@@ -128,6 +128,87 @@ class CommandLineCompletionTest {
     assertEquals(null, session.display.matches)
   }
 
+  // `:set`, whose argument is a list of option names.
+
+  /** The reported case: the abbreviation is a way of writing the option, so Tab spells it out. */
+  @Test
+  fun `test Tab completes an option name`() {
+    val session = Session()
+    session.type(":set syn")
+    session.key("<Tab>")
+
+    assertEquals(":set syntax", session.display.shown)
+  }
+
+  @Test
+  fun `test Tab cycles when more than one option starts that way`() {
+    val session = Session()
+    session.type(":set nu")
+    session.key("<Tab>")
+    assertEquals(":set number", session.display.shown)
+
+    session.key("<Tab>")
+    assertEquals(":set numberwidth", session.display.shown)
+  }
+
+  /**
+   * `:set` takes a *list*, so only the word being typed is replaced.
+   *
+   * The parser hands the whole argument to completion, because for `:edit my file.txt` the whole
+   * argument is the file name. `:set` is the other kind, and this is the difference.
+   */
+  @Test
+  fun `test only the option being typed is replaced`() {
+    val session = Session()
+    session.type(":set number rel")
+    session.key("<Tab>")
+
+    assertEquals(":set number relativenumber", session.display.shown)
+  }
+
+  /** `no` in front of a boolean option is how you write one, so it completes as one. */
+  @Test
+  fun `test the no prefix completes boolean options`() {
+    val session = Session()
+    session.type(":set norel")
+    session.key("<Tab>")
+
+    assertEquals(":set norelativenumber", session.display.shown)
+  }
+
+  @Test
+  fun `test inv completes the same way`() {
+    val session = Session()
+    session.type(":set invrel")
+    session.key("<Tab>")
+
+    assertEquals(":set invrelativenumber", session.display.shown)
+  }
+
+  /** A word that has already said what it wants is not a name being typed. */
+  @Test
+  fun `test a question, a toggle and an assignment are left alone`() {
+    for (typed in listOf(":set syn?", ":set syn!", ":set syntax=ja")) {
+      val session = Session()
+      session.type(typed)
+      session.key("<Tab>")
+
+      assertEquals(typed.removePrefix(":"), session.display.shown?.removePrefix(":"), "`$typed` should not complete")
+    }
+  }
+
+  /** `:setlocal` and `:setglobal` take the same names. */
+  @Test
+  fun `test setlocal and setglobal complete options too`() {
+    for (command in listOf("setlocal", "setglobal")) {
+      val session = Session()
+      session.type(":$command syn")
+      session.key("<Tab>")
+
+      assertEquals(":$command syntax", session.display.shown)
+    }
+  }
+
   @Test
   fun `test a prefix that matches nothing changes nothing`() {
     val session = Session()

@@ -359,6 +359,16 @@ paths and nothing else. Both hosts already answer `getActionIdList`, which is a 
 `ACTION` type in `vim-engine` was the whole of it; IdeaVim gets `:action` completion from the same
 change. Command names complete too, this host's own included: `:actionl<Tab>` finishes `:actionlist`.
 
+`:set syn<Tab>` finishes `:set syntax`, by the same route: an `OPTION` type, answered from the
+option registry both hosts fill. Vim completes the full name rather than the abbreviation - the
+abbreviation is a way of writing the option, not a second option - and offers `no` and `inv` in
+front of a boolean one, because those are how you write it. `:set` is also the first command whose
+argument is a *list*, so Tab replaces the word the caret is in rather than the whole argument:
+`:set number rel<Tab>` leaves `number` alone. Everything else still replaces the argument entire,
+because `:edit my file.txt` names one file and completing only `file.txt` would produce a path
+nobody meant. A word that has already said what it wants - `:set nu?`, `:set nu!`, `:set sw=4` - is
+not a name being typed, and none of the three completes.
+
 The matches are drawn on a second status bar item, which is Vim's wildmenu with the same two limits
 as the caret: text, so the current match is bracketed rather than highlighted, and one row, so the
 list is windowed around the selection with the count in front of it. `:action e` against a real VS
