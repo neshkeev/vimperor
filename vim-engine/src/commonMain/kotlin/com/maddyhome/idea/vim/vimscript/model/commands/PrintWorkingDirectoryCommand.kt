@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
@@ -39,7 +40,9 @@ data class PrintWorkingDirectoryCommand(val range: Range, val modifier: CommandM
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    val directory = injector.file.getWorkingDirectory(context) ?: throw exExceptionMessage("E187")
+    // The engine's directory when a `:cd` has set one, and the host's root otherwise - which is
+    // what this printed before there was anything else to print. See [WorkingDirectory].
+    val directory = WorkingDirectory.current(editor, context) ?: throw exExceptionMessage("E187")
     injector.messages.showMessage(editor, directory)
     return ExecutionResult.Success
   }

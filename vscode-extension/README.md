@@ -354,11 +354,23 @@ this host with it.
 
 What is on the far side of the line, and why, is worth reading as a group: `:diffget` and
 `:diffput` need a diff view an extension can reach hunk by hunk; `:ptag` and its relatives need a
-preview window; `:spelldump` and `:mkspell` need a word list a borrowed checker will not hand over;
-`:language` needs a locale. Each of those reports `E319` - "this build does not have it" - and each
-is an absent *subject* rather than unfinished work. `:debug` is the one command of the sweep still
-reporting `E492`: it needs an interactive stepping prompt, and a `:debug` that ran the command
-without stopping would not be `:debug`.
+preview window; `:spelldump` and `:mkspell` need a word list a borrowed checker will not hand over. Each of those
+reports `E319` - "this build does not have it" - and each is an absent *subject* rather than
+unfinished work. `:debug` is the one command of the sweep still reporting `E492`: it needs an
+interactive stepping prompt, and a `:debug` that ran the command without stopping would not be
+`:debug`.
+
+`:language` is deliberately not in that group, though it was for a day. It names something the
+editor decides for itself, which is the same shape as `:syntax`, `:filetype` and `:colorscheme` -
+and those three already accept quietly and speak up only when the argument asks for something the
+editor will not do. A `~/.vimrc` is full of such lines and one red line per line of config is a
+worse answer than silence, because the reader cannot act on any of it.
+
+`:cd`, `:chdir`, `:lcd` and `:tcd` are real now, over a current directory the *engine* owns -
+because a project or a workspace is not a working directory, which is why `:pwd` used to report the
+project root and there was nothing for `:cd` to change. A relative path is still handed to the host
+untouched until somebody runs one of them, so no existing config moves; after that the engine
+resolves, and `:e`, `:find`, `:vimgrep`, `:mkvimrc`, `:diffsplit` and the tag files all follow.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are

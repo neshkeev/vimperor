@@ -26,6 +26,7 @@ import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptor
 import com.maddyhome.idea.vim.api.AutoCmdService
 import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.diff.Diff
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.group.VimWindowGroup
 import com.maddyhome.idea.vim.group.WindowGroupBase
 import com.maddyhome.idea.vim.api.VimPathExpansion
@@ -437,6 +438,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
     Diff.reset()
     Matches.reset()
     Profile.reset()
+    WorkingDirectory.reset()
   }
 
   /**

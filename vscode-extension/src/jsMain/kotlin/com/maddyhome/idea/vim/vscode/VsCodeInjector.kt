@@ -32,6 +32,7 @@ import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.macro.VimMacroBase
@@ -99,6 +100,9 @@ open class VsCodeInjector(
     // running window that is a no-op at activation; in a test run it is what keeps one test's list
     // out of the next one's.
     Quickfix.reset()
+    // And the current directory, which is a session's and not a window's - without this a `:cd` in
+    // one test is still in force in the next one.
+    WorkingDirectory.reset()
   }
 
   /**

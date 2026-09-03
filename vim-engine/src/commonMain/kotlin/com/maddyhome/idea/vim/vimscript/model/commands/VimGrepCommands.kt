@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.helper.enumSetOf
@@ -69,7 +70,7 @@ sealed class VimGrepCommandBase(
     if (injector.globalOptions().smartcase) options.add(VimRegexOptions.SMART_CASE)
     if (injector.globalOptions().ignorecase) options.add(VimRegexOptions.IGNORE_CASE)
 
-    val files = parsed.files.flatMap { expandGlob(it, injector.file.getWorkingDirectory(context)) }
+    val files = parsed.files.flatMap { expandGlob(it, WorkingDirectory.current(editor, context)) }
     val entries = mutableListOf<QuickfixEntry>()
     for (path in files) {
       val text = try {

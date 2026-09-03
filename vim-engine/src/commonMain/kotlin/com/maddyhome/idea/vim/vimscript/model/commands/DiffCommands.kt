@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.diff.Diff
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
@@ -53,10 +54,10 @@ sealed class DiffCommandBase(
    * thing - the project or workspace root - and the hosts should be handed two paths they can open
    * rather than two they have to interpret.
    */
-  protected fun resolve(path: String, context: ExecutionContext): String {
+  protected fun resolve(path: String, editor: VimEditor, context: ExecutionContext): String {
     val expanded = injector.pathExpansion.expandPath(path.trim())
-    if (expanded.startsWith("/") || (expanded.length > 2 && expanded[1] == ':')) return expanded
-    val root = injector.file.getWorkingDirectory(context) ?: return expanded
+    if (WorkingDirectory.isAbsolute(expanded)) return expanded
+    val root = WorkingDirectory.current(editor, context) ?: return expanded
     return "${root.trimEnd('/', '\\')}/$expanded"
   }
 
@@ -120,7 +121,7 @@ data class DiffSplitCommand(val range: Range, val modifier: CommandModifier, val
   ): ExecutionResult {
     val other = commandArgument.trim()
     if (other.isEmpty()) throw exExceptionMessage("E471")
-    return show(editor, context, pathOf(editor), resolve(other, context))
+    return show(editor, context, pathOf(editor), resolve(other, editor, context))
   }
 }
 
@@ -198,7 +199,7 @@ data class DiffPatchCommand(val range: Range, val modifier: CommandModifier, val
     val output = try {
       injector.processGroup.executeCommand(
         editor,
-        "patch -o ${quote(patched)} ${quote(original)} < ${quote(resolve(patch, context))}",
+        "patch -o ${quote(patched)} ${quote(original)} < ${quote(resolve(patch, editor, context))}",
         null,
         null,
         injector.globalOptions(),

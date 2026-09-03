@@ -45,28 +45,24 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "colo[rscheme]" to command { range, modifier, argument -> ColorschemeCommand(range, modifier, argument) },
     "hi[ghlight]" to command { range, modifier, argument -> HighlightCommand(range, modifier, argument) },
     "ru[ntime]" to command { range, modifier, argument -> RuntimeCommand(range, modifier, argument) },
-    "scriptencoding" to command { range, modifier, argument -> ScriptEncodingCommand(range, modifier, argument) },
-    "lan[guage]" to command { range, modifier, argument -> LanguageCommand(range, modifier, argument) },
-    "behave" to command { range, modifier, argument -> BehaveCommand(range, modifier, argument) },
     "setf[iletype]" to command { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
 
     // The rest of what a `~/.vimrc` reaches for and VS Code answers for itself. Measured rather
     // than guessed at: every name the engine registers was typed at the prompt, and these are the
     // ones that came back `E492` and turn up in real configuration.
+    //
+    // Nothing here may name a command the engine implements. This provider is registered *after*
+    // the engine's, so a name in both silently replaces the real command with an accepted no-op -
+    // which is exactly what happened to eight of them, and what `ExCommandOverlapTest` now
+    // prevents.
     "packl[oadall]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "scrip[tnames]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "mes[sages]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "redi[r]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "mkvie[w]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "loadv[iew]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "sign" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "prof[ile]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "menu" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
     "unme[nu]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "difft[his]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "diffo[ff]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "lc[d]" to command { range, modifier, argument -> WorkingDirectoryCommand(range, modifier, argument) },
-    "cd" to command { range, modifier, argument -> WorkingDirectoryCommand(range, modifier, argument) },
   )
 
   private inline fun <reified T : Command> command(
@@ -158,17 +154,8 @@ internal class HighlightCommand(range: Range, modifier: CommandModifier, argumen
 internal class RuntimeCommand(range: Range, modifier: CommandModifier, argument: String) :
   AcceptedCommand(range, modifier, argument)
 
-/** `:scriptencoding`, which says how the file being sourced is encoded. Node reads UTF-8. */
-internal class ScriptEncodingCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument)
 
-/** `:language`, which sets a terminal Vim's locale. */
-internal class LanguageCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument)
 
-/** `:behave`, which chooses between `mswin` and `xterm` mouse and selection behaviour. */
-internal class BehaveCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument)
 
 
 /**
@@ -204,19 +191,3 @@ internal class SetFiletypeCommand(range: Range, modifier: CommandModifier, priva
 internal class AcceptedHostCommand(range: Range, modifier: CommandModifier, argument: String) :
   AcceptedCommand(range, modifier, argument)
 
-/**
- * `:cd`, `:lcd` and their kind.
- *
- * VS Code's working directory is the workspace folder, which it opens and an extension does not
- * move. A window-local one, which is what `:lcd` asks for, has no counterpart at all.
- */
-internal class WorkingDirectoryCommand(range: Range, modifier: CommandModifier, argument: String) :
-  AcceptedCommand(range, modifier, argument) {
-  override fun contradiction(argument: String): String? =
-    if (argument.isEmpty()) {
-      null
-    } else {
-      "VS Code's working directory is the workspace folder and an extension cannot move it, " +
-        "so `:cd $argument` did nothing."
-    }
-}

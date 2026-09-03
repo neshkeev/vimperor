@@ -203,6 +203,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CCloseCommand",
     "standardConstructor": true
   },
+  "cd": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeDirectoryCommand",
+    "standardConstructor": true
+  },
   "ce[nter]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CenterAlignCommand",
     "standardConstructor": true
@@ -221,6 +225,10 @@
   },
   "changes": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangesCommand",
+    "standardConstructor": true
+  },
+  "chd[ir]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeDirectoryCommand",
     "standardConstructor": true
   },
   "checkt[ime]": {
@@ -601,6 +609,14 @@
   },
   "lb[uffer]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LBufferCommand",
+    "standardConstructor": true
+  },
+  "lc[d]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "standardConstructor": true
+  },
+  "lch[dir]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "lcl[ose]": {
@@ -1233,6 +1249,14 @@
   },
   "tc[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TclCommand",
+    "standardConstructor": true
+  },
+  "tcd": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "standardConstructor": true
+  },
+  "tch[dir]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "tearo[ff]": {

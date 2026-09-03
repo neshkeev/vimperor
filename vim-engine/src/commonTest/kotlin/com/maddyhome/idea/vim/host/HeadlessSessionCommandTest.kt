@@ -163,14 +163,29 @@ class HeadlessSessionCommandTest {
     }
   }
 
-  // `:language`, which needs a locale nothing here has.
-
+  /**
+   * `:language` accepts and explains rather than failing.
+   *
+   * It reported `E319` for a day. The commands beside it - `:syntax`, `:filetype`, `:colorscheme` -
+   * all name something the editor decides for itself and all three accept quietly, because a
+   * `~/.vimrc` is full of such lines and a red one for each is worse than silence. `:language` is
+   * that shape too.
+   */
   @Test
-  fun `test language reports that this build does not have it`() {
+  fun `test language accepts and says the IDE decides it`() {
     val s = session()
     s.messages.clearError()
     s.run("language en_GB")
 
-    assertTrue(s.messages.lastError?.contains("E319") == true, "got ${s.messages.lastError}")
+    assertEquals(null, s.messages.lastError, "a config line must not turn red")
+    assertTrue(s.messages.lastMessage?.contains("did nothing") == true, "got ${s.messages.lastMessage}")
+  }
+
+  @Test
+  fun `test language with no argument answers the question rather than doing nothing`() {
+    val s = session()
+    s.run("language")
+
+    assertTrue(s.messages.lastMessage?.contains("IDE's own") == true, "got ${s.messages.lastMessage}")
   }
 }

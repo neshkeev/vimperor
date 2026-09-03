@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.annotations.TestOnly
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.options.OptionAccessScope
 
 /**
@@ -139,7 +140,7 @@ object Tags {
       .toVimString().value
       .ifEmpty { "./tags,tags" }
     val editorDirectory = editor.getPath()?.let { directoryOf(it) }
-    val workingDirectory = injector.file.getWorkingDirectory(context)
+    val workingDirectory = WorkingDirectory.current(editor, context)
 
     return setting.split(",").mapNotNull { entry ->
       val trimmed = entry.trim()

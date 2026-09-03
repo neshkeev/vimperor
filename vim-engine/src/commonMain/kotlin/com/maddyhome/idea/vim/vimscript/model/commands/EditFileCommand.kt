@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.vimscript.model.commands
 
 import com.intellij.vim.annotations.ExCommand
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
@@ -47,7 +48,7 @@ data class EditFileCommand(val range: Range, val modifier: CommandModifier, val 
       }
       return ExecutionResult.Success
     } else if (arg.isNotEmpty()) {
-      val errorMessage = injector.file.openFile(arg, context)
+      val errorMessage = injector.file.openFile(WorkingDirectory.resolve(arg, editor), context)
       if (errorMessage != null) {
         injector.messages.showMessage(editor, errorMessage)
         return ExecutionResult.Error

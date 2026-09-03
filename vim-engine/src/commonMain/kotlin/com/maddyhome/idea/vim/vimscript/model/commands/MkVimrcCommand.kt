@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.api.getAllMappingInfoWithMode
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.isDefaultValue
 import com.maddyhome.idea.vim.command.MappingMode
+import com.maddyhome.idea.vim.directory.WorkingDirectory
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range
@@ -56,7 +57,7 @@ sealed class MakeConfigCommand(
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     val name = argument.trim().ifEmpty { defaultName }
-    val path = resolve(name, context)
+    val path = resolve(name, editor, context)
     val files = injector.fileSystem
 
     // Vim refuses rather than reports: a `:mkvimrc` without `!` leaves a file that is already there
@@ -70,9 +71,9 @@ sealed class MakeConfigCommand(
     return ExecutionResult.Success
   }
 
-  private fun resolve(name: String, context: ExecutionContext): String {
+  private fun resolve(name: String, editor: VimEditor, context: ExecutionContext): String {
     if (isAbsolute(name)) return name
-    val directory = injector.file.getWorkingDirectory(context) ?: return name
+    val directory = WorkingDirectory.current(editor, context) ?: return name
     return directory.trimEnd('/', '\\') + "/" + name
   }
 
