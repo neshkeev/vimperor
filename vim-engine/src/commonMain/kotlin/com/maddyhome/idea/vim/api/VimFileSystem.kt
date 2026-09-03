@@ -38,6 +38,17 @@ interface VimFileSystem {
    * `:mkvimrc` with no `!` must leave the file that is already there completely alone.
    */
   fun exists(path: String): Boolean
+
+  /** Whether [path] is a directory, which decides whether a glob may descend into it. */
+  fun isDirectory(path: String): Boolean = false
+
+  /**
+   * The names directly inside [path] - files and directories alike, without their path in front.
+   *
+   * Empty for anything that is not a directory, and for a directory that cannot be read. `:vimgrep`
+   * is the caller, and a glob over a tree it may not enter should find fewer files rather than fail.
+   */
+  fun listDirectory(path: String): List<String> = emptyList()
 }
 
 /**

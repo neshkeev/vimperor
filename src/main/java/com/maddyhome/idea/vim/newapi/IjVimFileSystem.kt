@@ -13,6 +13,9 @@ import com.maddyhome.idea.vim.api.VimFileSystem
 import java.io.IOException
 import kotlin.io.path.Path
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
+import kotlin.io.path.listDirectoryEntries
+import kotlin.io.path.name
 import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
@@ -34,4 +37,13 @@ internal class IjVimFileSystem : VimFileSystem {
     }
 
   override fun exists(path: String): Boolean = Path(path).exists()
+
+  override fun isDirectory(path: String): Boolean = Path(path).isDirectory()
+
+  override fun listDirectory(path: String): List<String> =
+    try {
+      Path(path).listDirectoryEntries().map { it.name }
+    } catch (e: IOException) {
+      emptyList()
+    }
 }

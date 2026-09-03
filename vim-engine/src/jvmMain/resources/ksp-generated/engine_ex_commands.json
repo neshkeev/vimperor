@@ -663,6 +663,14 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LuaCommand",
     "standardConstructor": true
   },
+  "lv[imgrep]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationVimGrepCommand",
+    "standardConstructor": true
+  },
+  "lvimgrepa[dd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationVimGrepAddCommand",
+    "standardConstructor": true
+  },
   "lw[indow]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
     "standardConstructor": true
@@ -1237,6 +1245,14 @@
   },
   "vie[w]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
+    "standardConstructor": true
+  },
+  "vim[grep]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VimGrepCommand",
+    "standardConstructor": true
+  },
+  "vimgrepa[dd]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VimGrepAddCommand",
     "standardConstructor": true
   },
   "viu[sage]": {

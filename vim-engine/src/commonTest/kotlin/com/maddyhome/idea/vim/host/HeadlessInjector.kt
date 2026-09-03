@@ -829,7 +829,17 @@ class HeadlessFileSystem : VimFileSystem {
     return null
   }
 
-  override fun exists(path: String): Boolean = path in written
+  override fun exists(path: String): Boolean = path in written || isDirectory(path)
+
+  /** A path is a directory when something is written under it - there is nothing else to ask. */
+  override fun isDirectory(path: String): Boolean =
+    written.keys.any { it.startsWith("$path/") }
+
+  override fun listDirectory(path: String): List<String> =
+    written.keys
+      .filter { it.startsWith("$path/") }
+      .map { it.substring(path.length + 1).substringBefore("/") }
+      .distinct()
 }
 
 class HeadlessRedrawService : VimRedrawService {

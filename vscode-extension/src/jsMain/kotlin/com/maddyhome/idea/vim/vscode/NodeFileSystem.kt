@@ -48,6 +48,26 @@ class NodeFileSystem : VimFileSystem {
     false
   }
 
+  override fun isDirectory(path: String): Boolean = try {
+    fs.statSync(path).isDirectory() as Boolean
+  } catch (e: Throwable) {
+    false
+  }
+
+  /**
+   * The names directly inside a directory, for `:vimgrep`'s globs.
+   *
+   * Synchronous, like everything else here: `:vimgrep` fills the quickfix list and jumps to the
+   * first entry inside the command, and a promise cannot answer a command that has returned.
+   */
+  override fun listDirectory(path: String): List<String> = try {
+    val entries = fs.readdirSync(path)
+    val count = entries.length as Int
+    (0 until count).map { entries[it] as String }
+  } catch (e: Throwable) {
+    emptyList()
+  }
+
   /**
    * `:w file`, which writes a file that is not the one in the editor.
    *
