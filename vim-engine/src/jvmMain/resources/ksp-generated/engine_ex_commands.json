@@ -747,6 +747,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeSessionCommand",
     "standardConstructor": true
   },
+  "mksp[ell]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeSpellCommand",
+    "standardConstructor": true
+  },
   "mkv[imrc]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkVimrcCommand",
     "standardConstructor": true
@@ -1078,6 +1082,34 @@
   "sp[lit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
     "standardConstructor": false
+  },
+  "spe[llgood]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellGoodCommand",
+    "standardConstructor": true
+  },
+  "spelld[ump]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellDumpCommand",
+    "standardConstructor": true
+  },
+  "spelli[nfo]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellInfoCommand",
+    "standardConstructor": true
+  },
+  "spellr[epall]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellRepeatAllCommand",
+    "standardConstructor": true
+  },
+  "spellra[re]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellRareCommand",
+    "standardConstructor": true
+  },
+  "spellu[ndo]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellUndoCommand",
+    "standardConstructor": true
+  },
+  "spellw[rong]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellWrongCommand",
+    "standardConstructor": true
   },
   "spr[evious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitPreviousCommand",

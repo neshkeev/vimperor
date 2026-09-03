@@ -254,8 +254,14 @@ class VsCodeUnimplementedTest {
      *
      * What is left is no longer a matter of writing more host. `U` needs a history this host does
      * not keep - VS Code owns the undo stack and will not say what is on it - and the rest need a
-     * spellchecker, a language server or Vim's command-line window, none of which VS Code has. The
-     * ordinary Vim keys are off this list as of `S`.
+     * language server or Vim's command-line window, neither of which VS Code has. The ordinary Vim
+     * keys are off this list as of `S`.
+     *
+     * `z=`, `zg` and `zw` came off it without a spell checker being written, which is the other way
+     * a key leaves: they now reach [NoSpellchecker], which reports that VS Code has none and says
+     * what to do instead. That is a better answer than "Not implemented yet :(" and it is a real
+     * answer, so the keys are no longer unimplemented - they are implemented as a refusal. `[s`
+     * and `]s` are still here because they are motions and a motion has nowhere to put a message.
      */
     const val EXPECTED_SETTINGS = """
 """
@@ -272,8 +278,6 @@ VS Code host: findMisspelledWord needs a spellchecker
     [s ]s
 the VS Code host does not provide searchWindowGroup yet
     q/ q: q?
-the VS Code host does not provide spellcheckerService yet
-    z= zg zw
 """
   }
 }

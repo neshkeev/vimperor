@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.autocmd.AutoCmdImpl
+import com.maddyhome.idea.vim.api.SpellcheckerService
 import com.maddyhome.idea.vim.api.*
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
@@ -194,6 +195,9 @@ open class VsCodeInjector(
     }
   }
   override val psiService: VimPsiService by lazy { TextOnlyPsiService }
+
+  /** There is no spell checker in VS Code, and this is what says so. See [NoSpellchecker]. */
+  override val spellcheckerService: SpellcheckerService get() = NoSpellchecker
   /**
    * `~` and `$VAR` in a path, which `:sp`, `:e` and `:source` all hand to this first.
    *

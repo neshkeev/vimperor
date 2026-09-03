@@ -239,6 +239,44 @@ data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, v
  */
 
 /**
+ * The spell commands that need a word list, a spell file, or a memory of the last replacement.
+ *
+ * Three of Vim's `:spell` commands are next door and work - see [SpellGoodCommand] - because a
+ * borrowed checker can be told to add and remove a word. These five cannot be asked anything:
+ * `:spelldump` wants the whole list, `:spellinfo` wants the files it came from, `:mkspell` wants to
+ * compile one, `:spellrare` wants a third list beside good and bad, and `:spellrepall` wants to
+ * know what the last `z=` replaced - which the engine never learns, because the host puts the
+ * suggestions on screen and the reader picks one there.
+ *
+ * Vim itself gates every one of these behind `+spell`, and a `vim` without it answers exactly this.
+ */
+
+/** see "h :spelldump" */
+@ExCommand(command = "spelld[ump]")
+data class SpellDumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :spellinfo" */
+@ExCommand(command = "spelli[nfo]")
+data class SpellInfoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :spellrare" */
+@ExCommand(command = "spellra[re]")
+data class SpellRareCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :spellrepall" */
+@ExCommand(command = "spellr[epall]")
+data class SpellRepeatAllCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/** see "h :mkspell" */
+@ExCommand(command = "mksp[ell]")
+data class MakeSpellCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  UnavailableCommand(range, modifier, argument)
+
+/**
  * The two diff commands that move a hunk from one side to the other.
  *
  * The rest of diff mode is next door in [DiffThisCommand], and works: opening a view over two files

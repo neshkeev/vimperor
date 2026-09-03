@@ -29,6 +29,7 @@ import com.maddyhome.idea.vim.diff.Diff
 import com.maddyhome.idea.vim.group.VimWindowGroup
 import com.maddyhome.idea.vim.group.WindowGroupBase
 import com.maddyhome.idea.vim.api.VimPathExpansion
+import com.maddyhome.idea.vim.api.SpellcheckerService
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.maddyhome.idea.vim.script.SourcedScripts
 import com.maddyhome.idea.vim.tags.Tags
@@ -405,6 +406,7 @@ class HeadlessInjector : HeadlessInjectorBase() {
    */
   override val file: VimFile by lazy { HeadlessFile() }
   override val window: VimWindowGroup by lazy { HeadlessWindowGroup() }
+  override val spellcheckerService: SpellcheckerService by lazy { HeadlessSpellchecker() }
 
   /**
    * Paths, unexpanded.
@@ -905,6 +907,31 @@ class HeadlessWindowGroup : WindowGroupBase() {
   override fun closeCurrentWindow(context: ExecutionContextApi) {}
   override fun closeAll(context: ExecutionContextApi) {}
   override fun openNewBuffer(context: ExecutionContextApi) {}
+}
+
+/**
+ * A dictionary that is a pair of lists, so a test can read back what was added and removed.
+ *
+ * The engine's whole share of spell checking is the three calls `zg`, `zw` and `z=` make, and this
+ * records them. The IDE's real dictionary is the host's business; what belongs here is that
+ * `:spellgood` reaches "add" with the word the reader typed.
+ */
+class HeadlessSpellchecker : SpellcheckerService {
+  val added: MutableList<String> = mutableListOf()
+  val removed: MutableList<String> = mutableListOf()
+  val suggested: MutableList<String> = mutableListOf()
+
+  override fun addWordToDictionary(word: String, editor: VimEditor) {
+    added += word
+  }
+
+  override fun removeWordFromDictionary(word: String, editor: VimEditor) {
+    removed += word
+  }
+
+  override fun selectSuggestion(word: String, editor: VimEditor, caret: VimCaret) {
+    suggested += word
+  }
 }
 
 class HeadlessRedrawService : VimRedrawService {

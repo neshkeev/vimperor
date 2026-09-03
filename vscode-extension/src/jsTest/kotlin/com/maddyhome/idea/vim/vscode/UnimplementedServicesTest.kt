@@ -55,7 +55,7 @@ class UnimplementedServicesTest {
    *
    * Without this the test above would pass just as well if the override regex matched nothing - and
    * that failure is silent, because a service that is implemented would simply appear on the list
-   * and the list would be updated to match. `motion` is implemented and `spellcheckerService` is not.
+   * and the list would be updated to match. `motion` is implemented and `highlightingService` is not.
    */
   @Test
   fun `test an implemented service is not listed and an unimplemented one is`() {
@@ -64,8 +64,8 @@ class UnimplementedServicesTest {
     val overridden = OVERRIDE.findAll(readText("$host/VsCodeInjector.kt")).map { it.groupValues[1] }.toSet()
 
     assertTrue("motion" in overridden, "motion is implemented and should be read as overridden")
-    assertTrue("spellcheckerService" !in overridden, "spellcheckerService is not implemented")
-    assertTrue("spellcheckerService" in EXPECTED, "spellcheckerService should be on the list")
+    assertTrue("highlightingService" !in overridden, "highlightingService is not implemented")
+    assertTrue("highlightingService" in EXPECTED, "highlightingService should be on the list")
   }
 
   private companion object {
@@ -118,10 +118,13 @@ class UnimplementedServicesTest {
      * the buffers behind it. A real editor buffer that is not a file, holding history, that closes
      * on Enter.
      *
-     * `spellcheckerService` is `z=`, `zg`, `]s`. VS Code has no spellchecker; the popular ones are
-     * extensions, and an extension cannot ask another extension for a word list.
-     *
      * Gone from this list, and why the reasons were wrong:
+     *
+     * `spellcheckerService` is still true - VS Code has no spellchecker, the popular ones are
+     * extensions, and an extension cannot ask another extension for a word list - but it is no
+     * longer a `TODO()`. `NoSpellchecker` reports the absence and says what to do instead, which
+     * `z=`, `zg`, `zw` and now `:spellgood` all reach. An honest refusal is an implementation; a
+     * `TODO()` prints "Not implemented yet :(" and names nothing.
      *
      * `pluginService` was blocked by nothing. Its three methods are running normal-mode keys,
      * declaring a Vimscript function and adding a command alias - all the engine's, and IdeaVim's
@@ -140,7 +143,6 @@ class UnimplementedServicesTest {
       jsonExtensionProvider
       pluginActivator
       searchWindowGroup
-      spellcheckerService
       virtualBufferGroup
     """.trimIndent()
   }
