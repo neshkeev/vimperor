@@ -334,12 +334,31 @@ everything else about them is `:s` because it is `:s`.
 
 The list in `VsCodeOptionsTest` of what a config can say and this host reports `E492` for is now
 empty. It is still typed at the prompt, and still asserted, so a command that stops resolving shows
-up as a failure rather than as a bug report. Sweeping the whole of Vim's command list rather than
-what a config reaches for leaves twenty-six: tags (`:tag` and its eight relatives), diff mode,
-spell, `:ball` and `:unhide`, `:mkvimrc`, `:match`, `:changes` and `:vimgrep`. Each of those needs
-something this fork has not built - a symbol search an extension can drive, a diff view it can
-reach hunk by hunk, a way to walk the files of a project - rather than a command that has not been
-written.
+up as a failure rather than as a bug report.
+
+Sweeping the whole of Vim's command list rather than what a config reaches for left twenty-six, and
+those are written now. **Tags** read a real `tags` file - a symbol index that answers over a promise
+cannot report `E426`, and a list of matches is what `:tselect` and `:tnext` are questions about, so
+`'tags'` means what its documentation says and a project without one gets Vim's `E433`. **Diff**
+opens the host's own diff view over two files, which is what `:diffthis` and `:diffsplit` reach in
+the end; Vim gets there by turning a window mode on and neither host has one, so the first
+`:diffthis` remembers the file and the second opens the pair. **`:vimgrep`** searches the files
+itself with this engine's regex, which is the whole difference from `:grep` and its shell. **Spell**
+is the three operations a borrowed checker answers - VS Code has none at all and says so.
+**`:match`** is a standing highlight, recomputed after every keystroke and after every ex command,
+painted in the editor's own colours for the handful of Vim highlight groups people name.
+**`:mkvimrc`** writes the session back out from the same two places `:map` and `:set` read it from,
+and the test runs the file it wrote back through the parser. **`:changes`** is the change list,
+which moved out of an IntelliJ application service into the engine and brought `g;` and `g,` to
+this host with it.
+
+What is on the far side of the line, and why, is worth reading as a group: `:diffget` and
+`:diffput` need a diff view an extension can reach hunk by hunk; `:ptag` and its relatives need a
+preview window; `:spelldump` and `:mkspell` need a word list a borrowed checker will not hand over;
+`:language` needs a locale. Each of those reports `E319` - "this build does not have it" - and each
+is an absent *subject* rather than unfinished work. `:debug` is the one command of the sweep still
+reporting `E492`: it needs an interactive stepping prompt, and a `:debug` that ran the command
+without stopping would not be `:debug`.
 
 `:action {id}` runs any VS Code command, `:actionlist [pattern]` lists them, and `<Action>(id)`
 maps a key to one - IdeaVim's three, over commands instead of IntelliJ actions. The names are
