@@ -606,12 +606,38 @@ open class VsCodeInjector(
       override fun reformatCode(editor: VimEditor, start: Int, end: Int) =
         TODO("VS Code host: reformatCode is an asynchronous command")
 
+      /**
+       * `=`, and every motion that reaches it - `==`, `=j`, `=ap`, and `=` over a visual selection,
+       * all of which come through here.
+       *
+       * The engine's contract is synchronous: indent this range, put the caret on the first
+       * non-blank of its first line, return. VS Code's re-indent is a command, so neither half can
+       * happen before this function returns. What the host can do is hold the user's next keystroke
+       * until it has - which is the machinery undo and redo already use - and do the caret half in
+       * the hook that fires once the buffer has been re-read.
+       *
+       * Lines are captured rather than offsets. Re-indenting moves every offset after the first
+       * line it changes, so a stored offset would place the caret in the wrong column or the wrong
+       * line entirely; it never adds or removes a line, so a line number survives it intact.
+       */
       override fun autoIndentRange(
         editor: VimEditor,
         context: ExecutionContext,
         ranges: List<TextRange>,
         carets: List<VimCaret>,
-      ) = TODO("VS Code host: autoIndentRange is an asynchronous command")
+      ) {
+        if (ranges.isEmpty()) return
+        val vsCodeEditor = editor as? VsCodeEditor ?: return
+        val firstLines = ranges.map { editor.offsetToBufferPosition(it.startOffset).line }
+        val moving = carets.ifEmpty { listOf(editor.primaryCaret()) }
+
+        vsCodeEditor.selectForHostCommand(ranges)
+        hostCommands.run(VsCodeCommands.REINDENT_SELECTED_LINES) {
+          for ((caret, line) in moving.zip(firstLines)) {
+            caret.moveToOffset(injector.motion.moveCaretToLineStartSkipLeading(editor, line))
+          }
+        }
+      }
 
       /**
        * Typed characters go straight into the buffer.
@@ -1521,6 +1547,17 @@ interface HostCommandRunner {
   fun run(command: String, waitForIt: Boolean = true) = run(command, emptyArray(), waitForIt)
 
   /**
+   * The same, with something to do once the command has landed *and* the buffer has been re-read.
+   *
+   * `=` is why this exists. The engine's contract says the caret is placed when `autoIndentRange`
+   * returns, and here the indenting has not happened yet - so the placement has to wait for it,
+   * and it has to wait for the re-read as well, or it would compute an offset from text VS Code
+   * has already replaced. Only meaningful with `waitForIt`, which is the only path that re-reads.
+   */
+  fun run(command: String, afterwards: () -> Unit) =
+    run(command, emptyArray(), waitForIt = true, afterwards = afterwards)
+
+  /**
    * The same, for the few VS Code commands that take an argument.
    *
    * `vscode.open` is why this exists: opening a file by name is a command like the folds and the
@@ -1528,10 +1565,10 @@ interface HostCommandRunner {
    * calling `showTextDocument` directly means it inherits the queue, the rejection branch and the
    * id check, none of which a second path would have.
    */
-  fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean = true)
+  fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean = true, afterwards: () -> Unit = {})
 
   /** For a host that has no VS Code to run commands in. Nothing happens, and nothing pretends to. */
   object None : HostCommandRunner {
-    override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {}
+    override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {}
   }
 }

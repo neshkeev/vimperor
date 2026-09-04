@@ -303,7 +303,7 @@ class VimHost(
    * success would leave `pending` above zero and every later keystroke queued behind a command
    * that is never coming back.
    */
-  override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {
+  override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {
     if (!waitForIt) {
       runCommand(command, arguments) { succeeded ->
         if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
@@ -311,6 +311,10 @@ class VimHost(
       return
     }
     pending++
+    // Held until the re-read below, not run here: at this point the buffer still holds the text
+    // from before the command, and the whole reason a caller wants this hook is to place a caret
+    // in the text the command produced.
+    landed += afterwards
     runCommand(command, arguments) { succeeded ->
       if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
       pending--
@@ -318,12 +322,24 @@ class VimHost(
     }
   }
 
+  /** What to do once the document is back in step - see [run]. */
+  private val landed: MutableList<() -> Unit> = mutableListOf()
+
   private fun hostCommandsFinished() {
     // The command changed the document, and it changed it without going through the buffer - so
     // every editor has to be re-read before anything else looks at one.
     for (editor in editors.values) {
       if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
+      // A command may leave its own selection behind - the formatter does - and the engine is not
+      // in visual mode by the time it lands.
+      editor.dropSelectionLeftByCommand()
     }
+    // After the re-read and before the held keys: a caret placed here is what the user sees, and a
+    // queued keystroke has to act on it rather than on where the caret was left by the command.
+    val after = landed.toList()
+    landed.clear()
+    after.forEach { it() }
+
     val waiting = queued.toList()
     queued.clear()
     waiting.forEach { it() }

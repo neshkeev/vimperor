@@ -58,12 +58,6 @@ src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVis
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after block visual operation multiple time
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after visual operation multicaret
 
-# --- Reindenting, which is a VS Code command and therefore asynchronous.
-#
-# `=` on a sentence object asks the host to reindent a range. VS Code's is a command that resolves a
-# promise, and the engine wants the text changed before it returns.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionOuterSentenceActionTest.kt:test on empty last line
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/object/MotionSentenceActionTest.kt:test indent outer sentence on empty last line
 
 # --- An IntelliJ action replayed by `.`, which this host has no equivalent of.
 #

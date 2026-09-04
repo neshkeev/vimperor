@@ -41,6 +41,25 @@ internal object VsCodeCommands {
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
   /**
+   * `=`. Re-indents the selected lines, which is what Vim's `=` does and the whole of what it does.
+   *
+   * Measured rather than argued, with Vim 9.1 and `-u NONE`: `ggVG=` on `{ "hello": "world"}`
+   * leaves it exactly as it was, with json indent rules loaded or without; the same key on a
+   * six-line JSON with the indentation wrong fixes every indent and leaves six lines. `=` changes
+   * leading whitespace. It does not split a line, join one, or touch spacing inside one.
+   *
+   * Not `editor.action.formatSelection`, then, even though IdeaVim's `=` does call the IDE's
+   * formatter - that is IdeaVim diverging from Vim, and this fork's stated goal is Vim. The cost
+   * is that `=` on a one-line document appears to do nothing, because there is nothing an indenter
+   * can do to it. Anybody who wants the IdeaVim behaviour has it in one line of config:
+   * `xnoremap = <Action>(editor.action.formatSelection)`.
+   *
+   * Vim's own answer to "run a real formatter instead" is `'equalprg'`, which this fork does not
+   * implement yet. That is where the choice belongs when it is built.
+   */
+  const val REINDENT_SELECTED_LINES = "editor.action.reindentselectedlines"
+
+  /**
    * Moves the view by a number of lines, which is the only API that does exactly that.
    *
    * `revealRange` is the other half of VS Code's scrolling API and the obvious thing to reach for,
@@ -115,7 +134,7 @@ internal object VsCodeCommands {
   val all: List<String> = listOf(
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
-    REVEAL_DEFINITION, EDITOR_SCROLL, OPEN,
+    REVEAL_DEFINITION, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

@@ -384,6 +384,29 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   /**
+   * Throws away a selection a host command left behind, when the engine is not in a mode that has
+   * one.
+   *
+   * Vim has a selection in visual and select modes and nowhere else. `editor.action.formatSelection`
+   * - reached from an `xnoremap`, which leaves visual mode on its way to the command line - finishes
+   * with its range still selected, and by then the engine is back in normal mode. Adopting that
+   * left a selection nothing could clear: `<Esc>` and `<C-c>` do not clear selections in normal
+   * mode, because in Vim there is never one there to clear, and every later flush pushed it back.
+   *
+   * Only for commands. A *drag* is the user selecting text, and that legitimately puts the engine
+   * into visual mode - which is why this is not part of [syncCaretsFromEditor], where it would
+   * have stopped the mouse from entering visual mode at all.
+   */
+  fun dropSelectionLeftByCommand() {
+    if (mode is Mode.VISUAL || mode is Mode.SELECT) return
+    if (vimCarets.none { it.hasSelection() }) return
+    vimCarets.forEach { it.removeSelection() }
+    // Pushed back rather than left for the next keystroke, which would mean the user looking at a
+    // highlight that no key can act on.
+    flushCarets()
+  }
+
+  /**
    * Follows VS Code into and out of visual mode when the user works with the mouse.
    *
    * Dragging a selection in Vim *is* visual mode, so a host that left the mode alone would show a
@@ -452,6 +475,24 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * moved past. The buffer's line index has neither problem, and a line and column mean the same
    * thing on both sides whichever way the file ends its lines.
    */
+  /**
+   * Puts VS Code's own selection over [ranges], for a command that acts on whatever is selected.
+   *
+   * `editor.action.reindentselectedlines` takes no argument - it reads the focused editor's
+   * selection - so a range has to be handed over this way before the command runs.
+   *
+   * Written straight to `selections` rather than by moving the engine's carets, and that is the
+   * point: the carets are Vim's state, and `=` ends in normal mode with no selection. Borrowing a
+   * visual selection to describe the range would mean the engine believing in one afterwards.
+   * [flushCarets] overwrites this on the next keystroke, which is exactly when it should.
+   */
+  internal fun selectForHostCommand(ranges: List<TextRange>) {
+    if (ranges.isEmpty()) return
+    nativeEditor.selections = ranges
+      .map { Selection(positionOf(it.startOffset), positionOf(it.endOffset)) }
+      .toTypedArray()
+  }
+
   private fun positionOf(offset: Int): Position {
     val position = offsetToBufferPosition(offset)
     return Position(position.line, position.column)

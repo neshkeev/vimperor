@@ -272,7 +272,7 @@ class BufferListTest {
   private class RecordingRunner : HostCommandRunner {
     val commands: MutableList<String> = mutableListOf()
     val arguments: MutableList<Array<Any?>> = mutableListOf()
-    override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean) {
+    override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {
       commands += command
       this.arguments += arguments
     }
