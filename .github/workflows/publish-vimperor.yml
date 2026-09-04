@@ -7,6 +7,11 @@
 #
 # It runs on a `vimperor-v*` tag, and it does exactly what `PUBLISHING.md` says to do by hand -
 # assemble, package, publish - with the whole test suite in front of it.
+#
+# What it signs in with depends on what the repository has been given. With `AZURE_CLIENT_ID` and
+# `AZURE_TENANT_ID` set as variables it federates to Microsoft Entra ID and holds no secret at all;
+# without them it falls back to a `VSCE_PAT` secret, which is the way that stops working in
+# December 2026.
 
 name: Publish Vimperor
 
@@ -24,10 +29,16 @@ on:
 
 permissions:
   contents: write
+  # For the Entra sign-in below: this is what lets GitHub mint a token saying which repository and
+  # which workflow is asking. It is not a credential for anything on its own.
+  id-token: write
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    env:
+      # A tag publishes. A manual run only packages, unless it was asked for both.
+      publishing: ${{ startsWith(github.ref, 'refs/tags/') || inputs.publish }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,11 +78,35 @@ jobs:
           name: vimperor-vsix
           path: vscode-extension/build/*.vsix
 
+      # Microsoft Entra ID, by federation rather than by a stored secret: GitHub signs a token
+      # saying which repository asked, Azure trades it for an access one, and nothing durable is
+      # kept on either side. `AZURE_CLIENT_ID` and `AZURE_TENANT_ID` are repository *variables* and
+      # not secrets, deliberately - they name an identity, they do not authenticate as it.
+      #
+      # Skipped when they are unset, which is the PAT path below. Azure DevOps retires global
+      # personal access tokens on 1 December 2026, so that fallback has a date on it; see
+      # `vscode-extension/PUBLISHING.md`, including the third way that will make this step
+      # unnecessary altogether.
+      - name: Sign in to Microsoft Entra ID
+        if: env.publishing == 'true' && vars.AZURE_CLIENT_ID != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          # Publishing needs a Marketplace membership, not an Azure subscription.
+          allow-no-subscriptions: true
+
       - name: Publish
-        if: startsWith(github.ref, 'refs/tags/') || inputs.publish
+        if: env.publishing == 'true'
         env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: ./gradlew :vscode-extension:publishExtension --console=plain
+          # Passed only on the PAT path. `vsce` reads `--pat` before `--azure-credential` and
+          # `--pat` defaults to this variable, so a PAT in the environment would quietly win over
+          # the sign-in above - and a release that publishes for the wrong reason teaches nothing.
+          VSCE_PAT: ${{ vars.AZURE_CLIENT_ID == '' && secrets.VSCE_PAT || '' }}
+        run: >
+          ./gradlew :vscode-extension:publishExtension
+          -PvsceAuth=${{ vars.AZURE_CLIENT_ID != '' && 'entra' || 'pat' }}
+          --console=plain
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')

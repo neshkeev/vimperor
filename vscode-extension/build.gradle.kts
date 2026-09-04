@@ -376,16 +376,69 @@ val extensionVersion: String by lazy {
     ?: error("no version in vscode-extension/package.json")
 }
 
+/**
+ * The `vsce` this fork publishes with.
+ *
+ * Pinned, because an unpinned `npx` fetches whatever is newest at the moment somebody runs a
+ * release - which is not a thing a release should depend on. `-PvsceVersion=` overrides it, which
+ * is how a prerelease gets tried without a commit; see [vsceAuth] for the reason to want one.
+ */
+val vsceVersion: String = (findProperty("vsceVersion") as String?) ?: "3.9.2"
+
 /** `vsce`, run through `npx` so that nothing has to be installed into this repository. */
 fun Exec.vsce(vararg arguments: String) {
   dependsOn(assembleExtension)
   workingDir = layout.projectDirectory.asFile
   val bin = nodeBinDirectory.get()
   executable = File(bin, if (File(bin, "npx").isFile) "npx" else "npx.cmd").absolutePath
-  // Pinned, because an unpinned `npx` fetches whatever is newest at the moment somebody runs a
-  // release - which is not a thing a release should depend on.
-  args(listOf("--yes", "@vscode/vsce@3.6.0") + arguments)
+  args(listOf("--yes", "@vscode/vsce@$vsceVersion") + arguments)
   environment("PATH", bin.absolutePath + File.pathSeparator + (System.getenv("PATH") ?: ""))
+}
+
+/**
+ * How `vsce` proves who we are - the part of publishing that has a deadline on it.
+ *
+ * Azure DevOps retires global personal access tokens on **1 December 2026**, and a PAT is what
+ * this fork published with. Microsoft's replacement is a Microsoft Entra ID token, which `vsce`
+ * takes with `--azure-credential`: it asks `@azure/identity` for an Azure DevOps token for
+ * whatever identity the machine is already signed in as, so the credential is the sign-in rather
+ * than a long-lived secret somebody has to store, rotate and eventually leak.
+ *
+ * Three modes, and the default is the one that needs no stored secret:
+ *
+ *  - `entra` - `--azure-credential`. Locally that is `az login`; in CI it is a federated sign-in.
+ *  - `pat` - `VSCE_PAT`. Works until December 2026 and then stops, everywhere, at once.
+ *  - `oidc` - `--oidc`. `vsce` asks GitHub Actions for its own OIDC token and trades it with the
+ *    Marketplace for a credential, so CI needs no Azure tenant and no secret at all. This is the
+ *    right answer for [the release workflow][1] and the reason `vsceVersion` is overridable: as of
+ *    September 2026 the flag is hidden from `--help` and ships only in `@vscode/vsce@next`.
+ *
+ * A `VSCE_PAT` in the environment picks `pat`, because a PAT that is set is a PAT that was meant
+ * to be used. `-PvsceAuth=` overrides that either way.
+ *
+ * [1]: ../.github/workflows/publish-vimperor.yml
+ */
+val vsceAuth: String = (findProperty("vsceAuth") as String?)
+  ?: if (System.getenv("VSCE_PAT").isNullOrBlank()) "entra" else "pat"
+
+/** Adds whatever [vsceAuth] asks for to a `vsce` command that talks to the Marketplace. */
+fun Exec.authenticate() {
+  when (vsceAuth) {
+    "pat" -> doFirst {
+      check(!System.getenv("VSCE_PAT").isNullOrBlank()) {
+        "VSCE_PAT is not set. See vscode-extension/PUBLISHING.md - and note that personal access " +
+          "tokens stop working in December 2026; -PvsceAuth=entra is the replacement."
+      }
+    }
+
+    // Emptied rather than left alone: `getPAT` in vsce reads `--pat` before `--azure-credential`,
+    // and `--pat` defaults to `$VSCE_PAT`. A PAT still in the environment would quietly win, and
+    // "it published, so the Entra setup must work" is the wrong thing to come away believing.
+    "entra" -> { args("--azure-credential"); environment("VSCE_PAT", "") }
+    "oidc" -> { args("--oidc"); environment("VSCE_PAT", "") }
+
+    else -> error("unknown -PvsceAuth=$vsceAuth: one of entra, pat, oidc")
+  }
 }
 
 /**
@@ -455,20 +508,19 @@ val checkPackagedExtension by tasks.registering(Exec::class) {
 /**
  * Publishes to the Visual Studio Marketplace.
  *
- * The token comes from `VSCE_PAT` in the environment and is never written down here or anywhere
- * else in this repository. It is a personal access token from an Azure DevOps organisation with
- * Marketplace *manage* scope; the publisher id it belongs to has to match `publisher` in
- * `package.json`, which is the one thing that cannot be checked until the moment it fails.
+ * No credential is written down here or anywhere else in this repository; [vsceAuth] decides which
+ * one is used and where it comes from. Whichever it is, it belongs to an identity that has to be a
+ * member of the publisher named by `publisher` in `package.json` - which is the one thing that
+ * cannot be checked until the moment it fails.
+ *
+ * It never prompts. Left to itself `vsce` asks for a token on the terminal when it cannot find
+ * one, and a task that prompts is a task that hangs in CI, so every mode passes something explicit.
  */
 val publishExtension by tasks.registering(Exec::class) {
-  description = "Publishes the extension to the Visual Studio Marketplace. Needs VSCE_PAT."
+  description = "Publishes the extension to the Visual Studio Marketplace."
   group = "distribution"
-  doFirst {
-    check(!System.getenv("VSCE_PAT").isNullOrBlank()) {
-      "VSCE_PAT is not set. It is a Marketplace personal access token; see vscode-extension/PUBLISHING.md."
-    }
-  }
   vsce("publish", "--packagePath", "build/vimperor-$extensionVersion.vsix")
+  authenticate()
   // Nothing is published that has not been unpacked and run first. This is the last moment the
   // check is free; after it, the archive is on the Marketplace and the version cannot be reused.
   dependsOn(checkPackagedExtension)
