@@ -15,23 +15,22 @@
   <!-- Tyrian purple: the colour Roman law reserved for the emperor, which is the whole idea. -->
   <rect width="128" height="128" rx="28" fill="url(#ground)"/>
 
-  <!-- The same wreath, mirrored about the middle: tied at the top and opening downwards, so the
-       leaves fall away from the knot instead of rising to meet it. -->
-  <g transform="translate(0 128) scale(1 -1)">
-    <path d="M 48.00 96.81 A 36.5 36.5 0 0 1 42.55 34.47" fill="none" stroke="#A77BF3" stroke-width="3.6" stroke-linecap="round" stroke-opacity="0.85"/>
-    <path d="M -10.75 0 Q 0 -5.40 10.75 0 Q 0 5.40 -10.75 0 Z" fill="#E4D9FF" fill-opacity="0.98" transform="translate(45.59 101.75) rotate(232.00)"/>
-    <path d="M -10.05 0 Q 0 -5.05 10.05 0 Q 0 5.05 -10.05 0 Z" fill="#E4D9FF" fill-opacity="0.95" transform="translate(29.39 87.79) rotate(261.50)"/>
-    <path d="M -9.35 0 Q 0 -4.70 9.35 0 Q 0 4.70 -9.35 0 Z" fill="#E4D9FF" fill-opacity="0.93" transform="translate(22.16 67.66) rotate(291.00)"/>
-    <path d="M -8.65 0 Q 0 -4.35 8.65 0 Q 0 4.35 -8.65 0 Z" fill="#E4D9FF" fill-opacity="0.91" transform="translate(25.78 46.58) rotate(320.50)"/>
-    <path d="M -7.96 0 Q 0 -4.00 7.96 0 Q 0 4.00 -7.96 0 Z" fill="#E4D9FF" fill-opacity="0.88" transform="translate(39.31 30.02) rotate(350.00)"/>
-    <path d="M 80.00 96.81 A 36.5 36.5 0 0 0 85.45 34.47" fill="none" stroke="#A77BF3" stroke-width="3.6" stroke-linecap="round" stroke-opacity="0.85"/>
-    <path d="M -10.75 0 Q 0 -5.40 10.75 0 Q 0 5.40 -10.75 0 Z" fill="#E4D9FF" fill-opacity="0.98" transform="translate(82.41 101.75) rotate(128.00)"/>
-    <path d="M -10.05 0 Q 0 -5.05 10.05 0 Q 0 5.05 -10.05 0 Z" fill="#E4D9FF" fill-opacity="0.95" transform="translate(98.61 87.79) rotate(98.50)"/>
-    <path d="M -9.35 0 Q 0 -4.70 9.35 0 Q 0 4.70 -9.35 0 Z" fill="#E4D9FF" fill-opacity="0.93" transform="translate(105.84 67.66) rotate(69.00)"/>
-    <path d="M -8.65 0 Q 0 -4.35 8.65 0 Q 0 4.35 -8.65 0 Z" fill="#E4D9FF" fill-opacity="0.91" transform="translate(102.22 46.58) rotate(39.50)"/>
-    <path d="M -7.96 0 Q 0 -4.00 7.96 0 Q 0 4.00 -7.96 0 Z" fill="#E4D9FF" fill-opacity="0.88" transform="translate(88.69 30.02) rotate(10.00)"/>
-    <path d="M 57 100.5 Q 64 107 71 100.5" fill="none" stroke="#E4D9FF" stroke-width="4.5" stroke-linecap="round"/>
-  </g>
+  <!-- The wreath as one is worn: open at the top, tied at the bottom, the leaves rising from the
+       knot to meet at the crown. Ten of them, largest at the tie and tapering to the tips, placed
+       on a 36.5 radius arc rather than drawn one at a time. -->
+  <path d="M 48.00 96.81 A 36.5 36.5 0 0 1 42.55 34.47" fill="none" stroke="#A77BF3" stroke-width="3.6" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M -10.75 0 Q 0 -5.40 10.75 0 Q 0 5.40 -10.75 0 Z" fill="#E4D9FF" fill-opacity="0.98" transform="translate(45.59 101.75) rotate(232.00)"/>
+  <path d="M -10.05 0 Q 0 -5.05 10.05 0 Q 0 5.05 -10.05 0 Z" fill="#E4D9FF" fill-opacity="0.95" transform="translate(29.39 87.79) rotate(261.50)"/>
+  <path d="M -9.35 0 Q 0 -4.70 9.35 0 Q 0 4.70 -9.35 0 Z" fill="#E4D9FF" fill-opacity="0.93" transform="translate(22.16 67.66) rotate(291.00)"/>
+  <path d="M -8.65 0 Q 0 -4.35 8.65 0 Q 0 4.35 -8.65 0 Z" fill="#E4D9FF" fill-opacity="0.91" transform="translate(25.78 46.58) rotate(320.50)"/>
+  <path d="M -7.96 0 Q 0 -4.00 7.96 0 Q 0 4.00 -7.96 0 Z" fill="#E4D9FF" fill-opacity="0.88" transform="translate(39.31 30.02) rotate(350.00)"/>
+  <path d="M 80.00 96.81 A 36.5 36.5 0 0 0 85.45 34.47" fill="none" stroke="#A77BF3" stroke-width="3.6" stroke-linecap="round" stroke-opacity="0.85"/>
+  <path d="M -10.75 0 Q 0 -5.40 10.75 0 Q 0 5.40 -10.75 0 Z" fill="#E4D9FF" fill-opacity="0.98" transform="translate(82.41 101.75) rotate(128.00)"/>
+  <path d="M -10.05 0 Q 0 -5.05 10.05 0 Q 0 5.05 -10.05 0 Z" fill="#E4D9FF" fill-opacity="0.95" transform="translate(98.61 87.79) rotate(98.50)"/>
+  <path d="M -9.35 0 Q 0 -4.70 9.35 0 Q 0 4.70 -9.35 0 Z" fill="#E4D9FF" fill-opacity="0.93" transform="translate(105.84 67.66) rotate(69.00)"/>
+  <path d="M -8.65 0 Q 0 -4.35 8.65 0 Q 0 4.35 -8.65 0 Z" fill="#E4D9FF" fill-opacity="0.91" transform="translate(102.22 46.58) rotate(39.50)"/>
+  <path d="M -7.96 0 Q 0 -4.00 7.96 0 Q 0 4.00 -7.96 0 Z" fill="#E4D9FF" fill-opacity="0.88" transform="translate(88.69 30.02) rotate(10.00)"/>
+  <path d="M 57 100.5 Q 64 107 71 100.5" fill="none" stroke="#E4D9FF" stroke-width="4.5" stroke-linecap="round"/>
 
   <!-- The symmetric V: flat terminals, mitred joins, a chisel at the apex. -->
   <path d="M 44 42 L 56.2 42 L 65.0 71.5 L 74.6 42 L 84.6 42 L 69.4 86 L 59.6 86 Z" fill="url(#mark)"/>
