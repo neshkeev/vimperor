@@ -77,8 +77,8 @@ See CONTRIBUTING.md for the plugin's architecture and
 
 ## Issue tracking
 
-There isn't one. `VIM-XXXX` tickets belong to JetBrains' YouTrack and are not this
-fork's to close; no GitHub issues have been filed on `neshkeev/vimperor`. Bugs are
+There isn't one. `VIM-XXXX` tickets belong to IdeaVim's own issue tracker and are
+not this fork's to close; no GitHub issues have been filed on `neshkeev/vimperor`. Bugs are
 recorded in commit bodies, in comments at the code, and in
 `vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`.
 
@@ -90,9 +90,10 @@ carries the reasoning - what was wrong, what Vim does, what was measured. See th
 
 ## Automation
 
-Every workflow inherited from JetBrains is disabled by living in
-`.github/workflows-disabled/` rather than `.github/workflows/`. Read the README
-there before moving any back.
+Every workflow inherited from IdeaVim was **deleted**, not disabled - twenty-eight
+of them, in commit `146db64f5`. They tested IntelliJ versions this fork does not
+track, closed tickets in a tracker that is not ours, and published documentation
+to a site that is not ours. `git show 146db64f5` if one is ever wanted back.
 
 There is one live workflow, written for this fork:
 `.github/workflows/publish-vimperor.yml`, which packages and publishes the VS

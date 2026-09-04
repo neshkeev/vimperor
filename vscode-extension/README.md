@@ -3,8 +3,8 @@
 Vim for VS Code, powered by IdeaVim's engine.
 
 This is not another Vim written from scratch, and it is not a Neovim running as a subprocess. It is
-JetBrains' `vim-engine` — the one IdeaVim ships, with its Vimscript parser, its regex engine and its
-test corpus — compiled to JavaScript and loaded into the extension host. Modes, operators, text
+IdeaVim's `vim-engine` — the engine that plugin ships, with its Vimscript parser, its regex engine
+and its test corpus — compiled to JavaScript and loaded into the extension host. Modes, operators, text
 objects, registers, macros, marks and Vimscript are all the engine's own, so they behave the way
 they behave in IdeaVim rather than the way somebody reimplemented them.
 

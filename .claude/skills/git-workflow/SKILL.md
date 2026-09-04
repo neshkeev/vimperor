@@ -10,7 +10,7 @@ description: Git conventions for this fork - branches, commit messages, remotes,
     origin    git@github.com:neshkeev/vimperor.git    the fork, and where this work goes
     upstream  git@github.com:JetBrains/ideavim.git    read-only, never pushed to
 
-This is a **hard fork**. Nothing here is destined for JetBrains, `vim-engine` may
+This is a **hard fork**. Nothing here is destined for the upstream project, `vim-engine` may
 be changed freely, and there is no upstream review to satisfy. `upstream` is kept
 to read from - IdeaVim's history is often the fastest answer to "why is this code
 like this" - and must never be pushed to.
@@ -56,15 +56,15 @@ the first push:
 
 - Confirm the user actually wants it. This is a public repository.
 - `git push -u origin master` sets the tracking branch. Consider whether a fork's
-  `master` - which still carries JetBrains' entire history - is the default branch
+  `master` - which still carries IdeaVim's entire history - is the default branch
   you want the GitHub page to open on.
-- Every GitHub Actions workflow inherited from JetBrains is disabled, by living in
-  `.github/workflows-disabled/` rather than `.github/workflows/`. See the README
-  there before moving any of them back.
+- Every GitHub Actions workflow inherited from IdeaVim was deleted in commit
+  `146db64f5`, not merely switched off. `.github/workflows/` holds one file, and it
+  is this fork's own. `git show 146db64f5` recovers any of the twenty-eight.
 
 ## Issue tracking
 
-There isn't one yet. `VIM-XXXX` tickets belong to JetBrains' YouTrack and are not
+There isn't one yet. `VIM-XXXX` tickets belong to IdeaVim's own tracker and are not
 this fork's to close; `gh issue` would target `neshkeev/vimperor`, where no issues
 have been filed. If a bug needs recording, the honest places are a commit body, a
 comment at the code, or `known-fixture-failures.txt` - all of which this project

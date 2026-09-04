@@ -10,9 +10,9 @@ A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README
 What this is
 ------------
 
-JetBrains' `vim-engine` — the Vim implementation behind IdeaVim, with its Vimscript
-parser, its regex engine and its test suite — compiled to JavaScript and loaded as
-a VS Code extension.
+IdeaVim's `vim-engine` — the Vim implementation behind that plugin, with its
+Vimscript parser, its regex engine and its test suite — compiled to JavaScript and
+loaded as a VS Code extension.
 
 That is the whole of what makes it different from the extensions already in the
 marketplace. Those are either a Vim written from scratch in TypeScript, or a real
@@ -54,9 +54,10 @@ that file is Vim's own.
 Status
 ------
 
-**Not released.** Version 0.0.1, not on the marketplace, and there is no packaging
-step yet. It does run in a real VS Code window, and has since the port's first
-keystroke landed.
+**Not released.** Version 0.0.1 and not on the marketplace yet, though it packages
+and publishes: `./gradlew :vscode-extension:packageExtension` builds the `.vsix`, and
+[`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) has the rest. It
+runs in a real VS Code window, and has since the port's first keystroke landed.
 
 What works today: motions, operators and text objects; counts and registers; the
 `:` and `/` prompts with history, so `:s`, ranges and search are all reachable;
@@ -82,13 +83,14 @@ Java 21 is required; the build refuses anything else.
 
 ```bash
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
-./gradlew :vscode-extension:jsProductionExecutableCompileSync
+./gradlew :vscode-extension:assembleExtension
 code --extensionDevelopmentPath="$PWD/vscode-extension"
 ```
 
-`package.json` points `main` straight at the build output, so there is no packaging
-step: build, then reload the extension host window. Type in any editor and Vim's
-mode appears in the status bar.
+`main` points at `vscode-extension/dist/`, which `assembleExtension` fills from the
+build output and which is exactly what the `.vsix` ships — so a development window
+loads the same files a user would install. Build, then reload the extension host
+window. Type in any editor and Vim's mode appears in the status bar.
 
 The extension takes over VS Code's `type` command, which is the only way for an
 extension to see ordinary typing. That also means **no other Vim extension can be

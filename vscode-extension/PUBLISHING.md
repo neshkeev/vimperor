@@ -128,9 +128,9 @@ release discipline: bump `package.json`, note the change in `CHANGELOG.md`, tag,
 ## Releasing from GitHub
 
 `.github/workflows/publish-vimperor.yml` does the same three commands on a `vimperor-v*` tag. It is
-the only live workflow in this fork - everything inherited from JetBrains is disabled by living in
-`.github/workflows-disabled/`, and this one is here because a release should not depend on which
-machine it was run from.
+the only workflow in this fork - everything inherited from IdeaVim was deleted rather than kept
+switched off - and it is here because a release should not depend on which machine it was run
+from.
 
 ```bash
 git tag vimperor-v0.0.1

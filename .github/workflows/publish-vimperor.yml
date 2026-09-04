@@ -1,9 +1,8 @@
 # The only live workflow in this fork.
 #
-# Everything inherited from JetBrains is disabled by living in `.github/workflows-disabled/` rather
-# than here; see the README there. This one is here on purpose: a release is the one thing that
-# should not depend on which machine it was run from, or on what happened to be in that machine's
-# `dist/` at the time.
+# The twenty-eight workflows inherited from IdeaVim were deleted in 146db64f5, so this is the only
+# file in this directory. It is here on purpose: a release is the one thing that should not depend
+# on which machine it was run from, or on what happened to be in that machine's `dist/` at the time.
 #
 # It runs on a `vimperor-v*` tag, and it does exactly what `PUBLISHING.md` says to do by hand -
 # assemble, package, publish - with the whole test suite in front of it.

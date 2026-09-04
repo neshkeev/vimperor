@@ -4,8 +4,8 @@ The long account, for somebody reading the source. `README.md` next to this file
 and it is the page the Marketplace shows; this is the one that says *why*, and it is deliberately
 kept out of the published package.
 
-Vim for VS Code, powered by IdeaVim's engine: JetBrains' `vim-engine` compiled to JavaScript and
-loaded as a VS Code extension.
+Vim for VS Code, powered by IdeaVim's engine: its `vim-engine` compiled to JavaScript and loaded
+as a VS Code extension.
 
 That is the whole of what makes this different from the extensions already in the marketplace. They
 are either a Vim written from scratch in TypeScript, or a real Neovim running as a subprocess. This
@@ -23,7 +23,7 @@ is no reason to make anybody copy it.
 ## Running it
 
 ```bash
-./gradlew :vscode-extension:jsProductionExecutableCompileSync
+./gradlew :vscode-extension:assembleExtension
 code --extensionDevelopmentPath="$PWD/vscode-extension"
 ```
 

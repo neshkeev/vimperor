@@ -26,8 +26,9 @@ scrutiny:
   explanations of every fixture that does not pass
 - KDoc on the extension's tests, which is where the port's reasoning lives
 
-`syncDoc.yml`, which used to push `doc/` to JetBrains' documentation site, is
-disabled with the rest of the inherited workflows.
+`syncDoc.yml`, which used to push `doc/` to the upstream documentation site, was
+deleted with the rest of the inherited workflows in commit `146db64f5`. Nothing
+publishes `doc/` anywhere now, so it is read in the repository or not at all.
 
 ## Core mindset
 

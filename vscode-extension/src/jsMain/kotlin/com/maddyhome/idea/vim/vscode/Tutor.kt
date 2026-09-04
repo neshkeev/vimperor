@@ -44,7 +44,7 @@ private val VimperorTutorHost = TutorHost(
 
   whatItIs = """
     |     Vimperor is Vim for VS Code. It runs the same engine as IdeaVim does -
-    |     JetBrains' vim-engine, compiled to JavaScript - inside the extension
+    |     that plugin's vim-engine, compiled to JavaScript - inside the extension
     |     host, so what you learn here is Vim rather than an imitation of it.
   """.trimMargin(),
 

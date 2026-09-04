@@ -447,7 +447,7 @@ open class VsCodeInjector(
        * `:copy`, `:move` and `<C-R>` ask for the inserted range to be reindented. IdeaVim does it
        * through IntelliJ's code style, because pasting in an IDE is expected to fix the indent;
        * plain Vim reindents none of them, and IdeaVim itself skips this in Rider, CLion Nova and
-       * the JetBrains client. VS Code's reindent is a command and therefore asynchronous, so this
+       * the remote-development thin client. VS Code's reindent is a command and therefore asynchronous, so this
        * host could not do it here even if it wanted to.
        *
        * The base class leaves this a `TODO`, and the ex command executor catches `NotImplementedError`

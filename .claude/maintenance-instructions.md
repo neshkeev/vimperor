@@ -3,10 +3,9 @@
 Routine maintenance on a randomly chosen part of the codebase: keep an eye on it,
 find genuine issues, don't change things for the sake of changing them.
 
-This used to run weekly from `codebaseMaintenance.yml`. That workflow is disabled
-along with the rest of JetBrains' automation (see
-`.github/workflows-disabled/README.md`), so this is now something you do on
-purpose, when asked.
+This used to run weekly from `codebaseMaintenance.yml`. That workflow was deleted
+along with the rest of the inherited automation in commit `146db64f5`, so this is
+now something you do on purpose, when asked.
 
 ## 1. Pick an area
 
