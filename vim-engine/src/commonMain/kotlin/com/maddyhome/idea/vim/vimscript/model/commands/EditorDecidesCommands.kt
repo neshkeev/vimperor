@@ -214,6 +214,7 @@ internal data class VersionCommand(val range: Range, val modifier: CommandModifi
     appendLine("an ex command or the regex engine reaches both hosts at once.")
     appendLine()
     appendLine("Configuration is read from ~/.ideavimrc, and XDG's config directory is honoured.")
+    appendLine("In VS Code a ~/.vimperorrc is preferred over it, and ~/.vimrc is read after it.")
     appendLine("`:help` opens the editor's own documentation rather than Vim's.")
   }
 }

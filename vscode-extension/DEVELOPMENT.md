@@ -14,9 +14,11 @@ its regex engine and its 1,049 test fixtures - running in the extension host wit
 it and the editor.
 
 The name is not IdeaVim's, deliberately. "Idea" means IntelliJ IDEA and means nothing here, and the
-engine being MIT-licensed makes it free to use but not free to imply an endorsement with. What the
-extension keeps is the attribution: it reads your `~/.ideavimrc`, because that is the config this
-engine has always read and the one its users already have.
+engine being MIT-licensed makes it free to use but not free to imply an endorsement with. So the
+extension has its own name and its own config file, `~/.vimperorrc`. What it keeps is the
+attribution, and the ability to read `~/.ideavimrc` unchanged when there is no `~/.vimperorrc` -
+that is the config this engine has always read and the one its users already have, and a new name
+is no reason to make anybody copy it.
 
 ## Running it
 
@@ -118,9 +120,24 @@ every key on a buffer of ordinary text, so `gx` returns before it ever asks for 
 opens a URL. A hole that needs the right *text* under the caret as well as the right key is
 invisible to a sweep that only varies the key.
 
-Your `~/.ideavimrc` is read at startup, so mappings and options come from the file you already have.
-The search order is IdeaVim's: `IDEA_VIM_CUSTOM_VIMRC`, then `~/.ideavimrc` and `~/_ideavimrc`, then
-`$XDG_CONFIG_HOME/ideavim/ideavimrc`. A line that fails does not stop the rest, the way Vim carries
+Your config is read at startup, so mappings and options come from the file you already have. The
+order is `IDEA_VIM_CUSTOM_VIMRC`, then three families, each searched to the end before the next one
+starts: `vimperor`, `ideavim`, and Vim's own `vimrc`. Each family is the dotted name in `$HOME`, the
+underscored one, and the XDG directory - and Vim's adds `~/.vim/vimrc`, which is one of the three
+locations `:h vimrc` lists.
+
+A family at a time rather than a location at a time, because the name is the intent: a file called
+`vimperorrc` was written for this editor, and should not lose to an `.ideavimrc` that happens to sit
+somewhere searched earlier. Only the first file found is read; a `~/.vimperorrc` that wants the rest
+says `source ~/.ideavimrc` on its first line.
+
+Reading `~/.vimrc` is what lets somebody who has never installed IdeaVim get a working editor with
+nothing to copy or rename. Their file will contain a plugin manager, autocommands and `syntax on`,
+none of which exist here - and **none of which say so**, because `executeFile` runs a config with
+`indicateErrors = false`. That is IdeaVim's behaviour and it is right for a file that runs before
+there is a window to complain in, but it means a config that half worked is indistinguishable from
+one that worked. `isVimsOwnConfig` exists for that: when the file found is Vim's own, startup says
+in the output channel that unimplemented lines were skipped. A line that fails does not stop the rest, the way Vim carries
 on after an error in a vimrc.
 
 Files are read through Node's `fs` rather than VS Code's `workspace.fs`, for the same reason the

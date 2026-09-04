@@ -84,11 +84,74 @@ class NodeFileSystem : VimFileSystem {
 }
 
 /**
- * Where a user's configuration lives, in the order Vim and IdeaVim look for it.
+ * Every configuration file this host will read, in the order it looks for them.
  *
- * The same names IdeaVim uses on the JVM: `~/.ideavimrc`, `~/_ideavimrc` for Windows habits, then
- * the XDG location. `IDEA_VIM_CUSTOM_VIMRC` overrides all of it, which is what tests and dotfile
- * managers use.
+ * Three families, most specific first. Within a family: the dotted name in the home directory, the
+ * underscored one for Windows habits, then the XDG location - and for Vim's family, `~/.vim/vimrc`
+ * as well, which is where people who keep everything under `~/.vim` put it.
+ *
+ * Vim's own three are in Vim's own order, from `:h vimrc`: `$HOME/.vimrc`, `$HOME/.vim/vimrc`,
+ * `$XDG_CONFIG_HOME/vim/vimrc`, with `_vimrc` tried beside `.vimrc` on any system.
+ */
+private fun vimRcCandidates(home: String, xdgConfigHome: String): List<String> = listOf(
+  // Written for this editor. Wins over everything, wherever it is.
+  "$home/.vimperorrc",
+  "$home/_vimperorrc",
+  "$xdgConfigHome/vimperor/vimperorrc",
+
+  // Written for IdeaVim, and shared with the IntelliJ plugin unchanged.
+  "$home/.ideavimrc",
+  "$home/_ideavimrc",
+  "$xdgConfigHome/ideavim/ideavimrc",
+
+  // Written for Vim. The point of reading it is the person who has never installed IdeaVim: they
+  // already have a config, and requiring them to copy it to a new name before anything works is a
+  // worse first five minutes than the handful of lines this fork will not understand.
+  "$home/.vimrc",
+  "$home/_vimrc",
+  "$home/.vim/vimrc",
+  "$xdgConfigHome/vim/vimrc",
+)
+
+/**
+ * Whether the config that was found is Vim's own, rather than one written for this fork.
+ *
+ * Worth saying out loud at startup, and only for this family. A `.vimrc` is the one file here that
+ * was written for a different program: the lines in it this fork does not implement are expected
+ * rather than a mistake, and - this is the part that would otherwise be mystifying - they are
+ * skipped **in silence**. `executeFile` runs a config with `indicateErrors = false`, which is
+ * IdeaVim's behaviour and the right one for a file that runs before there is a window to complain
+ * in. The cost is that a config which half worked looks exactly like one that worked, so the one
+ * place that can say "some of this was for a different editor" is here, once, at startup.
+ */
+fun isVimsOwnConfig(path: String): Boolean =
+  path.endsWith("/.vimrc") || path.endsWith("/_vimrc") || path.endsWith("vim/vimrc")
+
+/**
+ * Where a user's configuration lives, in the order this host looks for it.
+ *
+ * `~/.vimperorrc`, then `~/.ideavimrc`, then `~/.vimrc` - and a whole family is searched before the
+ * next one starts, so an XDG `vimperor/vimperorrc` also beats a `~/.ideavimrc`, even though the home
+ * directory is searched first within any one family. **The name is the intent.** Somebody who wrote
+ * a file called `vimperorrc` meant it for this editor, and it should not lose to a config that
+ * happens to sit in a directory that gets looked at earlier.
+ *
+ * The last family is what makes this usable by somebody who has never installed IdeaVim. Their
+ * `~/.vimrc` will contain lines this fork does not implement - a plugin manager above all - and
+ * those report errors and are stepped over, the way Vim itself carries on past a bad line. A config
+ * that half works is worth more than no config at all, and it is the reason `:syntax`,
+ * `:colorscheme` and `:filetype` are accepted rather than rejected.
+ *
+ * Nothing is merged: the first file found is the only one read. That is what `.ideavimrc` already
+ * promised, and it is what makes `~/.vimperorrc` useful as "everything I already had, plus the
+ * lines that only make sense in VS Code" - `source ~/.vimrc` on its first line does the rest, and
+ * does it explicitly, where a merge would have to guess at an order.
+ *
+ * The IntelliJ plugin reads `.ideavimrc` and only `.ideavimrc`. This function is host-local for
+ * that reason: sharing a config between the two editors is what the second family is *for*, and
+ * teaching the plugin to read `.vimperorrc` would defeat it.
+ *
+ * `IDEA_VIM_CUSTOM_VIMRC` still overrides all of it, which is what tests and dotfile managers use.
  */
 fun findVimRc(files: NodeFileSystem, environment: (String) -> String?): String? {
   environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }?.let { custom ->
@@ -97,18 +160,12 @@ fun findVimRc(files: NodeFileSystem, environment: (String) -> String?): String? 
 
   val home = environment("HOME") ?: environment("USERPROFILE") ?: return null
 
-  for (name in listOf(".ideavimrc", "_ideavimrc")) {
-    val candidate = "$home/$name"
-    if (files.exists(candidate)) return candidate
-  }
-
   val xdgConfigHome = environment("XDG_CONFIG_HOME")
     ?.takeIf { it.isNotEmpty() }
     ?.let { if (it.startsWith("~/")) home + it.substring(1) else it }
     ?: "$home/.config"
 
-  val xdg = "$xdgConfigHome/ideavim/ideavimrc"
-  return if (files.exists(xdg)) xdg else null
+  return vimRcCandidates(home, xdgConfigHome).firstOrNull { files.exists(it) }
 }
 
 /** `fs` is a Node module rather than a global, so it has to be required by name. */

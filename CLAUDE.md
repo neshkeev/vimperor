@@ -63,7 +63,12 @@ See CONTRIBUTING.md for the plugin's architecture and
 
 - Property tests can be flaky - check whether a failure relates to your change
 - Use `<Action>` in mappings, not `:action`
-- Config file: `~/.ideavimrc` (XDG supported); Vimperor reads the same file
+- Config file: Vimperor's own is `~/.vimperorrc`; it falls back to `~/.ideavimrc`, then Vim's
+  `~/.vimrc`. Three families in that order, XDG and `_name` included, a whole family before the
+  next one starts. Host-local, in `NodeFileSystem.findVimRc`; the IntelliJ plugin reads
+  `~/.ideavimrc` only
+- A config runs with `indicateErrors = false`, so a line it cannot execute fails *silently*.
+  That is IdeaVim's behaviour and why startup names the file it loaded
 - Goal: match Vim's functionality and architecture
 - `commonMain` cannot use JVM APIs (`String.format`, `Character`, `java.*`,
   reflection). They compile for the JVM target and break the JS one.

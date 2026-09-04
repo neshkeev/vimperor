@@ -19,8 +19,37 @@ marketplace. Those are either a Vim written from scratch in TypeScript, or a rea
 Neovim running as a subprocess. This is neither: it is a mature Vim implementation
 running in the extension host with nothing between it and the editor.
 
-It reads your `~/.ideavimrc`. That is the config this engine has always read, and
-the one its users already have.
+Configuring it
+--------------
+
+Vimperor has **its own config file, `~/.vimperorrc`** — and reads the two you may
+already have if it is not there:
+
+| file | for |
+|---|---|
+| **`~/.vimperorrc`** | **Vimperor's own. Read first, wherever it is** |
+| `~/.ideavimrc` | shared with IdeaVim in IntelliJ, unchanged |
+| `~/.vimrc` | Vim's own — nothing to copy, nothing to rename |
+
+Each is also looked for as `_name` and in its XDG directory, and Vim's family adds
+`~/.vim/vimrc`; a whole family is searched before the next one starts, so a
+`vimperorrc` anywhere beats an `ideavimrc` anywhere. **The name is the intent.**
+
+Only the first file found is read — nothing is merged. That is what makes
+`~/.vimperorrc` worth having: it is where anything VS Code-specific goes without
+leaking into IntelliJ, and it can pull in the rest explicitly.
+
+```vim
+" ~/.vimperorrc
+source ~/.ideavimrc
+nnoremap <leader>f <Action>(workbench.action.quickOpen)
+```
+
+A borrowed `~/.vimrc` is read as-is, but expect part of it not to apply: there are
+no Vim plugins here, so a plugin manager does nothing, and neither do autocommands,
+`syntax` or `colorscheme`. Those lines are stepped over and the rest takes effect.
+Startup names the file it loaded in the Vimperor output channel, and says so when
+that file is Vim's own.
 
 Status
 ------
@@ -101,7 +130,7 @@ injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all
 of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
-Beyond its own 598 tests, the extension replays IdeaVim's test fixtures against the
+Beyond its own 624 tests, the extension replays IdeaVim's test fixtures against the
 VS Code host: **1,034 of 1,049 pass**. The fifteen that do not are listed, with an
 explanation of each, in
 [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt).

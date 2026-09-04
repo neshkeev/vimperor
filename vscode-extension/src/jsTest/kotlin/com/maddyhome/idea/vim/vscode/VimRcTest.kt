@@ -14,11 +14,13 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.MappingMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
- * The user's `.ideavimrc`, which is how anyone actually configures Vim.
+ * The user's config - `~/.vimperorrc`, or `~/.ideavimrc` - which is how anyone actually
+ * configures Vim.
  *
  * Read through Node's `fs` rather than VS Code's `workspace.fs`, for the same reason the command
  * line does not use `showInputBox`: `readFileSync` returns the contents and `workspace.fs` returns
@@ -85,6 +87,163 @@ class VimRcTest {
     session.type("Q")
 
     assertEquals("two", session.content, "Q should have been remapped to dw")
+  }
+
+  // ---- which of the two families wins ------------------------------------------------------
+
+  @Test
+  fun `test vimperorrc is preferred over ideavimrc`() {
+    val home = writing(mapOf(".vimperorrc" to "set ignorecase\n", ".ideavimrc" to "set nowrapscan\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/.vimperorrc", session.load(mapOf("HOME" to home)))
+    assertTrue(injector.globalOptions().wrapscan, "the ideavimrc must not have run as well")
+  }
+
+  @Test
+  fun `test ideavimrc is read when there is no vimperorrc`() {
+    val home = writing(mapOf(".ideavimrc" to "set ignorecase\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/.ideavimrc", session.load(mapOf("HOME" to home)))
+  }
+
+  /**
+   * The name is the intent, so a whole family is searched before the next one starts.
+   *
+   * Within one family the home directory beats XDG. Across the two, a `vimperorrc` anywhere beats
+   * an `.ideavimrc` in the home directory - because somebody who wrote a file with that name meant
+   * it for this editor, and a search ordered by location rather than by name would ignore that.
+   */
+  @Test
+  fun `test an XDG vimperorrc beats an ideavimrc in the home directory`() {
+    val home = writing(mapOf(".ideavimrc" to "set nowrapscan\n"))
+    val config = writing(mapOf("vimperor/vimperorrc" to "set ignorecase\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals(
+      "$config/vimperor/vimperorrc",
+      session.load(mapOf("HOME" to home, "XDG_CONFIG_HOME" to config)),
+    )
+  }
+
+  @Test
+  fun `test _vimperorrc is found when the dotted name is not there`() {
+    val home = writing(mapOf("_vimperorrc" to "set ignorecase\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/_vimperorrc", session.load(mapOf("HOME" to home)))
+  }
+
+  /**
+   * How a config is shared between the two editors: nothing is merged, so the chaining is written
+   * down rather than guessed at.
+   */
+  @Test
+  fun `test a vimperorrc can source the ideavimrc beside it`() {
+    val home = writing(mapOf(".ideavimrc" to "nnoremap Q dw\n"))
+    writeFile("$home/.vimperorrc", "source $home/.ideavimrc\nset ignorecase\n")
+    val session = Session("one two", emptyMap())
+
+    session.load(mapOf("HOME" to home))
+
+    assertEquals(emptyList(), session.sink.errors, "the config should have run without complaint")
+    assertTrue(injector.globalOptions().ignorecase, "the vimperorrc's own line should have run")
+    session.type("Q")
+    assertEquals("two", session.content, "the sourced ideavimrc's mapping should be in place")
+  }
+
+  // ---- Vim's own config, for somebody who has never used IdeaVim -----------------------------
+
+  @Test
+  fun `test a plain vimrc is read when there is nothing else`() {
+    val home = writing(mapOf(".vimrc" to "set ignorecase\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/.vimrc", session.load(mapOf("HOME" to home)))
+    assertTrue(injector.globalOptions().ignorecase, "the vimrc's options should have taken effect")
+  }
+
+  @Test
+  fun `test an ideavimrc beats a vimrc`() {
+    val home = writing(mapOf(".ideavimrc" to "set ignorecase\n", ".vimrc" to "set nowrapscan\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/.ideavimrc", session.load(mapOf("HOME" to home)))
+    assertTrue(injector.globalOptions().wrapscan, "the vimrc must not have run as well")
+  }
+
+  /** Where people who keep everything under `~/.vim` put it. One of Vim's own three. */
+  @Test
+  fun `test the vim directory location is found`() {
+    val home = writing(mapOf(".vim/vimrc" to "set ignorecase\n"))
+    val session = Session("text", emptyMap())
+
+    assertEquals("$home/.vim/vimrc", session.load(mapOf("HOME" to home)))
+  }
+
+  /**
+   * The whole point of reading `~/.vimrc`: a config written for Vim, by somebody who has never
+   * heard of this fork, has to leave them better off than no config at all.
+   *
+   * So this is a real one rather than a tidy one - a plugin manager, `syntax on`, a colorscheme,
+   * an autocommand, and options that do not exist here. None of those can work. What must work is
+   * everything around them: the lines this fork *does* understand have to take effect, which means
+   * a line it does not understand cannot stop the file.
+   */
+  @Test
+  fun `test a borrowed vimrc still applies the parts this fork understands`() {
+    val home = writing(
+      mapOf(
+        ".vimrc" to """
+          set nocompatible
+          filetype plugin indent on
+          syntax on
+
+          call plug#begin('~/.vim/plugged')
+          Plug 'tpope/vim-surround'
+          call plug#end()
+
+          colorscheme desert
+          set background=dark
+
+          set number relativenumber
+          set ignorecase smartcase
+          set scrolloff=5
+
+          autocmd BufWritePre * :%s/\s\+${'$'}//e
+
+          let mapleader = ","
+          nnoremap Q dw
+        """.trimIndent() + "\n",
+      ),
+    )
+    val session = Session("one two", emptyMap())
+
+    assertEquals("$home/.vimrc", session.load(mapOf("HOME" to home)))
+    assertTrue(injector.globalOptions().ignorecase, "'ignorecase' should be on")
+    assertTrue(injector.globalOptions().smartcase, "'smartcase' should be on")
+
+    session.type("Q")
+    assertEquals("two", session.content, "the mapping below every unsupported line should work")
+
+    // Deliberately not asserted: that the sink stayed empty. It does, but vacuously - a config is
+    // run with `indicateErrors = false`, so *nothing* in it reports, and an assertion on that
+    // would pass whatever the file contained. What is worth asserting is above: the lines this
+    // fork understands took effect even though unsupported ones sat between them.
+    assertTrue(isVimsOwnConfig("$home/.vimrc"), "startup has to be able to say this was Vim's own")
+  }
+
+  @Test
+  fun `test only Vim's own config is recognised as borrowed`() {
+    assertTrue(isVimsOwnConfig("/home/x/.vimrc"))
+    assertTrue(isVimsOwnConfig("/home/x/_vimrc"))
+    assertTrue(isVimsOwnConfig("/home/x/.vim/vimrc"), "the ~/.vim location")
+    assertTrue(isVimsOwnConfig("/home/x/.config/vim/vimrc"), "the XDG location")
+
+    assertFalse(isVimsOwnConfig("/home/x/.vimperorrc"))
+    assertFalse(isVimsOwnConfig("/home/x/.ideavimrc"))
+    assertFalse(isVimsOwnConfig("/home/x/.config/ideavim/ideavimrc"))
   }
 
   @Test

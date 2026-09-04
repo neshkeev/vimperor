@@ -87,7 +87,8 @@ class VimHost(
   }
 
   /**
-   * Runs the user's `.ideavimrc`, if there is one.
+   * Runs the user's config, if there is one: `~/.vimperorrc` for choice, `~/.ideavimrc` otherwise.
+   * [findVimRc] has the full order and the reason for it.
    *
    * After [start] and before any key, because the file is where mappings and options come from and
    * a key handled before it would use the defaults. Bracketed by `startInitVimRc`/`endInitVimRc`

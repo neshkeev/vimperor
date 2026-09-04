@@ -11,7 +11,9 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
 - Search with `'incsearch'` and `'hlsearch'`, `:substitute` and its flags, `:global`, `:normal`,
   `:sort`, `:uniq`.
 - Around 380 ex commands and 170 Vimscript builtin functions.
-- More than a hundred options, read from `~/.ideavimrc` and the XDG location.
+- More than a hundred options, read from the first config found of `~/.vimperorrc`, `~/.ideavimrc`
+  and `~/.vimrc` - so an existing Vim or IdeaVim setup needs nothing copied or renamed. XDG
+  locations included.
 - `<Action>(id)` and `:action` to run any VS Code command; `:actionlist` to find one, with the
   keyboard shortcut it already has.
 - `:sign`, `:highlight`, `:match`, `:redir`, `:messages` and the quickfix and location lists.

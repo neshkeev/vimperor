@@ -12,9 +12,37 @@ they behave in IdeaVim rather than the way somebody reimplemented them.
 
 Install it, restart the window, and start typing. The mode appears in the status bar.
 
-Vimperor reads **`~/.ideavimrc`** — the same file IdeaVim reads, and the XDG location
-(`$XDG_CONFIG_HOME/ideavim/ideavimrc`) if you keep it there. If you have a `~/.vimrc` you want to
-use, `source ~/.vimrc` from it.
+### The config file
+
+Vimperor's own config file is **`~/.vimperorrc`**. If you do not have one, it reads whichever of
+these you do — the first found wins, and nothing is merged:
+
+| file | for |
+|---|---|
+| **`~/.vimperorrc`** | **Vimperor. Read first, from wherever it is** |
+| `~/.ideavimrc` | shared with IdeaVim in IntelliJ, unchanged |
+| `~/.vimrc` | Vim's own — nothing to copy, nothing to rename |
+
+So **an existing setup works untouched**, and you only need a `~/.vimperorrc` when you want
+something to apply here and not in IntelliJ. When you do, pull in the rest on its first line:
+
+```vim
+" ~/.vimperorrc
+source ~/.ideavimrc
+nnoremap <leader>f <Action>(workbench.action.quickOpen)
+```
+
+Each name is also looked for as `_name` and in its XDG directory
+(`$XDG_CONFIG_HOME/vimperor/vimperorrc` and so on), and Vim's adds `~/.vim/vimrc`. A whole family
+is searched before the next one starts, so a `vimperorrc` anywhere beats an `ideavimrc` anywhere —
+the name says which editor the file was written for.
+
+If all you have is a `~/.vimrc`, it is read as it is — **but expect part of it not to apply.**
+There are no Vim plugins here, so a plugin manager does nothing, and neither do autocommands,
+`syntax` or `colorscheme`. Those lines are stepped over without complaint and the rest of the file
+takes effect. The Vimperor output channel names the file it loaded, and says when it was Vim's own.
+
+Whichever file you use, it is ordinary Vimscript:
 
 ```vim
 set number relativenumber
@@ -79,9 +107,11 @@ Issues: <https://github.com/neshkeev/vimperor/issues>
 MIT. The engine is IdeaVim's, © the IdeaVim authors, MIT-licensed; see `ThirdPartyLicenses.md`.
 
 The name is deliberately not IdeaVim's — "Idea" means IntelliJ IDEA and means nothing here, and a
-licence that makes the code free to use does not make it free to imply an endorsement with. What
-the extension keeps is the attribution, and the config file: `~/.ideavimrc` is the file this engine
-has always read, and the one its users already have.
+licence that makes the code free to use does not make it free to imply an endorsement with. So the
+extension has its own name and its own config file, `~/.vimperorrc`. What it keeps is the
+attribution, and the ability to read `~/.ideavimrc` unchanged: that is the file this engine has
+always read and the one its users already have, and taking a new name is no reason to make them
+copy it.
 
 `DEVELOPMENT.md` in the repository is the long version — how it is built, how it is tested, and
 what only a real editor window ever found.

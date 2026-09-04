@@ -14,6 +14,7 @@ import com.maddyhome.idea.vim.vscode.DecorationHighlighter
 import com.maddyhome.idea.vim.vscode.Disposable
 import com.maddyhome.idea.vim.vscode.ExtensionContext
 import com.maddyhome.idea.vim.vscode.IdeaActionAliases
+import com.maddyhome.idea.vim.vscode.isVimsOwnConfig
 import com.maddyhome.idea.vim.vscode.MessageSink
 import com.maddyhome.idea.vim.vscode.NodeFileSystem
 import com.maddyhome.idea.vim.vscode.contributedKeybindings
@@ -205,7 +206,18 @@ fun activate(context: ExtensionContext) {
   // session, silently, because the message saying so was inside the same `let`. It runs against the
   // fallback window when there is nothing on screen.
   val loaded = vim.loadVimRc(vim.startupEditor(window.activeTextEditor))
-  output.appendLine(if (loaded != null) "Loaded " + loaded else "No .ideavimrc found.")
+  if (loaded == null) {
+    output.appendLine("No .vimperorrc, .ideavimrc or .vimrc found.")
+  } else {
+    output.appendLine("Loaded " + loaded)
+    // Only for Vim's own file, because it is the only one written for a different program. A
+    // config runs with errors suppressed, so without this line a `.vimrc` whose plugin manager and
+    // autocommands did nothing looks exactly like one that worked.
+    if (isVimsOwnConfig(loaded)) {
+      output.appendLine("That is a Vim config. Lines this extension does not implement - plugin")
+      output.appendLine("managers, autocommands, syntax - are skipped without complaint.")
+    }
+  }
 
   output.appendLine("Vimperor is running. ${window.visibleTextEditors.size} editor(s) open.")
 
