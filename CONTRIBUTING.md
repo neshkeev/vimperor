@@ -1,8 +1,8 @@
-[![TeamCity Build][teamcity-build-status-svg]][teamcity-build-status]
+This repository is a hard fork of IdeaVim, an open source project created by 130+ contributors, and
+it builds two things from one engine: the IntelliJ plugin it inherited, and Vimperor, a VS Code
+extension. Would you like to make it better? That's wonderful!
 
-IdeaVim is an open source project created by 130+ contributors. Would you like to make it even better? That’s wonderful!
-
-This page is created to help you start contributing. And who knows, maybe in a few days this project will be brighter than ever!
+This page is here to help you start contributing.
 
 ## Before you begin
 
@@ -15,8 +15,8 @@ you’re working in areas where Java is explicitly used.
     * [IntelliJ architectural overview](https://plugins.jetbrains.com/docs/intellij/fundamentals.html)
     * [IntelliJ Platform community space](https://platform.jetbrains.com/)
 
-- Having any difficulties?
-Ask any questions in [GitHub discussions](https://github.com/JetBrains/ideavim/discussions) or [IntelliJ Platform community space](https://platform.jetbrains.com/).
+- Having any difficulties? Ask in [this fork's discussions](https://github.com/neshkeev/vimperor/discussions).
+Please do not take questions about this fork to the upstream project - it is not theirs to answer.
 
 OK, ready to do some coding?
 
@@ -68,15 +68,15 @@ If you are looking for:
 
 - Vim commands (`w`, `<C-O>`, `p`, etc.):
     - Any particular command:
-      - [Commands common for Fleet and IdeaVim](vim-engine/src/main/resources/ksp-generated/engine_commands.json)
-      - [IdeaVim only commands](src/main/resources/ksp-generated/intellij_commands.json)
+      - [In the engine, and so in both hosts](vim-engine/src/jvmMain/resources/ksp-generated/engine_commands.json)
+      - [In the IntelliJ plugin only](src/main/resources/ksp-generated/frontend_commands.json)
     - How commands are executed in common: `EditorActionHandlerBase`.
     - Key mapping: `KeyHandler.handleKey()`.
 
 - Ex commands (`:set`, `:s`, `:nohlsearch`):
     - Any particular command:
-        - [Commands common for Fleet and IdeaVim](vim-engine/src/main/resources/ksp-generated/engine_ex_commands.json)
-        - [IdeaVim only commands](src/main/resources/ksp-generated/intellij_ex_commands.json)
+        - [In the engine, and so in both hosts](vim-engine/src/jvmMain/resources/ksp-generated/engine_ex_commands.json)
+        - [In the IntelliJ plugin only](src/main/resources/ksp-generated/frontend_ex_commands.json)
     - Vim script grammar: `Vimscript.g4`.
     - Vim script parsing: package `com.maddyhome.idea.vim.vimscript.parser`.
     - Vim script executor: `Executor`.
@@ -146,44 +146,62 @@ We also support proper command mappings (functions are mapped to `<Plug>...`), t
 - Magic is supported as well. See `Magic`.
 
 
-## Fleet
+## Two hosts, one engine
 
-The IdeaVim plugin is divided into two main modules: IdeaVim and vim-engine.
-IdeaVim serves as a plugin for JetBrains IDEs, while vim-engine is an IntelliJ Platform-independent Vim engine.
-This engine is utilized in both the Vim plugin for Fleet and IdeaVim.
+The engine is deliberately separate from the editor it runs in. `vim-engine` knows nothing about
+IntelliJ or about VS Code; each host supplies its own implementations of the seams the engine
+declares. Upstream split it this way so one engine could serve more than one editor, and that is
+exactly what makes this fork possible.
 
-If you develop a plugin that depends on IdeaVim: We have an instrument to check that our changes don't affect
-the plugins in the marketplace.
-If you still encounter any issues with the newer versions of IdeaVim, please [contact maintainers](https://github.com/JetBrains/ideavim#contact-maintainers).
+| Path                | What it is                        | Compiles to       |
+|---------------------|-----------------------------------|-------------------|
+| `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
+| `src/main/java/`    | The IntelliJ plugin               | JVM               |
+| `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
+
+`vim-engine` is Kotlin Multiplatform, so the engine lives in `src/commonMain/kotlin` rather than
+`src/main/kotlin`. **A change there changes both hosts**, and the IntelliJ plugin's test suite is
+the regression net that catches it - which is why the plugin is kept rather than deleted.
 
 
 -----
 
-### I read the whole page but something is still unclear.
+## Getting help, and reporting things
 
-Oh no! No cookies for the maintainers today! Please [tell us](https://github.com/JetBrains/ideavim#contact-maintainers) about it so we can help.
+Everything below is about **this fork**. It has its own repository, and the upstream project neither
+maintains it nor supports it, so please do not send questions about it there.
 
+### Something on this page is unclear, wrong, or missing.
 
-### I’ve found a bug in this documentation.
+That is a bug in the documentation and worth reporting like any other. Open an issue, or a pull
+request if you already know what it should say.
 
-No beer in the bar for us unless it's fixed. [Let us know](https://github.com/JetBrains/ideavim#contact-maintainers) situation so we might be able to fix it.
+### I have found a bug.
 
+[Open an issue](https://github.com/neshkeev/vimperor/issues), and say which host it happened in -
+the IntelliJ plugin or the VS Code extension - because the fix is in a different place depending on
+the answer. If it is the extension, turn on `vimperor.trace` in VS Code's settings and include what
+the Vimperor output channel printed: most of what is left to get wrong lives in the gap between the
+engine and the editor, and a trace shows that gap directly.
 
-### The lack of documentation or a javadoc/ktdoc makes it difficult to start contributing.
+If the same bug reproduces in IdeaVim as it ships, it is an upstream bug rather than this fork's,
+and reporting it there as well will get it fixed for more people.
 
-This is just terrible. [You know what to do](https://github.com/JetBrains/ideavim#contact-maintainers).
+### I want to know why some code is the way it is.
 
-### Resources:
+Three places, in order of how often they have the answer: the KDoc at the code, which in this
+repository carries the reasoning rather than restating the signature; the commit that introduced it,
+whose body says what was wrong and what was measured; and `git log upstream/master` for anything
+older than the fork.
 
-* [Continuous integration builds](https://ideavim.teamcity.com/)
-* [Bug tracker](https://youtrack.jetbrains.com/issues/VIM)
-* [Architecture Decision Records](https://youtrack.jetbrains.com/issues/VIM?q=Type:%20%7BArchitecture%20Decision%20Record%7D%20)
-* [IntelliJ Platform community space](https://platform.jetbrains.com/)
-* [Chat on gitter](https://gitter.im/JetBrains/ideavim)
-* [IdeaVim Channel](https://jb.gg/bi6zp7) on [JetBrains Server](https://discord.gg/jetbrains)
-* [Plugin homepage](https://plugins.jetbrains.com/plugin/164-ideavim)
-* [Changelog](CHANGES.md)
-* [Contributors listing](AUTHORS.md)
+### Resources
 
-[teamcity-build-status]: https://ideavim.teamcity.com/viewType.html?buildTypeId=Ideavim_IdeaVimTests_Latest_EAP&guest=1
-[teamcity-build-status-svg]: https://ideavim.teamcity.com/app/rest/builds/buildType:(id:Ideavim_IdeaVimTests_Latest_EAP)/statusIcon.svg?guest=1
+* [`vscode-extension/DEVELOPMENT.md`](vscode-extension/DEVELOPMENT.md) - how the VS Code port is
+  built and tested, and what only a real editor window ever found
+* [`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) - packaging and releasing the
+  extension
+* [`CLAUDE.md`](CLAUDE.md) - the short version of everything on this page
+* [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt) -
+  every replayed fixture the VS Code host does not pass, with the reason for each
+* [Changelog](CHANGES.md) and [contributors listing](AUTHORS.md), both inherited and both still
+  the record of the work this fork is built on
