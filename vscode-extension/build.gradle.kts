@@ -170,7 +170,7 @@ val checkVsCodeApiDeclarations by tasks.registering {
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
   dependsOn(rootProject.tasks.named("kotlinNpmInstall"))
-  val declarations = layout.projectDirectory.file("src/jsMain/kotlin/com/maddyhome/idea/vim/vscode/VsCodeApi.kt")
+  val declarations = layout.projectDirectory.file("src/jsMain/kotlin/com/github/neshkeev/vimperor/vscode/VsCodeApi.kt")
   val typings = rootProject.layout.buildDirectory.file("js/node_modules/@types/vscode/index.d.ts")
   inputs.file(declarations)
   outputs.upToDateWhen { false }
@@ -285,7 +285,7 @@ val checkVsCodeCommandIds by tasks.registering {
         stray.joinToString("\n") { "  $it" }
     }
 
-    val registry = File(sources.asFile, "com/maddyhome/idea/vim/vscode/$registryName")
+    val registry = File(sources.asFile, "com/github/neshkeev/vimperor/vscode/$registryName")
     check(registry.isFile) { "No $registryName - the command registry has moved or gone." }
     val text = registry.readText()
     val commandsObject = text.substringAfter("internal object VsCodeCommands {").substringBefore("\n}")

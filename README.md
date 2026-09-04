@@ -109,8 +109,11 @@ Layout
 with `jvmMain` and `jsMain` for what each platform needs. A change to `commonMain`
 changes both hosts.
 
-The IntelliJ plugin is kept rather than deleted. It is the second host that keeps
-the engine honest, and its test suite is the regression net for every engine change.
+The IntelliJ plugin is kept until the port is finished, and then it goes. It is not
+kept for its features - nobody runs IdeaVim out of this repository - but for its
+tests: 11,727 of them, plus the 1,049 fixtures the VS Code host mines out of
+`src/test` and replays. That corpus is the largest outside check on the port, and
+it has to outlive the plugin.
 
 Testing
 -------

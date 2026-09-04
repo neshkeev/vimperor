@@ -4,8 +4,8 @@ Guidance for Claude Code when working in this repository.
 
 ## What this repository is
 
-A **hard fork of IdeaVim** being turned into **Vimperor**, a VS Code extension,
-without giving up the IntelliJ plugin. Three parts:
+A **hard fork of IdeaVim** being turned into **Vimperor**, a VS Code extension.
+Three parts:
 
 | Path                | What it is                        | Compiles to       |
 |---------------------|-----------------------------------|-------------------|
@@ -18,6 +18,44 @@ without giving up the IntelliJ plugin. Three parts:
 
 There is no upstream to contribute to. `vim-engine` may be changed freely, and
 should be when the bug is the engine's. The `upstream` remote is read-only.
+
+## Where this is going
+
+**Port IdeaVim to VS Code completely, then delete the IntelliJ plugin.** The
+plugin is kept until then and only until then, so weigh every change against the
+day it goes: anything written into `src/main/java/` is work that will be thrown
+away, and anything that only the plugin can do is a gap in the port.
+
+The plugin is not kept for its features - nobody runs IdeaVim out of this
+repository. It is kept for its tests. 11,727 of them, plus the 1,049 fixtures the
+VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is the
+largest outside check on the port and it has to survive the deletion, so
+`src/test` is not an ordinary casualty of removing `src/main`.
+
+What is still missing, measured rather than guessed: all 26 bundled extensions
+(`surround`, `commentary`, `argtextobj`, `matchit`, `targets` and the rest), which
+are built on `getchar()` and need rewriting around a control flow JavaScript can
+have; 24 IntelliJ-only options; 13 of the replayed fixtures; and five `TODO`
+seams in `VsCodeInjector`. Ex commands are at parity - 401 in the engine, two
+IntelliJ-only.
+
+## Packages
+
+**New code goes in `com.github.neshkeev.vimperor`.** So does anything this fork
+authored, which is what the `Copyright 2026 Nikita Eshkeev` header marks;
+inherited files keep `com.maddyhome.idea.vim` along with their own header.
+
+The VS Code extension and the fourteen engine packages that are wholly this
+fork's - `highlight`, `sign`, `redirect`, `path`, `diff`, `directory`, `match`,
+`message`, `profile`, `script`, `tags`, `tutor`, and the buffer and path function
+handlers - have moved. Sub-paths were preserved: only the prefix changed.
+
+**Sixty-four files have not moved, on purpose.** They sit in packages that are
+mostly inherited - 20 ex commands among 116, one file in `api` among 110, the
+`host` test package, four function-handler packages - and moving them would split
+those packages in two for as long as the plugin lives. The engine is easier to
+rename in one pass once it belongs to this fork outright, which is after the
+plugin goes. Until then, leave them.
 
 ## Quick Reference
 
@@ -72,8 +110,9 @@ See CONTRIBUTING.md for the plugin's architecture and
 - Goal: match Vim's functionality and architecture
 - `commonMain` cannot use JVM APIs (`String.format`, `Character`, `java.*`,
   reflection). They compile for the JVM target and break the JS one.
-- Moving or adding an `@ExCommand` class needs `:vim-engine:kspKotlinJvm` re-run
-  and the generated JSON committed, or the command is silently unregistered.
+- Moving or adding an `@ExCommand` or `@VimscriptFunction` class needs
+  `:vim-engine:kspKotlinJvm` re-run and the generated JSON committed, or it is
+  silently unregistered - the registries name every class by its full package.
 
 ## Issue tracking
 

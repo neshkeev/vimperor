@@ -161,7 +161,11 @@ exactly what makes this fork possible.
 
 `vim-engine` is Kotlin Multiplatform, so the engine lives in `src/commonMain/kotlin` rather than
 `src/main/kotlin`. **A change there changes both hosts**, and the IntelliJ plugin's test suite is
-the regression net that catches it - which is why the plugin is kept rather than deleted.
+the regression net that catches it - which is why the plugin is kept for now.
+
+It will not be kept forever: the goal is to finish the port and then delete it. So a change to
+`src/main/java/` is work with a shelf life, and anything only the plugin can do is a gap in the
+port rather than a feature of the repository.
 
 
 -----

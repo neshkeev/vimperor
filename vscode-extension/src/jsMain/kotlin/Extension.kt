@@ -10,31 +10,31 @@
 
 // No `package` declaration, deliberately - see the note below.
 
-import com.maddyhome.idea.vim.vscode.DecorationHighlighter
-import com.maddyhome.idea.vim.vscode.Disposable
-import com.maddyhome.idea.vim.vscode.ExtensionContext
-import com.maddyhome.idea.vim.vscode.IdeaActionAliases
-import com.maddyhome.idea.vim.vscode.isVimsOwnConfig
-import com.maddyhome.idea.vim.vscode.MessageSink
-import com.maddyhome.idea.vim.vscode.NodeFileSystem
-import com.maddyhome.idea.vim.vscode.contributedKeybindings
-import com.maddyhome.idea.vim.vscode.hostPlatform
-import com.maddyhome.idea.vim.vscode.readDefaultKeybindings
-import com.maddyhome.idea.vim.vscode.userKeybindings
-import com.maddyhome.idea.vim.vscode.userKeybindingsPath
-import com.maddyhome.idea.vim.vscode.openTutor
-import com.maddyhome.idea.vim.vscode.OutputChannel
-import com.maddyhome.idea.vim.vscode.OutputChannelPanelService
-import com.maddyhome.idea.vim.vscode.StatusBarAlignment
-import com.maddyhome.idea.vim.vscode.StatusBarItem
-import com.maddyhome.idea.vim.vscode.StatusBarPrompt
-import com.maddyhome.idea.vim.vscode.TextEditor
-import com.maddyhome.idea.vim.vscode.VimHost
-import com.maddyhome.idea.vim.vscode.VsCodeClipboard
-import com.maddyhome.idea.vim.vscode.VsCodeCommands
-import com.maddyhome.idea.vim.vscode.commands
-import com.maddyhome.idea.vim.vscode.window
-import com.maddyhome.idea.vim.vscode.workspace
+import com.github.neshkeev.vimperor.vscode.DecorationHighlighter
+import com.github.neshkeev.vimperor.vscode.Disposable
+import com.github.neshkeev.vimperor.vscode.ExtensionContext
+import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
+import com.github.neshkeev.vimperor.vscode.isVimsOwnConfig
+import com.github.neshkeev.vimperor.vscode.MessageSink
+import com.github.neshkeev.vimperor.vscode.NodeFileSystem
+import com.github.neshkeev.vimperor.vscode.contributedKeybindings
+import com.github.neshkeev.vimperor.vscode.hostPlatform
+import com.github.neshkeev.vimperor.vscode.readDefaultKeybindings
+import com.github.neshkeev.vimperor.vscode.userKeybindings
+import com.github.neshkeev.vimperor.vscode.userKeybindingsPath
+import com.github.neshkeev.vimperor.vscode.openTutor
+import com.github.neshkeev.vimperor.vscode.OutputChannel
+import com.github.neshkeev.vimperor.vscode.OutputChannelPanelService
+import com.github.neshkeev.vimperor.vscode.StatusBarAlignment
+import com.github.neshkeev.vimperor.vscode.StatusBarItem
+import com.github.neshkeev.vimperor.vscode.StatusBarPrompt
+import com.github.neshkeev.vimperor.vscode.TextEditor
+import com.github.neshkeev.vimperor.vscode.VimHost
+import com.github.neshkeev.vimperor.vscode.VsCodeClipboard
+import com.github.neshkeev.vimperor.vscode.VsCodeCommands
+import com.github.neshkeev.vimperor.vscode.commands
+import com.github.neshkeev.vimperor.vscode.window
+import com.github.neshkeev.vimperor.vscode.workspace
 
 /**
  * The extension's entry points, and the only things here that JavaScript needs to see.
@@ -46,7 +46,7 @@ import com.maddyhome.idea.vim.vscode.workspace
  *
  * **This file is in the root package because JavaScript has no packages.** Kotlin/JS mirrors the
  * package path into the exports object, so declaring a package here would put these functions at
- * `module.exports.com.maddyhome.idea.vim.vscode.activate`, where VS Code does not look - it reads
+ * `module.exports.com.github.neshkeev.vimperor.vscode.activate`, where VS Code does not look - it reads
  * `activate` off the top level and reports an extension that exports nothing. Everything else in
  * this module keeps its package; only the two names the host calls by name live where the host
  * looks for them.
