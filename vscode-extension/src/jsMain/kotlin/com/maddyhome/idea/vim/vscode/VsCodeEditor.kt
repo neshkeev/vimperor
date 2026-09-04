@@ -69,6 +69,22 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   internal var lastReportedTopLine: Int? = null
 
   /**
+   * The viewport VS Code last described, remembered from the moment a command rewrote the document.
+   *
+   * `visibleRanges` is clipped to the text, so a one-line file reports one visible line however
+   * tall the window is - and the height this host works in is derived from it. That is harmless
+   * until the document *grows underneath the report*: a command that reformats one line of JSON
+   * into fifteen leaves the ranges saying `0..0`, so the window looks one line tall, and the next
+   * caret correction dutifully scrolls line fourteen to the top of a window that could have shown
+   * the whole file. The first line goes up behind the tab bar, and every later `zb`, `gg` and
+   * `<C-E>` reasons from the same wrong height.
+   *
+   * Null means the report can be trusted. Non-null means it describes the document as it was
+   * before the command, and is worth nothing until VS Code reports something else.
+   */
+  internal var viewportReportedBeforeEdit: Pair<Int, Int>? = null
+
+  /**
    * Every scroll this host asked for since the last keystroke, for the trace.
    *
    * A window has now three times disagreed with what this host believed a scroll did, and each time
@@ -447,7 +463,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val ordered = listOf(primary) + vimCarets.filter { it !== primary }
     val selections = ordered.map { caret ->
       if (caret.hasSelection()) {
-        Selection(positionOf(caret.selectionStart), positionOf(caret.selectionEnd))
+        Selection(positionOf(caret.selectionStart), positionOf(shownEnd(caret.selectionStart, caret.selectionEnd)))
       } else {
         val position = positionOf(caret.offset)
         Selection(position, position)
@@ -462,6 +478,87 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // VS Code takes it from.
     nativeEditor.selections = selections.toTypedArray()
     pushedSelections = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
+    revealCaretColumn()
+  }
+
+  /**
+   * Scrolls sideways far enough to show the caret, which nothing else here does.
+   *
+   * VS Code keeps its own cursor on screen when *it* moves the cursor. It does not when an
+   * extension assigns `selections`, and this host assigns them on every keystroke - so `$` on a
+   * line wider than the window moved the caret to the end and left the window where it was,
+   * looking at the beginning.
+   *
+   * `revealRange` is the API this file's viewport code deliberately does not use, and the reason
+   * does not apply here. That was about vertical scrolling, where a reveal is a *request* about
+   * where a line should end up and a real window answered `AtTop` five lines out; Vim's vertical
+   * arithmetic goes through `editorScroll` instead. Horizontally there is no arithmetic to do and
+   * nothing to do it with: `visibleRanges` carries lines and no columns, so the column the window
+   * starts at cannot be read, and a reveal is the only way to move it at all.
+   *
+   * Guarded on the caret's line already being on screen, which keeps the two axes apart. `Default`
+   * scrolls as little as it can, so with the line visible the only axis left for it to move is the
+   * horizontal one, and the vertical position stays whatever `zt`, `zz` or `<C-E>` last made it.
+   */
+  private fun revealCaretColumn() {
+    val position = positionOf(primaryCaret().offset)
+    // Asked for as rarely as it can be, because `Default` is not the horizontal-only operation this
+    // wants it to be. Measured from a trace of a real window: with all sixteen lines of a document
+    // showing, `G` revealed the last line and VS Code scrolled *down* two lines to leave room under
+    // it - `view=[0..15]` became `view=[2..15]` - so the first two lines went off the top and every
+    // `zb` afterwards reasoned from a window that had been made two lines shorter than it is.
+    //
+    // A caret inside the first screenful of columns cannot be off the right-hand edge, unless an
+    // earlier reveal scrolled the view there - which is what [revealedForColumn] remembers, so the
+    // journey back from a long line still gets its one reveal.
+    //
+    // 80 is `getApproximateScreenWidth`, which this host does not measure: VS Code exposes no
+    // horizontal viewport to measure. It is a threshold, not a measurement, and it is only allowed
+    // to be wrong in the cheap direction - too small costs a reveal nobody needed.
+    val far = position.character >= injector.engineEditorHelper.getApproximateScreenWidth(this)
+    if (!far && !revealedForColumn) return
+    val onScreen = nativeEditor.visibleRanges.any { position.line >= it.start.line && position.line <= it.end.line }
+    if (!onScreen) return
+    revealedForColumn = far
+    revealPrimaryCaret()
+  }
+
+  /** Whether a reveal has scrolled the view off column zero, and so whether coming back needs one. */
+  private var revealedForColumn = false
+
+  /**
+   * The same reveal without the on-screen guard, for when the guard has nothing to guard with.
+   *
+   * After a command rewrites the document, `visibleRanges` still describes the text that was there
+   * before it, so "is the caret's line on screen" is a question about the wrong document. This asks
+   * VS Code to put the caret in view and to work out for itself how far that is - which it can and
+   * this host cannot, because the window's real height is not something an extension can read.
+   */
+  internal fun revealPrimaryCaret() {
+    val position = positionOf(primaryCaret().offset)
+    nativeEditor.revealRange(Range(position, position), TextEditorRevealType.Default)
+  }
+
+  /**
+   * Where a selection should be drawn as ending, which is not always where it ends.
+   *
+   * VS Code draws the cursor at a selection's `active` end, and a *linewise* selection ends at the
+   * start of the line after the last one it covers - so `V` on a single line drew the cursor on
+   * the line below it, one line further down than Vim's. Pulling the drawn end back to the end of
+   * the last covered line puts the cursor back on that line.
+   *
+   * Only what is *drawn* moves. The engine's own selection is untouched, so `d` over a linewise
+   * selection still takes the newline with it.
+   *
+   * By line rather than by stepping back one character: on a CRLF document `end - 1` is the offset
+   * between the carriage return and the newline, and a cursor there is a cursor in the middle of a
+   * line ending.
+   */
+  private fun shownEnd(start: Int, end: Int): Int {
+    if (end <= start) return end
+    val position = positionOf(end)
+    if (position.character != 0 || position.line == 0) return end
+    return maxOf(start, getLineEndOffset(position.line - 1))
   }
 
   /**

@@ -132,8 +132,8 @@ injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all
 of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
-Beyond its own 624 tests, the extension replays IdeaVim's test fixtures against the
-VS Code host: **1,034 of 1,049 pass**. The fifteen that do not are listed, with an
+Beyond its own 631 tests, the extension replays IdeaVim's test fixtures against the
+VS Code host: **1,036 of 1,049 pass**. The thirteen that do not are listed, with an
 explanation of each, in
 [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt).
 

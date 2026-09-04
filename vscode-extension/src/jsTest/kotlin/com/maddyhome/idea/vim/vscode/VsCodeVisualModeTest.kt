@@ -74,8 +74,13 @@ class VsCodeVisualModeTest {
 
     assertEquals("VISUAL LINE", session.host.modeName())
     // Through the newline: a linewise selection covers the line separator too, which is why `Vd`
-    // removes the line rather than emptying it.
-    assertEquals(0 to 4, session.selection, "V should select the line and its newline")
+    // removes the line rather than emptying it. That is the *engine's* selection - which is what
+    // the claim was always about, though it used to be asserted against the drawn one.
+    assertEquals(0, session.editor.primaryCaret().selectionStart)
+    assertEquals(4, session.editor.primaryCaret().selectionEnd, "V should select the line and its newline")
+    // What VS Code is asked to draw stops at the end of the line, because it draws the cursor at a
+    // selection's end and a cursor on the following line is not where Vim's is. See DrawnSelectionTest.
+    assertEquals(0 to 3, session.selection, "the drawn selection keeps the cursor on the line")
   }
 
   @Test

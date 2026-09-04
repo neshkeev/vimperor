@@ -58,6 +58,15 @@ nnoremap <leader>f <Action>(workbench.action.quickOpen)
 `<Action>(id)` runs any VS Code command from a mapping — `:actionlist` lists them, with the
 keyboard shortcut each one already has. `:action {id}` runs one from the command line.
 
+That is also how to change what a Vim key does. `=` re-indents, which is all Vim's `=` has ever
+done — it fixes leading whitespace and never splits or joins a line, so on a document that is
+already one line it correctly does nothing. If you would rather it ran the editor's formatter, the
+way IdeaVim's `=` does:
+
+```vim
+xnoremap = <Action>(editor.action.formatSelection)
+```
+
 ## Only one Vim at a time
 
 An extension can only see ordinary typing by taking over VS Code's `type` command, and `type` has

@@ -45,10 +45,10 @@ import kotlin.math.min
  */
 
 /** What VS Code says the window shows, which is where it has been painted rather than where it is. */
-private val VsCodeEditor.reportedTopLine: Int
+internal val VsCodeEditor.reportedTopLine: Int
   get() = nativeEditor.visibleRanges.firstOrNull()?.start?.line ?: 0
 
-private val VsCodeEditor.reportedBottomLine: Int
+internal val VsCodeEditor.reportedBottomLine: Int
   get() = nativeEditor.visibleRanges.lastOrNull()?.end?.line ?: (lineCount() - 1)
 
 /**
@@ -62,6 +62,37 @@ private val VsCodeEditor.reportedBottomLine: Int
  *
  * See [VsCodeEditor.believedTopLine] for what that cost.
  */
+/**
+ * Whether what VS Code last said about the viewport still describes the document that is there.
+ *
+ * Cleared the moment the editor reports anything different, which is it having repainted. See
+ * [VsCodeEditor.viewportReportedBeforeEdit] for what goes wrong while it has not.
+ */
+internal val VsCodeEditor.viewportIsStale: Boolean
+  get() {
+    val before = viewportReportedBeforeEdit ?: return false
+    if ((reportedTopLine to reportedBottomLine) != before) {
+      viewportReportedBeforeEdit = null
+      return false
+    }
+    return true
+  }
+
+/**
+ * Called when a host command has rewritten the document behind the engine's back.
+ *
+ * Two things stop being true at once: where the view is, and how tall it looked. Both are dropped,
+ * and the caret is handed to VS Code to reveal - it is the only party that knows the real height,
+ * and with a document that now fits on screen its answer is to not scroll at all, which is the
+ * right one and the one this host could not have worked out.
+ */
+internal fun VsCodeEditor.viewportChangedUnderneath() {
+  viewportReportedBeforeEdit = reportedTopLine to reportedBottomLine
+  believedTopLine = null
+  lastReportedTopLine = null
+  revealPrimaryCaret()
+}
+
 internal val VsCodeEditor.screenTopLine: Int
   get() {
     val reported = reportedTopLine
@@ -248,6 +279,26 @@ internal object VsCodeScrollGroup : VimScrollGroup {
    */
   override fun scrollCaretIntoView(editor: VimEditor) {
     val vsCode = editor as? VsCodeEditor ?: return
+    // Nothing is known about the window yet - a command has just changed the document and VS Code
+    // has not said where that left the view. Scrolling on the previous document's numbers is what
+    // put the first line behind the tab bar.
+    //
+    // Revealed rather than merely skipped, and that distinction is the whole of the bug this line
+    // was reported for a second time. Skipping alone is right for the arithmetic and wrong for the
+    // user: `gg` in the stale window moved the caret to line zero, this returned without scrolling,
+    // and nothing else was going to show it - so the caret sat above the top of the window. In a
+    // window tall enough to hold the whole document that never showed, because the document was
+    // visible anyway; with the Output panel open and eight lines of editor, it showed every time.
+    //
+    // A reveal is the one request that does not need the height. VS Code knows it.
+    if (vsCode.viewportIsStale) {
+      vsCode.revealPrimaryCaret()
+      return
+    }
+    // The whole document is on screen, so there is nowhere to scroll it to. Worth saying before
+    // the arithmetic rather than trusting the arithmetic to reach the same answer, because the
+    // height it uses is exactly what a short document makes unreliable.
+    if (vsCode.screenTopLine == 0 && vsCode.reportedBottomLine >= editor.lineCount() - 1) return
     // From the buffer rather than from the document: this runs mid-command, before the flush, when
     // the document still has the old text and `positionAt` would answer about that.
     val position = vsCode.offsetToBufferPosition(vsCode.primaryCaret().offset)

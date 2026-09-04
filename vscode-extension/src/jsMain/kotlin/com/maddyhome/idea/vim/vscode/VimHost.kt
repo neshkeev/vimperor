@@ -329,7 +329,13 @@ class VimHost(
     // The command changed the document, and it changed it without going through the buffer - so
     // every editor has to be re-read before anything else looks at one.
     for (editor in editors.values) {
-      if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
+      if (editor.buffer.syncIfDocumentMoved()) {
+        editor.syncCaretsFromEditor()
+        // The document is a different length now, and what VS Code last said about the viewport
+        // describes the old one. Everything derived from it - where the view is, how tall it looks
+        // - has to be dropped rather than reasoned from.
+        editor.viewportChangedUnderneath()
+      }
       // A command may leave its own selection behind - the formatter does - and the engine is not
       // in visual mode by the time it lands.
       editor.dropSelectionLeftByCommand()

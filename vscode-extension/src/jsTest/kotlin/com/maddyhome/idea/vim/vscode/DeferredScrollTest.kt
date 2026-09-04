@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Scrolling when the editor has not painted yet, which is the only kind of editor there is.
@@ -416,7 +417,13 @@ class DeferredScrollTest {
    *
    * Vim's `update_topline` returns immediately when the cursor is inside the window. So does this,
    * now, and the assertion is that a `<C-E>` whose caret stays on screen asks for exactly one
-   * thing.
+   * *vertical* thing.
+   *
+   * "No reveals at all" was the original assertion and is no longer the claim. Keeping the caret
+   * column on screen needs a reveal - see `VsCodeEditor.revealCaretColumn`, and the `$` that has
+   * no other way to scroll sideways - and that one is vertical-neutral by construction: it names a
+   * line that is already visible, and `Default` scrolls as little as it can. What must not happen
+   * is a reveal of a line the scroll has just moved past, which is what would undo it.
    */
   @Test
   fun `test a scroll is not undone by a caret correction behind it`() {
@@ -427,7 +434,13 @@ class DeferredScrollTest {
       session.fake.scrolls.toList(),
       "the scroll should be the only thing asked of the view",
     )
-    assertEquals(emptyList(), session.fake.reveals.toList(), "and nothing should have been revealed")
+    val visible = session.fake.visibleRanges.first()
+    for (reveal in session.fake.reveals) {
+      assertTrue(
+        reveal.start >= visible.start.line && reveal.end <= visible.end.line,
+        "a reveal of a line already on screen cannot move the view vertically, and this one is not: $reveal",
+      )
+    }
   }
 
   /** ...and the caret is still brought back when it really has gone off screen. */
