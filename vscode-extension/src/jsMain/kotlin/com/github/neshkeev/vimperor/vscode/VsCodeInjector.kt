@@ -295,18 +295,6 @@ open class VsCodeInjector(
   override val variableService: VariableService by lazy { object : VimVariableServiceBase() {} }
 
   /**
-   * IdeaVim's bundled extensions - `surround`, `easymotion`, `commentary` - none of which are
-   * ported. `set surround` therefore reports an unknown option rather than silently doing nothing,
-   * which is the honest answer while the extensions do not exist here.
-   */
-  override val extensionRegistrator: VimExtensionRegistrator by lazy {
-    object : VimExtensionRegistrator {
-      override fun setOptionByPluginAlias(alias: String): Boolean = false
-      override fun getExtensionNameByAlias(alias: String): String? = null
-    }
-  }
-
-  /**
    * "Is a live template running?" - to which the answer here is no, and always will be.
    *
    * The engine asks before `<CR>` moves down a line and before an insert is recorded for `.`,

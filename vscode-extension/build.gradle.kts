@@ -48,6 +48,10 @@ kotlin {
     val jsMain by getting {
       dependencies {
         implementation(project(":vim-engine"))
+        // The thin API an extension is written against. `vim-engine` depends on it too, but as
+        // `implementation`, so it is not on this module's compile classpath without saying so -
+        // and this module names the type an extension's `init` is handed.
+        implementation(project(":api"))
       }
     }
 

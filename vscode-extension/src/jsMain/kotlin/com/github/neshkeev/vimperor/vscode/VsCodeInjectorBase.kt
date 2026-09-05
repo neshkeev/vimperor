@@ -123,14 +123,15 @@ abstract class VsCodeInjectorBase : VimInjector {
   override val historyGroup: VimHistory
     get() = TODO("the VS Code host does not provide historyGroup yet")
 
-  override val extensionRegistrator: VimExtensionRegistrator
-    get() = TODO("the VS Code host does not provide extensionRegistrator yet")
+  // Extensions. See `Extensions.kt` for why the thin API is the only one of IdeaVim's two extension
+  // systems that can reach this host, and why a map takes the place of a classloader here.
+  override val extensionRegistrator: VimExtensionRegistrator by lazy { VsCodeExtensionRegistrator() }
 
-  override val jsonExtensionProvider: JsonExtensionProvider
-    get() = TODO("the VS Code host does not provide jsonExtensionProvider yet")
+  override val jsonExtensionProvider: JsonExtensionProvider by lazy {
+    VsCodeJsonExtensionProvider().also { it.init() }
+  }
 
-  override val extensionLoader: ExtensionLoader
-    get() = TODO("the VS Code host does not provide extensionLoader yet")
+  override val extensionLoader: ExtensionLoader by lazy { VsCodeExtensionLoader() }
 
   override val tabService: TabService
     get() = TODO("the VS Code host does not provide tabService yet")

@@ -79,21 +79,18 @@ class UnimplementedServicesTest {
      * reason is worse than none: it stops the next person from looking. Two services came off the
      * list when the reason was checked.
      *
-     * `extensionLoader` and `jsonExtensionProvider` are the thin-API plugin registry, reached by
-     * `:Plug`, `:PlugEnable` and `:IdeaPlug` - so a `.ideavimrc` with a `Plug` line in it hits this,
-     * which is not a rare thing to have. They were recorded as blocked behind `modalInput.activate`,
-     * and that was about a different part of the extension system: the real blocker is *class
-     * loading*. `LazyVimExtension` lives in `vim-engine/src/jvmMain` and resolves a class by name
-     * through a `ClassLoader`, which JavaScript does not have. That is the same problem this build
-     * already solves for commands, functions and ex commands by generating a registry at build time,
-     * so the answer has a known shape.
+     * `extensionLoader` and `jsonExtensionProvider` used to be here, and the note that stood in
+     * their place is worth keeping the shape of, because it was right twice and that is what got
+     * them implemented. It said the real blocker was *class loading* - `LazyVimExtension` resolves
+     * a class by name through a `ClassLoader`, which JavaScript does not have - and that the answer
+     * had a known shape, since this build already generates registries for commands, functions and
+     * ex commands rather than reflecting on names. It does: `VsCodeExtensionLoader` keeps a map from
+     * extension name to the function itself, and never sees a class name at all.
      *
-     * They were also described as how "IdeaVim's twenty-six bundled extensions are found and
-     * started". They start exactly one: `ideavim_extensions.json` has a single entry. The other
-     * twenty-five use the older `VimExtension` extension point, which is not a `VimInjector` service
-     * at all - so it never appears here, and this list understates what is missing. That is the
-     * blind spot this whole file exists to have less of, arriving from the one direction it cannot
-     * see: a thing that was never a service.
+     * It also said this list understates what is missing, because the other twenty-five extensions
+     * use the older `VimExtension` extension point, which is not a `VimInjector` service and so can
+     * never appear here. That is still true, and is still the blind spot this file exists to have
+     * less of.
      *
      * The thing to know before starting that work is that the mechanism is not finished upstream
      * either. IdeaVim's single thin-API extension is `ReplaceWithRegisterNew`, its test class is
@@ -138,9 +135,7 @@ class UnimplementedServicesTest {
      * its mappings. It is the *first* thing the extension chain asks for, not the last.
      */
     val EXPECTED = """
-      extensionLoader
       highlightingService
-      jsonExtensionProvider
       pluginActivator
       searchWindowGroup
       virtualBufferGroup
