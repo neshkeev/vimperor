@@ -37,7 +37,8 @@ What is still missing: 17 of the 26 bundled extensions, 24 IntelliJ-only options
 
 Nine are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
-`targets` and `abolish` - and they are the pattern for the rest. Each lives in
+`targets` and `abolish` - and they are the pattern for the rest. A tenth,
+`yankring`, is in the engine and deliberately *not* bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -46,8 +47,19 @@ unaffected. The adapter goes when the plugin does.
 `textobj-user` is the one exception to "two-line", and it says something about the
 engine rather than about that extension: it registers Vimscript *function
 handlers*, and the loader's teardown removes mappings and listeners by owner but
-knows nothing about functions. So its adapter keeps a real `dispose`. Anything
-else that registers by name will need the same.
+knows nothing about functions. So its adapter keeps a real `dispose`, and the VS
+Code host has `VsCodeExtensions.TEARDOWN` for the same reason. Anything else that
+registers by name will need an entry there.
+
+**`yankring` is in `vim-engine` and is not in `VsCodeExtensions.BUNDLED`, on
+purpose.** `<C-P>` after a paste works by undoing the paste and re-pasting an older
+entry, and that needs `u` to have finished by the next statement. IntelliJ's undo is
+synchronous; VS Code's is a command the host dispatches and cannot wait for -
+`VsCodeInjector.undo` returns `true` immediately and holds the user's *keys* until it
+lands, which is no help inside one mapping. The re-paste would land on text the undo
+had not removed yet. Enabling it there needs a seam the engine does not have: a way
+for an extension to continue once the host's document has caught up. Everything else
+in the extension asks nothing of the host.
 
 A candidate is an extension whose *body* uses only the thin API and the engine,
 whatever its registration does. Screen by compiling, not by grepping imports - the

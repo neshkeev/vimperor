@@ -105,6 +105,11 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'wellle/targets.vim'                " ci( from anywhere, cin( for the next pair, cil( the last
   Plug 'tpope/vim-abolish'                 " crs crc crm recase a word; :S, a case-carrying :s
   ```
+
+  `yankring` is the one that compiles for this host and is deliberately left out. Its `<C-P>` works
+  by undoing the paste and re-pasting an older entry, and VS Code's undo is a command that finishes
+  after the extension has moved on — so it would re-paste onto text the undo had not removed yet.
+  Enabling it needs the engine to grow a way of continuing once the document has caught up.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.

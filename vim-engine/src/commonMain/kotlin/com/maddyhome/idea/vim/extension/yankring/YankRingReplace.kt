@@ -81,8 +81,10 @@ private fun VimApi.cycleLastPaste(steps: Int) {
     return
   }
 
-  // Walking off either end wraps around, so that holding <C-P> keeps cycling.
-  val nextIndex = Math.floorMod(pending.ringIndex + steps, entries.size)
+  // Walking off either end wraps around, so that holding <C-P> keeps cycling. `mod` rather than `%`
+  // because `%` keeps the sign of the left operand, so <C-N> past the start would index backwards;
+  // it is also Kotlin's own `Math.floorMod`, which is JVM-only and does not compile for JS.
+  val nextIndex = (pending.ringIndex + steps).mod(entries.size)
 
   undoAndRepaste(entries[nextIndex], pending.paste)
   rememberPaste(pending.paste, nextIndex)
@@ -93,6 +95,21 @@ private fun VimApi.cycleLastPaste(steps: Int) {
  * just imitation: re-pasting applies the entry's own character/line-wise semantics, and undoing
  * first keeps the undo stack holding a single paste however long the user keeps cycling, so one
  * `u` still returns to the state before the paste.
+ *
+ * ## This is what keeps the extension off the VS Code host
+ *
+ * It requires `u` to have finished by the time the next line runs, and that is a demand on the
+ * host, not on the engine. IntelliJ's undo is synchronous. VS Code's is a command it runs for
+ * itself: `VsCodeInjector.undo` dispatches `undo` and returns `true` immediately, and the host holds
+ * the user's *keys* until it lands - which is the right answer for someone typing and no answer at
+ * all here, because `normal("<Esc>u")` and the `normal("${'$'}{paste.count}...")` below it are one
+ * synchronous run inside a single mapping. The re-paste would land on text the undo had not removed
+ * yet, and the undo would then arrive on top of it.
+ *
+ * So `yankring` compiles for both hosts and is bundled by only one. Enabling it in VS Code needs a
+ * seam the engine does not have: a way for an extension to continue once the host's document has
+ * caught up. The rest of the extension - the ring, what records into it, `:YRShow`, `:YRClear` -
+ * asks nothing of the host and would work there today.
  */
 private fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste) {
   withUnnamedRegister(RegisterContents(entry.text, entry.type)) {
