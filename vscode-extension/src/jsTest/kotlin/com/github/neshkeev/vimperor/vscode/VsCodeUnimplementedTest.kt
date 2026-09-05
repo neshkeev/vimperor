@@ -252,16 +252,22 @@ class VsCodeUnimplementedTest {
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
-     * What is left is no longer a matter of writing more host. `U` needs a history this host does
-     * not keep - VS Code owns the undo stack and will not say what is on it - and the rest need a
-     * language server or Vim's command-line window, neither of which VS Code has. The ordinary Vim
-     * keys are off this list as of `S`.
+     * **One entry left, and it is Vim's command-line window.** Everything else has come off, by
+     * one of the three ways a key leaves this list, and the three are worth telling apart.
      *
-     * `z=`, `zg` and `zw` came off it without a spell checker being written, which is the other way
-     * a key leaves: they now reach [NoSpellchecker], which reports that VS Code has none and says
-     * what to do instead. That is a better answer than "Not implemented yet :(" and it is a real
-     * answer, so the keys are no longer unimplemented - they are implemented as a refusal. `[s`
-     * and `]s` are still here because they are motions and a motion has nowhere to put a message.
+     * A service gets written, which is how the ordinary Vim keys went, up to `S`.
+     *
+     * Or a service turns out to have been written already under another name. `[m`, `]m`, `[M` and
+     * `]M` left that way: their note said "needs a language server", which was true when it was
+     * written and stopped being true when [DocumentSymbols] cached the Outline tree - IdeaVim reads
+     * IntelliJ's Structure View for these, and it is the same tree. The note outlived the problem
+     * by two commits, which is the argument for asserting this list rather than printing it.
+     *
+     * Or the honest answer turns out to be *no*, and saying no is an implementation. `z=`, `zg` and
+     * `zw` went that way: they reach [NoSpellchecker], which reports that VS Code has no spell
+     * checker and says what to do instead. `[s` and `]s` have now followed them and could not use
+     * the same trick - a motion has nowhere to put a message - so they answer `-1`, the engine's
+     * "no such motion", and beep. A beep is what Vim does in a file with nothing to find.
      */
     const val EXPECTED_SETTINGS = """
 """
@@ -270,12 +276,6 @@ class VsCodeUnimplementedTest {
 """
 
     const val EXPECTED = """
-VS Code host: findMethodEnd needs a language server
-    [M ]M
-VS Code host: findMethodStart needs a language server
-    [m ]m
-VS Code host: findMisspelledWord needs a spellchecker
-    [s ]s
 the VS Code host does not provide searchWindowGroup yet
     q/ q: q?
 """

@@ -130,6 +130,16 @@ internal object VsCodeCommands {
   const val REINDENT_SELECTED_LINES = "editor.action.reindentselectedlines"
 
   /**
+   * `gq` and `gw`, which are *format* rather than *indent* - so this is the command `=` deliberately
+   * does not use.
+   *
+   * The note above explains why `=` is not allowed to reach a formatter: Vim's `=` changes leading
+   * whitespace and nothing else. `gq` has no such restraint in IdeaVim, which hands it straight to
+   * the IDE's reformat, and this is the same bargain: whatever the language's formatter does.
+   */
+  const val FORMAT_SELECTION = "editor.action.formatSelection"
+
+  /**
    * `gc`, `gcc` and `:Commentary`, which VS Code answers from the language configuration every
    * language extension ships - the same knowledge IntelliJ keeps in a `Commenter`.
    *
@@ -217,6 +227,7 @@ internal object VsCodeCommands {
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     REVEAL_DEFINITION, DOCUMENT_SYMBOLS, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
+    FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,

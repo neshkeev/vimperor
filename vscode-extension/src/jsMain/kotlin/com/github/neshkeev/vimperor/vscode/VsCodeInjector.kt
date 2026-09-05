@@ -591,24 +591,97 @@ open class VsCodeInjector(
 
   override val searchHelper: VimSearchHelper by lazy {
     object : VimSearchHelperBase() {
-      // Both are IDE features rather than Vim ones, and VS Code exposes neither synchronously:
-      // symbol navigation goes through a language server, and there is no spellchecker API at all.
+      /**
+       * `]m` and `[m` - the start of the next or previous structural element.
+       *
+       * IdeaVim reads IntelliJ's Structure View, which is the same tree VS Code's Outline draws and
+       * the same tree [DocumentSymbols] caches. So this had been down as "needs a language server"
+       * since before the cache existed, and the note outlived the problem.
+       *
+       * Note *structural element*, not *method*: IdeaVim walks every node the Structure View has,
+       * fields and properties included, and so does this. The name is Vim's - `[m` is documented as
+       * "start of a method" - and both hosts have always been looser than the name.
+       */
       override fun findMethodStart(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
-        TODO("VS Code host: findMethodStart needs a language server")
+        structuralOffset(editor, caret, count) { it.start }
 
+      /** `]M` and `[M`. The last character of the element rather than one past it, as IdeaVim has it. */
       override fun findMethodEnd(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
-        TODO("VS Code host: findMethodEnd needs a language server")
+        structuralOffset(editor, caret, count) { it.end - 1 }
 
-      override fun findMisspelledWord(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int =
-        TODO("VS Code host: findMisspelledWord needs a spellchecker")
+      /**
+       * `]s` and `[s`, which this host cannot answer: VS Code has no spellchecker API, and an
+       * extension cannot read the squiggles another extension contributes either.
+       *
+       * `-1` is the engine's "no such motion" - `toMotionOrError` turns it into `Motion.Error` - so
+       * the key beeps rather than throwing, which is what it did until now.
+       */
+      override fun findMisspelledWord(editor: VimEditor, caret: ImmutableVimCaret, count: Int): Int = -1
     }
+  }
+
+  /**
+   * The offset `[m`, `]m`, `[M` and `]M` move to, worked out exactly as `PsiHelper` does it.
+   *
+   * Every symbol contributes one offset, they are sorted and deduplicated, and the caret's position
+   * in that list plus the count picks the answer, clamped at both ends. The one thing not carried
+   * over is IdeaVim's Java-only hack of advancing the start offset to the opening brace: it is
+   * written against `element.getText()` and a language id, and this host has neither.
+   *
+   * Answers `-1` when there is nothing to go on - no symbol provider for the language, or a cache
+   * that an edit has just invalidated. The key then beeps, which is what `[m` does in Vim in a file
+   * with no methods.
+   */
+  private fun structuralOffset(
+    editor: VimEditor,
+    caret: ImmutableVimCaret,
+    count: Int,
+    offsetOf: (SymbolRange) -> Int,
+  ): Int {
+    val document = (editor as? VsCodeEditor)?.nativeEditor?.document ?: return -1
+    val offsets = symbols.of(document)?.map(offsetOf)?.distinct()?.sorted() ?: return -1
+    if (offsets.isEmpty()) return -1
+
+    val caretOffset = caret.offset
+    var index = offsets.size
+    var remaining = count
+    for (candidate in offsets.indices) {
+      if (offsets[candidate] > caretOffset) {
+        index = candidate
+        // Landing *past* the caret has already moved one step, so a forward count owes one less.
+        if (remaining > 0) remaining--
+        break
+      }
+      if (offsets[candidate] == caretOffset) {
+        index = candidate
+        break
+      }
+    }
+    return offsets[(index + remaining).coerceIn(0, offsets.size - 1)]
   }
 
   override val changeGroup: VimChangeGroup by lazy {
     object : VimChangeGroupBase() {
-      /** `=` asks the editor to re-indent, which VS Code does through a command, asynchronously. */
-      override fun reformatCode(editor: VimEditor, start: Int, end: Int) =
-        TODO("VS Code host: reformatCode is an asynchronous command")
+      /**
+       * `gq` and `gw` - hand the range to the editor's own formatter.
+       *
+       * The same shape as [autoIndentRange] below and a different command, and the difference is
+       * the point rather than an accident. Vim's `=` only changes leading whitespace, so `=` asks
+       * for a re-indent; `gq` is *format*, so it asks for `editor.action.formatSelection`, which is
+       * whatever the language's formatter does - splitting lines included. IdeaVim's `gq` calls the
+       * IDE's reformat for exactly the same reason.
+       *
+       * No caret hook: the engine moves the caret itself for `gq`, and `gw` is the variant that
+       * puts it back where it was. Both do that against line numbers, which formatting *can* change
+       * - unlike re-indenting - so `gq` on a range the formatter rewraps may leave the caret a line
+       * or two out. Vim has the same problem and solves it by doing the wrapping itself, which is a
+       * different feature and not this one.
+       */
+      override fun reformatCode(editor: VimEditor, start: Int, end: Int) {
+        val vsCodeEditor = editor as? VsCodeEditor ?: return
+        vsCodeEditor.selectForHostCommand(listOf(TextRange(start, end)))
+        hostCommands.run(VsCodeCommands.FORMAT_SELECTION)
+      }
 
       /**
        * `=`, and every motion that reaches it - `==`, `=j`, `=ap`, and `=` over a visual selection,
