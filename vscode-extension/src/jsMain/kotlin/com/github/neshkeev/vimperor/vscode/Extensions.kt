@@ -24,6 +24,7 @@ import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.sneak.disposeSneak
+import com.maddyhome.idea.vim.extension.surround.init as surroundInit
 import com.maddyhome.idea.vim.extension.sneak.init as sneakInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
@@ -143,6 +144,11 @@ internal object VsCodeExtensions {
     // `,` repeat. The two characters arrive through the engine's modal input rather than a blocking
     // read - see `readCharacters`, which is what let this one leave the plugin at all.
     "sneak" to { api -> api.sneakInit() },
+
+    // `vim-surround`: `ys{motion}{char}` wraps, `cs{from}{to}` changes what wraps, `ds{char}`
+    // unwraps, `S` in visual. The last of the 26 that had to ask the user for something before it
+    // could act, and the whole reason `readKeys` exists.
+    "surround" to { api -> api.surroundInit() },
   )
 
   /**

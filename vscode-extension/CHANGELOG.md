@@ -27,4 +27,6 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
   (`ia` `aa` — one argument of a call), `commentary` (`gc{motion}`, `gcc`, `gcu`, `:Commentary`) and
   `highlightedyank` (the text a yank covered flashes), `exchange` (`cx{motion}` marks a region,
   `cx` over a second one swaps the two) and `sneak` (`s{char}{char}` jumps to the pair, `S`
-  backwards, `;` and `,` repeat), each enabled with the `Plug` line you would use in IdeaVim.
+  backwards, `;` and `,` repeat) and `surround` (`ys{motion}{char}` wraps, `cs{from}{to}` changes
+  what wraps, `ds{char}` unwraps, `S` in visual), each enabled with the `Plug` line you would use in
+  IdeaVim.

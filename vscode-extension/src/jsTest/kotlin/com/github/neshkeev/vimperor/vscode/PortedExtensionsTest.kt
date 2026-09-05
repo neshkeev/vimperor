@@ -443,6 +443,101 @@ class PortedExtensionsTest {
     assertEquals("function(a, b)\n", session.content, "nothing is deleted when the setting is unusable")
   }
 
+  // ---- surround ------------------------------------------------------------------------------------
+
+  /**
+   * `vim-surround`, the last of the 26 that had to ask the user for something before it could act.
+   *
+   * `ys{motion}{char}` wraps, `cs{from}{to}` changes what wraps, `ds{char}` unwraps. The character
+   * arrives through `readKeys`, and for `<`, `t`, `f` and `F` a whole name arrives the same way -
+   * one prompt session, however many keys it takes, which is what stops a keystroke going missing
+   * at a handover.
+   */
+  @Test
+  fun `test ys wraps a motion`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("ysiw\"")
+
+    assertEquals("\"hello\" world\n", session.content)
+  }
+
+  @Test
+  fun `test yss wraps the line`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("yss)")
+
+    assertEquals("(hello world)\n", session.content)
+  }
+
+  /** `cs` reads two characters, one after the other, in two separate sessions. */
+  @Test
+  fun `test cs changes what surrounds`() {
+    val session = Session("\"hello\" world\n", "surround")
+
+    session.type("cs\"'")
+
+    assertEquals("'hello' world\n", session.content)
+  }
+
+  @Test
+  fun `test ds removes what surrounds`() {
+    val session = Session("\"hello\" world\n", "surround")
+
+    session.type("ds\"")
+
+    assertEquals("hello world\n", session.content)
+  }
+
+  /** `S` in visual mode, which has to leave visual mode *after* the surround rather than before. */
+  @Test
+  fun `test S wraps a visual selection`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("veS)")
+
+    assertEquals("(hello) world\n", session.content)
+  }
+
+  /**
+   * A tag name, which is where the one-session rule earns its keep: `<`, `e`, `m` and `>` all reach
+   * the same prompt. Reading the `<` and then opening a second prompt for the name loses a
+   * keystroke - measured on the IntelliJ host, where `ysiw<em>` arrived as `<m>`.
+   */
+  @Test
+  fun `test a tag name arrives whole`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("ysiw<em>")
+
+    assertEquals("<em>hello</em> world\n", session.content)
+  }
+
+  /** `f` takes a function name, up to Enter - which vim-surround has always wanted. */
+  @Test
+  fun `test f wraps in a function call`() {
+    val session = Session("foo = bar\n", "surround")
+    session.type("ww")
+
+    session.type("ysiwfbaz")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals("foo = baz(bar)\n", session.content)
+  }
+
+  /** `<Esc>` at the prompt abandons it, and the key after it is the user's again. */
+  @Test
+  fun `test escape cancels a surround in progress`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("ysiw")
+    session.host.key(session.fake, "<Esc>")
+    session.type("x")
+
+    assertEquals("ello world\n", session.content, "`x` deleted a character rather than being eaten")
+  }
+
   // ---- sneak ---------------------------------------------------------------------------------------
 
   /**

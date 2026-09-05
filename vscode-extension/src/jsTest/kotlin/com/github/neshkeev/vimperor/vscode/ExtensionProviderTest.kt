@@ -205,12 +205,17 @@ class ExtensionProviderTest {
    * The aliases are kept for extensions that are not bundled yet, and this is why: setting one has
    * to fail because the extension is absent, not because the name was never recognised. The two
    * fail identically to a user and differently to whoever adds the extension.
+   *
+   * `yankring` is the example because it is the one extension that is in the engine and left out of
+   * this host on purpose - its `<C-P>` is built on undo, which VS Code finishes after the extension
+   * has moved on. So the alias resolves and the extension does not arrive, which is exactly the
+   * distinction this test exists for. It used to be `surround`, until `surround` was ported.
    */
   @Test
   fun `test a known alias with no extension behind it still fails`() {
     Session()
 
-    assertEquals("surround", injector.extensionRegistrator.getExtensionNameByAlias("tpope/vim-surround"))
-    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("tpope/vim-surround"))
+    assertEquals("yankring", injector.extensionRegistrator.getExtensionNameByAlias("vim-scripts/YankRing.vim"))
+    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("vim-scripts/YankRing.vim"))
   }
 }

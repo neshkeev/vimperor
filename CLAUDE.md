@@ -32,16 +32,16 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 11 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 10 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Fifteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Sixteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange` and `sneak` - and they are the pattern for the rest. A
-sixteenth, `yankring`, is in the engine and deliberately *not* bundled: see below.
-Each lives in
+`highlightedyank`, `exchange`, `sneak` and `surround` - and they are the pattern for
+the rest. A seventeenth, `yankring`, is in the engine and deliberately *not*
+bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -103,12 +103,27 @@ not blocked any more either.** The standing explanation was wrong in its details
 runtime with one thread cannot, so the VS Code host returned `null` and such an
 extension silently did nothing.
 
-`readCharacters` in `vim-engine/.../extension/ExtensionInput.kt` is the answer, and
-it was sitting in the engine already: modal input, which `ModalInputConsumer` routes
-every keystroke through while a prompt is open, is a *non-blocking* read that both
-hosts implement - it is how `:s///c` asks its question. `sneak` uses it. `surround`
-is the one left. The cost is real but small: the extension returns before it knows
-what the user typed, and continues in a callback a keystroke or two later.
+`readKeys` in `vim-engine/.../extension/ExtensionInput.kt` is the answer, and it was
+sitting in the engine already: modal input, which `ModalInputConsumer` routes every
+keystroke through while a prompt is open, is a *non-blocking* read that both hosts
+implement - it is how `:s///c` asks its question. Both extensions use it and both
+are ported. Three things it has to get right, each of them learnt from a test going
+red:
+
+- **One session, however many keys.** Reading a character and then opening a second
+  prompt for a tag name loses a keystroke in the handover - `ysiw<em>` arrives as
+  `<m>`. So the caller supplies a predicate, and the prompt stays open until it says
+  there are enough keys.
+- **The work goes back inside a command.** IntelliJ refuses a document change made
+  outside one, and the change no longer happens inside the keystroke that set one up.
+- **`.` replays through `Extension.consumeKeystroke`.** A repeat re-runs the handler
+  rather than the keys, so the keys the handler read have to be recorded and handed
+  back - and the "this change was an extension's" marking, which
+  `ToHandlerMappingInfo` sets after the handler returns, has to be restored after the
+  callback too.
+
+The cost is real: the extension returns before it knows what the user typed, and
+continues a keystroke or two later.
 
 What blocked the rest is where they live and how they register. They are in
 `src/main/java/`, which compiles for the JVM only, and `VimExtensionRegistrar`

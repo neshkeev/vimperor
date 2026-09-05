@@ -10,18 +10,22 @@ package com.maddyhome.idea.vim.extension
 
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.action.change.Extension
+import com.maddyhome.idea.vim.action.change.VimRepeater
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.helper.inRepeatMode
 import com.maddyhome.idea.vim.helper.isCloseKeyStroke
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptorBase
 
 /**
- * Reads [count] characters straight from the keyboard, then calls [onInput].
+ * Keys straight from the keyboard, until [isComplete] says there are enough of them.
  *
  * This is `getchar()` as an extension actually wants it: `s` in `vim-sneak` takes two characters,
- * `cs"'` in `vim-surround` takes two one after another. Both were written against
- * `injector.keyGroup.getChar`, which *blocks* until a key arrives.
+ * and `ys{motion}` in `vim-surround` takes one - unless that one is `<`, in which case it takes a
+ * whole tag name after it. Both were written against `injector.keyGroup.getChar`, which *blocks*
+ * until a key arrives.
  *
  * ## Why blocking was never going to travel
  *
@@ -38,14 +42,67 @@ import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptorBase
  * runs when enough of them have. Both hosts already implement it - it is what `:s///c` asks its
  * question through.
  *
+ * ## One session, however many keys
+ *
+ * The prompt stays open until [isComplete] is satisfied, however many keys that takes. That matters
+ * more than it looks. The obvious alternative - read one character, and if it turns out to be `<`
+ * open a *second* prompt for the tag name - loses a keystroke in the handover: measured, `ysiw<em>`
+ * arrived as `<m>`, the `e` having gone to the editor as a motion. There is nothing to hand over
+ * here.
+ *
+ * ## Why the decision and the work are separate
+ *
+ * [isComplete] decides and must do nothing else; [onInput] does the work. The prompt is closed
+ * between them, and it has to be: [onInput] typically runs normal-mode keys of its own - a
+ * surround runs ``  `[ `` to jump back - and a prompt still open would swallow the first of them.
+ *
  * ## What a caller has to know
  *
- * [onInput] runs *later*, on a subsequent keystroke, and may never run at all: `<Esc>` cancels and
- * the callback is dropped. An operator function that used to compute its answer inside `apply` has
- * to answer before it knows, which is the one real cost of the change.
+ * [onInput] runs *later*, on a subsequent keystroke, and may never run at all: `<Esc>` cancels. An
+ * operator function that used to compute its answer inside `apply` has to answer before it knows.
  *
  * [label] is what the prompt shows. Vim shows nothing while `s` waits for its two characters, so
  * the default is nothing.
+ */
+public fun readKeys(
+  editor: VimEditor,
+  context: ExecutionContext,
+  label: String = "",
+  isComplete: (List<VimKeyStroke>) -> Boolean,
+  onInput: (List<VimKeyStroke>) -> Unit,
+) {
+  if (editor.inRepeatMode) {
+    replayKeys(isComplete, onInput)
+    return
+  }
+  injector.modalInput.create(editor, context, label, KeysInterceptor(isComplete, onInput))
+}
+
+/**
+ * `.` does not replay keystrokes; it re-runs the extension handler. So the keys the handler asked
+ * for the first time have to be given back to it, and `Extension` is where the engine keeps them -
+ * `ds"` remembers the `"` so that `.` can delete the next pair of quotes without asking again.
+ *
+ * Synchronous, which is the point: a repeat has all its input already, so the handler does its work
+ * before returning, exactly as it did when the read blocked.
+ */
+private fun replayKeys(
+  isComplete: (List<VimKeyStroke>) -> Boolean,
+  onInput: (List<VimKeyStroke>) -> Unit,
+) {
+  val typed = mutableListOf<VimKeyStroke>()
+  do {
+    val key = Extension.consumeKeystroke() ?: error("Not enough keystrokes saved: ${Extension.lastExtensionHandler}")
+    typed.add(key)
+  } while (!isComplete(typed))
+  onInput(typed)
+}
+
+/**
+ * [readKeys] for the common case: [count] characters, then [onInput].
+ *
+ * A keystroke with no character of its own - a bare modifier, a function key - is passed over rather
+ * than counted.
  */
 public fun readCharacters(
   count: Int,
@@ -55,7 +112,13 @@ public fun readCharacters(
   onInput: (String) -> Unit,
 ) {
   require(count > 0) { "readCharacters needs a positive count, got $count" }
-  injector.modalInput.create(editor, context, label, CharactersInterceptor(count, onInput))
+  readKeys(
+    editor,
+    context,
+    label,
+    isComplete = { keys -> keys.count { it.keyChar != VimKeyCodes.CHAR_UNDEFINED } >= count },
+    onInput = { keys -> onInput(keys.mapNotNull { it.keyChar.takeIf { c -> c != VimKeyCodes.CHAR_UNDEFINED } }.joinToString("")) },
+  )
 }
 
 /** [readCharacters] for the common case of one. */
@@ -68,31 +131,56 @@ public fun readCharacter(
   readCharacters(1, editor, context, label) { onInput(it.single()) }
 }
 
-private class CharactersInterceptor(
-  private val count: Int,
-  private val onInput: (String) -> Unit,
-) : VimInputInterceptorBase<String>() {
+/**
+ * Runs [action] as an editor command, which is what a keystroke's own work runs inside.
+ *
+ * The reason this is here rather than left to each caller: an extension that used to block for its
+ * input did its work inside the command the *original* keystroke set up, and IntelliJ refuses a
+ * document change made outside one - "Must not change document outside command or undo-transparent
+ * action", which is what 58 of `vim-surround`'s tests said the moment its input stopped blocking.
+ * Deferring the work to a later keystroke has to put it back in a command, and doing that here
+ * means every user of these helpers gets it rather than remembering to.
+ */
+private fun asExtensionCommand(editor: VimEditor, action: () -> Unit) {
+  injector.actionExecutor.executeCommand(editor, action, "Vim extension input", null)
+}
 
-  private val typed = StringBuilder()
-  private var cancelled = false
+private class KeysInterceptor(
+  private val isComplete: (List<VimKeyStroke>) -> Boolean,
+  private val onInput: (List<VimKeyStroke>) -> Unit,
+) : VimInputInterceptorBase<List<VimKeyStroke>>() {
 
-  override fun buildInput(key: VimKeyStroke): String? {
+  private val typed = mutableListOf<VimKeyStroke>()
+
+  override fun buildInput(key: VimKeyStroke): List<VimKeyStroke>? {
     // `<Esc>` abandons the whole thing, which is what it does at every other Vim prompt. The
-    // interceptor still has to *complete* so that the prompt closes, so the cancellation is carried
-    // in a flag rather than by returning null forever.
-    if (key.isCloseKeyStroke()) {
-      cancelled = true
-      return ""
-    }
-    if (key.keyChar == VimKeyCodes.CHAR_UNDEFINED) return null
-    typed.append(key.keyChar)
-    return if (typed.length >= count) typed.toString() else null
+    // interceptor still has to *complete* so that the prompt closes, so cancellation is an input of
+    // its own - the empty one, which no finished input can be - rather than a refusal to build one.
+    if (key.isCloseKeyStroke()) return emptyList()
+    typed.add(key)
+    // Remembered as it arrives, so that `.` can hand it back - see `replayKeys`. Recorded even when
+    // the sequence turns out to be incomplete, because the replay reads the same number of keys the
+    // same way.
+    Extension.addKeystroke(key)
+    return if (isComplete(typed)) typed.toList() else null
   }
 
-  override fun executeInput(input: String, editor: VimEditor, context: ExecutionContext) {
-    // Before the callback, not after: the callback may run normal-mode keys of its own, and a
-    // prompt still open when they arrive would swallow the first of them.
+  override fun executeInput(input: List<VimKeyStroke>, editor: VimEditor, context: ExecutionContext) {
+    // Closed before the callback, never after: see `readKeys`.
     onFinish()
-    if (!cancelled) onInput(input)
+    if (input.isEmpty()) return
+
+    // `ToHandlerMappingInfo.execute` marks the change as an extension's *after* running the handler,
+    // so that any normal-mode commands the handler ran along the way - `ds"` runs `di"` - do not
+    // leave themselves as what `.` repeats. The handler now finishes here instead, one or more
+    // keystrokes later, so the marking has to be put back the same way or `.` after `dsb` repeats
+    // `di(`. Measured: four of vim-surround's repeat tests said exactly that.
+    val handler = Extension.lastExtensionHandler
+    val wasRepeatHandler = VimRepeater.repeatHandler
+    asExtensionCommand(editor) { onInput(input) }
+    if (handler != null) {
+      Extension.lastExtensionHandler = handler
+      VimRepeater.repeatHandler = wasRepeatHandler
+    }
   }
 }

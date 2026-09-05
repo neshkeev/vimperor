@@ -120,9 +120,17 @@ class VimSurroundExtensionTest : VimTestCase() {
   }
 
   @Test
+  /**
+   * The `<CR>` is not new behaviour, only newly required in a test.
+   *
+   * vim-surround prompts `function: ` and takes the name until Enter, which is what
+   * `testRepeatWrapWithFunction` below has always typed. This test got away without one because the
+   * old input blocked and, under test, a blocking read consumed whatever keystrokes were left - an
+   * artefact of the harness rather than of Vim. Nothing waits for the end of input any more.
+   */
   fun testSurroundFunctionName() {
     configureByText("foo = b${c}ar")
-    typeText(injector.parser.parseKeys("ysiwfbaz"))
+    typeText(injector.parser.parseKeys("ysiwfbaz<CR>"))
     assertState("foo = ${c}baz(bar)")
   }
 
@@ -136,9 +144,10 @@ class VimSurroundExtensionTest : VimTestCase() {
   }
 
   @Test
+  /** `<CR>` for the same reason as [testSurroundFunctionName]. */
   fun testSurroundFunctionNameWithInnerSpacing() {
     configureByText("foo = b${c}ar")
-    typeText(injector.parser.parseKeys("ysiwFbaz"))
+    typeText(injector.parser.parseKeys("ysiwFbaz<CR>"))
     assertState("foo = ${c}baz( bar )")
   }
 

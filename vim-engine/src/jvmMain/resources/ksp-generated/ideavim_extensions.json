@@ -50,6 +50,11 @@
     "className": "com.maddyhome.idea.vim.extension.sneak.SneakKt"
   },
   {
+    "extensionName": "surround",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.surround.SurroundKt"
+  },
+  {
     "extensionName": "targets",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.targets.TargetsKt"
