@@ -45,8 +45,8 @@ class ExtensionProviderTest {
     Session()
 
     // Reading them used to throw. That is the whole of this assertion.
-    assertTrue(injector.jsonExtensionProvider.getAllExtensions().isEmpty(), "nothing is bundled yet")
-    assertTrue(injector.extensionLoader.getEnabledExtensions().isEmpty())
+    assertTrue(injector.jsonExtensionProvider.getAllExtensions().isNotEmpty(), "the catalogue answers")
+    assertTrue(injector.extensionLoader.getEnabledExtensions().isEmpty(), "and nothing is on until asked")
     assertNull(injector.extensionRegistrator.getExtensionNameByAlias("nothing/at-all"))
   }
 
@@ -60,7 +60,7 @@ class ExtensionProviderTest {
     injector.jsonExtensionProvider.addExtension(bean)
 
     assertEquals(bean, injector.jsonExtensionProvider.getExtension("demo"))
-    assertEquals(listOf(bean), injector.jsonExtensionProvider.getExtensionsForPlugin(VsCodeExtensions.PLUGIN_ID))
+    assertTrue(bean in injector.jsonExtensionProvider.getExtensionsForPlugin(VsCodeExtensions.PLUGIN_ID))
   }
 
   @Test
@@ -83,7 +83,8 @@ class ExtensionProviderTest {
 
     injector.jsonExtensionProvider.removeExtensionForPlugin("someone.else")
 
-    assertEquals(listOf("ours"), injector.jsonExtensionProvider.getAllExtensions().map { it.extensionName })
+    val names = injector.jsonExtensionProvider.getAllExtensions().map { it.extensionName }
+    assertTrue("ours" in names && "demo" !in names, "only the other plugin's extension goes")
   }
 
   // ---- enabling ------------------------------------------------------------------------------

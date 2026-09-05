@@ -42,7 +42,7 @@ fun VimInitApi.init() {
   }
 }
 
-internal fun VimApi.operatorFunction(): Boolean {
+public fun VimApi.operatorFunction(): Boolean {
   fun CaretTransaction.getSelection(): Range? {
     return when {
       this@operatorFunction.mode == Mode.NORMAL -> changeMarks
@@ -63,12 +63,12 @@ internal fun VimApi.operatorFunction(): Boolean {
   return true
 }
 
-internal fun VimApi.rewriteMotion() {
+public fun VimApi.rewriteMotion() {
   commands().setOperatorFunction(OPERATOR_FUNC_NAME)
   normal("g@")
 }
 
-internal fun VimApi.rewriteLine() {
+public fun VimApi.rewriteLine() {
   val count1 = getVariable<Int>("v:count1") ?: 1
   editor {
     change {
@@ -83,7 +83,7 @@ internal fun VimApi.rewriteLine() {
   }
 }
 
-internal fun VimApi.rewriteVisual() {
+public fun VimApi.rewriteVisual() {
   editor {
     change {
       forEachCaret {
@@ -149,13 +149,20 @@ private fun CaretTransaction.replaceTextAndUpdateCaret(
     } else if (selectionRange is Range.Block) {
       replaceTextBlockwise(selectionRange, text)
 
-      kotlinx.coroutines.runBlocking { vimApi.normal("<Esc>") }
+      // `normal` is not a suspend function, and this was `runBlocking { }` around it - which
+      // bought nothing on the JVM and does not exist on Kotlin/JS, where there is one thread and
+      // nothing to block on.
+      vimApi.normal("<Esc>")
       updateCaret(offset = selectionRange.start)
     }
   }
 }
 
-internal const val RWR_OPERATOR = "<Plug>ReplaceWithRegisterOperator"
-internal const val RWR_LINE = "<Plug>ReplaceWithRegisterLine"
-internal const val RWR_VISUAL = "<Plug>ReplaceWithRegisterVisual"
-internal const val OPERATOR_FUNC_NAME = "ReplaceWithRegisterOperatorFunc"
+// Public rather than internal because the file moved: the IntelliJ plugin's older,
+// extension-point version of this same extension shares these, and `internal` stopped reaching it
+// when this became a different module. They are the extension's own vocabulary, not engine API -
+// and they go back to internal, or go away entirely, when that older version does.
+public const val RWR_OPERATOR = "<Plug>ReplaceWithRegisterOperator"
+public const val RWR_LINE = "<Plug>ReplaceWithRegisterLine"
+public const val RWR_VISUAL = "<Plug>ReplaceWithRegisterVisual"
+public const val OPERATOR_FUNC_NAME = "ReplaceWithRegisterOperatorFunc"

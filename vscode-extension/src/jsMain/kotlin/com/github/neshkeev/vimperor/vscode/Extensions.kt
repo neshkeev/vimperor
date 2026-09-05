@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
+import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionBean
@@ -49,9 +50,8 @@ import com.maddyhome.idea.vim.thinapi.VimApiImpl
  *
  * ## What is bundled
  *
- * Nothing yet. [BUNDLED] is empty and the wiring is complete around it, which is the useful state
- * to be in: adding an extension is one entry, and the failure mode of a missing extension is now
- * `:set someext` reporting that it is not there, rather than the whole injector throwing.
+ * One so far, and adding the next is one entry in [BUNDLED] plus a source file the engine can
+ * compile - which is now the whole cost, where before it was this file.
  */
 internal object VsCodeExtensions {
 
@@ -61,7 +61,13 @@ internal object VsCodeExtensions {
    * The value is the extension's `init` - the function `@VimPlugin` annotates - taking the
    * [VimInitApi] it registers its mappings and text objects through.
    */
-  val BUNDLED: Map<String, (VimInitApi) -> Unit> = emptyMap()
+  val BUNDLED: Map<String, (VimInitApi) -> Unit> = mapOf(
+    // `gr{motion}`, `grr`, `gr` in visual: replace the text a motion covers with a register,
+    // without the register being clobbered by what was replaced. The function is `init`, which is
+    // what `@VimPlugin` annotates, and it is an extension function on `VimInitApi` rather than one
+    // taking it - hence the lambda rather than a reference.
+    "ReplaceWithRegisterNew" to { api -> api.replaceWithRegisterInit() },
+  )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */
   const val PLUGIN_ID: String = "com.github.neshkeev.vimperor"
@@ -181,7 +187,10 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "vim-multiple-cursors" to "multiple-cursors",
       "argtextobj.vim" to "argtextobj",
       "vim-textobj-entire" to "textobj-entire",
-      "ReplaceWithRegister" to "ReplaceWithRegister",
+      // IdeaVim has two of these: `ReplaceWithRegister` on the old extension point and
+      // `ReplaceWithRegisterNew` on the thin API. Only the second can run here, so the name a
+      // `.vimrc` writes resolves to it.
+      "ReplaceWithRegister" to "ReplaceWithRegisterNew",
       "vim-exchange" to "exchange",
       "vim-highlightedyank" to "highlightedyank",
       "vim-paragraph-motion" to "vim-paragraph-motion",

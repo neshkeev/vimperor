@@ -32,8 +32,14 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: all 26 bundled extensions, 24 IntelliJ-only options, 13 of
-the replayed fixtures, and five `TODO` seams in `VsCodeInjector`. Ex commands are
+What is still missing: 25 of the 26 bundled extensions, 24 IntelliJ-only options,
+13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
+
+`ReplaceWithRegister` is the one that is ported, and it is the pattern for the
+rest: it lives in `vim-engine/src/commonMain/.../extension/replacewithregister/`,
+compiles to both hosts from one source, and the VS Code host lists it in
+`VsCodeExtensions.BUNDLED`. Adding the next is one entry there plus a source file
+the engine can compile. Ex commands are
 at parity - 401 in the engine, two IntelliJ-only.
 
 **The extensions are not blocked on `getchar()`.** That was the standing

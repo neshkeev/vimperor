@@ -17,3 +17,5 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
 - `<Action>(id)` and `:action` to run any VS Code command; `:actionlist` to find one, with the
   keyboard shortcut it already has.
 - `:sign`, `:highlight`, `:match`, `:redir`, `:messages` and the quickfix and location lists.
+- The first of IdeaVim's bundled extensions: `ReplaceWithRegister` (`gr`, `grr`), enabled with
+  `Plug 'vim-scripts/ReplaceWithRegister'`.

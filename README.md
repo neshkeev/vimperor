@@ -69,8 +69,9 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: the 26 bundled extensions — surround, commentary, targets and the
-rest. Not for the reason this file used to give. They are not built on `getchar()`;
+What does not: 25 of the 26 bundled extensions — surround, commentary, targets and
+the rest. `ReplaceWithRegister` is ported and is the pattern for the others. Not
+for the reason this file used to give. They are not built on `getchar()`;
 exactly one of them asks for a key. They are unported because they live in the
 IntelliJ plugin's module and register through an IntelliJ extension point. One is
 portable as it stands and four more are a single cast away from it.
