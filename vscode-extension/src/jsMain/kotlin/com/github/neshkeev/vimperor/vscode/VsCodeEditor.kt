@@ -254,14 +254,36 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   override fun insertText(caret: VimCaret, atPosition: Int, text: CharSequence) {
     buffer.insert(atPosition, text.toString())
+    shiftCaretsAfterEdit(atPosition, atPosition, text.length)
   }
 
   override fun replaceString(start: Int, end: Int, newString: String) {
     buffer.replace(start, end, newString)
+    shiftCaretsAfterEdit(start, end, newString.length)
   }
 
   override fun deleteString(range: TextRange) {
     buffer.replace(range.startOffset, range.endOffset, "")
+    shiftCaretsAfterEdit(range.startOffset, range.endOffset, 0)
+  }
+
+  /**
+   * Keeps every caret pointing at the same text after the engine has edited somewhere.
+   *
+   * IntelliJ gets this for free: a `Caret` is a document marker and the document moves it. Here a
+   * caret is a value this host holds, so with more than one caret every edit but the first leaves
+   * the others describing a document that has changed underneath them. Nothing noticed until
+   * `multiple-cursors` arrived and `c` over two `<C-n>` cursors ended in `'start' is out of bounds`
+   * - one caret was still pointing past the end of a document the other had just shortened.
+   *
+   * [typeAtCarets] and [deleteSelections] do their own arithmetic and do not come through here, for
+   * the reason their own comments give: they edit at *every* caret and have to work backwards.
+   */
+  private fun shiftCaretsAfterEdit(start: Int, end: Int, newLength: Int) {
+    if (vimCarets.size <= 1) return
+    val delta = newLength - (end - start)
+    if (delta == 0) return
+    vimCarets.forEach { it.adjustForEdit(start, end, delta) }
   }
 
   /**

@@ -28,20 +28,20 @@ away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
 repository. It is kept for its tests. 11,727 of them, plus the 1,049 fixtures the
-VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is the
+VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 10 of the 26 bundled extensions, 24 IntelliJ-only options,
-13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
+What is still missing: 9 of the 26 bundled extensions, 24 IntelliJ-only options,
+12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Sixteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Seventeen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak` and `surround` - and they are the pattern for
-the rest. A seventeenth, `yankring`, is in the engine and deliberately *not*
-bundled: see below. Each lives in
+`highlightedyank`, `exchange`, `sneak`, `surround` and `multiple-cursors` - and they
+are the pattern for the rest. An eighteenth, `yankring`, is in the engine and
+deliberately *not* bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -75,8 +75,12 @@ nothing new at all - the two seams those two added were the whole of its debt.
 
 The engine has **no per-editor storage**, and `IjVimEditor` throws from `equals` so
 it cannot be a map key either. An extension that kept state in IntelliJ's editor user
-data keys it by `editor.getPath()` instead - see `exchange`. `sneak` is the last one
-of this shape.
+data keys it by `editor.getPath()` instead - see `exchange` and `multiple-cursors`.
+
+A caret is a value the VS Code host holds, not a document marker, so **the engine's
+edits have to move the other carets** - `VsCodeEditor.shiftCaretsAfterEdit`. IntelliJ
+gets that from its document. Nothing needed it until `multiple-cursors` arrived,
+which is also how one of IdeaVim's own replayed fixtures started passing.
 
 A candidate is an extension whose *body* uses only the thin API and the engine,
 whatever its registration does. Screen by compiling, not by grepping imports - the

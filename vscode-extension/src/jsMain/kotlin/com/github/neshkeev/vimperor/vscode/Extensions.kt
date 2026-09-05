@@ -21,6 +21,8 @@ import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
+import com.maddyhome.idea.vim.extension.multiplecursors.disposeMultipleCursors
+import com.maddyhome.idea.vim.extension.multiplecursors.init as multipleCursorsInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.sneak.disposeSneak
@@ -149,6 +151,10 @@ internal object VsCodeExtensions {
     // unwraps, `S` in visual. The last of the 26 that had to ask the user for something before it
     // could act, and the whole reason `readKeys` exists.
     "surround" to { api -> api.surroundInit() },
+
+    // `vim-multiple-cursors`: `<C-n>` puts a caret on the next occurrence of the word under the
+    // caret, `<C-x>` skips one, `<C-p>` takes the last one back.
+    "multiple-cursors" to { api -> api.multipleCursorsInit() },
   )
 
   /**
@@ -179,6 +185,9 @@ internal object VsCodeExtensions {
 
     // The highlight on the pair it last jumped to, which fades on a timer nobody else owns.
     "sneak" to { disposeSneak() },
+
+    // What the last cursor was added from, per buffer.
+    "multiple-cursors" to { disposeMultipleCursors() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

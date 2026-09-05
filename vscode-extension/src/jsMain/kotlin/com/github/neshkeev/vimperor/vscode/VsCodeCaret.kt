@@ -127,6 +127,35 @@ class VsCodeCaret(
     selectionEndOffset = end
   }
 
+  /**
+   * Moves this caret so that it still points at the same text after an edit somewhere else.
+   *
+   * IntelliJ does not need this: a `Caret` is a document marker and the document moves it. VS Code's
+   * selections are values the host writes, so with more than one caret every edit but the first
+   * leaves the others describing a document that has changed underneath them - which is how `c` over
+   * two `<C-n>` cursors ended in `'start' is out of bounds`.
+   *
+   * The rules are a document marker's. Anything before the edit is untouched; anything after it
+   * moves by the difference in length; anything *inside* it collapses to where the replaced text
+   * began, because the text it pointed at is gone. An offset exactly at [start] does not move: an
+   * insertion there belongs after the caret, and the caret that asked for it is placed by its own
+   * caller.
+   */
+  internal fun adjustForEdit(start: Int, end: Int, delta: Int) {
+    offset = adjustOffset(offset, start, end, delta)
+    if (hasSelection()) {
+      selectionStartOffset = adjustOffset(selectionStartOffset, start, end, delta)
+      selectionEndOffset = adjustOffset(selectionEndOffset, start, end, delta)
+      if (selectionEndOffset <= selectionStartOffset) removeSelection()
+    }
+  }
+
+  private fun adjustOffset(value: Int, start: Int, end: Int, delta: Int): Int = when {
+    value <= start -> value
+    value >= end -> value + delta
+    else -> start
+  }
+
   override fun removeSelection() {
     selectionStartOffset = -1
     selectionEndOffset = -1

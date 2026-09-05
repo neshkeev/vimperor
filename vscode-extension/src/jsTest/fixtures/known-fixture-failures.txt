@@ -56,7 +56,6 @@ src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVis
 #
 # `vedx1v` is the same field seen from the text side: the two carets delete different amounts.
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after block visual operation multiple time
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after visual operation multicaret
 
 
 # --- An IntelliJ action replayed by `.`, which this host has no equivalent of.

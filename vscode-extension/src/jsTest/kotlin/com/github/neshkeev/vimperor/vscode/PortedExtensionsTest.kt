@@ -443,6 +443,77 @@ class PortedExtensionsTest {
     assertEquals("function(a, b)\n", session.content, "nothing is deleted when the setting is unusable")
   }
 
+  // ---- multiple-cursors ------------------------------------------------------------------------------
+
+  /**
+   * `vim-multiple-cursors`: `<C-n>` puts a caret on the next occurrence of the word under the
+   * caret, and typing then changes all of them at once.
+   *
+   * The extension asks the editor for carets it does not have yet, which is the one thing here that
+   * is not a text operation. `VimEditor.addCaret` and `removeCaret` have been engine API all along,
+   * so what IntelliJ's `CaretModel` was really being asked for was a caret at a *visual* position -
+   * a buffer position here, and the two differ only where something is folded.
+   */
+  @Test
+  fun `test ctrl-n selects the word and then the next occurrence`() {
+    val session = Session("foo bar foo\n", "multiple-cursors")
+
+    session.host.key(session.fake, "<C-n>")
+    assertEquals(1, session.host.editorFor(session.fake).carets().size, "the first selects the word under the caret")
+
+    session.host.key(session.fake, "<C-n>")
+
+    assertEquals(2, session.host.editorFor(session.fake).carets().size, "the second adds a caret on `foo`")
+  }
+
+  /** What the carets are for: one edit lands in every place at once. */
+  @Test
+  fun `test typing changes every occurrence`() {
+    val session = Session("foo bar foo\n", "multiple-cursors")
+
+    session.host.key(session.fake, "<C-n>")
+    session.host.key(session.fake, "<C-n>")
+    session.type("c")
+    session.type("X")
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals("X bar X\n", session.content)
+  }
+
+  /** `<C-x>` moves the newest caret past this occurrence to the next one instead of adding to it. */
+  @Test
+  fun `test ctrl-x skips an occurrence`() {
+    val session = Session("foo bar foo baz foo\n", "multiple-cursors")
+
+    session.host.key(session.fake, "<C-n>")
+    session.host.key(session.fake, "<C-x>")
+
+    assertEquals(1, session.host.editorFor(session.fake).carets().size, "still one caret, moved on")
+  }
+
+  /** `<C-p>` takes the last caret back. */
+  @Test
+  fun `test ctrl-p removes the newest caret`() {
+    val session = Session("foo bar foo\n", "multiple-cursors")
+    session.host.key(session.fake, "<C-n>")
+    session.host.key(session.fake, "<C-n>")
+    assertEquals(2, session.host.editorFor(session.fake).carets().size)
+
+    session.host.key(session.fake, "<C-p>")
+
+    assertEquals(1, session.host.editorFor(session.fake).carets().size)
+  }
+
+  /** `g<A-n>` - every occurrence at once, rather than one at a time. */
+  @Test
+  fun `test all occurrences can be selected at once`() {
+    val session = Session("foo bar foo baz foo\n", "multiple-cursors")
+
+    session.host.key(session.fake, "<Plug>AllWholeOccurrences")
+
+    assertEquals(3, session.host.editorFor(session.fake).carets().size)
+  }
+
   // ---- surround ------------------------------------------------------------------------------------
 
   /**

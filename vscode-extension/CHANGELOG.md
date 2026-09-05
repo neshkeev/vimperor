@@ -28,5 +28,6 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
   `highlightedyank` (the text a yank covered flashes), `exchange` (`cx{motion}` marks a region,
   `cx` over a second one swaps the two) and `sneak` (`s{char}{char}` jumps to the pair, `S`
   backwards, `;` and `,` repeat) and `surround` (`ys{motion}{char}` wraps, `cs{from}{to}` changes
-  what wraps, `ds{char}` unwraps, `S` in visual), each enabled with the `Plug` line you would use in
-  IdeaVim.
+  what wraps, `ds{char}` unwraps, `S` in visual) and `multiple-cursors` (`<C-n>` puts a caret on the
+  next occurrence, `<C-x>` skips one, `<C-p>` takes the last back), each enabled with the `Plug`
+  line you would use in IdeaVim.
