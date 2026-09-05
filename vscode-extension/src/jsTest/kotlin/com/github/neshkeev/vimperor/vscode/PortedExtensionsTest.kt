@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.ExtensionBean
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * The extensions ported after the first, tested for what they do rather than that they loaded.
@@ -448,6 +449,27 @@ class PortedExtensionsTest {
     session.type("daD")
 
     assertEquals("due  ok\n", session.content)
+  }
+
+  /**
+   * Disabling has to take the two functions with it, and the loader cannot do that by owner.
+   *
+   * The engine tracks mappings and listeners by owner and function handlers by name, so the whole
+   * of `disableExtension` used to miss these: `textobj#user#plugin` stayed callable after
+   * `textobj-user` was turned off. `VsCodeExtensions.TEARDOWN` is where an extension names what the
+   * owner does not cover; IntelliJ reaches the same function through `VimExtension.dispose`.
+   */
+  @Test
+  fun `test disabling it unregisters the functions too`() {
+    Session("x\n", "textobj-user")
+    assertTrue(injector.functionService.getBuiltInFunction("textobj#user#plugin") != null)
+
+    injector.extensionLoader.disableExtension("textobj-user")
+
+    assertTrue(
+      injector.functionService.getBuiltInFunction("textobj#user#plugin") == null,
+      "the function the extension registered should be gone with it",
+    )
   }
 
   @Test

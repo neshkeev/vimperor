@@ -19,6 +19,7 @@ import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithR
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
+import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionBean
@@ -108,6 +109,24 @@ internal object VsCodeExtensions {
     "abolish" to { api -> api.abolishInit() },
   )
 
+  /**
+   * What disabling an extension has to undo *by name*, for the few that need it.
+   *
+   * The engine tracks mappings and listeners by owner, and [VsCodeExtensionLoader.disableExtension]
+   * removes both without knowing anything about the extension. Two things escape that: a Vimscript
+   * function handler, which the function service holds by name, and a command alias, which the
+   * command group holds by name. So an extension that registers either has to name them again on
+   * the way out, and this is where it says so.
+   *
+   * IntelliJ reaches the same code through `VimExtension.dispose`, which is why the entry here is a
+   * function in the engine rather than logic written twice.
+   */
+  val TEARDOWN: Map<String, () -> Unit> = mapOf(
+    // `textobj#user#plugin` and `textobj#user#map`, held by the function service.
+    "textobj-user" to { unregisterTextObjUserFunctions() },
+
+  )
+
   /** The id a bundled extension belongs to, which for this host is the extension itself. */
   const val PLUGIN_ID: String = "com.github.neshkeev.vimperor"
 
@@ -162,11 +181,12 @@ internal class VsCodeJsonExtensionProvider : JsonExtensionProvider {
  * The same shape as `IjExtensionLoader`, with the one difference that matters: where IntelliJ asks
  * a classloader for `bean.className`, this looks the function up in [VsCodeExtensions.BUNDLED].
  *
- * Disabling has to undo what `init` did, and an extension does two things that outlive it -
- * mappings and listeners - both of which the engine tracks by owner. So both owners are derived
- * from the extension's name, exactly as they are when it is enabled, and removing them is the whole
- * of the teardown. An extension that registers something the engine does not track by owner would
- * leak, which is a fact about the engine's ownership model rather than about this host.
+ * Disabling has to undo what `init` did. Most of what an extension registers - mappings and
+ * listeners - the engine tracks by owner, so both owners are derived from the extension's name
+ * exactly as they are when it is enabled, and removing them is most of the teardown. What the
+ * engine holds *by name* rather than by owner - a Vimscript function handler, a command alias - has
+ * to be named again, and [VsCodeExtensions.TEARDOWN] is where an extension that needs it says so.
+ * IntelliJ reaches the same functions through `VimExtension.dispose`.
  */
 internal class VsCodeExtensionLoader : ExtensionLoader {
 
@@ -189,6 +209,7 @@ internal class VsCodeExtensionLoader : ExtensionLoader {
     if (enabled.remove(name) == null) return
     injector.keyGroup.removeKeyMapping(MappingOwner.Plugin.get(name))
     injector.listenersNotifier.unloadListeners(ListenerOwner.Plugin.get(name))
+    VsCodeExtensions.TEARDOWN[name]?.invoke()
   }
 }
 
