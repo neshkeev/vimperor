@@ -71,6 +71,10 @@ class VimHost(
 
   fun start() {
     injector = vimInjector
+    // Before anything can run a command: the engine reaches this through `injector.application`,
+    // and without it every deferred continuation would run immediately - which is the answer for a
+    // host whose edits are synchronous and the wrong one here. See [afterHostCatchesUp].
+    SingleThreadedApplication.hostCatchUp = ::afterHostCatchesUp
     // The engine owns the builtin command trie but does not fill it. Without this the key handler
     // recognises nothing, and every keystroke is silently discarded.
     engineCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
@@ -324,6 +328,23 @@ class VimHost(
 
   /** What to do once the document is back in step - see [run]. */
   private val landed: MutableList<() -> Unit> = mutableListOf()
+
+  /**
+   * `VimApplication.runAfterHostCatchesUp`: engine work that must not start until the commands in
+   * flight have landed and the buffer has been re-read.
+   *
+   * This is [landed] with the command left out. [run]'s hook belongs to one command and is written
+   * next to the call that dispatched it; this belongs to a caller that dispatched a command through
+   * some other route - `normal("u")`, an `<Action>` mapping - and knows only that it has to wait.
+   * They share the list because they want the same moment.
+   *
+   * Nothing pending means nothing to wait for, and then it has to run *now* rather than at the next
+   * opportunity: the caller is inside a keystroke, and deferring it would put its work after work
+   * that was written to follow it.
+   */
+  private fun afterHostCatchesUp(action: () -> Unit) {
+    if (pending == 0) action() else landed += action
+  }
 
   private fun hostCommandsFinished() {
     // The command changed the document, and it changed it without going through the buffer - so

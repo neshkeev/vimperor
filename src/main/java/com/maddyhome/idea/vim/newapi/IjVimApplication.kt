@@ -96,6 +96,12 @@ internal class IjVimApplication : VimApplicationBase() {
     return ScheduledTask { alarm.cancelAllRequests() }
   }
 
+  /**
+   * Now, because there is never anything to wait for: IntelliJ's undo, redo and reformatting are
+   * all done by the time the call that asked for them returns.
+   */
+  override fun runAfterHostCatchesUp(action: () -> Unit) = action()
+
   private fun createKeyEvent(stroke: VimKeyStroke, component: Component): KeyEvent {
     return KeyEvent(
       component,

@@ -1366,6 +1366,22 @@ internal object SingleThreadedApplication : VimApplication, PostingApplication {
   }
 
   /**
+   * How to wait for a VS Code command to land, installed by [VimHost] at startup.
+   *
+   * A settable field rather than a constructor argument because this is an `object`, which the
+   * injector names before any host exists - the same reason [postKey]'s queue is a field that
+   * [VimHost] drains rather than something handed in. Null until a host installs one, and null for
+   * good in a test that drives the engine without one; in both cases nothing has been dispatched to
+   * VS Code, so there is nothing to wait for.
+   */
+  internal var hostCatchUp: ((() -> Unit) -> Unit)? = null
+
+  override fun runAfterHostCatchesUp(action: () -> Unit) {
+    val wait = hostCatchUp
+    if (wait == null) action() else wait(action)
+  }
+
+  /**
    * A key the engine wants handled *after* the one being handled now.
    *
    * One caller: `<C-V>` in Insert mode collects a numeric literal - `<C-V>065` types `A` - and the

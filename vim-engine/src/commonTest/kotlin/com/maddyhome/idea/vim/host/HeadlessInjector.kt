@@ -717,6 +717,9 @@ private object HeadlessApplication : VimApplication {
    */
   override fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask = ScheduledTask.NONE
 
+  /** Nothing here runs a host command, so the document is never out of step. */
+  override fun runAfterHostCatchesUp(action: () -> Unit) = action()
+
 }
 
 private object HeadlessStatistics : VimStatistics {

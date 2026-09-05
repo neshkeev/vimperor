@@ -39,6 +39,28 @@ interface VimApplication {
    * highlights, whether or not the last one is still pending.
    */
   fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask
+
+  /**
+   * Runs [action] once the host has finished whatever it is doing to the document.
+   *
+   * Some of what Vim does, only the host can do: undo and redo, reformatting, a `<Action>` mapping.
+   * IntelliJ does all of them in the call, so the next statement already sees the result. VS Code
+   * does none of them in the call - each is a command it runs for itself, and the engine gets a
+   * promise it cannot wait on, because the runtime has one thread and blocking it would stop the
+   * command from ever finishing.
+   *
+   * That is not a problem while the caller is a keystroke: the host holds the user's keys and
+   * everything resumes in order. It is a problem when one *statement* depends on the previous one
+   * having landed, which is what an extension writing `u` and then re-pasting is doing. This is the
+   * seam for that: the work that has to see the new document goes in [action], and the host runs it
+   * when the document is back in step - immediately, if it never went out of step.
+   *
+   * Two things a caller has to know. Whatever [action] closes over is restored *after* it runs, not
+   * after the function returns, so a `try`/`finally` around the call restores too early - see
+   * `undoAndRepaste`, which had to move its register save inside. And the host has already re-read
+   * the buffer by then, so [action] must not cache offsets from before it.
+   */
+  fun runAfterHostCatchesUp(action: () -> Unit)
 }
 
 /** A [VimApplication.schedule] request that has not run yet, or that has. */
