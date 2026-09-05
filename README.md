@@ -69,18 +69,19 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 7 of IdeaVim's 24 bundled extensions — matchit, NERDTree, VimEverywhere
-and youcompleteme are still in the plugin, and `yankring`, `functextobj` and
-`classtextobj` are compiled here but not enabled, each for a reason recorded at the
-code. `ReplaceWithRegister`, `vim-paragraph-motion`,
+What does not: 6 of IdeaVim's 24 bundled extensions — matchit, NERDTree, VimEverywhere
+and youcompleteme are still in the plugin, and `functextobj` and `classtextobj` are
+compiled here but not enabled, both waiting on a symbol cache. `ReplaceWithRegister`,
+`vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround` and `multiple-cursors` are
-ported, and are the pattern for the others. Not
-for the reason this file used to give. Two of them read a key, and both are ported:
-a key is read here through the engine's modal input rather than by blocking on one. They are unported because they live in the
-IntelliJ plugin's module and register through an IntelliJ extension point. One is
-portable as it stands and four more are a single cast away from it.
+`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors` and `yankring`
+are ported, and are the pattern for the others.
+
+The four still in the plugin are not there for want of a seam. `matchit` wants a
+syntax tree, `NERDTree` a project tool window, `VimEverywhere` popups and
+`java.awt.Robot`, and `youcompleteme` works by taking `<Tab>` out of an IntelliJ-only
+option. Each would be a rewrite against a different UI, not a move.
 
 [`vscode-extension/DEVELOPMENT.md`](vscode-extension/DEVELOPMENT.md) is the real account: what
 works, how it is tested, and what only a real window found.

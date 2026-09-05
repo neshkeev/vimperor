@@ -86,8 +86,12 @@ private fun VimApi.cycleLastPaste(steps: Int) {
   // it is also Kotlin's own `Math.floorMod`, which is JVM-only and does not compile for JS.
   val nextIndex = (pending.ringIndex + steps).mod(entries.size)
 
-  undoAndRepaste(entries[nextIndex], pending.paste)
-  rememberPaste(pending.paste, nextIndex)
+  // Inside the call rather than after it: the re-paste may not have happened yet - see
+  // [undoAndRepaste] - and `rememberPaste` records the buffer as it is when it runs, which is what
+  // makes the next <C-P> recognise this paste as still replaceable.
+  undoAndRepaste(entries[nextIndex], pending.paste) {
+    rememberPaste(pending.paste, nextIndex)
+  }
 }
 
 /**
@@ -96,31 +100,34 @@ private fun VimApi.cycleLastPaste(steps: Int) {
  * first keeps the undo stack holding a single paste however long the user keeps cycling, so one
  * `u` still returns to the state before the paste.
  *
- * ## This is what keeps the extension off the VS Code host
+ * ## The undo is the host's, and it does not always finish in the call
  *
- * It requires `u` to have finished by the time the next line runs, and that is a demand on the
- * host, not on the engine. IntelliJ's undo is synchronous. VS Code's is a command it runs for
+ * This needs `u` to have finished by the time the re-paste runs, and that is a demand on the host
+ * rather than on the engine. IntelliJ's undo is synchronous. VS Code's is a command it runs for
  * itself: `VsCodeInjector.undo` dispatches `undo` and returns `true` immediately, and the host holds
  * the user's *keys* until it lands - which is the right answer for someone typing and no answer at
- * all here, because `normal("<Esc>u")` and the `normal("${'$'}{paste.count}...")` below it are one
- * synchronous run inside a single mapping. The re-paste would land on text the undo had not removed
- * yet, and the undo would then arrive on top of it.
+ * all here, because this is one mapping and none of it is a keystroke. So the re-paste landed on
+ * text the undo had not removed yet, and the undo then arrived on top of it. That was the whole of
+ * what kept the extension off VS Code.
  *
- * So `yankring` compiles for both hosts and is bundled by only one. Enabling it in VS Code needs a
- * seam the engine does not have: a way for an extension to continue once the host's document has
- * caught up. The rest of the extension - the ring, what records into it, `:YRShow`, `:YRClear` -
- * asks nothing of the host and would work there today.
+ * `VimApplication.runAfterHostCatchesUp` is the seam for it, and this is what calling one looks
+ * like: everything that has to see the undone document goes inside, and the register the paste
+ * reads is loaded *there* rather than around the call. Loading it outside would put it back before
+ * the paste that needs it, because this function now returns while the undo is still in flight.
  */
-private fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste) {
-  withUnnamedRegister(RegisterContents(entry.text, entry.type)) {
-    // The count that selected the entry is still pending in the key handler, and `normal` feeds keys
-    // back through that same state - leaving it would apply the count to the undo and re-enter this
-    // mapping. YankRing clears it with the `:<C-U>` in its own mapping; <Esc> is our equivalent.
-    normal("<Esc>u")
+private fun VimApi.undoAndRepaste(entry: YankRingEntry, paste: Paste, afterwards: () -> Unit) {
+  // The count that selected the entry is still pending in the key handler, and `normal` feeds keys
+  // back through that same state - leaving it would apply the count to the undo and re-enter this
+  // mapping. YankRing clears it with the `:<C-U>` in its own mapping; <Esc> is our equivalent.
+  normal("<Esc>u")
 
-    restoreCaretFor(paste)
+  injector.application.runAfterHostCatchesUp {
+    withUnnamedRegister(RegisterContents(entry.text, entry.type)) {
+      restoreCaretFor(paste)
 
-    normal("${paste.count}${paste.command}")
+      normal("${paste.count}${paste.command}")
+    }
+    afterwards()
   }
 }
 

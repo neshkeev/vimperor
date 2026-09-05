@@ -90,11 +90,11 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 7 of IdeaVim's 24 bundled extensions are not
+- **Vim plugins.** There is no `pack/` directory, and 6 of IdeaVim's 24 bundled extensions are not
   available — `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code
-  has nothing shaped like, and `yankring`, `functextobj` and `classtextobj` are built but not
-  enabled, each waiting on an answer this host can only give asynchronously. Seventeen work, and
-  they are enabled the way you would in IdeaVim:
+  has nothing shaped like, and `functextobj` and `classtextobj` are built but not enabled, both
+  waiting on an answer this host can only give asynchronously. Eighteen work, and they are enabled
+  the way you would in IdeaVim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
@@ -114,16 +114,22 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'justinmk/vim-sneak'                " s{char}{char} jumps to the pair; S back, ; and , repeat
   Plug 'tpope/vim-surround'                " ys{motion}{char}, cs{from}{to}, ds{char}, S in visual
   Plug 'terryma/vim-multiple-cursors'      " <C-n> a caret on the next occurrence, <C-x> skip, <C-p> back
+  Plug 'vim-scripts/YankRing.vim'          " every yank in a ring; <C-P>/<C-N> cycle the last paste
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
   drives its own Toggle Line Comment. `dgc`, the text object over a run of comment lines, needs a
   syntax tree and does nothing here.
 
-  `yankring` is the one that compiles for this host and is deliberately left out. Its `<C-P>` works
-  by undoing the paste and re-pasting an older entry, and VS Code's undo is a command that finishes
-  after the extension has moved on — so it would re-paste onto text the undo had not removed yet.
-  Enabling it needs the engine to grow a way of continuing once the document has caught up.
+  `yankring`'s `<C-P>` undoes the paste and re-pastes an older entry, and VS Code's undo is a
+  command that finishes after the extension has moved on — so the re-paste happens a tick later,
+  once the document has caught up, rather than in the keystroke that asked for it. You will not see
+  the difference; the extension does, and says so at the code.
+
+  `functextobj` and `classtextobj` are the two that compile for this host and are deliberately left
+  out. Both ask where a function or a class begins, VS Code answers over a promise, and a text
+  object is asked its range in the middle of a keystroke — so what they need is not a way to wait
+  but a cache that already knows.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.

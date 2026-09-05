@@ -206,16 +206,17 @@ class ExtensionProviderTest {
    * to fail because the extension is absent, not because the name was never recognised. The two
    * fail identically to a user and differently to whoever adds the extension.
    *
-   * `yankring` is the example because it is the one extension that is in the engine and left out of
-   * this host on purpose - its `<C-P>` is built on undo, which VS Code finishes after the extension
-   * has moved on. So the alias resolves and the extension does not arrive, which is exactly the
-   * distinction this test exists for. It used to be `surround`, until `surround` was ported.
+   * `NERDTree` is the example, and it is chosen to stay one: it is a project tree in a tool window,
+   * which is not a thing this host is ever going to grow. So the alias resolves and the extension
+   * does not arrive, which is exactly the distinction this test exists for. It was `surround`
+   * until `surround` was ported, and then `yankring` until `runAfterHostCatchesUp` let that one in
+   * too - twice is enough to stop picking an example that is merely waiting its turn.
    */
   @Test
   fun `test a known alias with no extension behind it still fails`() {
     Session()
 
-    assertEquals("yankring", injector.extensionRegistrator.getExtensionNameByAlias("vim-scripts/YankRing.vim"))
-    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("vim-scripts/YankRing.vim"))
+    assertEquals("NERDTree", injector.extensionRegistrator.getExtensionNameByAlias("preservim/nerdtree"))
+    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("preservim/nerdtree"))
   }
 }

@@ -32,7 +32,7 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 7 of the 24 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 6 of the 24 bundled extensions, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
@@ -41,12 +41,12 @@ never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points,
 `windownavigation` - which looks like a 25th in `src/main/java` - is not one of them.
 It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 
-Seventeen are ported and bundled - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Eighteen are ported and bundled - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround` and `multiple-cursors` - and they
-are the pattern for the rest. **Three more are in the engine and deliberately not
-bundled**: `yankring`, `functextobj` and `classtextobj`. Each lives in
+`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors` and
+`yankring` - and they are the pattern for the rest. **Two more are in the engine and
+deliberately not bundled**: `functextobj` and `classtextobj`. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -59,25 +59,36 @@ knows nothing about functions. So its adapter keeps a real `dispose`, and the VS
 Code host has `VsCodeExtensions.TEARDOWN` for the same reason. Anything else that
 registers by name will need an entry there.
 
-**Three extensions are in `vim-engine` and not in `VsCodeExtensions.BUNDLED`, on
+**Two extensions are in `vim-engine` and not in `VsCodeExtensions.BUNDLED`, on
 purpose.** Compiling for both hosts and being *useful* on both are different
 questions, and moving one out of `src/main/java` is worth doing either way - it is
 the deletion this port is working towards.
-
-`yankring`'s `<C-P>` works by undoing the paste and re-pasting an older entry, which
-needs `u` to have finished by the next statement. IntelliJ's undo is synchronous; VS
-Code's is a command the host dispatches and cannot wait for - `VsCodeInjector.undo`
-returns `true` immediately and holds the user's *keys* until it lands, which is no
-help inside one mapping. The re-paste would land on text the undo had not removed
-yet.
 
 `functextobj` (`am`, `aM`, `im`) and `classtextobj` (`ac`) ask
 `injector.psiService` where a function or a class begins and ends. IntelliJ answers
 from its PSI tree. `TextOnlyPsiService` answers null, and every mapping they install
 would be inert - which is worse than absent, because the keys would be taken. VS Code
 *can* answer: `vscode.executeDocumentSymbolProvider` knows where functions are, and
-returns a promise. So the seam that is missing is the same one `yankring` needs, plus
-a symbol cache the host refreshes in the background.
+returns a promise - so what is missing is a symbol cache the host refreshes in the
+background, because a text object is asked its range in the middle of a keystroke and
+cannot wait for one.
+
+**`yankring` was the third of these until it was not, and how it stopped being one is
+the pattern for the rest.** Its `<C-P>` undoes the paste and re-pastes an older entry,
+which needs `u` to have finished by the next statement. IntelliJ's undo is
+synchronous; VS Code's is a command the host dispatches and cannot wait for -
+`VsCodeInjector.undo` returns `true` immediately and holds the user's *keys* until it
+lands, which is no help inside one mapping, so the re-paste landed on text the undo
+had not removed yet.
+
+`VimApplication.runAfterHostCatchesUp` is the seam: the work that has to see the new
+document goes in a callback, and the host runs it once the commands in flight have
+landed and every editor has been re-read - immediately, on a host whose edits never go
+out of step, which is what IntelliJ's one-line implementation says. Two things a
+caller learns the hard way, both of them the same lesson `readKeys` taught: whatever
+the callback closes over is restored *after* it runs, so `undoAndRepaste` had to move
+its register save inside; and the buffer is a different buffer by then, so nothing may
+carry an offset across.
 
 **`commentary` and `highlightedyank` are the pattern for the ones that are left**,
 and a different one: their bodies were *not* engine-only, and the answer was not to

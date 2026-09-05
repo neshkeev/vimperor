@@ -33,6 +33,8 @@ import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
+import com.maddyhome.idea.vim.extension.yankring.disposeYankRing
+import com.maddyhome.idea.vim.extension.yankring.init as yankRingInit
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionBean
@@ -155,6 +157,12 @@ internal object VsCodeExtensions {
     // `vim-multiple-cursors`: `<C-n>` puts a caret on the next occurrence of the word under the
     // caret, `<C-x>` skips one, `<C-p>` takes the last one back.
     "multiple-cursors" to { api -> api.multipleCursorsInit() },
+
+    // `YankRing.vim`: every yank, delete and change goes into a ring, and `<C-P>` / `<C-N>` walk
+    // the text of the last paste back and forth through it. The walk undoes the paste and repeats
+    // it with another entry, so it needs the host's undo to have landed before the re-paste - see
+    // `VimApplication.runAfterHostCatchesUp`, which is what let this one be bundled here at all.
+    "yankring" to { api -> api.yankRingInit() },
   )
 
   /**
@@ -188,6 +196,10 @@ internal object VsCodeExtensions {
 
     // What the last cursor was added from, per buffer.
     "multiple-cursors" to { disposeMultipleCursors() },
+
+    // `:YRShow`, `:YRClear` and `:YRReplace`, held by the command group, plus the register listener
+    // that fills the ring, which goes onto `listenersNotifier` under no owner at all.
+    "yankring" to { disposeYankRing() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */
