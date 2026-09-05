@@ -160,8 +160,16 @@ private fun CaretTransaction.replaceTextAndUpdateCaret(
 
 // Public rather than internal because the file moved: the IntelliJ plugin's older,
 // extension-point version of this same extension shares these, and `internal` stopped reaching it
-// when this became a different module. They are the extension's own vocabulary, not engine API -
-// and they go back to internal, or go away entirely, when that older version does.
+// when this became a different module. They are the extension's own vocabulary, not engine API.
+//
+// The alternative was to delete that older version instead, and it was weighed rather than
+// assumed. `ReplaceWithRegister.kt` is twenty-six lines that install the same three mappings by
+// calling the same four functions - it exists only to reach the old extension point - but three
+// things name it: `enableExtensions("ReplaceWithRegister")` in the plugin's own 73 tests,
+// `ExtensionTracking`, and the extension-point declaration and alias in
+// `ideavim-frontend/src/main/resources/IdeaVIM.ideavim-frontend.xml`. Deleting it means editing all
+// three, and all three are deleted anyway when the plugin is. Eight symbols widened is the cheaper
+// half of that trade, and it reverts in one edit when the plugin goes.
 public const val RWR_OPERATOR = "<Plug>ReplaceWithRegisterOperator"
 public const val RWR_LINE = "<Plug>ReplaceWithRegisterLine"
 public const val RWR_VISUAL = "<Plug>ReplaceWithRegisterVisual"

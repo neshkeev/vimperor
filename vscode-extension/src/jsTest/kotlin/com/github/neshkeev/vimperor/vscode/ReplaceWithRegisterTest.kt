@@ -139,6 +139,26 @@ class ReplaceWithRegisterTest {
     )
   }
 
+  /**
+   * Enable, disable, enable: the teardown has to leave nothing behind that the second `init` then
+   * trips over. Worth asserting because the teardown is by *owner* - the engine removes every
+   * mapping and listener tagged `MappingOwner.Plugin.get(name)` - so it is correct only as long as
+   * everything the extension registers is tagged that way, and a leak would show up here as a
+   * duplicate rather than as an error.
+   */
+  @Test
+  fun `test it can be turned off and on again and still work`() {
+    val session = Session("aaa bbb ccc")
+    injector.extensionLoader.disableExtension("ReplaceWithRegisterNew")
+    injector.extensionRegistrator.setOptionByPluginAlias("vim-scripts/ReplaceWithRegister")
+
+    session.type("yiw")
+    session.type("wgriw")
+
+    assertEquals(1, injector.extensionLoader.getEnabledExtensions().size, "enabled once, not twice")
+    assertEquals("aaa aaa ccc", session.content, "and still doing its job")
+  }
+
   private companion object {
     const val RWR_OPERATOR = "<Plug>ReplaceWithRegisterOperator"
   }
