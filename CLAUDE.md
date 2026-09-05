@@ -32,16 +32,22 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 20 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 19 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-Six are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `mini-ai`, `CamelCaseMotion` and `indentwise` - and they are the
-pattern for the rest. Each lives in
+Seven are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise` and `textobj-user` -
+and they are the pattern for the rest. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
+
+`textobj-user` is the one exception to "two-line", and it says something about the
+engine rather than about that extension: it registers Vimscript *function
+handlers*, and the loader's teardown removes mappings and listeners by owner but
+knows nothing about functions. So its adapter keeps a real `dispose`. Anything
+else that registers by name will need the same.
 
 A candidate is an extension whose *body* uses only the thin API and the engine,
 whatever its registration does. Screen by compiling, not by grepping imports - the
@@ -51,8 +57,8 @@ name filter useless.
 `VimExtensionFacade` is in the engine now, which was worth more than any single
 port: it is what an extension calls to register a mapping, and while it lived in
 the plugin a portable extension still could not follow. Moving it unblocked
-`camelcasemotion` and `indentwise` immediately, and left `abolish`, `targets` and
-`textobjuser` needing only the `newapi` bridge. What stayed behind is in `VimExtensionFacadeIj.kt`
+`camelcasemotion` and `indentwise` immediately, and left `abolish` and `targets`
+needing only the `newapi` bridge. What stayed behind is in `VimExtensionFacadeIj.kt`
 - the functions taking an IntelliJ `Editor` or `DataContext`, as top-level
 functions rather than members, since Kotlin cannot add a member to an object from
 another module. `inputKeyStroke` is the only one with a real reason to stay: its
@@ -66,11 +72,12 @@ at all. What blocks them is where they live and how they register. They are in
 hangs off an IntelliJ extension point. Measured against `vim-engine` rather than
 against `com.intellij` - which is the measure that matters, because IdeaVim's own
 IntelliJ bridge lives in `newapi`, `helper` and `listener` and does not say
-`com.intellij` - exactly one is portable as it stands: `indentwise`, 224 lines.
-Four more are a single package away, and that package is always `newapi`: a cast
-to `IjVimEditor` or `IjVimCaret` for something the engine can now do itself.
-`abolish` (786 lines), `targets` (808), `functextobj` and `classtextobj` are in
-that group.
+`com.intellij` - most of what is left is a single package away, and that package
+is always `newapi`: a cast to `IjVimEditor` or `IjVimCaret` for something the
+engine can now do itself. `abolish` (786 lines), `targets` (808), `functextobj`
+and `classtextobj` are in that group; `textobj-user` was, and its whole `newapi`
+debt turned out to be one line calling `moveToInlayAwareOffset`, which `VimCaret`
+has declared all along.
 
 ### How an extension is meant to reach VS Code
 

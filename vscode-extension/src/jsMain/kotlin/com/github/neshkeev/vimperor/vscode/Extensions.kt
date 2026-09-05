@@ -16,6 +16,7 @@ import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
+import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionBean
@@ -90,6 +91,10 @@ internal object VsCodeExtensions {
     // `[-` `]-` `[+` `]+` `[=` `]=` `[%` `]%`: move by indentation level, which in a language whose
     // blocks are indentation is structural movement without a parser.
     "indentwise" to { api -> api.indentWiseInit() },
+
+    // `textobj#user#plugin(...)`, which is how a vimrc declares text objects of its own: a pattern
+    // and the keys to select it with. The only bundled extension that registers no keys at all.
+    "textobj-user" to { api -> api.textObjUserInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

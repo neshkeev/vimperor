@@ -39,6 +39,9 @@ class PortedExtensionsTest {
     }
 
     fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
+    fun script(line: String) =
+      injector.vimscriptExecutor.execute(line, host.editorFor(fake), VsCodeExecutionContext, skipHistory = true)
+
     val content: String get() = fake.document.content
     val caret: Int get() = host.editorFor(fake).primaryCaret().offset
   }
@@ -188,6 +191,98 @@ class PortedExtensionsTest {
     session.type("di\"")
 
     assertEquals("say \"\" now\n", session.content)
+  }
+
+  // ---- textobj-user ----------------------------------------------------------------------------
+
+  /**
+   * Unlike every other extension here, this one installs no keys. It installs two Vimscript
+   * functions, and the user's own `.vimrc` calls them to declare a text object - which is why the
+   * tests are scripts rather than keystrokes.
+   */
+  @Test
+  fun `test a vimrc can declare a text object of its own`() {
+    val session = Session("due 2026-09-05 ok\n", "textobj-user")
+
+    session.script(
+      "call textobj#user#plugin('date', {'-': " +
+        "{'pattern': '\\d\\{4}-\\d\\{2}-\\d\\{2}', 'select': ['ad', 'id']}})",
+    )
+    session.type("dad")
+
+    assertEquals("due  ok\n", session.content)
+  }
+
+  /** Both keys the spec lists reach the same object; `select` is one pattern, so `i` and `a` agree. */
+  @Test
+  fun `test every key in the spec is mapped`() {
+    val session = Session("due 2026-09-05 ok\n", "textobj-user")
+
+    session.script(
+      "call textobj#user#plugin('date', {'-': " +
+        "{'pattern': '\\d\\{4}-\\d\\{2}-\\d\\{2}', 'select': ['ad', 'id']}})",
+    )
+    session.type("did")
+
+    assertEquals("due  ok\n", session.content)
+  }
+
+  /**
+   * A `[header, footer]` pair, which is the half `select` alone cannot express: `select-a` spans the
+   * delimiters and `select-i` only what is between them.
+   */
+  @Test
+  fun `test a header and footer pair gives an inner and an outer object`() {
+    val session = Session("x BEGIN body END y\n", "textobj-user")
+    val spec = "{'pattern': ['BEGIN', 'END'], 'select-a': 'ab', 'select-i': 'ib'}"
+
+    session.script("call textobj#user#plugin('blk', {'-': $spec})")
+    session.type("dib")
+
+    assertEquals("x BEGINEND y\n", session.content)
+  }
+
+  @Test
+  fun `test the outer form takes the delimiters with it`() {
+    val session = Session("x BEGIN body END y\n", "textobj-user")
+    val spec = "{'pattern': ['BEGIN', 'END'], 'select-a': 'ab', 'select-i': 'ib'}"
+
+    session.script("call textobj#user#plugin('blk', {'-': $spec})")
+    session.type("dab")
+
+    assertEquals("x  y\n", session.content)
+  }
+
+  /** `move-n` is a motion rather than a text object, so it is mapped in normal mode as well. */
+  @Test
+  fun `test a move spec gives a motion`() {
+    val session = Session("aa 2026-09-05 bb 2027-01-01\n", "textobj-user")
+
+    session.script(
+      "call textobj#user#plugin('date', {'-': " +
+        "{'pattern': '\\d\\{4}-\\d\\{2}-\\d\\{2}', 'move-n': ']d'}})",
+    )
+    session.type("]d")
+
+    assertEquals(3, session.caret, "the start of the first date ahead of the caret")
+  }
+
+  /**
+   * `textobj#user#map` adds keys to an object that already exists, by mapping them onto the same
+   * `<Plug>` name - which is the reason the interface names exist at all.
+   */
+  @Test
+  fun `test map adds another key to an object already declared`() {
+    val session = Session("due 2026-09-05 ok\n", "textobj-user")
+
+    session.script(
+      "call textobj#user#plugin('date', {'-': " +
+        "{'pattern': '\\d\\{4}-\\d\\{2}-\\d\\{2}', 'select': ['ad']}})",
+    )
+    session.script("call textobj#user#map('date', {'-': {'select': ['aD']}})")
+    session.type("daD")
+
+    assertEquals("due  ok\n", session.content)
   }
 
   @Test

@@ -9,37 +9,30 @@
 package com.maddyhome.idea.vim.extension.textobjuser
 
 import com.intellij.vim.api.VimInitApi
-import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.VimExtension
 
 /**
- * A port of kana/vim-textobj-user: a framework that lets users declaratively define their own text objects via
- * `textobj#user#plugin({name}, {specs})`.
+ * A port of kana/vim-textobj-user: a framework that lets users declaratively define their own text
+ * objects via `textobj#user#plugin({name}, {specs})`.
+ *
+ * The extension itself is in `vim-engine` now, as a `@VimPlugin` function both hosts compile; this
+ * is the adapter that keeps the IntelliJ extension point working, and it goes when the plugin does.
+ *
+ * Unlike the other adapters it is not two lines, because this extension registers Vimscript function
+ * handlers rather than mappings, and the engine tracks mappings by owner but not functions. So the
+ * teardown has to name them, which is what `dispose` does here.
  *
  * See: https://github.com/kana/vim-textobj-user
  */
 internal class VimTextObjUserExtension : VimExtension {
 
-  override fun getName(): String = "textobj-user"
+  override fun getName(): String = TEXT_OBJ_USER
 
   override fun init(initApi: VimInitApi) {
-    injector.functionService.registerFunctionHandler(
-      PLUGIN_FUNCTION_NAME,
-      TextObjUserPluginFunctionHandler(PLUGIN_FUNCTION_NAME, getOwner()),
-    )
-    injector.functionService.registerFunctionHandler(
-      MAP_FUNCTION_NAME,
-      TextObjUserMapFunctionHandler(MAP_FUNCTION_NAME, getOwner()),
-    )
+    registerTextObjUserFunctions()
   }
 
   override fun dispose() {
-    injector.functionService.unregisterFunctionHandler(PLUGIN_FUNCTION_NAME)
-    injector.functionService.unregisterFunctionHandler(MAP_FUNCTION_NAME)
-  }
-
-  companion object {
-    private const val PLUGIN_FUNCTION_NAME = "textobj#user#plugin"
-    private const val MAP_FUNCTION_NAME = "textobj#user#map"
+    unregisterTextObjUserFunctions()
   }
 }

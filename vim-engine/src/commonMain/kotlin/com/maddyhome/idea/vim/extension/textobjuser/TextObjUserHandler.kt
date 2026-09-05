@@ -17,9 +17,7 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.extension.ExtensionHandler
 import com.maddyhome.idea.vim.group.visual.vimSetSelection
-import com.maddyhome.idea.vim.helper.moveToInlayAwareOffset
 import com.maddyhome.idea.vim.listener.SelectionVimListenerSuppressor
-import com.maddyhome.idea.vim.newapi.IjVimCaret
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import kotlin.math.max
@@ -59,7 +57,7 @@ internal class TextObjUserHandler(
           injector.visualMotionGroup.toggleVisual(editor, 1, 0, regionType)
         }
       } else {
-        (caret as IjVimCaret).caret.moveToInlayAwareOffset(range.startOffset)
+        caret.moveToInlayAwareOffset(range.startOffset)
       }
     }
   }
