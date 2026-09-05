@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
+import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.api.injector
@@ -95,6 +96,10 @@ internal object VsCodeExtensions {
     // `textobj#user#plugin(...)`, which is how a vimrc declares text objects of its own: a pattern
     // and the keys to select it with. The only bundled extension that registers no keys at all.
     "textobj-user" to { api -> api.textObjUserInit() },
+
+    // `targets.vim`: seeking text objects. `ci(` when the caret is nowhere near a paren, `cin(` for
+    // the next one, `cil(` for the last, and `I`/`A` for the whitespace-trimmed and -extended forms.
+    "targets" to { api -> api.targetsInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

@@ -193,6 +193,78 @@ class PortedExtensionsTest {
     assertEquals("say \"\" now\n", session.content)
   }
 
+  // ---- targets -----------------------------------------------------------------------------------
+
+  /**
+   * `targets.vim`, and the biggest of the ported extensions at 808 lines.
+   *
+   * The fixture and every expectation below are transcribed from the plugin's own
+   * `VimTargetsPairTest`, which took them in turn from targets.vim's golden file `test/test1.ok`.
+   * That is deliberate: the point of these is not to re-derive what targets.vim does - 73 tests in
+   * `src/test` already pin that down - but to show the same source producing the same answers on
+   * this host, where the caret, the document and the selection are VS Code's.
+   */
+  private fun targets(): Session {
+    val session = Session("a ( b ) ( c ) ( ( x ) ) ( e ) ( f ) g\n", "targets")
+    session.type("fx")
+    return session
+  }
+
+  @Test
+  fun `test the four pair modifiers`() {
+    assertEquals("a ( b ) ( c ) ( () ) ( e ) ( f ) g\n", targets().also { it.type("di(") }.content, "i")
+    assertEquals("a ( b ) ( c ) ( (  ) ) ( e ) ( f ) g\n", targets().also { it.type("dI(") }.content, "I")
+    assertEquals("a ( b ) ( c ) (  ) ( e ) ( f ) g\n", targets().also { it.type("da(") }.content, "a")
+    assertEquals("a ( b ) ( c ) ( ) ( e ) ( f ) g\n", targets().also { it.type("dA(") }.content, "A")
+  }
+
+  /** `n` and `l` are the half plain Vim has no spelling for: the *next* pair, and the *last*. */
+  @Test
+  fun `test the next and last qualifiers`() {
+    assertEquals("a ( b ) ( c ) ( ( x ) ) () ( f ) g\n", targets().also { it.type("din(") }.content, "n")
+    assertEquals("a ( b ) () ( ( x ) ) ( e ) ( f ) g\n", targets().also { it.type("dil(") }.content, "l")
+  }
+
+  @Test
+  fun `test a count steps outward`() {
+    assertEquals("a ( b ) ( c ) () ( e ) ( f ) g\n", targets().also { it.type("d2i(") }.content)
+  }
+
+  /** `b` is "any block", which here resolves to the paren the caret is inside. */
+  @Test
+  fun `test the any-block trigger`() {
+    assertEquals("a ( b ) ( c ) ( () ) ( e ) ( f ) g\n", targets().also { it.type("dib") }.content)
+  }
+
+  /**
+   * The seeking half, and the reason to install it: Vim's `di(` needs the caret already inside the
+   * parentheses, and this looks along the line in both directions.
+   */
+  @Test
+  fun `test it seeks forward and backward along the line`() {
+    val forward = Session("a ( bbbbbbbb ) c\n", "targets")
+    forward.type("di(")
+    assertEquals("a () c\n", forward.content, "the caret starts before the pair")
+
+    val backward = Session("a ( bbbbbbbb ) c\n", "targets")
+    backward.type("\$di(")
+    assertEquals("a () c\n", backward.content, "and after it")
+  }
+
+  /**
+   * Re-issuing the object in visual mode grows the selection outward, which is why the extension is
+   * a class holding the last target it produced rather than a set of free functions.
+   */
+  @Test
+  fun `test re-issuing the object in visual mode grows the selection`() {
+    val session = Session("( ( ( x ) ) )\n", "targets")
+    session.type("fx")
+
+    session.type("vibibd")
+
+    assertEquals("( () )\n", session.content, "the second `ib` stepped out one level")
+  }
+
   // ---- textobj-user ----------------------------------------------------------------------------
 
   /**
