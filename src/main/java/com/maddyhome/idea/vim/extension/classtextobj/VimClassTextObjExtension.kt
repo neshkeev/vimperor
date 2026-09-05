@@ -8,41 +8,20 @@
 
 package com.maddyhome.idea.vim.extension.classtextobj
 
-import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.extension.VimExtension
-import com.maddyhome.idea.vim.extension.VimExtensionFacade.putExtensionHandlerMapping
-import com.maddyhome.idea.vim.extension.VimExtensionFacade.putKeyMappingIfMissing
 
 /**
- * Provides a Vim-style text object for class definitions.
+ * The IntelliJ half of the class text object. The extension itself is in `vim-engine`, where both
+ * hosts compile it; this keeps the `IdeaVIM.vimExtension` extension point working and goes when the
+ * plugin does.
  *
- * Mapping:
- * - `ac` "a class definition" — the entire class definition (declaration line and body).
+ * What is *not* portable is the answer to "where does this class begin and end", and that is
+ * `IjVimPsiService.getClassRange` now rather than something this extension reaches for itself.
  */
 internal class VimClassTextObjExtension : VimExtension {
-
-  override fun getName(): String = "classtextobj"
+  override fun getName(): String = CLASS_TEXT_OBJ
 
   override fun init() {
-    putExtensionHandlerMapping(
-      MappingMode.XO,
-      injector.parser.parseKeys(PLUG_OUTER_CLASS),
-      owner,
-      ClassTextObjectHandler(),
-      false,
-    )
-
-    putKeyMappingIfMissing(
-      MappingMode.XO,
-      injector.parser.parseKeys("ac"),
-      owner,
-      injector.parser.parseKeys(PLUG_OUTER_CLASS),
-      true,
-    )
-  }
-
-  companion object {
-    private const val PLUG_OUTER_CLASS = "<Plug>(textobj-class-ac)"
+    registerClassTextObj()
   }
 }

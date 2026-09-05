@@ -17,15 +17,33 @@ import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiWhiteSpace
 import com.intellij.psi.util.PsiTreeUtil
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.MethodRanges
 import com.maddyhome.idea.vim.api.VimPsiService
 import com.maddyhome.idea.vim.api.getLineEndOffset
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.group.psi.ClassRangeFinder
+import com.maddyhome.idea.vim.group.psi.MethodPsiRanges
 import com.maddyhome.idea.vim.helper.PsiHelper
 import com.maddyhome.idea.vim.newapi.ij
 import com.maddyhome.idea.vim.newapi.vim
 
 
 class IjVimPsiService : VimPsiService {
+
+  /**
+   * `af`, `aF` and `if`, from the PSI tree. See [MethodPsiRanges], which is where the walking is.
+   *
+   * The extension that asks this used to do the walking itself, which is why it could not leave the
+   * plugin: the tree is IntelliJ's and the question - "what is a function here" - is one only a host
+   * can answer.
+   */
+  override fun getMethodRanges(editor: VimEditor, offset: Int): MethodRanges? =
+    MethodPsiRanges.find(editor.ij, offset)
+
+  /** `ac` and `ic`. See [ClassRangeFinder]. */
+  override fun getClassRange(editor: VimEditor, offset: Int): TextRange? =
+    ClassRangeFinder.find(editor.ij, offset)?.let { TextRange(it.first, it.second) }
+
   override fun getCommentAtPos(editor: VimEditor, pos: Int): Pair<TextRange, Pair<String, String>?>? {
     val psiFile = PsiHelper.getFile(editor.ij) ?: return null
     val psiElement = psiFile.findElementAt(pos) ?: return null

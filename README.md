@@ -69,8 +69,9 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 9 of the 26 bundled extensions — matchit, NERDTree, argtextobj's
-PSI-backed cousins and the rest. `ReplaceWithRegister`, `vim-paragraph-motion`,
+What does not: 9 of the 26 bundled extensions — matchit, NERDTree and the rest, plus
+`functextobj` and `classtextobj`, which are compiled here but need a syntax tree VS
+Code will only give asynchronously. `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround` and `multiple-cursors` are

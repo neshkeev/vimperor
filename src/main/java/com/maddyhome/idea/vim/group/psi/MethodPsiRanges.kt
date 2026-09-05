@@ -6,8 +6,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.extension.psi
+package com.maddyhome.idea.vim.group.psi
 
+import com.maddyhome.idea.vim.api.MethodRanges
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiComment
 import com.intellij.psi.PsiElement
@@ -23,13 +24,6 @@ import com.maddyhome.idea.vim.helper.PsiHelper
  * @property body offsets of the body's content (between the body braces, exclusive of the braces themselves),
  *                or null when no body can be located.
  */
-internal data class MethodRanges(
-  val fullStart: Int,
-  val definitionStart: Int,
-  val end: Int,
-  val body: Pair<Int, Int>?,
-)
-
 /**
  * Locates the function/method definition that surrounds a caret offset by walking the PSI tree.
  *

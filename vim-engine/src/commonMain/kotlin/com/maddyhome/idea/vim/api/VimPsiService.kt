@@ -41,4 +41,35 @@ interface VimPsiService {
    * @return a [TextRange] covering the full comment block (line-wise), or null if the cursor is not on a comment line.
    */
   fun getCommentBlockRange(editor: VimEditor, cursorLine: Int): TextRange? = null
+
+  /**
+   * The function or method that encloses [offset], or null if the host cannot say.
+   *
+   * This is what `vim-textobj-function`'s `af`, `aF` and `if` select, and the three ranges are the
+   * three of them: `af` is the definition without its doc comment, `aF` includes it, and `if` is the
+   * body. Answering needs to know what a function *is* in the language at hand, which is a fact
+   * about the file that only a host has - the same reason [getCommentAtPos] is here.
+   *
+   * A host that cannot answer says so, and the text objects then do nothing rather than guessing.
+   */
+  fun getMethodRanges(editor: VimEditor, offset: Int): MethodRanges? = null
+
+  /**
+   * The class that encloses [offset], or null if the host cannot say. `vim-textobj-python`'s `ac`
+   * and `ic`. See [getMethodRanges].
+   */
+  fun getClassRange(editor: VimEditor, offset: Int): TextRange? = null
 }
+
+/**
+ * Where a function begins and ends, in the three ways a text object asks about it.
+ *
+ * [fullStart] takes the doc comment with it and [definitionStart] does not; [body] is what is
+ * between the braces, and is null for a declaration with no body.
+ */
+data class MethodRanges(
+  val fullStart: Int,
+  val definitionStart: Int,
+  val end: Int,
+  val body: Pair<Int, Int>?,
+)

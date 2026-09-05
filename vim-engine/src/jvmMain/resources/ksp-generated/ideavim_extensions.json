@@ -20,6 +20,11 @@
     "className": "com.maddyhome.idea.vim.extension.argtextobj.ArgTextObjKt"
   },
   {
+    "extensionName": "classtextobj",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.classtextobj.ClassTextObjectKt"
+  },
+  {
     "extensionName": "commentary",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.commentary.CommentaryKt"
@@ -28,6 +33,11 @@
     "extensionName": "exchange",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.exchange.ExchangeKt"
+  },
+  {
+    "extensionName": "functextobj",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.functextobj.FuncTextObjectKt"
   },
   {
     "extensionName": "highlightedyank",

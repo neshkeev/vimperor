@@ -6,7 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.extension.psi
+package com.maddyhome.idea.vim.group.psi
 
 import com.intellij.openapi.editor.Editor
 import com.intellij.psi.PsiElement

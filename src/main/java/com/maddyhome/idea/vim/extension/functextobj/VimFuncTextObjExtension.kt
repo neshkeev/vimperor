@@ -8,76 +8,20 @@
 
 package com.maddyhome.idea.vim.extension.functextobj
 
-import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.extension.VimExtension
-import com.maddyhome.idea.vim.extension.VimExtensionFacade.putExtensionHandlerMapping
-import com.maddyhome.idea.vim.extension.VimExtensionFacade.putKeyMappingIfMissing
 
 /**
- * Provides Vim-style text objects for function/method definitions.
+ * The IntelliJ half of the vim-textobj-function port. The extension itself is in `vim-engine`, where
+ * both hosts compile it; this keeps the `IdeaVIM.vimExtension` extension point working and goes when
+ * the plugin does.
  *
- * Inspired by kana/vim-textobj-function: https://github.com/kana/vim-textobj-function
- *
- * Mappings:
- * - `am` "a method definition" — the function including signature and body, excluding JavaDoc
- *   and any annotations directly preceding it.
- * - `aM` "a Method definition" — same as `am` but including JavaDoc and annotations.
- * - `im` "inner method definition" — only the contents between the body braces.
+ * What is *not* portable is the answer to "where does this function begin and end", and that is
+ * `IjVimPsiService.getMethodRanges` now rather than something this extension reaches for itself.
  */
 internal class VimFuncTextObjExtension : VimExtension {
-
-  override fun getName(): String = "functextobj"
+  override fun getName(): String = FUNC_TEXT_OBJ
 
   override fun init() {
-    putExtensionHandlerMapping(
-      MappingMode.XO,
-      injector.parser.parseKeys(PLUG_OUTER_METHOD),
-      owner,
-      FuncTextObjectHandler(FuncRange.OUTER_NO_DOC),
-      false,
-    )
-    putExtensionHandlerMapping(
-      MappingMode.XO,
-      injector.parser.parseKeys(PLUG_OUTER_METHOD_WITH_DOC),
-      owner,
-      FuncTextObjectHandler(FuncRange.OUTER_WITH_DOC),
-      false,
-    )
-    putExtensionHandlerMapping(
-      MappingMode.XO,
-      injector.parser.parseKeys(PLUG_INNER_METHOD),
-      owner,
-      FuncTextObjectHandler(FuncRange.INNER),
-      false,
-    )
-
-    putKeyMappingIfMissing(
-      MappingMode.XO,
-      injector.parser.parseKeys("am"),
-      owner,
-      injector.parser.parseKeys(PLUG_OUTER_METHOD),
-      true,
-    )
-    putKeyMappingIfMissing(
-      MappingMode.XO,
-      injector.parser.parseKeys("aM"),
-      owner,
-      injector.parser.parseKeys(PLUG_OUTER_METHOD_WITH_DOC),
-      true,
-    )
-    putKeyMappingIfMissing(
-      MappingMode.XO,
-      injector.parser.parseKeys("im"),
-      owner,
-      injector.parser.parseKeys(PLUG_INNER_METHOD),
-      true,
-    )
-  }
-
-  companion object {
-    private const val PLUG_OUTER_METHOD = "<Plug>(textobj-function-am)"
-    private const val PLUG_OUTER_METHOD_WITH_DOC = "<Plug>(textobj-function-aM)"
-    private const val PLUG_INNER_METHOD = "<Plug>(textobj-function-im)"
+    registerFuncTextObj()
   }
 }

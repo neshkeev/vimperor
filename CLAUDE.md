@@ -36,12 +36,12 @@ What is still missing: 9 of the 26 bundled extensions, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Seventeen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Seventeen are ported and bundled - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround` and `multiple-cursors` - and they
-are the pattern for the rest. An eighteenth, `yankring`, is in the engine and
-deliberately *not* bundled: see below. Each lives in
+are the pattern for the rest. **Three more are in the engine and deliberately not
+bundled**: `yankring`, `functextobj` and `classtextobj`. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -54,15 +54,25 @@ knows nothing about functions. So its adapter keeps a real `dispose`, and the VS
 Code host has `VsCodeExtensions.TEARDOWN` for the same reason. Anything else that
 registers by name will need an entry there.
 
-**`yankring` is in `vim-engine` and is not in `VsCodeExtensions.BUNDLED`, on
-purpose.** `<C-P>` after a paste works by undoing the paste and re-pasting an older
-entry, and that needs `u` to have finished by the next statement. IntelliJ's undo is
-synchronous; VS Code's is a command the host dispatches and cannot wait for -
-`VsCodeInjector.undo` returns `true` immediately and holds the user's *keys* until it
-lands, which is no help inside one mapping. The re-paste would land on text the undo
-had not removed yet. Enabling it there needs a seam the engine does not have: a way
-for an extension to continue once the host's document has caught up. Everything else
-in the extension asks nothing of the host.
+**Three extensions are in `vim-engine` and not in `VsCodeExtensions.BUNDLED`, on
+purpose.** Compiling for both hosts and being *useful* on both are different
+questions, and moving one out of `src/main/java` is worth doing either way - it is
+the deletion this port is working towards.
+
+`yankring`'s `<C-P>` works by undoing the paste and re-pasting an older entry, which
+needs `u` to have finished by the next statement. IntelliJ's undo is synchronous; VS
+Code's is a command the host dispatches and cannot wait for - `VsCodeInjector.undo`
+returns `true` immediately and holds the user's *keys* until it lands, which is no
+help inside one mapping. The re-paste would land on text the undo had not removed
+yet.
+
+`functextobj` (`am`, `aM`, `im`) and `classtextobj` (`ac`) ask
+`injector.psiService` where a function or a class begins and ends. IntelliJ answers
+from its PSI tree. `TextOnlyPsiService` answers null, and every mapping they install
+would be inert - which is worse than absent, because the keys would be taken. VS Code
+*can* answer: `vscode.executeDocumentSymbolProvider` knows where functions are, and
+returns a promise. So the seam that is missing is the same one `yankring` needs, plus
+a symbol cache the host refreshes in the background.
 
 **`commentary` and `highlightedyank` are the pattern for the ones that are left**,
 and a different one: their bodies were *not* engine-only, and the answer was not to
