@@ -15,6 +15,8 @@ import com.maddyhome.idea.vim.extension.argtextobj.init as argTextObjInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
 import com.maddyhome.idea.vim.extension.commentary.COMMENTARY_COMMAND
 import com.maddyhome.idea.vim.extension.commentary.init as commentaryInit
+import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
+import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
@@ -124,6 +126,10 @@ internal object VsCodeExtensions {
     // Code's, from the language configuration - see `VsCodeCommentService`. `dgc`, the text object
     // over a run of comment lines, needs a syntax tree and does nothing here.
     "commentary" to { api -> api.commentaryInit() },
+
+    // `vim-highlightedyank`: the text a yank covered flashes, so you can see what you took.
+    // `g:highlightedyank_highlight_duration` and `..._color` set how long and what colour.
+    "highlightedyank" to { api -> api.highlightedYankInit() },
   )
 
   /**
@@ -144,6 +150,10 @@ internal object VsCodeExtensions {
 
     // `:Commentary`, held by the command group.
     "commentary" to { injector.commandGroup.removeAlias(COMMENTARY_COMMAND) },
+
+    // Its yank and mode listeners, which go straight onto `listenersNotifier` rather than through
+    // the thin API's listener scope - so no owner covers them - plus any highlight still showing.
+    "highlightedyank" to { disposeHighlightedYank() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

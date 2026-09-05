@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.host
 
+import com.maddyhome.idea.vim.api.ScheduledTask
 import com.maddyhome.idea.vim.api.VimApplication
 import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
@@ -707,6 +708,15 @@ private object HeadlessApplication : VimApplication {
 
   override fun postKey(stroke: VimKeyStroke, editor: VimEditor) =
     TODO("headless host has no key queue yet")
+  /**
+   * Nothing is scheduled, and nothing pretends to be.
+   *
+   * A headless engine test has no event loop to come back to, and a callback that fired later would
+   * fire after the assertion. A host test drives the timer instead - see the VS Code host's
+   * `HighlightedYankTest`, which advances it by hand.
+   */
+  override fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask = ScheduledTask.NONE
+
 }
 
 private object HeadlessStatistics : VimStatistics {

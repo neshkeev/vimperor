@@ -1354,6 +1354,18 @@ internal object SingleThreadedApplication : VimApplication, PostingApplication {
   override fun currentStackTrace(): String = Throwable().stackTraceToString()
 
   /**
+   * Node's `setTimeout`, which is the whole of scheduling on a runtime with one thread.
+   *
+   * No modality to think about, unlike IntelliJ's `Alarm`: there is no modal dialog that could be
+   * holding the editor, and a callback that fires while the user is typing is handled the same way
+   * every other asynchronous arrival is - the editor is re-read before it is looked at.
+   */
+  override fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask {
+    val handle = setTimeout(action, delayMillis)
+    return ScheduledTask { clearTimeout(handle) }
+  }
+
+  /**
    * A key the engine wants handled *after* the one being handled now.
    *
    * One caller: `<C-V>` in Insert mode collects a numeric literal - `<C-V>065` types `A` - and the

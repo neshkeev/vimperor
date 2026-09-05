@@ -25,4 +25,28 @@ interface VimApplication {
 
   fun currentStackTrace(): String
   fun runAfterGotFocus(runnable: () -> Unit)
+
+  /**
+   * Runs [action] after [delayMillis], on whatever thread the host does its editing on.
+   *
+   * The one thing an extension cannot do for itself and every host already has: IntelliJ's `Alarm`,
+   * VS Code's `setTimeout`. `highlightedyank` is what needed it first - a flash that goes away is a
+   * flash and a timer, and without the timer it is just a highlight - and `'timeoutlen'`-shaped
+   * work and Vim's own `timer_start()` want the same thing.
+   *
+   * The returned handle cancels it. Cancelling one that has already run is not an error, because
+   * the caller has no way to know: `highlightedyank` cancels the pending fade every time it
+   * highlights, whether or not the last one is still pending.
+   */
+  fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask
+}
+
+/** A [VimApplication.schedule] request that has not run yet, or that has. */
+fun interface ScheduledTask {
+  fun cancel()
+
+  companion object {
+    /** For a host that cannot schedule anything; nothing is pending, so nothing is cancelled. */
+    val NONE: ScheduledTask = ScheduledTask {}
+  }
 }

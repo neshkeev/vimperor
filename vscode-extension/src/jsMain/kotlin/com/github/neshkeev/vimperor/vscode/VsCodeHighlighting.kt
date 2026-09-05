@@ -46,17 +46,51 @@ internal class VsCodeHighlightingService : VimHighlightingService {
     backgroundColor: Color?,
     foregroundColor: Color?,
   ): HighlightId {
-    val vsCode = editor as VsCodeEditor
-    val options: dynamic = js("({})")
     // `#RRGGBBAA` is CSS's own eight-digit hex, so a colour with alpha needs no conversion - which
     // is the form `highlightedyank` writes, and the reason `Color` carries the hex rather than
     // four numbers.
-    backgroundColor?.let { options.backgroundColor = it.hexCode }
+    return add(editor, startOffset, endOffset, foregroundColor) { options ->
+      backgroundColor?.let { options.backgroundColor = it.hexCode }
+    }
+  }
+
+  private fun add(
+    editor: VimEditor,
+    startOffset: Int,
+    endOffset: Int,
+    foregroundColor: Color?,
+    background: (dynamic) -> Unit,
+  ): HighlightId {
+    val vsCode = editor as VsCodeEditor
+    val options: dynamic = js("({})")
+    background(options)
     foregroundColor?.let { options.color = it.hexCode }
 
     val type = window.createTextEditorDecorationType(options)
     vsCode.nativeEditor.setDecorations(type, arrayOf(rangeOf(vsCode, startOffset, endOffset)))
     return DecorationId(type)
+  }
+
+  /**
+   * The theme's own find-match colour where none was named.
+   *
+   * A `ThemeColor` rather than a hex, which is why this cannot be answered by handing the caller a
+   * `Color`: `editor.findMatchHighlightBackground` is a name VS Code resolves when it paints, so it
+   * follows the user's theme and a literal would not. `VsCodeMatchHighlighter` falls back the same
+   * way for a `:highlight` group nobody defined, and for the same reason.
+   */
+  override fun addSearchHighlighter(
+    editor: VimEditor,
+    startOffset: Int,
+    endOffset: Int,
+    backgroundColor: Color?,
+    foregroundColor: Color?,
+  ): HighlightId = add(editor, startOffset, endOffset, foregroundColor) { options ->
+    if (backgroundColor != null) {
+      options.backgroundColor = backgroundColor.hexCode
+    } else {
+      options.backgroundColor = ThemeColor(VsCodeThemeColors.FIND_MATCH_HIGHLIGHT)
+    }
   }
 
   override fun removeHighlighter(editor: VimEditor, highlightId: HighlightId) {

@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 14 of IdeaVim's 26 bundled extensions —
-  surround, matchit, sneak and the rest — are not ported yet. Twelve are, and they are enabled
+- **Vim plugins.** There is no `pack/` directory, and 13 of IdeaVim's 26 bundled extensions —
+  surround, matchit, sneak and the rest — are not ported yet. Thirteen are, and they are enabled
   the way you would in IdeaVim:
 
   ```vim
@@ -107,6 +107,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'michaeljsmith/vim-indent-object'   " ai ii aI — the block at the caret's indentation level
   Plug 'vim-scripts/argtextobj.vim'        " ia aa — one argument of a call, nesting and strings and all
   Plug 'tpope/vim-commentary'              " gc{motion}, gcc, gcu and :Commentary
+  Plug 'machakann/vim-highlightedyank'     " the text a yank covered flashes
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that

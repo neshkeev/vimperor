@@ -8,6 +8,8 @@
 
 package com.maddyhome.idea.vim.thinapi
 
+import com.intellij.ide.ui.LafManager
+import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.editor.colors.EditorColors
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.HighlighterLayer
@@ -57,8 +59,44 @@ class IjVimHighlightingService : VimHighlightingService {
     return highlighter
   }
 
+  /**
+   * The scheme's own search-result background where none was named, cached until the theme changes.
+   *
+   * This is what `highlightedyank` used to read for itself, and reading it is the whole reason it
+   * had IntelliJ in it. The cache and its invalidation come with it - see [HighlightColorResetter],
+   * which is registered on IntelliJ's look-and-feel listener.
+   */
+  override fun addSearchHighlighter(
+    editor: VimEditor,
+    startOffset: Int,
+    endOffset: Int,
+    backgroundColor: Color?,
+    foregroundColor: Color?,
+  ): HighlightId = addHighlighter(
+    editor,
+    startOffset,
+    endOffset,
+    backgroundColor ?: defaultSearchBackground(),
+    foregroundColor,
+  )
+
   override fun removeHighlighter(editor: VimEditor, highlightId: HighlightId) {
     val ijEditor = editor.ij
     ijEditor.markupModel.removeHighlighter((highlightId as IjHighlightId).ijHighlighter)
+  }
+}
+
+private var cachedSearchBackground: Color? = null
+
+private fun defaultSearchBackground(): Color? {
+  cachedSearchBackground?.let { return it }
+  val awt = EditorColors.TEXT_SEARCH_RESULT_ATTRIBUTES.defaultAttributes.backgroundColor ?: return null
+  return Color(awt.red, awt.green, awt.blue, awt.alpha).also { cachedSearchBackground = it }
+}
+
+/** A new theme has different colours, so the one that was cached is no longer the right answer. */
+internal class HighlightColorResetter : LafManagerListener {
+  override fun lookAndFeelChanged(source: LafManager) {
+    cachedSearchBackground = null
   }
 }

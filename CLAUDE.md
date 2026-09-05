@@ -32,15 +32,15 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 14 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 13 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Twelve are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Thirteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
-`targets`, `abolish`, `textobj-indent`, `argtextobj` and `commentary` - and they
-are the pattern for the rest. A thirteenth, `yankring`, is in the engine and
-deliberately *not* bundled: see below. Each lives in
+`targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary` and
+`highlightedyank` - and they are the pattern for the rest. A fourteenth,
+`yankring`, is in the engine and deliberately *not* bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -63,14 +63,14 @@ had not removed yet. Enabling it there needs a seam the engine does not have: a 
 for an extension to continue once the host's document has caught up. Everything else
 in the extension asks nothing of the host.
 
-**`commentary` is the pattern for the ones that are left**, and a different one:
-its body was *not* engine-only, and the answer was not to make it so. Toggling a
-comment needs to know that a comment is `//` here and `#` there, which is a fact
-about the file that only a host has - so the extension asks
-`injector.commentService` to toggle a range and the host decides what that means.
-Both hosts already had the capability and neither exposed it. Most of what is left
-- `highlightedyank`, `sneak`, `exchange` and their editor markup - is the same
-shape: a capability to name, not code to move.
+**`commentary` and `highlightedyank` are the pattern for the ones that are left**,
+and a different one: their bodies were *not* engine-only, and the answer was not to
+make them so. Toggling a comment needs to know that a comment is `//` here and `#`
+there; a flash that fades needs a timer. Both are facts about the host, so the
+engine names the capability - `injector.commentService`, `VimApplication.schedule`,
+`VimHighlightingService.addSearchHighlighter` - and each host supplies it. In every
+case both hosts already had it and neither exposed it. What is left of `sneak` and
+`exchange` is the same shape: a capability to name, not code to move.
 
 A candidate is an extension whose *body* uses only the thin API and the engine,
 whatever its registration does. Screen by compiling, not by grepping imports - the

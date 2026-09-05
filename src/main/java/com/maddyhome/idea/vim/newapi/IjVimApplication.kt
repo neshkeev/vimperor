@@ -12,6 +12,9 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.util.Computable
 import com.intellij.util.ExceptionUtil
+import com.intellij.util.Alarm
+import com.maddyhome.idea.vim.VimPlugin
+import com.maddyhome.idea.vim.api.ScheduledTask
 import com.maddyhome.idea.vim.api.VimApplicationBase
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.diagnostic.vimLogger
@@ -74,6 +77,23 @@ internal class IjVimApplication : VimApplicationBase() {
 
   override fun runAfterGotFocus(runnable: () -> Unit) {
     com.maddyhome.idea.vim.helper.runAfterGotFocus(runnable)
+  }
+
+  /**
+   * IntelliJ's `Alarm`, one per request, at `ModalityState.any()`.
+   *
+   * The modality matters and is the reason this is not a bare `invokeLater` with a sleep: a
+   * highlight put on an editor while a modal dialog is open - the resolve-conflict diff view is the
+   * one that gets reported - would otherwise never be taken off again, because the request would
+   * wait for the dialog to close.
+   *
+   * `Alarm` needs a parent disposable to be tied to; the plugin's on/off disposable is the right
+   * one, since a request outliving IdeaVim being switched off is exactly what it must not do.
+   */
+  override fun schedule(delayMillis: Int, action: () -> Unit): ScheduledTask {
+    val alarm = Alarm(Alarm.ThreadToUse.SWING_THREAD, VimPlugin.getInstance().onOffDisposable)
+    alarm.addRequest(action, delayMillis, ModalityState.any())
+    return ScheduledTask { alarm.cancelAllRequests() }
   }
 
   private fun createKeyEvent(stroke: VimKeyStroke, component: Component): KeyEvent {
