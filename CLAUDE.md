@@ -32,12 +32,28 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing, measured rather than guessed: all 26 bundled extensions
-(`surround`, `commentary`, `argtextobj`, `matchit`, `targets` and the rest), which
-are built on `getchar()` and need rewriting around a control flow JavaScript can
-have; 24 IntelliJ-only options; 13 of the replayed fixtures; and five `TODO`
-seams in `VsCodeInjector`. Ex commands are at parity - 401 in the engine, two
-IntelliJ-only.
+What is still missing: all 26 bundled extensions, 24 IntelliJ-only options, 13 of
+the replayed fixtures, and five `TODO` seams in `VsCodeInjector`. Ex commands are
+at parity - 401 in the engine, two IntelliJ-only.
+
+**The extensions are not blocked on `getchar()`.** That was the standing
+explanation and it is wrong: of the 26, exactly one - `surround` - asks for a key
+at all. What blocks them is where they live and how they register. They are in
+`src/main/java/`, which compiles for the JVM only, and `VimExtensionRegistrar`
+hangs off an IntelliJ extension point. Five of them import nothing from IntelliJ
+whatsoever (`abolish`, `classtextobj`, `functextobj`, `indentwise`, `targets`) and
+four more import a single class; those are engine code sitting in the plugin's
+module.
+
+Most of the machinery to fix this is already in `vim-engine`:
+`extension/ExtensionHandler.kt`, `ExtensionLoader.kt`, `ExtensionBean.kt` and
+`JsonExtensionProvider.kt` - registration driven by JSON rather than by an
+IntelliJ extension point - and `VimExtensionRegistrator`, which `:Plug` already
+calls. `VimExtensionHandler` in the plugin is a thin adapter over the engine's
+`ExtensionHandler`: it converts a `VimEditor` to an IntelliJ `Editor` and does
+nothing else. So porting one is moving it to `commonMain`, writing it against
+`ExtensionHandler` instead of the adapter, and registering it through the JSON
+provider - not rewriting it.
 
 ## Packages
 

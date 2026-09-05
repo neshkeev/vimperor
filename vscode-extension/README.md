@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory and no `:Plug`. IdeaVim's bundled extensions —
-  surround, commentary, easymotion — are not ported yet.
+- **Vim plugins.** There is no `pack/` directory, and IdeaVim's bundled extensions — surround,
+  commentary, targets and the rest — are not ported yet.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.

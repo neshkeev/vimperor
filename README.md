@@ -69,9 +69,11 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: anything built on `getchar()`, which blocks on a modal event loop
-until a key arrives. IdeaVim's bundled extensions — surround, commentary, easymotion
-— are built on it, and JavaScript has one thread and no way to stop it.
+What does not: the 26 bundled extensions — surround, commentary, targets and the
+rest. Not for the reason this file used to give. They are not built on `getchar()`;
+exactly one of them asks for a key. They are unported because they live in the
+IntelliJ plugin's module and register through an IntelliJ extension point, and
+nine of them import nothing from IntelliJ worth the name.
 
 [`vscode-extension/DEVELOPMENT.md`](vscode-extension/DEVELOPMENT.md) is the real account: what
 works, how it is tested, and what only a real window found.
