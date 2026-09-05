@@ -443,6 +443,97 @@ class PortedExtensionsTest {
     assertEquals("function(a, b)\n", session.content, "nothing is deleted when the setting is unusable")
   }
 
+  // ---- sneak ---------------------------------------------------------------------------------------
+
+  /**
+   * `vim-sneak`: `s{char}{char}` jumps to the next occurrence of two characters.
+   *
+   * The first extension here whose input does *not* arrive in the keystroke that asked for it. `s`
+   * used to block on `injector.keyGroup.getChar` until a key came, which is a thing this host
+   * cannot do at all - it answered `null` and the extension silently did nothing. The two
+   * characters now come through the engine's modal input, so `s` returns and the jump happens two
+   * keystrokes later. That is what these tests are really checking: that the keys find their way to
+   * the interceptor and back.
+   */
+  @Test
+  fun `test s jumps to the next pair of characters`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("sxt")
+
+    assertEquals(7, session.caret, "the `xt` of the first `text`")
+  }
+
+  @Test
+  fun `test S jumps backwards`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("\$")
+
+    session.type("Ste")
+
+    assertEquals(10, session.caret, "the `te` of the second `text`, behind the caret")
+  }
+
+  /** `;` repeats the last sneak, which is why the pair is remembered rather than just used. */
+  @Test
+  fun `test semicolon repeats the last sneak`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("sxt")
+    session.type(";")
+
+    assertEquals(12, session.caret, "on to the second `xt`")
+  }
+
+  /** `,` repeats it the other way. */
+  @Test
+  fun `test comma repeats it in reverse`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("sxt")
+    session.type(";")
+    session.type(",")
+
+    assertEquals(7, session.caret, "back to the first one")
+  }
+
+  /** Nothing found leaves the caret where it was, rather than moving it somewhere arbitrary. */
+  @Test
+  fun `test a pair that is not there does not move the caret`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("sqq")
+
+    assertEquals(3, session.caret)
+  }
+
+  /** `<Esc>` at the prompt abandons the sneak, and the keys after it are the user's again. */
+  @Test
+  fun `test escape cancels a sneak in progress`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("s")
+    session.host.key(session.fake, "<Esc>")
+    session.type("x")
+
+    assertEquals("som text text\n", session.content, "`x` deleted a character rather than being eaten")
+  }
+
+  @Test
+  fun `test the pair it found is highlighted`() {
+    val session = Session("some text text\n", "sneak")
+    session.type("lll")
+
+    session.type("sxt")
+
+    assertEquals(1, session.fake.decorations.values.count { it.isNotEmpty() })
+  }
+
   // ---- exchange ------------------------------------------------------------------------------------
 
   /**

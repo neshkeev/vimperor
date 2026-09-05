@@ -32,15 +32,15 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 12 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 11 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Fourteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Fifteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank` and `exchange` - and they are the pattern for the rest. A
-fifteenth, `yankring`, is in the engine and deliberately *not* bundled: see below.
+`highlightedyank`, `exchange` and `sneak` - and they are the pattern for the rest. A
+sixteenth, `yankring`, is in the engine and deliberately *not* bundled: see below.
 Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
@@ -95,9 +95,22 @@ another module. `inputKeyStroke` is the only one with a real reason to stay: its
 unit-test branch reads IntelliJ's `TestInputModel`. Ex commands are
 at parity - 401 in the engine, two IntelliJ-only.
 
-**The extensions are not blocked on `getchar()`.** That was the standing
-explanation and it is wrong: of the 26, exactly one - `surround` - asks for a key
-at all. What blocks them is where they live and how they register. They are in
+**The extensions were never blocked on `getchar()`, and the two that read a key are
+not blocked any more either.** The standing explanation was wrong in its details -
+`getchar()` is a Vimscript function nothing here calls - but two extensions,
+`surround` and `sneak`, did read a key through `injector.keyGroup.getChar`, which
+*blocks* until one arrives. IntelliJ answers it by pumping a nested event loop; a
+runtime with one thread cannot, so the VS Code host returned `null` and such an
+extension silently did nothing.
+
+`readCharacters` in `vim-engine/.../extension/ExtensionInput.kt` is the answer, and
+it was sitting in the engine already: modal input, which `ModalInputConsumer` routes
+every keystroke through while a prompt is open, is a *non-blocking* read that both
+hosts implement - it is how `:s///c` asks its question. `sneak` uses it. `surround`
+is the one left. The cost is real but small: the extension returns before it knows
+what the user typed, and continues in a callback a keystroke or two later.
+
+What blocked the rest is where they live and how they register. They are in
 `src/main/java/`, which compiles for the JVM only, and `VimExtensionRegistrar`
 hangs off an IntelliJ extension point. Measured against `vim-engine` rather than
 against `com.intellij` - which is the measure that matters, because IdeaVim's own

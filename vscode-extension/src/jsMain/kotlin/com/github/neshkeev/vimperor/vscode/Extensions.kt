@@ -23,6 +23,8 @@ import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
+import com.maddyhome.idea.vim.extension.sneak.disposeSneak
+import com.maddyhome.idea.vim.extension.sneak.init as sneakInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
@@ -136,6 +138,11 @@ internal object VsCodeExtensions {
     // `vim-exchange`: `cx{motion}` marks a region, `cx` on a second one swaps the two. `cxx` for
     // lines, `X` in visual, `cxc` to forget the mark.
     "exchange" to { api -> api.exchangeInit() },
+
+    // `vim-sneak`: `s{char}{char}` jumps to the next occurrence of the pair, `S` backwards, `;` and
+    // `,` repeat. The two characters arrive through the engine's modal input rather than a blocking
+    // read - see `readCharacters`, which is what let this one leave the plugin at all.
+    "sneak" to { api -> api.sneakInit() },
   )
 
   /**
@@ -163,6 +170,9 @@ internal object VsCodeExtensions {
 
     // A region marked and never exchanged, and the highlight showing where it is.
     "exchange" to { disposeExchange() },
+
+    // The highlight on the pair it last jumped to, which fades on a timer nobody else owns.
+    "sneak" to { disposeSneak() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

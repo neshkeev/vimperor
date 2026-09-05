@@ -69,13 +69,13 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 12 of the 26 bundled extensions — surround, matchit, sneak and the
-rest. `ReplaceWithRegister`, `vim-paragraph-motion`, `textobj-entire`, `mini-ai`,
-`CamelCaseMotion`, `indentwise`, `textobj-user`, `targets`, `abolish`,
-`textobj-indent`, `argtextobj`, `commentary`, `highlightedyank` and `exchange` are
-ported, and are the pattern for the others. Not
-for the reason this file used to give. They are not built on `getchar()`;
-exactly one of them asks for a key. They are unported because they live in the
+What does not: 11 of the 26 bundled extensions — surround, matchit, NERDTree and
+the rest. `ReplaceWithRegister`, `vim-paragraph-motion`, `textobj-entire`,
+`mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`, `targets`, `abolish`,
+`textobj-indent`, `argtextobj`, `commentary`, `highlightedyank`, `exchange` and
+`sneak` are ported, and are the pattern for the others. Not
+for the reason this file used to give. Two of them read a key, and a key can be
+read here now - through the engine's modal input rather than by blocking on one. They are unported because they live in the
 IntelliJ plugin's module and register through an IntelliJ extension point. One is
 portable as it stands and four more are a single cast away from it.
 
