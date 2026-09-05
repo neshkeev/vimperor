@@ -203,7 +203,7 @@ class CommentaryTest {
 
   /**
    * `dgc` is the text object over a run of comment lines, and it needs to know which lines *are*
-   * comments - `injector.psiService.getCommentBlockRange`, which `TextOnlyPsiService` answers null
+   * comments - `injector.psiService.getCommentBlockRange`, which `VsCodePsiService` answers null
    * to. So it does nothing here, which is asserted rather than left to be discovered.
    */
   @Test

@@ -32,7 +32,7 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 6 of the 24 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 4 of the 24 bundled extensions, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
@@ -41,16 +41,22 @@ never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points,
 `windownavigation` - which looks like a 25th in `src/main/java` - is not one of them.
 It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 
-Eighteen are ported and bundled - `ReplaceWithRegister`, `vim-paragraph-motion`,
+**Twenty are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors` and
-`yankring` - and they are the pattern for the rest. **Two more are in the engine and
-deliberately not bundled**: `functextobj` and `classtextobj`. Each lives in
+`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
+`functextobj` and `classtextobj` - which is every one that is not a piece of IntelliJ
+furniture. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
+
+The four that are left - `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` -
+are not waiting on a seam. `matchit` wants a syntax tree, `NERDTree` a project tool
+window, `VimEverywhere` popups and `java.awt.Robot`, and `youcompleteme` works by
+taking `<Tab>` out of `'lookupkeys'`, which is an IntelliJ-only option. Each would be
+a rewrite against a different UI rather than a move.
 
 `textobj-user` is the one exception to "two-line", and it says something about the
 engine rather than about that extension: it registers Vimscript *function
@@ -59,23 +65,14 @@ knows nothing about functions. So its adapter keeps a real `dispose`, and the VS
 Code host has `VsCodeExtensions.TEARDOWN` for the same reason. Anything else that
 registers by name will need an entry there.
 
-**Two extensions are in `vim-engine` and not in `VsCodeExtensions.BUNDLED`, on
-purpose.** Compiling for both hosts and being *useful* on both are different
-questions, and moving one out of `src/main/java` is worth doing either way - it is
-the deletion this port is working towards.
+**The last three to be bundled were all held up by the same thing, and it took two
+different answers.** Each needed something only VS Code knows, and VS Code says all of
+it over a promise while the engine is inside a keystroke and cannot wait. The two
+answers are worth telling apart, because which one a case needs is decided by whether
+the caller has to *return a value*.
 
-`functextobj` (`am`, `aM`, `im`) and `classtextobj` (`ac`) ask
-`injector.psiService` where a function or a class begins and ends. IntelliJ answers
-from its PSI tree. `TextOnlyPsiService` answers null, and every mapping they install
-would be inert - which is worse than absent, because the keys would be taken. VS Code
-*can* answer: `vscode.executeDocumentSymbolProvider` knows where functions are, and
-returns a promise - so what is missing is a symbol cache the host refreshes in the
-background, because a text object is asked its range in the middle of a keystroke and
-cannot wait for one.
-
-**`yankring` was the third of these until it was not, and how it stopped being one is
-the pattern for the rest.** Its `<C-P>` undoes the paste and re-pastes an older entry,
-which needs `u` to have finished by the next statement. IntelliJ's undo is
+**`yankring`: continue later.** Its `<C-P>` undoes the paste and re-pastes an older
+entry, which needs `u` to have finished by the next statement. IntelliJ's undo is
 synchronous; VS Code's is a command the host dispatches and cannot wait for -
 `VsCodeInjector.undo` returns `true` immediately and holds the user's *keys* until it
 lands, which is no help inside one mapping, so the re-paste landed on text the undo
@@ -89,6 +86,26 @@ caller learns the hard way, both of them the same lesson `readKeys` taught: what
 the callback closes over is restored *after* it runs, so `undoAndRepaste` had to move
 its register save inside; and the buffer is a different buffer by then, so nothing may
 carry an offset across.
+
+**`functextobj` (`am`, `aM`, `im`) and `classtextobj` (`ac`): know already.** These
+ask `injector.psiService` where a function or a class begins and ends, and a text
+object has to *return a range now* - continuing later is no use to it. So the shape
+that fits is the other one: `DocumentSymbols` asks
+`vscode.executeDocumentSymbolProvider` ahead of time - on activation, and after every
+change to any open document - and `VsCodePsiService` answers from the cache.
+
+The cache is honest about its one gap rather than papering over it: what is held
+belongs to a document *version*, an edit invalidates every offset in it, and for the
+moment between an edit and the language server answering these text objects decline.
+A stale range would be worse. The refresh is debounced so that typing a word asks
+once, and `Settle` exists only so the whole cache can be tested without an event loop.
+
+What a `DocumentSymbol` does not carry is a body range, and the two rules
+`VsCodePsiService.bodyOf` uses are the only things inferred rather than known: match
+the braces backwards from the last `}`, or, when there is no brace, take the run of
+lines indented more deeply than the definition. The second is not an approximation of
+Python's rule, it *is* Python's rule, and it gets Ruby right from the other end -
+`end` sits at the definition's own indentation, so it falls outside the run.
 
 **`commentary` and `highlightedyank` are the pattern for the ones that are left**,
 and a different one: their bodies were *not* engine-only, and the answer was not to
@@ -162,8 +179,7 @@ against `com.intellij` - which is the measure that matters, because IdeaVim's ow
 IntelliJ bridge lives in `newapi`, `helper` and `listener` and does not say
 `com.intellij` - most of what is left is a single package away, and that package
 is always `newapi`: a cast to `IjVimEditor` or `IjVimCaret` for something the
-engine can now do itself. `functextobj` and `classtextobj` are what is left in
-that group, and both also want PSI, so neither is a move.
+engine can now do itself. Nothing is left in that group.
 
 **"Imports `newapi`" measures the import, not the debt.** `textobj-user` (489
 lines), `targets` (808), `abolish` (786) and `textobj-indent` (279) were all on

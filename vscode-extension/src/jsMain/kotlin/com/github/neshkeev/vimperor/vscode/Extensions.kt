@@ -13,10 +13,12 @@ import com.maddyhome.idea.vim.api.VimExtensionRegistrator
 import com.maddyhome.idea.vim.extension.abolish.init as abolishInit
 import com.maddyhome.idea.vim.extension.argtextobj.init as argTextObjInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
+import com.maddyhome.idea.vim.extension.classtextobj.init as classTextObjInit
 import com.maddyhome.idea.vim.extension.commentary.COMMENTARY_COMMAND
 import com.maddyhome.idea.vim.extension.commentary.init as commentaryInit
 import com.maddyhome.idea.vim.extension.exchange.disposeExchange
 import com.maddyhome.idea.vim.extension.exchange.init as exchangeInit
+import com.maddyhome.idea.vim.extension.functextobj.init as funcTextObjInit
 import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
@@ -163,6 +165,18 @@ internal object VsCodeExtensions {
     // it with another entry, so it needs the host's undo to have landed before the re-paste - see
     // `VimApplication.runAfterHostCatchesUp`, which is what let this one be bundled here at all.
     "yankring" to { api -> api.yankRingInit() },
+
+    // `vim-textobj-function`: `am` and `aM` for a function definition without and with its doc
+    // comment, `im` for its body.
+    "functextobj" to { api -> api.funcTextObjInit() },
+
+    // `vim-textobj-class`: `ac` for the class, interface, struct or enum the caret is inside.
+    //
+    // Both of these ask `injector.psiService` where a function or a class is, and both were left
+    // out until this host could answer. It answers from `DocumentSymbols` now - a cache of what
+    // VS Code's own Outline view knows, refreshed in the background, because the question is asked
+    // in the middle of a keystroke and the answer arrives over a promise.
+    "classtextobj" to { api -> api.classTextObjInit() },
   )
 
   /**

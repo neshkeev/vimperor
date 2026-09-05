@@ -90,11 +90,10 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 6 of IdeaVim's 24 bundled extensions are not
+- **Vim plugins.** There is no `pack/` directory, and 4 of IdeaVim's 24 bundled extensions are not
   available — `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code
-  has nothing shaped like, and `functextobj` and `classtextobj` are built but not enabled, both
-  waiting on an answer this host can only give asynchronously. Eighteen work, and they are enabled
-  the way you would in IdeaVim:
+  has nothing shaped like. The other twenty work, and they are enabled the way you would in
+  IdeaVim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
@@ -115,6 +114,8 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'tpope/vim-surround'                " ys{motion}{char}, cs{from}{to}, ds{char}, S in visual
   Plug 'terryma/vim-multiple-cursors'      " <C-n> a caret on the next occurrence, <C-x> skip, <C-p> back
   Plug 'vim-scripts/YankRing.vim'          " every yank in a ring; <C-P>/<C-N> cycle the last paste
+  Plug 'kana/vim-textobj-function'         " am aM im — a function without its doc comment, with it, its body
+  Plug 'kana/vim-textobj-class'            " ac — the class, interface, struct or enum you are inside
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
@@ -126,10 +127,11 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   once the document has caught up, rather than in the keystroke that asked for it. You will not see
   the difference; the extension does, and says so at the code.
 
-  `functextobj` and `classtextobj` are the two that compile for this host and are deliberately left
-  out. Both ask where a function or a class begins, VS Code answers over a promise, and a text
-  object is asked its range in the middle of a keystroke — so what they need is not a way to wait
-  but a cache that already knows.
+  `am`, `aM`, `im` and `ac` come from the same knowledge VS Code's own Outline view draws, kept in
+  a cache that refreshes in the background — because a text object is asked its range in the middle
+  of a keystroke and a language server answers over a promise. For the moment between an edit and
+  the answer, those four keys do nothing rather than using a range that has moved. In a language
+  with no symbol provider they do nothing at all, which is the same answer the Outline view gives.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.

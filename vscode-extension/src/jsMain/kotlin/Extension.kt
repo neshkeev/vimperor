@@ -13,6 +13,7 @@
 import com.github.neshkeev.vimperor.vscode.DecorationHighlighter
 import com.github.neshkeev.vimperor.vscode.Disposable
 import com.github.neshkeev.vimperor.vscode.ExtensionContext
+import com.github.neshkeev.vimperor.vscode.VsCodeDocumentSymbols
 import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
 import com.github.neshkeev.vimperor.vscode.isVimsOwnConfig
 import com.github.neshkeev.vimperor.vscode.MessageSink
@@ -82,6 +83,7 @@ fun activate(context: ExtensionContext) {
     highlighter = DecorationHighlighter(),
     clipboard = VsCodeClipboard(),
     outputPanel = OutputChannelPanelService(output),
+    symbols = VsCodeDocumentSymbols(),
   )
   vim.start()
   host = vim
@@ -178,6 +180,14 @@ fun activate(context: ExtensionContext) {
   // text, and its markers - for every file opened in the session.
   val documentClosed = workspace.onDidCloseTextDocument { document ->
     vim.forgetDocument(document)
+  }
+
+  // Every change to any open document, whoever made it. The buffer does not need this - it keeps
+  // itself in step - but the symbol cache does: an edit moves every offset a language server last
+  // reported, and `am` and `ac` have to decline until it has answered again. Asking here rather
+  // than when a key is pressed is what makes that gap short enough not to notice.
+  val documentChanged = workspace.onDidChangeTextDocument { event ->
+    vim.documentChanged(event.document)
   }
 
   // `BufWritePost`. `BufWritePre` is not fired: VS Code's `onWillSaveTextDocument` wants the edits
@@ -321,7 +331,8 @@ fun activate(context: ExtensionContext) {
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
     output, status, commandLine, matches, typing, namedKey, tutor, pasteInCommandLine,
-    activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentSaved,
+    activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
+    documentSaved,
   )) {
     subscriptions.push(registration)
   }

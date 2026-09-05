@@ -52,12 +52,20 @@ class VimHost(
   matchHighlighter: VimMatchHighlighter = VsCodeMatchHighlighter(),
   /** Where `:sign` is drawn. Gutter icons and line decorations, in a real window. */
   signDisplay: VimSignDisplay = VsCodeSignDisplay(),
+  /**
+   * Where the functions and classes in a file are, for `am`, `aM`, `im` and `ac`.
+   *
+   * [DocumentSymbols.None] unless a real window supplies one, for the same reason the highlighter
+   * and the clipboard default to nothing: a language server is not something a test has, and a
+   * cache that asked a stub for symbols would only ever be told nothing, slowly.
+   */
+  private val symbols: DocumentSymbols = DocumentSymbols.None,
 ) : HostCommandRunner {
 
   private val vimInjector =
     VsCodeInjector(
       sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener, matchHighlighter,
-      signDisplay,
+      signDisplay, symbols,
     )
 
   /**
@@ -175,6 +183,7 @@ class VimHost(
    */
   fun forgetDocument(document: TextDocument) {
     val identity = "${document.uri.scheme}://${document.uri.path}"
+    symbols.forget(document)
     editors.remove(identity)?.let { vimInjector.unregister(it) }
     if (lastActiveEditor?.document?.uri?.path == document.uri.path) lastActiveEditor = null
   }
@@ -218,7 +227,24 @@ class VimHost(
     val left = lastActiveEditor
     lastActiveEditor = editor
     if (left != null && left !== editor) fire(AutoCmdEvent.BufLeave, editorFor(left))
-    if (editor != null) fire(AutoCmdEvent.BufEnter, editorFor(editor))
+    if (editor != null) {
+      // The file the user is now looking at is the one whose symbols will be asked for, and asking
+      // now means the answer is there before the first key. A file opened and never edited is
+      // otherwise asked about only when a text object declines once.
+      symbols.refresh(editor.document)
+      fire(AutoCmdEvent.BufEnter, editorFor(editor))
+    }
+  }
+
+  /**
+   * The document changed, however it changed - this host's own edit, another extension's, a
+   * formatter, an undo.
+   *
+   * Only the symbol cache cares. The buffer keeps itself in step through [DocumentBuffer] and does
+   * not need telling, which is why nothing was listening for this before.
+   */
+  fun documentChanged(document: TextDocument) {
+    symbols.refresh(document)
   }
 
   /** The window gained or lost focus, which is Vim's `FocusGained` and `FocusLost`. */

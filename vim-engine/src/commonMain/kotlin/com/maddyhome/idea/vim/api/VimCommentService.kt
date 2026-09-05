@@ -16,7 +16,7 @@ import com.maddyhome.idea.vim.common.TextRange
  * A comment is `//` in one language, `#` in another, `%` in a third and `<!-- -->` in a fourth, and
  * which one applies is a fact about the file the host has and the engine does not. Guessing from the
  * file extension would be a table of lies that grows forever - the same reason
- * `TextOnlyPsiService.getCommentAtPos` answers `null` rather than inventing an answer.
+ * `VsCodePsiService.getCommentAtPos` answers `null` rather than inventing an answer.
  *
  * So the extension asks for a *range* to be toggled and the host decides what that means. Both hosts
  * already had the capability and neither exposed it: IntelliJ through its `Commenter` (reached over

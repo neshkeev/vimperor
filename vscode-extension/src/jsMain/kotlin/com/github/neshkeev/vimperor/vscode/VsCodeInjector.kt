@@ -97,6 +97,12 @@ open class VsCodeInjector(
   /** Where `:match` is painted. Injectable so a test can read the ranges instead of the colours. */
   private val matchPainter: VimMatchHighlighter = VsCodeMatchHighlighter(),
   private val signPainter: VimSignDisplay = VsCodeSignDisplay(),
+  /**
+   * Where the functions and classes in a file are. Injectable so a test can answer without a
+   * language server, and [DocumentSymbols.None] by default because there is nothing to ask when
+   * this runs outside a window.
+   */
+  private val symbols: DocumentSymbols = DocumentSymbols.None,
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -214,7 +220,7 @@ open class VsCodeInjector(
       }
     }
   }
-  override val psiService: VimPsiService by lazy { TextOnlyPsiService }
+  override val psiService: VimPsiService by lazy { VsCodePsiService(symbols) }
 
   /** `gc`: VS Code's own comment commands, over the range the extension asks about. */
   override val commentService: VimCommentService by lazy { VsCodeCommentService(hostCommands) }

@@ -69,14 +69,13 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 6 of IdeaVim's 24 bundled extensions — matchit, NERDTree, VimEverywhere
-and youcompleteme are still in the plugin, and `functextobj` and `classtextobj` are
-compiled here but not enabled, both waiting on a symbol cache. `ReplaceWithRegister`,
-`vim-paragraph-motion`,
+What does not: 4 of IdeaVim's 24 bundled extensions — matchit, NERDTree, VimEverywhere
+and youcompleteme are still in the plugin. The other twenty are ported:
+`ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors` and `yankring`
-are ported, and are the pattern for the others.
+`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
+`functextobj` and `classtextobj`.
 
 The four still in the plugin are not there for want of a seam. `matchit` wants a
 syntax tree, `NERDTree` a project tool window, `VimEverywhere` popups and

@@ -41,6 +41,19 @@ internal object VsCodeCommands {
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
   /**
+   * Where the functions and classes in a file are, asked of whichever language server owns it.
+   *
+   * One of VS Code's "execute a provider" commands, which is how an extension reaches a provider it
+   * does not own - the same mechanism the Outline view and Go to Symbol use, so the answer is
+   * exactly what a user sees there. It resolves with `DocumentSymbol[]`, or `SymbolInformation[]`
+   * from an older provider, or nothing at all for a language that has no provider.
+   *
+   * It is a promise, and `am`, `aM`, `im` and `ac` are asked their range in the middle of a
+   * keystroke - so it is never asked *for* a keystroke. See [DocumentSymbols].
+   */
+  const val DOCUMENT_SYMBOLS = "vscode.executeDocumentSymbolProvider"
+
+  /**
    * `=`. Re-indents the selected lines, which is what Vim's `=` does and the whole of what it does.
    *
    * Measured rather than argued, with Vim 9.1 and `-u NONE`: `ggVG=` on `{ "hello": "world"}`
@@ -146,7 +159,7 @@ internal object VsCodeCommands {
   val all: List<String> = listOf(
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
-    REVEAL_DEFINITION, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
+    REVEAL_DEFINITION, DOCUMENT_SYMBOLS, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     COMMENT_LINE, BLOCK_COMMENT,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
