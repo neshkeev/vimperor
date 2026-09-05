@@ -63,17 +63,10 @@ class ExtensionProviderTest {
     assertTrue(bean in injector.jsonExtensionProvider.getExtensionsForPlugin(VsCodeExtensions.PLUGIN_ID))
   }
 
-  @Test
-  fun `test everything this host knows about is bundled`() {
-    Session()
-    injector.jsonExtensionProvider.addExtension(ExtensionBean("demo", VsCodeExtensions.PLUGIN_ID, "init", ""))
-
-    assertEquals(
-      injector.jsonExtensionProvider.getAllExtensions(),
-      injector.jsonExtensionProvider.getBundledExtensions(),
-      "there is no second kind of extension on this host",
-    )
-  }
+  // There was a test here asserting that `getBundledExtensions()` returns the same list as
+  // `getAllExtensions()`. It could not fail: the implementation is `= getAllExtensions()`, so it
+  // asserted that the code is itself. The claim it was making - that this host has no second kind
+  // of extension - is a design statement and belongs in the KDoc on the override, where it is.
 
   @Test
   fun `test removing a plugin takes its extensions with it`() {
