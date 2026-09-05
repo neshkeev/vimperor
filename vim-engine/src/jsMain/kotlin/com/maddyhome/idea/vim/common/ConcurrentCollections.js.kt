@@ -37,13 +37,34 @@ private class CopyOnWriteCollection<T> : AbstractMutableCollection<T>() {
     items = emptyList()
   }
 
+  /**
+   * Walks a snapshot, and `remove` takes the element it last returned out of the live collection.
+   *
+   * `remove` used to throw, on the reasoning that removing during a walk is what copy-on-write
+   * exists to avoid. That was wrong twice over. `ConcurrentLinkedDeque`, which this stands in for on
+   * the JVM, supports it - so the two platforms disagreed. And `MutableCollection.removeAll {}` is
+   * written in terms of it, which is how `VimListenersNotifier.unloadListeners` removes a plugin's
+   * listeners: on JS that threw `UnsupportedOperationException` for any extension that had actually
+   * registered one, and disabling such an extension was impossible.
+   */
   override fun iterator(): MutableIterator<T> {
     val snapshot = items
     var cursor = 0
+    var removable = false
     return object : MutableIterator<T> {
       override fun hasNext() = cursor < snapshot.size
-      override fun next(): T = snapshot[cursor++]
-      override fun remove() = throw UnsupportedOperationException("remove during iteration")
+
+      override fun next(): T {
+        if (!hasNext()) throw NoSuchElementException()
+        removable = true
+        return snapshot[cursor++]
+      }
+
+      override fun remove() {
+        check(removable) { "remove() before next(), or twice for the same element" }
+        removable = false
+        remove(snapshot[cursor - 1])
+      }
     }
   }
 }
@@ -74,13 +95,25 @@ private class CopyOnWriteSet<T> : AbstractMutableSet<T>() {
     items = emptySet()
   }
 
+  /** Snapshot iteration with a working `remove`, for the reason [CopyOnWriteCollection] has one. */
   override fun iterator(): MutableIterator<T> {
     val snapshot = items.toList()
     var cursor = 0
+    var removable = false
     return object : MutableIterator<T> {
       override fun hasNext() = cursor < snapshot.size
-      override fun next(): T = snapshot[cursor++]
-      override fun remove() = throw UnsupportedOperationException("remove during iteration")
+
+      override fun next(): T {
+        if (!hasNext()) throw NoSuchElementException()
+        removable = true
+        return snapshot[cursor++]
+      }
+
+      override fun remove() {
+        check(removable) { "remove() before next(), or twice for the same element" }
+        removable = false
+        remove(snapshot[cursor - 1])
+      }
     }
   }
 }
