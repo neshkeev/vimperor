@@ -32,12 +32,12 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 21 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 20 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-Five are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `mini-ai` and `CamelCaseMotion` - and they are the pattern for
-the rest. Each lives in
+Six are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `mini-ai`, `CamelCaseMotion` and `indentwise` - and they are the
+pattern for the rest. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -51,7 +51,8 @@ name filter useless.
 `VimExtensionFacade` is in the engine now, which was worth more than any single
 port: it is what an extension calls to register a mapping, and while it lived in
 the plugin a portable extension still could not follow. Moving it unblocked
-`camelcasemotion` immediately. What stayed behind is in `VimExtensionFacadeIj.kt`
+`camelcasemotion` and `indentwise` immediately, and left `abolish`, `targets` and
+`textobjuser` needing only the `newapi` bridge. What stayed behind is in `VimExtensionFacadeIj.kt`
 - the functions taking an IntelliJ `Editor` or `DataContext`, as top-level
 functions rather than members, since Kotlin cannot add a member to an object from
 another module. `inputKeyStroke` is the only one with a real reason to stay: its
