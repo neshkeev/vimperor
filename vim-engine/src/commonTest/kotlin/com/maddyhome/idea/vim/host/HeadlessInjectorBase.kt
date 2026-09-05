@@ -190,6 +190,9 @@ abstract class HeadlessInjectorBase : VimInjector {
   override val psiService: VimPsiService
     get() = TODO("headless host does not provide psiService yet")
 
+  override val commentService: VimCommentService
+    get() = TODO("headless host does not provide commentService yet")
+
   override val vimscriptExecutor: VimscriptExecutor
     get() = TODO("headless host does not provide vimscriptExecutor yet")
 

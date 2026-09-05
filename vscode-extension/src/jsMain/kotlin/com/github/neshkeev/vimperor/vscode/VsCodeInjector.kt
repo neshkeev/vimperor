@@ -215,6 +215,9 @@ open class VsCodeInjector(
   }
   override val psiService: VimPsiService by lazy { TextOnlyPsiService }
 
+  /** `gc`: VS Code's own comment commands, over the range the extension asks about. */
+  override val commentService: VimCommentService by lazy { VsCodeCommentService(hostCommands) }
+
   /** There is no spell checker in VS Code, and this is what says so. See [NoSpellchecker]. */
   override val spellcheckerService: SpellcheckerService get() = NoSpellchecker
 

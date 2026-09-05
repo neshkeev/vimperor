@@ -60,6 +60,18 @@ internal object VsCodeCommands {
   const val REINDENT_SELECTED_LINES = "editor.action.reindentselectedlines"
 
   /**
+   * `gc`, `gcc` and `:Commentary`, which VS Code answers from the language configuration every
+   * language extension ships - the same knowledge IntelliJ keeps in a `Commenter`.
+   *
+   * Both are toggles, which is what Vim's `gc` is, and both act on the selection - so the caller
+   * puts a selection over the range first, exactly as `=` does. `addCommentLine` and
+   * `removeCommentLine` are the one-way forms and are the wrong shape: deciding whether a mixed
+   * selection counts as commented is the part worth letting the host do.
+   */
+  const val COMMENT_LINE = "editor.action.commentLine"
+  const val BLOCK_COMMENT = "editor.action.blockComment"
+
+  /**
    * Moves the view by a number of lines, which is the only API that does exactly that.
    *
    * `revealRange` is the other half of VS Code's scrolling API and the obvious thing to reach for,
@@ -135,6 +147,7 @@ internal object VsCodeCommands {
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     REVEAL_DEFINITION, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
+    COMMENT_LINE, BLOCK_COMMENT,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

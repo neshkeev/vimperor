@@ -58,6 +58,7 @@ import com.maddyhome.idea.vim.api.VimPathExpansion
 import com.maddyhome.idea.vim.api.VimPathExpansionImpl
 import com.maddyhome.idea.vim.api.VimPluginActivator
 import com.maddyhome.idea.vim.api.VimProcessGroup
+import com.maddyhome.idea.vim.api.VimCommentService
 import com.maddyhome.idea.vim.api.VimPsiService
 import com.maddyhome.idea.vim.api.VimRedrawService
 import com.maddyhome.idea.vim.api.VimRegexServiceBase
@@ -175,6 +176,9 @@ internal class IjVimInjector : VimInjectorBase() {
     get() = LineChangeGroup
   override val psiService: VimPsiService
     get() = service()
+
+  /** The `Commenter` behind `gc`, reached over RPC. See [IjCommentService]. */
+  override val commentService: VimCommentService by lazy { IjCommentService() }
   override val nativeActionManager: NativeActionManager
     get() = service()
   override val messages: VimMessages

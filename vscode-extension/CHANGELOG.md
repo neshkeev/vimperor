@@ -23,5 +23,6 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
   `textobj-user` — `textobj#user#plugin()`, for declaring text objects of your own — `targets`
   (seeking text objects: `cin(` for the next pair, `cil(` for the last), `abolish` (`crs` `crc`
   `crm` to recase a word, and `:S`, a substitute that carries the case of what it replaced) and
-  `textobj-indent` (`ai` `ii` `aI` — the block at the caret's indentation level) and `argtextobj`
-  (`ia` `aa` — one argument of a call), each enabled with the `Plug` line you would use in IdeaVim.
+  `textobj-indent` (`ai` `ii` `aI` — the block at the caret's indentation level), `argtextobj`
+  (`ia` `aa` — one argument of a call) and `commentary` (`gc{motion}`, `gcc`, `gcu`, `:Commentary`),
+  each enabled with the `Plug` line you would use in IdeaVim.

@@ -13,6 +13,8 @@ import com.maddyhome.idea.vim.api.VimExtensionRegistrator
 import com.maddyhome.idea.vim.extension.abolish.init as abolishInit
 import com.maddyhome.idea.vim.extension.argtextobj.init as argTextObjInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
+import com.maddyhome.idea.vim.extension.commentary.COMMENTARY_COMMAND
+import com.maddyhome.idea.vim.extension.commentary.init as commentaryInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
@@ -117,6 +119,11 @@ internal object VsCodeExtensions {
     // `argtextobj.vim`: `ia` and `aa` for one argument of a call, commas and nesting and quoted
     // strings all accounted for.
     "argtextobj" to { api -> api.argTextObjInit() },
+
+    // `vim-commentary`: `gc{motion}`, `gcc`, `gcu` and `:Commentary`. The comment syntax is VS
+    // Code's, from the language configuration - see `VsCodeCommentService`. `dgc`, the text object
+    // over a run of comment lines, needs a syntax tree and does nothing here.
+    "commentary" to { api -> api.commentaryInit() },
   )
 
   /**
@@ -128,13 +135,15 @@ internal object VsCodeExtensions {
    * command group holds by name. So an extension that registers either has to name them again on
    * the way out, and this is where it says so.
    *
-   * IntelliJ reaches the same code through `VimExtension.dispose`, which is why the entry here is a
-   * function in the engine rather than logic written twice.
+   * IntelliJ reaches the same code through `VimExtension.dispose`, which is why these call the same
+   * engine functions the plugin's adapters do rather than repeating the logic.
    */
   val TEARDOWN: Map<String, () -> Unit> = mapOf(
     // `textobj#user#plugin` and `textobj#user#map`, held by the function service.
     "textobj-user" to { unregisterTextObjUserFunctions() },
 
+    // `:Commentary`, held by the command group.
+    "commentary" to { injector.commandGroup.removeAlias(COMMENTARY_COMMAND) },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 15 of IdeaVim's 26 bundled extensions —
-  surround, commentary, matchit and the rest — are not ported yet. Eleven are, and they are enabled
+- **Vim plugins.** There is no `pack/` directory, and 14 of IdeaVim's 26 bundled extensions —
+  surround, matchit, sneak and the rest — are not ported yet. Twelve are, and they are enabled
   the way you would in IdeaVim:
 
   ```vim
@@ -106,7 +106,12 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'tpope/vim-abolish'                 " crs crc crm recase a word; :S, a case-carrying :s
   Plug 'michaeljsmith/vim-indent-object'   " ai ii aI — the block at the caret's indentation level
   Plug 'vim-scripts/argtextobj.vim'        " ia aa — one argument of a call, nesting and strings and all
+  Plug 'tpope/vim-commentary'              " gc{motion}, gcc, gcu and :Commentary
   ```
+
+  `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
+  drives its own Toggle Line Comment. `dgc`, the text object over a run of comment lines, needs a
+  syntax tree and does nothing here.
 
   `yankring` is the one that compiles for this host and is deliberately left out. Its `<C-P>` works
   by undoing the paste and re-pasting an older entry, and VS Code's undo is a command that finishes

@@ -170,6 +170,9 @@ interface VimInjector {
 
   val psiService: VimPsiService
 
+  /** Toggling comments, which only the host knows the syntax for. See [VimCommentService]. */
+  val commentService: VimCommentService
+
   val vimscriptExecutor: VimscriptExecutor
 
   val vimscriptParser: VimscriptParser
