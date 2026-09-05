@@ -33,7 +33,8 @@ largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 14 of the 26 bundled extensions, 24 IntelliJ-only options,
-13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
+13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
+`pluginActivator`, which nothing in the engine calls, and the command-line window.
 
 Twelve are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,

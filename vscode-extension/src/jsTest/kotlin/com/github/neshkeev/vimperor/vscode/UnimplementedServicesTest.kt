@@ -55,7 +55,7 @@ class UnimplementedServicesTest {
    *
    * Without this the test above would pass just as well if the override regex matched nothing - and
    * that failure is silent, because a service that is implemented would simply appear on the list
-   * and the list would be updated to match. `motion` is implemented and `highlightingService` is not.
+   * and the list would be updated to match. `motion` is implemented and `pluginActivator` is not.
    */
   @Test
   fun `test an implemented service is not listed and an unimplemented one is`() {
@@ -64,8 +64,8 @@ class UnimplementedServicesTest {
     val overridden = OVERRIDE.findAll(readText("$host/VsCodeInjector.kt")).map { it.groupValues[1] }.toSet()
 
     assertTrue("motion" in overridden, "motion is implemented and should be read as overridden")
-    assertTrue("highlightingService" !in overridden, "highlightingService is not implemented")
-    assertTrue("highlightingService" in EXPECTED, "highlightingService should be on the list")
+    assertTrue("pluginActivator" !in overridden, "pluginActivator is not implemented")
+    assertTrue("pluginActivator" in EXPECTED, "pluginActivator should be on the list")
   }
 
   private companion object {
@@ -106,16 +106,19 @@ class UnimplementedServicesTest {
      * switched off and on from its status-bar icon; this host's on and off are VS Code's own
      * `activate` and `deactivate`, in `Extension.kt`.
      *
-     * `highlightingService` adds a coloured range by request. This was recorded here as `matchadd()`
-     * and that was wrong - `matchadd` does not exist anywhere in this repository. Its only caller is
-     * `Transaction.addHighlight` in the thin API, so it belongs with the extension services above
-     * and is reachable from nowhere else.
-     *
      * `searchWindowGroup` and `virtualBufferGroup` are Vim's command-line window - `q:`, `q/` - and
      * the buffers behind it. A real editor buffer that is not a file, holding history, that closes
      * on Enter.
      *
      * Gone from this list, and why the reasons were wrong:
+     *
+     * `highlightingService` adds a coloured range by request, and was described here as reachable
+     * from nowhere but `Transaction.addHighlight` in the thin API - which was true and was the wrong
+     * conclusion to draw from it. That is the call an extension makes to say "this is the text I
+     * just acted on", which is `highlightedyank`'s flash and `vim-exchange`'s mark on the region
+     * waiting to be swapped, so it gates every extension of that kind rather than nothing. It is
+     * `VsCodeHighlightingService` now: a decoration type per highlight, disposed on removal, which
+     * is what makes the ids the interface hands back mean anything.
      *
      * `spellcheckerService` is still true - VS Code has no spellchecker, the popular ones are
      * extensions, and an extension cannot ask another extension for a word list - but it is no
@@ -135,7 +138,6 @@ class UnimplementedServicesTest {
      * its mappings. It is the *first* thing the extension chain asks for, not the last.
      */
     val EXPECTED = """
-      highlightingService
       pluginActivator
       searchWindowGroup
       virtualBufferGroup
