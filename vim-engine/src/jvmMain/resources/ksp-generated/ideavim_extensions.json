@@ -1,5 +1,10 @@
 [
   {
+    "extensionName": "CamelCaseMotion",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.camelcasemotion.CamelCaseMotionNewApiKt"
+  },
+  {
     "extensionName": "ReplaceWithRegisterNew",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.replacewithregister.ReplaceWithRegisterNewApiKt"

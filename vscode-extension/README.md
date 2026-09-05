@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 22 of IdeaVim's 26 bundled extensions —
-  surround, commentary, targets and the rest — are not ported yet. Four are, and they are enabled
+- **Vim plugins.** There is no `pack/` directory, and 21 of IdeaVim's 26 bundled extensions —
+  surround, commentary, targets and the rest — are not ported yet. Five are, and they are enabled
   the way you would in IdeaVim:
 
   ```vim
@@ -99,6 +99,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'dbakker/vim-paragraph-motion'      " { and } stop at a line of only whitespace
   Plug 'kana/vim-textobj-entire'           " ae and ie — the whole buffer as a text object
   Plug 'echasnovski/mini.ai'               " ci( and friends, from anywhere on the line
+  Plug 'bkad/CamelCaseMotion'              " ,w ,b ,e move by the parts of an identifier
   ```
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.

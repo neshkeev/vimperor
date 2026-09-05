@@ -7,13 +7,7 @@
  */
 package com.maddyhome.idea.vim.extension
 
-import com.intellij.openapi.actionSystem.DataContext
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.diagnostic.logger
-import com.intellij.openapi.editor.Editor
 import com.maddyhome.idea.vim.KeyHandler
-import com.maddyhome.idea.vim.VimPlugin
-import com.maddyhome.idea.vim.action.change.Extension
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimCaret
@@ -23,31 +17,46 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.common.CommandAlias
 import com.maddyhome.idea.vim.common.CommandAliasHandler
-import com.maddyhome.idea.vim.helper.TestInputModel
 import com.maddyhome.idea.vim.helper.enumSetOf
-import com.maddyhome.idea.vim.helper.inRepeatMode
 import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.key.OperatorFunction
 import com.maddyhome.idea.vim.key.VimKeyStroke
-import com.maddyhome.idea.vim.newapi.vim
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.Scope
 import com.maddyhome.idea.vim.vimscript.model.statements.FunctionFlag
-import java.awt.event.KeyEvent
-import java.util.*
+import kotlin.jvm.JvmStatic
 
 /**
- * Vim API facade that defines functions similar to the built-in functions and statements of the original Vim.
+ * Vim API facade that defines functions similar to the built-in functions and statements of the
+ * original Vim.
  *
- * See :help eval.
+ * See `:help eval`.
+ *
+ * ## Why this is in the engine
+ *
+ * It was in the IntelliJ plugin, and it was the single largest thing standing between the bundled
+ * extensions and the VS Code host. An extension that registers a mapping calls
+ * `putExtensionHandlerMapping` and nothing else IntelliJ-shaped, so a facade in the plugin meant
+ * a *portable* extension could not move - which is what stopped `commentary`, `textobjuser` and
+ * `camelcasemotion`.
+ *
+ * Nothing here needed rewriting to move, only re-pointing: the bodies called `VimPlugin.getKey()`,
+ * `VimPlugin.getRegister()` and `VimPlugin.getCommand()`, which are the plugin's accessors for
+ * services the engine already exposes as `injector.keyGroup`, `injector.registerGroup` and
+ * `injector.commandGroup`. Same objects, reached the host-independent way.
+ *
+ * ## What stayed behind
+ *
+ * The functions that take an IntelliJ `Editor` or `DataContext` are extension functions on this
+ * object in the plugin, so `VimExtensionFacade.inputString(editor, context, ...)` still resolves at
+ * every call site that passes IntelliJ types. `inputKeyStroke` is one of those, and it is the only
+ * one with a real reason to stay: its unit-test branch reads IntelliJ's `TestInputModel`.
  *
  * @author vlan
  */
 object VimExtensionFacade {
-
-  private val LOG = logger<VimExtensionFacade>()
 
   /** The 'map' command for mapping keys to handlers defined in extensions. */
   @JvmStatic
@@ -58,26 +67,7 @@ object VimExtensionFacade {
     extensionHandler: ExtensionHandler,
     recursive: Boolean,
   ) {
-    VimPlugin.getKey().putKeyMapping(modes, fromKeys, pluginOwner, extensionHandler, recursive)
-  }
-
-
-  @JvmStatic
-  @Deprecated(
-    "Use VimPlugin.getKey().putKeyMapping(modes, fromKeys, pluginOwner, extensionHandler, recursive)",
-    ReplaceWith(
-      "VimPlugin.getKey().putKeyMapping(modes, fromKeys, pluginOwner, extensionHandler, recursive)",
-      "com.maddyhome.idea.vim.VimPlugin"
-    )
-  )
-  fun putExtensionHandlerMapping(
-    modes: Set<MappingMode>,
-    fromKeys: List<VimKeyStroke>,
-    pluginOwner: MappingOwner,
-    extensionHandler: VimExtensionHandler,
-    recursive: Boolean,
-  ) {
-    VimPlugin.getKey().putKeyMapping(modes, fromKeys, pluginOwner, extensionHandler, recursive)
+    injector.keyGroup.putKeyMapping(modes, fromKeys, pluginOwner, extensionHandler, recursive)
   }
 
   /** The 'map' command for mapping keys to other keys. */
@@ -89,7 +79,7 @@ object VimExtensionFacade {
     toKeys: List<VimKeyStroke>,
     recursive: Boolean,
   ) {
-    VimPlugin.getKey().putKeyMapping(modes, fromKeys, pluginOwner, toKeys, recursive)
+    injector.keyGroup.putKeyMapping(modes, fromKeys, pluginOwner, toKeys, recursive)
   }
 
   /** The 'map' command for mapping keys to other keys if there is no other mapping to these keys */
@@ -104,12 +94,10 @@ object VimExtensionFacade {
     val filteredModes = modes.filterTo(mutableSetOf()) {
       !injector.keyGroup.hasMapTo(toKeys, enumSetOf(it))
     }
-    VimPlugin.getKey().putKeyMapping(filteredModes, fromKeys, pluginOwner, toKeys, recursive)
+    injector.keyGroup.putKeyMapping(filteredModes, fromKeys, pluginOwner, toKeys, recursive)
   }
 
-  /**
-   * Equivalent to calling 'command' to set up a user-defined command or alias
-   */
+  /** Equivalent to calling 'command' to set up a user-defined command or alias */
   fun addCommand(
     name: String,
     handler: CommandAliasHandler,
@@ -117,9 +105,7 @@ object VimExtensionFacade {
     addCommand(name, 0, 0, handler)
   }
 
-  /**
-   * Equivalent to calling 'command' to set up a user-defined command or alias
-   */
+  /** Equivalent to calling 'command' to set up a user-defined command or alias */
   @JvmStatic
   fun addCommand(
     name: String,
@@ -127,7 +113,7 @@ object VimExtensionFacade {
     maximumNumberOfArguments: Int,
     handler: CommandAliasHandler,
   ) {
-    VimPlugin.getCommand()
+    injector.commandGroup
       .setAlias(name, CommandAlias.Call(minimumNumberOfArguments, maximumNumberOfArguments, name, handler))
   }
 
@@ -135,61 +121,29 @@ object VimExtensionFacade {
    * Runs normal mode commands similar to ':normal! {commands}'.
    * Mappings doesn't work with this function
    *
-   * XXX: Currently it doesn't make the editor enter the normal mode, it doesn't recover from incomplete commands, it
-   * leaves the editor in the insert mode if it's been activated.
+   * XXX: Currently it doesn't make the editor enter the normal mode, it doesn't recover from
+   * incomplete commands, it leaves the editor in the insert mode if it's been activated.
    */
   @JvmStatic
-  fun executeNormalWithoutMapping(keys: List<VimKeyStroke>, editor: Editor) {
-    val context = injector.executionContextManager.getEditorExecutionContext(editor.vim)
+  fun executeNormalWithoutMapping(keys: List<VimKeyStroke>, editor: VimEditor) {
+    val context = injector.executionContextManager.getEditorExecutionContext(editor)
     val keyHandler = KeyHandler.getInstance()
     keys.forEach {
-      keyHandler.handleKey(editor.vim, it, KeySource.NORMAL_COMMAND_NOT_MAPPED, context, keyHandler.keyHandlerState)
+      keyHandler.handleKey(editor, it, KeySource.NORMAL_COMMAND_NOT_MAPPED, context, keyHandler.keyHandlerState)
     }
-  }
-
-  /** Returns a single key stroke from the user input similar to 'getchar()'. */
-  @JvmStatic
-  fun inputKeyStroke(editor: Editor): VimKeyStroke {
-    if (editor.vim.inRepeatMode) {
-      val input = Extension.consumeKeystroke()
-      LOG.trace("inputKeyStroke: dot repeat in progress. Input: $input")
-      return input ?: error("Not enough keystrokes saved: ${Extension.lastExtensionHandler}")
-    }
-
-    val key: VimKeyStroke? = if (ApplicationManager.getApplication().isUnitTestMode) {
-      LOG.trace("Unit test mode is active")
-      val mappingStack = KeyHandler.getInstance().keyStack
-      mappingStack.feedSomeStroke() ?: TestInputModel.getInstance(editor).nextKeyStroke()?.also {
-        if (injector.registerGroup.isRecording) {
-          KeyHandler.getInstance().modalEntryKeys += it
-        }
-      }
-    } else {
-      LOG.trace("Getting char from the modal entry...")
-      var ref: VimKeyStroke? = null
-      injector.modalInput.activate(editor.vim) { stroke: VimKeyStroke ->
-        ref = stroke
-        false
-      }
-      LOG.trace("Got char $ref")
-      ref
-    }
-    val result = key ?: VimKeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE.toChar())
-    Extension.addKeystroke(result)
-    return result
   }
 
   /** Returns a string typed in the input box similar to 'input()'. */
   @JvmStatic
-  fun inputString(editor: Editor, context: DataContext, prompt: String, finishOn: Char?): String {
+  fun inputString(editor: VimEditor, context: ExecutionContext, prompt: String, finishOn: Char?): String {
     @Suppress("DEPRECATION")
-    return injector.commandLine.inputString(editor.vim, context.vim, prompt, finishOn) ?: ""
+    return injector.commandLine.inputString(editor, context, prompt, finishOn) ?: ""
   }
 
-  /** Get the current contents of the given register similar to 'getreg()'. */
+  /** Returns the current contents of the given register similar to 'getreg()'. */
   @JvmStatic
   fun getRegister(editor: VimEditor, register: Char): List<VimKeyStroke>? {
-    val reg = VimPlugin.getRegister()
+    val reg = injector.registerGroup
       .getRegister(editor, injector.executionContextManager.getEditorExecutionContext(editor), register) ?: return null
     return reg.keys
   }
@@ -208,7 +162,7 @@ object VimExtensionFacade {
   /** Set the current contents of the given register */
   @JvmStatic
   fun setRegister(register: Char, keys: List<VimKeyStroke?>?) {
-    VimPlugin.getRegister().setKeys(register, keys?.filterNotNull() ?: emptyList())
+    injector.registerGroup.setKeys(register, keys?.filterNotNull() ?: emptyList())
   }
 
   /** Set the current contents of the given register */
@@ -226,14 +180,14 @@ object VimExtensionFacade {
   /** Set the current contents of the given register */
   @JvmStatic
   fun setRegister(register: Char, keys: List<VimKeyStroke?>?, type: SelectionType) {
-    VimPlugin.getRegister().setKeys(register, keys?.filterNotNull() ?: emptyList(), type)
+    injector.registerGroup.setKeys(register, keys?.filterNotNull() ?: emptyList(), type)
   }
 
   /**
    * Declares a Vimscript function with a Kotlin body.
    *
-   * The implementation is `ScriptFunctions.export` in `vim-engine` now. It never had any IntelliJ
-   * in it, and the thin API's `VimPluginService` needs it from a host that has no IntelliJ at all.
+   * The implementation is `ScriptFunctions.export` in `vim-engine`. It never had any IntelliJ in
+   * it, and the thin API's `VimPluginService` needs it from a host that has no IntelliJ at all.
    */
   @JvmStatic
   fun exportScriptFunction(

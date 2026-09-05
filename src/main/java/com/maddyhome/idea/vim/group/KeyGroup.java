@@ -25,6 +25,7 @@ import com.maddyhome.idea.vim.action.VimShortcutKeyAction;
 import com.maddyhome.idea.vim.action.change.LazyVimCommand;
 import com.maddyhome.idea.vim.api.*;
 import com.maddyhome.idea.vim.command.MappingMode;
+import com.maddyhome.idea.vim.extension.IjVimExtensionFacade;
 import com.maddyhome.idea.vim.extension.VimExtensionFacade;
 import com.maddyhome.idea.vim.helper.EditorHelper;
 import com.maddyhome.idea.vim.helper.EditorHelperRt;
@@ -322,7 +323,7 @@ public class KeyGroup extends VimKeyGroupBase implements PersistentStateComponen
   @Override
   public @Nullable Character getChar(@NotNull VimEditor editor) {
     Editor ijEditor = ((IjVimEditor)editor).getEditor();
-    VimKeyStroke stroke = VimExtensionFacade.inputKeyStroke(ijEditor);
+    VimKeyStroke stroke = IjVimExtensionFacade.inputKeyStroke(ijEditor);
     char keyChar = stroke.getKeyChar();
     if (keyChar == KeyEvent.CHAR_UNDEFINED) {
       return null;

@@ -128,6 +128,35 @@ class PortedExtensionsTest {
     assertEquals("ONE TWO\n", session.content)
   }
 
+  // ---- CamelCaseMotion -------------------------------------------------------------------------
+
+  /**
+   * The whole difference from `w`: an identifier is several words, and `w` treats it as one.
+   *
+   * The mappings are `<Plug>CamelCaseMotion_w` and friends, bound to `,w` only when
+   * `g:camelcasemotion_key` is set - the extension deliberately installs no default keys - so the
+   * test drives the `<Plug>` target, which is what a user's own mapping would reach.
+   */
+  @Test
+  fun `test the camel motion stops inside an identifier`() {
+    val session = Session("getUserName rest\n", "CamelCaseMotion")
+
+    session.type("d")
+    session.host.key(session.fake, "<Plug>CamelCaseMotion_w")
+
+    assertEquals("UserName rest\n", session.content, "`w` would have taken the whole identifier")
+  }
+
+  @Test
+  fun `test it treats snake case the same way`() {
+    val session = Session("get_user_name rest\n", "CamelCaseMotion")
+
+    session.type("d")
+    session.host.key(session.fake, "<Plug>CamelCaseMotion_w")
+
+    assertEquals("user_name rest\n", session.content)
+  }
+
   // ---- mini-ai ---------------------------------------------------------------------------------
 
   /**

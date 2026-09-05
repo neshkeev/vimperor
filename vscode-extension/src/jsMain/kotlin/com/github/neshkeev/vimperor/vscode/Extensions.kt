@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
+import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
@@ -80,6 +81,10 @@ internal object VsCodeExtensions {
     // `a`/`i` text objects that search for their delimiter rather than needing the caret inside
     // it, so `ci(` works from anywhere on the line.
     "mini-ai" to { api -> api.miniAiInit() },
+
+    // `,w` `,b` `,e` and their text objects, moving by the parts of an identifier rather than by
+    // whitespace: `,w` on `getUserName` stops at `User`, where `w` jumps past the whole thing.
+    "CamelCaseMotion" to { api -> api.camelCaseMotionInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */
