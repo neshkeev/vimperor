@@ -202,34 +202,59 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
     ALIASES[alias.trim().removeSurrounding("'").removeSurrounding("\"").substringAfterLast('/')]
 
   private companion object {
-    /** By the repository tail, which is what `:Plug` and `Plugin` lines actually carry. */
+    /**
+     * By the repository tail, which is what `:Plug` and `Plugin` lines actually carry.
+     *
+     * Transcribed from the plugin's own `IdeaVIM.ideavim-frontend.xml`, where every bundled
+     * extension declares its aliases, rather than written from the documentation - which is how the
+     * first version of this table came to say `camelcasemotion` for an extension actually named
+     * `CamelCaseMotion`, and `miniai` for one named `mini-ai`. A wrong alias fails the way an
+     * unknown one does, silently, so nothing caught it.
+     *
+     * Kept whole rather than trimmed to what is bundled today: an alias for an extension this host
+     * does not have costs nothing, and trimming it would mean adding it back with the extension,
+     * which is exactly the kind of two-place edit that gets done once.
+     *
+     * The one divergence from the XML is `ReplaceWithRegister`. IdeaVim has two of them - the old
+     * one on the extension point and `ReplaceWithRegisterNew` on the thin API - and only the second
+     * can run here, so every alias the old one publishes resolves to the new one.
+     */
     val ALIASES: Map<String, String> = mapOf(
-      "vim-easymotion" to "easymotion",
-      "vim-surround" to "surround",
-      "vim-commentary" to "commentary",
-      "vim-multiple-cursors" to "multiple-cursors",
+      "vim-abolish" to "abolish",
       "argtextobj.vim" to "argtextobj",
-      "vim-textobj-entire" to "textobj-entire",
-      // IdeaVim has two of these: `ReplaceWithRegister` on the old extension point and
-      // `ReplaceWithRegisterNew` on the thin API. Only the second can run here, so the name a
-      // `.vimrc` writes resolves to it.
-      "ReplaceWithRegister" to "ReplaceWithRegisterNew",
+      "script.php?script_id=2699" to "argtextobj",
+      "CamelCaseMotion" to "CamelCaseMotion",
+      "vim-textobj-class" to "classtextobj",
+      "script.php?script_id=1173" to "commentary",
+      "script.php?script_id=3695" to "commentary",
+      "tcomment_vim" to "commentary",
+      "vim-commentary" to "commentary",
       "vim-exchange" to "exchange",
-      "vim-highlightedyank" to "highlightedyank",
-      "vim-paragraph-motion" to "vim-paragraph-motion",
-      "vim-indent-object" to "textobj-indent",
-      "matchit.zip" to "matchit",
-      "vim-matchit" to "matchit",
-      "vim-sneak" to "sneak",
-      "camelcasemotion" to "camelcasemotion",
-      "vim-abolish" to "vim-abolish",
-      "nerdtree" to "NERDTree",
       "vim-textobj-function" to "functextobj",
+      "vim-highlightedyank" to "highlightedyank",
       "vim-indentwise" to "indentwise",
-      "mini.ai" to "miniai",
-      "vim-targets" to "targets",
+      "matchit" to "matchit",
+      "vim-matchit" to "matchit",
+      "mini.ai" to "mini-ai",
+      "vim-multiple-cursors" to "multiple-cursors",
+      "nerdtree" to "NERDTree",
+      "ReplaceWithRegister" to "ReplaceWithRegisterNew",
+      "script.php?script_id=2703" to "ReplaceWithRegisterNew",
+      "vim-ReplaceWithRegister" to "ReplaceWithRegisterNew",
+      "vim-sneak" to "sneak",
+      "script.php?script_id=1697" to "surround",
+      "vim-surround" to "surround",
       "targets.vim" to "targets",
-      "YouCompleteMe" to "youcompleteme",
+      "script.php?script_id=2610" to "textobj-entire",
+      "vim-textobj-entire" to "textobj-entire",
+      "vim-indent-object" to "textobj-indent",
+      "vim-textobj-user" to "textobj-user",
+      "Improved-paragraph-motion" to "vim-paragraph-motion",
+      "vim-paragraph-motion" to "vim-paragraph-motion",
+      "VimEverywhere" to "VimEverywhere",
+      "script.php?script_id=1234" to "yankring",
+      "YankRing" to "yankring",
+      "YankRing.vim" to "yankring",
     )
   }
 }

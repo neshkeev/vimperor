@@ -148,6 +148,52 @@ class ExtensionProviderTest {
     assertEquals("surround", injector.extensionRegistrator.getExtensionNameByAlias("vim-surround"))
   }
 
+  /**
+   * Every bundled extension has to be reachable by the name its upstream repository actually has,
+   * and this is the test that says so, because nothing else would.
+   *
+   * The first version of the alias table was written from the documentation rather than from the
+   * plugin's own `IdeaVIM.ideavim-frontend.xml`, and got two of them wrong: `camelcasemotion` for an
+   * extension named `CamelCaseMotion`, and `miniai` for one named `mini-ai`. Both failures are
+   * silent - an alias that resolves to a name no extension has fails exactly the way an unknown
+   * alias does - so `Plug 'bkad/CamelCaseMotion'` did nothing at all and said nothing about it.
+   *
+   * The repositories are spelled out rather than derived from [VsCodeExtensions.BUNDLED], since a
+   * test that derived them would agree with whatever the table said.
+   */
+  @Test
+  fun `test each bundled extension is reachable by its own repository name`() {
+    Session()
+    val registrator = injector.extensionRegistrator
+
+    assertEquals("ReplaceWithRegisterNew", registrator.getExtensionNameByAlias("vim-scripts/ReplaceWithRegister"))
+    assertEquals("vim-paragraph-motion", registrator.getExtensionNameByAlias("dbakker/vim-paragraph-motion"))
+    assertEquals("textobj-entire", registrator.getExtensionNameByAlias("kana/vim-textobj-entire"))
+    assertEquals("mini-ai", registrator.getExtensionNameByAlias("echasnovski/mini.ai"))
+    assertEquals("CamelCaseMotion", registrator.getExtensionNameByAlias("bkad/CamelCaseMotion"))
+    assertEquals("indentwise", registrator.getExtensionNameByAlias("jeetsukumaran/vim-indentwise"))
+  }
+
+  /** And the resolved name has to name something, which is the half an alias table cannot check. */
+  @Test
+  fun `test each of those names then enables the extension`() {
+    Session()
+
+    val repositories = listOf(
+      "vim-scripts/ReplaceWithRegister",
+      "dbakker/vim-paragraph-motion",
+      "kana/vim-textobj-entire",
+      "echasnovski/mini.ai",
+      "bkad/CamelCaseMotion",
+      "jeetsukumaran/vim-indentwise",
+    )
+    repositories.forEach {
+      assertTrue(injector.extensionRegistrator.setOptionByPluginAlias(it), "`Plug '$it'` enabled nothing")
+    }
+
+    assertEquals(repositories.size, injector.extensionLoader.getEnabledExtensions().size)
+  }
+
   @Test
   fun `test a plugin this fork has never heard of resolves to nothing`() {
     Session()
