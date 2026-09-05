@@ -5,75 +5,45 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1034 of the 1049 harvested fixtures pass. These fifteen are grouped by what is actually wrong,
-# which is seven things.
+# 1044 of the 1047 harvested fixtures pass. Three are left and none of them is a caret: two name an
+# IntelliJ action and the third is a piece of machinery nobody has written yet.
 #
-# The corpus grew by 24 when the harness stopped refusing fixtures with more than one caret, and
-# twelve of those twenty-four failed. Four have been fixed since; the eleven left below are the
-# eight that were already here plus what remains of the twelve. That is the yield of removing a
-# refusal, and it is why refusing is only ever a temporary answer: multiple cursors are the feature
-# VS Code is best known for.
+# The nine that left this list most recently were one bug seen from eight angles plus one that was
+# never a bug at all, and both halves are worth recording.
 #
-# Four entries left this list without anything being fixed, which is the other thing to remember
-# about it: the harness was typing setup commands through `parseKeys`, so `:nmap <Tab> ihello<Esc>`
-# pressed Escape on the command line instead of writing five characters into it. Four fixtures had
-# been recorded here as bugs in this host that were bugs in the harness reading them.
+# Every multi-caret Visual and Select fixture failed because a blockwise selection put its carets in
+# the wrong column and kept carets IdeaVim does not have. A block's caret goes in the *active*
+# corner's column - which is the right edge only while the block is being drawn rightwards, so
+# `<C-V>jl` read the same either way and `<C-V>bjj` did not - and a line too short to hold the
+# block's slice contributes no caret at all. Three more followed from carets that had stopped being
+# different carets and were never merged, and one from `vimSelectionStart` defaulting to zero on a
+# caret the block had just invented. The details are at each fix; `VsCodeBlockVisualTest` is where
+# the numbers live.
+#
+# The other one was a harness bug, and it is the second of its kind: the harness was harvesting
+# tests IdeaVim has `@Disabled`. `search in one time from select mode` sat here as "expected [81],
+# actual [82]" when IdeaVim's own caret is at 82 - the test is switched off over there, with the
+# note "Ctrl-o doesn't work yet in select mode". `repeat command with execution of ij action` was
+# the same, disabled with "This test throws `Recursive runForEachCaret invocations are not
+# allowed`", and its entry here blamed the missing IntelliJ action instead. Before believing an
+# entry in this file, check that the fixture passes in the plugin.
 
-# --- Carets the engine narrowed away and this host kept.
+# --- Two IntelliJ actions, which this host has no equivalent of.
 #
-# `<C-V>khV` leaves a block for line Visual and answers `expected [46], actual [46, 75]`; `Ve<C-G>`
-# switches to Select mode with `expected [19, 104], actual [19, 42, 104]`; `g<C-H><S-Down>` gives
-# `expected [12], actual [2, 12]`. Every one is a caret too many, and always when the selection
-# changes *kind* without leaving Visual mode - which is the one path that does not go through
-# `exitVisualMode`, where the engine drops the secondary carets itself.
+# `ideajoin` is IntelliJ's smart join, a language feature this host cannot have: `VjJ` with the
+# option set joins the way the language wants rather than the way Vim does.
 #
-# Sibling of the bug that was fixed here rather than the same one. That was about which caret is
-# primary after a block is laid out; this is about which carets should still exist when the block
-# stops being one.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVisualModeHandlerTest.kt:test switch to select mode linewise multicaret
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/MotionShiftDownActionHandlerTest.kt:test block select to empty line
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleLineModeActionTest.kt:enter visual line from visual block with motion up
-
-# --- Select mode, where the caret sits on the other side of the selection.
-#
-# Four of these, and they agree with each other. `g<C-H>` enters block Select and puts the caret at
-# the anchor here rather than at the far end (`expected [99], actual [12]`); `<C-V>bjj<C-G>` toggles
-# a leftward block into Select and moves only the primary (`expected [15, 46, 87], actual [21, 52,
-# 87]` - the last is right and the other two are six columns adrift, which is the width of the `b`).
-# Select mode puts the caret *after* the selection where Visual puts it on the last character, and
-# this host applies that to one caret rather than all of them.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionShiftLeftActionHandlerTest.kt:test multiline with empty line block mode
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchEntryFwdActionTest.kt:search in one time from select mode
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectEnableBlockModeActionHandlerTest.kt:test entering select mode multicaret
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/select/SelectToggleVisualModeHandlerTest.kt:test switch to select mode blockwise left motion
-
-# --- `1v`, which re-enters Visual over the size of the last one, per caret.
-#
-# `<C-V>jld1v` passes now. `<C-V>jld1v<ESC>kh1v` does not: `expected [16, 45], actual [15]`, one
-# caret where there should be two. The size of the last Visual area is stored per caret, in
-# `vimLastVisualOperatorRange`, and a caret that this host built fresh has none - so the second `1v`
-# has nothing to rebuild the block from.
-#
-# `vedx1v` is the same field seen from the text side: the two carets delete different amounts.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/visual/VisualToggleCharacterModeActionTest.kt:test enter visual with count after block visual operation multiple time
-
-
-# --- An IntelliJ action replayed by `.`, which this host has no equivalent of.
-#
-# `c<C-End><C-I><esc>.` repeats a change that ran an IDE action in the middle of it. Arrived with
-# the multi-caret fixtures because its `after` carries two selection markers.
-src/test/java/org/jetbrains/plugins/ideavim/action/RepeatActionTest.kt:repeat command with execution of ij action
-
-# --- One each.
-#
-# `ideajoin` is IntelliJ's smart join, a language feature this host cannot have.
-#
-# `partial Action mapping` is the keys of a half-typed `<Action>` mapping, replayed as literal text
-# here instead of being recognised.
-#
-# The incsearch one is the preview for an *ex command* - `:%s/dolor` shows its match and drops the
-# Visual selection while still being typed. That needs the command line parsed for a range and a
-# pattern before it is run, which is a different piece of machinery from previewing `/`.
+# `partial Action mapping` types `X(EditorToggleCase)` into a half-declared `<Action>` mapping. The
+# mapping machinery works - nothing is inserted as literal text, which is what this entry used to
+# claim - and `EditorToggleCase` is an IntelliJ action id with no VS Code command behind it. There
+# is no toggle-case command; `editor.action.transformToUppercase` and its lowercase twin are the
+# whole of what VS Code offers.
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
+
+# --- Incsearch for an ex command, which is a different machine from incsearch for `/`.
+#
+# `:%s/dolor` shows its match and drops the Visual selection while it is still being typed. That
+# needs the command line parsed for a range and a pattern before it is run, where previewing `/`
+# only ever has a pattern. Nothing about it is host-shaped.
 src/test/java/org/jetbrains/plugins/ideavim/group/search/IncsearchTests.kt:test incsearch removes Visual when searching with no Visual range

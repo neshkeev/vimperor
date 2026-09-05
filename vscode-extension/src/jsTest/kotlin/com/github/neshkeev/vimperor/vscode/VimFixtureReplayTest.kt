@@ -132,7 +132,14 @@ class VimFixtureReplayTest {
         // Through VS Code's selections rather than by moving the engine's caret, because that is
         // the only way a second caret can arrive in a real window - the user alt-clicks, VS Code
         // reports a selection change, and the host rebuilds its carets from it.
-        fake.selections = caretsAt.map { offset ->
+        //
+        // The *last* marker first, because `selections[0]` is VS Code's primary caret and the last
+        // `${'$'}{c}` is IdeaVim's: `configureByText` adds a caret per marker and the one added last is
+        // the primary. It decides which caret survives - `g<C-H>` over three of them keeps the
+        // primary and drops the rest, `caret expected [99], actual [12]` - so a harness that put
+        // them in document order was starting the fixture from a state IdeaVim never has.
+        val primaryFirst = caretsAt.takeLast(1) + caretsAt.dropLast(1)
+        fake.selections = primaryFirst.map { offset ->
           val position = fake.document.positionAt(offset)
           Selection(position, position)
         }.toTypedArray()

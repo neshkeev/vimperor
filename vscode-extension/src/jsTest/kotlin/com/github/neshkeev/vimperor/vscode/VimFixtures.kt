@@ -91,6 +91,11 @@ internal object VimFixtures {
         val head = source.substring(maxOf(0, at - 400), at)
         if (head.contains("@OptionTest")) { skip("the test sets options"); continue }
         if (head.contains("@VimBehaviorDiffers")) { skip("IdeaVim knowingly differs from Vim here"); continue }
+        // A test IdeaVim has switched off does not pass over there either, so holding this host to
+        // it measures nothing. `search in one time from select mode` was recorded here as a bug in
+        // this host for a long time - `caret expected [81], actual [82]` - and IdeaVim's caret is at
+        // 82 as well; the fixture's own `@Disabled` says "Ctrl-o doesn't work yet in select mode".
+        if (head.contains("@Disabled")) { skip("IdeaVim has the test disabled"); continue }
         if (spans.size < 3) { skip("fewer than three arguments"); continue }
 
         // A file type or name means the test is about a language, and this host has no parser.

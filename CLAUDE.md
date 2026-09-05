@@ -27,15 +27,53 @@ day it goes: anything written into `src/main/java/` is work that will be thrown
 away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 1,049 fixtures the
-VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is the
+repository. It is kept for its tests. 11,727 of them, plus the 1,047 fixtures the
+VS Code host mines out of `src/test` and replays (1,044 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 14 IntelliJ-only options,
-12 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+3 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
+
+**Three, and two of them name an IntelliJ action.** Until recently it was twelve, and
+nine of those were one bug about carets seen from eight angles plus one that was never
+this host's bug at all - which is the second time a fixture turned out to be measuring
+the harness. The remaining three are `ideajoin`, an `<Action>` mapping that runs
+`EditorToggleCase`, and incsearch previewing an *ex command* - `:%s/dolor` shows its
+match while it is still being typed, which needs the command line parsed for a range
+and a pattern before it runs. Only the last is work this host can do.
+
+**What the eight had in common was blockwise Visual, and the fix was three rules a host
+owes the engine.** A block's caret goes in the *active corner's* column, not the block's
+right edge - the two are the same only while the block is drawn rightwards, which is why
+`<C-V>jl` read correctly for so long and `<C-V>bjj` put every caret but one six columns
+out. A line too short to hold the block's slice contributes **no caret at all**, and that
+one rule is what collapses `<C-V>j` onto an empty line to a single caret. And carets that
+have stopped being different carets merge - on a genuine overlap, not on touching, which
+was measured: two linewise selections meeting at a newline stay two.
+
+**The other half was per-caret state that has to outlive the caret**, and it is where
+"the engine has **no per-editor storage**" needs qualifying. That is true of the engine
+and *not* of IdeaVim, which mirrors the primary caret's copy of seven properties onto the
+editor - `userDataCaretToEditor` in `UserDataManager.kt`, plus `_vimLastColumn` through its
+`Or` variant - and reads it back when a new primary has none. A block invents its carets on every motion, so the caret holding the
+primary flag is usually one that has never run anything: without the mirror `1v` worked
+once and not twice. `vimSelectionStart` is the same story with a different default -
+IdeaVim's is the far end of whatever that caret has selected, this host's was zero, and a
+caret drawing a linewise selection from its own anchor drew one from the top of the file.
+
+**And the harness was harvesting tests IdeaVim has `@Disabled`.** Two of the twelve were
+that: `search in one time from select mode` sat here as "expected [81], actual [82]" when
+IdeaVim's own caret is at 82, and `repeat command with execution of ij action` had a
+reason written against it - a missing IntelliJ action - that was not why it failed. A
+disabled test does not pass over there either, so holding this host to it measures
+nothing. Before believing an entry in `known-fixture-failures.txt`, check that the fixture
+passes in the plugin: the way to do that is a throwaway test in `src/test` that runs the
+same keys and prints `caretModel.allCarets`, under a read action and after
+`PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()`, which is what `doTest`
+does before it asserts.
 
 **Fourteen, not twenty-four.** This file said 24 and the number counted the file
 rather than the concept, exactly as "26 extensions" did: `IjOptions` declares 24 and
@@ -228,6 +266,17 @@ nothing new at all - the two seams those two added were the whole of its debt.
 The engine has **no per-editor storage**, and `IjVimEditor` throws from `equals` so
 it cannot be a map key either. An extension that kept state in IntelliJ's editor user
 data keys it by `editor.getPath()` instead - see `exchange` and `multiple-cursors`.
+The *hosts* have it, and a host may owe it: IdeaVim's `userDataCaretToEditor` mirrors
+the primary caret's copy of `vimSelectionStart`, `vimLastColumn` and its position,
+`vimLastVisualOperatorRange`, `registerStorage`, `markStorage` and `lastSelectionInfo`
+onto the editor, which is how they survive a block Visual motion inventing a new primary
+caret. This host mirrors one of the seven - `vimLastVisualOperatorRange`, on
+`VsCodeCaret` - and reaches the same end two other ways: the block layout hands the new
+primary the anchor and the remembered column outright, and `vimSelectionStart` falls back
+to the caret's own lead offset. The three left - `registerStorage`, `markStorage` and
+`lastSelectionInfo` - have not been needed by a test yet, and are named here so the next
+one is found rather than rediscovered. See the note above on
+the replayed fixtures.
 
 A caret is a value the VS Code host holds, not a document marker, so **the engine's
 edits have to move the other carets** - `VsCodeEditor.shiftCaretsAfterEdit`. IntelliJ

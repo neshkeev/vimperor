@@ -9,15 +9,16 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.BufferPosition
+import com.maddyhome.idea.vim.api.CaretRegisterStorage
+import com.maddyhome.idea.vim.api.CaretRegisterStorageBase
+import com.maddyhome.idea.vim.api.LocalMarkStorage
+import com.maddyhome.idea.vim.api.SelectionInfo
 import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.group.visual.VisualChange
-import com.maddyhome.idea.vim.api.LocalMarkStorage
-import com.maddyhome.idea.vim.api.CaretRegisterStorage
-import com.maddyhome.idea.vim.api.CaretRegisterStorageBase
-import com.maddyhome.idea.vim.api.SelectionInfo
+import com.maddyhome.idea.vim.group.visual.vimLeadSelectionOffset
 import com.maddyhome.idea.vim.state.mode.SelectionType
 
 /**
@@ -163,10 +164,31 @@ class VsCodeCaret(
 
   override fun hasSelection(): Boolean = selectionStartOffset >= 0 && selectionEndOffset >= 0
 
-  override var vimSelectionStart: Int = 0
+  /**
+   * Where the selection this caret is drawing started from.
+   *
+   * Unset rather than zero to begin with, and the difference is the whole of a bug. A block's
+   * carets are built fresh on every motion and only the primary is handed the anchor, so every
+   * other one answered `0` - harmless while the block is a block, because a block reads the anchor
+   * off the primary, and wrong the moment it stops being one. `<C-V>khV` asked each caret for a
+   * linewise selection from its own anchor, and the second caret drew one from the top of the file:
+   * `selection expected [(41, 89)], actual [(0, 89)]`.
+   *
+   * IdeaVim's default is [vimLeadSelectionOffset] - the far end of whatever this caret already has
+   * selected - and it is cached on first read exactly as it is here. [vimSelectionStartClear] puts
+   * it back to unset rather than to the caret's offset, so that the next read recomputes it against
+   * the selection as it is then.
+   */
+  override var vimSelectionStart: Int
+    get() = anchor ?: vimLeadSelectionOffset.also { anchor = it }
+    set(value) {
+      anchor = value
+    }
+
+  private var anchor: Int? = null
 
   override fun vimSelectionStartClear() {
-    vimSelectionStart = offset
+    anchor = null
   }
 
   override val id: String = "vscode-caret-${nextId++}"
@@ -225,10 +247,38 @@ class VsCodeCaret(
     }
   /**
    * The shape of the last visual operation - how many lines, how many columns, which kind - so that
-   * `.` can repeat it on a different piece of text. Stored per caret because each one repeats its
-   * own.
+   * `1v` and `.` can repeat it on a different piece of text.
+   *
+   * Per caret, because each one repeats its own, and *also* on the editor for whichever caret is
+   * primary. That second half looks like belt and braces and is the only thing that makes `1v`
+   * work twice. A block's carets are built fresh on every motion, so the caret that a block hands
+   * the flag to is usually one that has never run an operation - `<C-V>jld1v` leaves the primary on
+   * the block's second line, a caret invented moments earlier, and the `<ESC>kh1v` that follows
+   * found nothing to rebuild the block from: `caret expected [16, 45], actual [15]`.
+   *
+   * IdeaVim gets this from `userDataCaretToEditor`, which mirrors the primary caret's value onto the
+   * editor and reads it back when the caret's own is missing. It is how four pieces of per-caret
+   * state survive a block being laid out, and CLAUDE.md's "the engine has no per-editor storage" is
+   * about the engine rather than about the hosts - IdeaVim has this, and until now this host did
+   * not.
    */
-  override var vimLastVisualOperatorRange: VisualChange? = null
+  override var vimLastVisualOperatorRange: VisualChange?
+    get() = lastVisualOperatorRange ?: if (isTheCaret()) vimEditor.lastVisualOperatorRange else null
+    set(value) {
+      lastVisualOperatorRange = value
+      if (isTheCaret()) vimEditor.lastVisualOperatorRange = value
+    }
+
+  private var lastVisualOperatorRange: VisualChange? = null
+
+  /**
+   * Whether the engine would call this "the caret", asked of the editor rather than of the flag.
+   *
+   * [isPrimary] is what the flag says; with no flag set anywhere the engine still answers with the
+   * first caret, and IdeaVim's own check is `this == editor.caretModel.primaryCaret` for the same
+   * reason.
+   */
+  private fun isTheCaret(): Boolean = vimEditor.primaryCaret() === this
   /** The caret's line, 1-based, because that is what Vimscript's `line(".")` means by a line. */
   override val vimLine: Int get() = getBufferPosition().line + 1
 

@@ -18,21 +18,23 @@ import com.maddyhome.idea.vim.api.VimCaretListener
 import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimEditorBase
-import com.maddyhome.idea.vim.api.VirtualBufferKind
-import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.helper.isEndAllowed
-import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.api.VimFoldRegion
 import com.maddyhome.idea.vim.api.VimIndentConfig
 import com.maddyhome.idea.vim.api.VimScrollingModel
 import com.maddyhome.idea.vim.api.VimVirtualFile
 import com.maddyhome.idea.vim.api.VimVisualPosition
+import com.maddyhome.idea.vim.api.VirtualBufferKind
+import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.common.VimEditorReplaceMask
+import com.maddyhome.idea.vim.group.visual.VisualChange
+import com.maddyhome.idea.vim.helper.isEndAllowed
+import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
+import kotlin.math.abs
 
 /**
  * A [VimEditor] over a VS Code text editor.
@@ -407,10 +409,70 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * so carets follow the text rather than accompanying it.
    */
   fun flush(onResult: (Boolean) -> Unit = {}) {
+    mergeIndistinguishableCarets()
     buffer.flush { applied ->
       if (applied) flushCarets() else syncCaretsFromEditor()
       onResult(applied)
     }
+  }
+
+  /**
+   * Collapses carets that have stopped being different carets.
+   *
+   * Every host with more than one caret does this and the engine leans on it, which is why nothing
+   * here says so out loud: `MotionActionHandler.CaretMergingWatcher` exists only to keep a per-caret
+   * loop upright *while* the host removes one underneath it. IntelliJ's caret model merges as part
+   * of setting selections; VS Code's does too when the array is assigned. This host kept its own
+   * list and merged nothing, so switching a two-line block to line Visual with `V` left two carets
+   * holding one selection between them - `caret expected [46], actual [46, 75]` - and `Ve` over two
+   * carets on the same line left three where IdeaVim has two.
+   *
+   * Two rules, and the narrow one is deliberate. Selections merge when they genuinely *overlap*, not
+   * when they touch: two linewise selections on adjacent lines meet at the newline and IdeaVim keeps
+   * them apart - measured, `carets [15, 48] selections [(13, 44), (44, 85)]`. Carets without
+   * selections merge when they stand in the same place, because there is nothing left to tell them
+   * apart.
+   *
+   * The earlier caret survives, which is what IdeaVim answers with, and it takes the union of the
+   * two selections and the primary flag if either had it.
+   */
+  /**
+   * The primary caret's [VsCodeCaret.vimLastVisualOperatorRange], kept where a new primary can find
+   * it. See that property; this is the editor half of IdeaVim's `userDataCaretToEditor`.
+   */
+  internal var lastVisualOperatorRange: VisualChange? = null
+
+  private fun mergeIndistinguishableCarets() {
+    if (vimCarets.size < 2) return
+    val kept = mutableListOf<VsCodeCaret>()
+    val removed = mutableListOf<VsCodeCaret>()
+    for (caret in vimCarets) {
+      val previous = kept.lastOrNull()
+      if (previous == null || !indistinguishable(previous, caret)) {
+        kept += caret
+        continue
+      }
+      if (previous.hasSelection() && caret.hasSelection()) {
+        previous.setSelection(
+          minOf(previous.selectionStart, caret.selectionStart),
+          maxOf(previous.selectionEnd, caret.selectionEnd),
+        )
+      }
+      if (caret.isPrimary) previous.isPrimary = true
+      removed += caret
+    }
+    if (removed.isEmpty()) return
+    vimCarets.clear()
+    vimCarets += kept
+    caretListeners.forEach { listener -> removed.forEach { listener.caretRemoved(it) } }
+  }
+
+  private fun indistinguishable(first: VsCodeCaret, second: VsCodeCaret): Boolean = when {
+    first.hasSelection() && second.hasSelection() ->
+      minOf(first.selectionEnd, second.selectionEnd) > maxOf(first.selectionStart, second.selectionStart)
+
+    !first.hasSelection() && !second.hasSelection() -> first.offset == second.offset
+    else -> false
   }
 
   // ---- Carets. VS Code calls them selections; a collapsed selection is a plain caret.
@@ -424,8 +486,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     if (incoming.toSet() == pushedSelections.toSet()) return
 
     vimCarets.clear()
-    incoming.forEachIndexed { index, (anchor, active) ->
-      val caret = VsCodeCaret(this, active, isPrimary = index == 0)
+    // Document order, whatever order VS Code reported them in. `selections[0]` is the primary and it
+    // is under no obligation to be the first caret in the file - alt-clicking upwards puts it last -
+    // while everything that walks the carets to make an edit depends on the order being the
+    // document's. So the flag follows index zero and the list is sorted around it.
+    incoming.sortedBy { (_, active) -> active }.forEach { (anchor, active) ->
+      val caret = VsCodeCaret(this, active, isPrimary = (anchor to active) == incoming.first())
       // Where the caret now is, is the column `j` and `k` should aim for. This is the one way a
       // caret moves that the engine never hears about - a click or a drag - so it is the one place
       // the host has to reset `curswant` itself. Without it a fresh caret remembers column zero and
@@ -818,7 +884,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * insertion order.
    *
    * A line shorter than the block contributes what it has, down to nothing. Vim does the same;
-   * a rectangle over ragged text is not a rectangle.
+   * a rectangle over ragged text is not a rectangle - and a line that can contribute *nothing* gets
+   * no caret at all, which is the part that is easy to miss. `<C-V>ljj` over a middle line as long
+   * as the block's left edge leaves two carets, not three, and the same rule is what collapses
+   * `<C-V>j` onto an empty line to a single caret. The exception is a block with no width yet -
+   * `<C-V>` before any motion - where every line keeps its caret because there is no slice to fail
+   * to hold.
    */
   override fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition) {
     val lastLine = (lineCount() - 1).coerceAtLeast(0)
@@ -826,21 +897,50 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val lastBlockLine = maxOf(start.line, end.line).coerceIn(0, lastLine)
     val leftColumn = minOf(start.column, end.column).coerceAtLeast(0)
     val rightColumn = maxOf(start.column, end.column).coerceAtLeast(0)
+    // The column every caret of the block stands in, which is the *active* corner's - not the
+    // block's right edge. The two are the same only while the block is being drawn rightwards, and
+    // that is why the difference went unnoticed: `<C-V>jl` reads the same either way. `<C-V>bjj`
+    // does not. A block drawn leftwards puts the caret on the left edge of every line, and this
+    // host put it on the right - `caret expected [15, 46, 87], actual [21, 52, 87]`, the primary
+    // right because the engine drags it to the active corner afterwards and the others six columns
+    // out, which is the width of the `b`.
+    //
+    // `end` is already the active corner: `blockToNativeSelection` widens whichever side is the
+    // block's right edge by one, so for a rightward block this is one past the last selected
+    // character and the engine's own "move one char left if the caret is on the selection end" step
+    // brings it back.
+    val caretColumn = end.column.coerceAtLeast(0)
+    // Whether the block has a width at all, which decides what an empty slice means. With width, a
+    // line that cannot hold the slice drops out; without it - `<C-V>` before any motion, or on an
+    // empty line - every line keeps its caret, because nothing was asked of the line to begin with.
+    val hasWidth = leftColumn != rightColumn
 
     val survivor = vimCarets.firstOrNull { it.isPrimary } ?: vimCarets.firstOrNull()
     val survivorLine = survivor?.getBufferPosition()?.line?.coerceIn(firstBlockLine, lastBlockLine)
     // The block's *active* end - the corner the last motion moved - as opposed to its anchor.
     val activeLine = end.line.coerceIn(firstBlockLine, lastBlockLine)
 
-    val rebuilt = (firstBlockLine..lastBlockLine).map { line ->
+    val rebuilt = (firstBlockLine..lastBlockLine).mapNotNull { line ->
       val lineStart = getLineStartOffset(line)
       val lineEnd = getLineEndOffset(line)
       val from = (lineStart + leftColumn).coerceAtMost(lineEnd)
       val to = (lineStart + rightColumn).coerceAtMost(lineEnd)
-      val caret = if (survivor != null && line == survivorLine) survivor else VsCodeCaret(this, to, isPrimary = false)
-      caret.moveToOffsetNative(to)
+      if (from == to && hasWidth) return@mapNotNull null
+      val at = (lineStart + caretColumn).coerceAtMost(lineEnd)
+      val caret = if (survivor != null && line == survivorLine) survivor else VsCodeCaret(this, at, isPrimary = false)
+      caret.moveToOffsetNative(at)
       caret.setSelection(from, to)
       line to caret
+    }.ifEmpty {
+      // Every line of the block too short to hold it, which a block can be after `$` on a ragged
+      // file. Dropping the last caret would leave the editor with none, so the active line keeps
+      // one with nothing selected.
+      val lineStart = getLineStartOffset(activeLine)
+      val at = (lineStart + caretColumn).coerceAtMost(getLineEndOffset(activeLine))
+      val caret = survivor ?: VsCodeCaret(this, at, isPrimary = false)
+      caret.moveToOffsetNative(at)
+      caret.setSelection(at, at)
+      listOf(activeLine to caret)
     }
 
     // Which of them the engine will call "the caret", and it is not free to choose.
@@ -863,7 +963,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // dragged the block's whole left edge to column 1, and the next `k` to column 0.
     val column = survivor?.vimLastColumn
     val anchor = survivor?.vimSelectionStart
-    val primary = rebuilt.firstOrNull { (line, _) -> line == activeLine }?.second ?: rebuilt.last().second
+    // Nearest to the active line rather than the last, because the active line is not always in the
+    // block any more: a line too short to hold the slice drops out, and `<C-V>kk` over a one-
+    // character line and then an empty one lands the motion on a line that has no caret. IdeaVim
+    // hands the flag to the line above or below it, whichever the motion came from - `carets [9,
+    // 12]`, the caret from the `b` line dragged up to the empty one - and picking the last would
+    // have dragged the wrong end of the block instead.
+    val primary = rebuilt.minByOrNull { (line, _) -> abs(line - activeLine) }!!.second
     for ((_, caret) in rebuilt) caret.isPrimary = caret === primary
     if (anchor != null) primary.vimSelectionStart = anchor
     // Every caret of the block, not only the primary. The remembered column is what the block's

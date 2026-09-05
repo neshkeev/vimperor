@@ -219,9 +219,10 @@ class VsCodeBlockVisualTest {
    * divergence from Vim. Measured against IdeaVim rather than assumed: the same keys give `[(1, 3)]`
    * there. It is shared, so it belongs in the engine and not in a workaround here.
    *
-   * And a line too short to contribute still gets a caret here, where IdeaVim has none - `[(1, 1),
-   * (1, 3)]` against `[(1, 3)]`. That is the same difference as the "carets the engine narrowed away
-   * and this host kept" group in `known-fixture-failures.txt`.
+   * A line too short to contribute gets no caret, which is the other half of the same measurement
+   * and used to be this host's most visible divergence: it kept one, and the numbers below said
+   * `[(1, 1), (1, 3)]` where IdeaVim says `[(1, 3)]`. Three of the replayed fixtures were that one
+   * difference seen from other angles.
    */
   @Test
   fun `test a block drawn upwards over ragged lines does not widen`() {
@@ -231,19 +232,101 @@ class VsCodeBlockVisualTest {
     session.type("<C-V>")
     assertEquals(listOf(2 to 3), columnsOf(session), "one line, one column")
 
+    // The one-character line cannot hold a slice that starts at column 1, so it contributes no
+    // caret at all and the block is one selection wide.
     session.type("k")
-    assertEquals(listOf(1 to 1, 1 to 3), columnsOf(session), "clamped onto the one-character line")
+    assertEquals(listOf(1 to 3), columnsOf(session), "clamped onto the one-character line")
 
     // The block narrows to what a short line can hold and *recovers* on a line long enough. Before
     // the fix the column was lost rather than borrowed, so it never came back.
     session.type("k")
-    assertEquals(listOf(0 to 0, 0 to 1, 0 to 3), columnsOf(session), "the empty line drags it to column zero")
+    assertEquals(listOf(0 to 1, 0 to 3), columnsOf(session), "the empty line drags it to column zero")
 
     session.type("k")
     assertEquals(
-      listOf(2 to 3, 0 to 0, 1 to 1, 2 to 3),
+      listOf(2 to 3, 2 to 3),
       columnsOf(session),
       "and on a line long enough it is back to the column the user asked for",
+    )
+  }
+
+  /**
+   * A block drawn leftwards puts its carets on the *left* edge of every line.
+   *
+   * The column a block's caret stands in is the active corner's, and the two edges are the same
+   * column only while the block is being drawn rightwards - which is why this went unnoticed for so
+   * long: `<C-V>jl` reads the same either way. This host used the right edge, so every caret but the
+   * primary came out `b`'s width too far along. The engine drags the primary to the active corner
+   * afterwards, which is why exactly one of the three was right.
+   *
+   * The numbers are IdeaVim's, from the same keys.
+   */
+  @Test
+  fun `test a block drawn leftwards puts every caret on the left edge`() {
+    val session = Session(DISCOVERY, caretOffset = 20)
+
+    session.type("<C-V>bjj")
+
+    assertEquals(listOf(15, 46, 87), session.editor.carets().map { it.offset })
+    assertEquals(
+      listOf(15 to 21, 46 to 52, 87 to 93),
+      session.editor.carets().map { it.selectionStart to it.selectionEnd },
+    )
+  }
+
+  /**
+   * Switching a block to line Visual leaves one caret, not one per line of the block.
+   *
+   * `V` gives each of the block's carets a linewise selection from its own anchor, and the two
+   * selections cover the same lines - at which point they have stopped being different carets. Every
+   * host merges them; this one kept its own list and merged nothing.
+   *
+   * The anchor is the other half. Only the primary carries one, so a caret the block invented
+   * answered with `vimSelectionStart`'s default - which was zero, and drew a selection from the top
+   * of the file. IdeaVim's default is the far end of whatever that caret already has selected.
+   */
+  @Test
+  fun `test switching a block to line visual leaves one caret`() {
+    val session = Session(LOREM, caretOffset = 75)
+
+    session.type("<C-V>kh")
+    assertEquals(listOf(46, 74), session.editor.carets().map { it.offset }, "two lines, two carets")
+
+    session.type("V")
+    assertEquals(listOf(46), session.editor.carets().map { it.offset })
+    assertEquals(
+      listOf(41 to 89),
+      session.editor.carets().map { it.selectionStart to it.selectionEnd },
+      "the two lines of the block, once",
+    )
+  }
+
+  /**
+   * `1v` works a second time, which needs state to outlive the caret that recorded it.
+   *
+   * `1v` rebuilds the last Visual area from `vimLastVisualOperatorRange`, and that is recorded on
+   * the caret that ran the operation. A block hands the primary flag to whichever caret sits on its
+   * active corner, and that caret was invented while the block was being laid out - so after the
+   * first `1v` the primary had no range, `<ESC>` kept that caret and dropped the one that did, and
+   * the second `1v` had nothing to rebuild from.
+   *
+   * IdeaVim mirrors the primary caret's copy onto the editor and reads it back when a new primary
+   * has none of its own. See `VsCodeCaret.vimLastVisualOperatorRange`.
+   */
+  @Test
+  fun `test a count repeats the last block a second time`() {
+    val session = Session(DISCOVERY, caretOffset = 15)
+
+    session.type("<C-V>jld")
+    session.type("1v")
+    assertEquals(listOf(16, 45), session.editor.carets().map { it.offset }, "the first repeat")
+
+    session.type("<ESC>kh")
+    session.type("1v")
+    assertEquals(listOf(16, 45), session.editor.carets().map { it.offset }, "and the second")
+    assertEquals(
+      listOf(15 to 17, 44 to 46),
+      session.editor.carets().map { it.selectionStart to it.selectionEnd },
     )
   }
 
@@ -253,4 +336,14 @@ class VsCodeBlockVisualTest {
       session.editor.offsetToBufferPosition(caret.selectionStart).column to
         session.editor.offsetToBufferPosition(caret.selectionEnd).column
     }
+
+  private companion object {
+    /** IdeaVim's own fixture text, so that the offsets below can be checked against it directly. */
+    const val DISCOVERY = "A Discovery\n\nI found it in a legendary land\n" +
+      "all rocks and lavender and tufted grass,\nwhere it was settled on some sodden sand\n" +
+      "hard by the torrent of a mountain pass."
+
+    const val LOREM = "Lorem Ipsum\n\nLorem ipsum dolor sit amet,\nconsectetur adipiscing elit\n" +
+      "Sed in orci mauris.\nCras id tellus in ex imperdiet egestas."
+  }
 }
