@@ -170,6 +170,12 @@ class KeybindingManifestTest {
      * does not make. Its `left` is both arrows.
      *
      * `<Undo>` is the dedicated Undo key on keyboards that have one. VS Code has no name for it.
+     *
+     * `<C-_>` arrived with the window-resize keys, as the second half of `<C-W><C-_>` - Vim's
+     * alternate spelling of `<C-W>_`. It is Ctrl with an underscore, which needs a shifted key on
+     * most layouts and is a different chord on each of them, so binding it would be right for one
+     * keyboard and wrong for the rest. `<C-W>_` itself is bound and does the same thing, which is
+     * the reason this one can be left: the feature is reachable, only the second spelling is not.
      */
     val UNBOUND_ON_PURPOSE = """
       <C-2>
@@ -181,6 +187,7 @@ class KeybindingManifestTest {
       <C-S-2>
       <C-S-6>
       <C-S>
+      <C-_>
       <Kdown>
       <Kleft>
       <Kright>

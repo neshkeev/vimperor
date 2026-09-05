@@ -13,8 +13,11 @@ import com.maddyhome.idea.vim.ex.InvalidCommandException
 
 /**
  * A parsed `:resize` argument. See [ResizeCommand] for the textual forms each case maps to.
+ *
+ * Also what `<C-W>` carries: a count is [Relative] for `+` and `-` and [Absolute] for `_` and `|`,
+ * which is Vim's own rule and the reason one type serves the keys and the ex command alike.
  */
-internal sealed interface ResizeArgument {
+sealed interface ResizeArgument {
 
   /** `:resize` with no argument - maximise the window. */
   object Maximize : ResizeArgument

@@ -37,7 +37,7 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  * see "h :resize"
  */
 @ExCommand(command = "res[ize]")
-internal data class ResizeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+data class ResizeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
   override val argFlags = flags(RangeFlag.RANGE_OPTIONAL, ArgumentFlag.ARGUMENT_OPTIONAL, Access.SELF_SYNCHRONIZED)
@@ -49,9 +49,9 @@ internal data class ResizeCommand(val range: Range, val modifier: CommandModifie
   ): ExecutionResult {
     val resizeArgument = ResizeArgument.parse(argument)
     if (injector.window.verticalModifier == true) {
-      ResizeService().resizeCurrentWindowWidth(editor, resizeArgument)
+      injector.windowResize.resizeCurrentWindowWidth(editor, resizeArgument)
     } else {
-      ResizeService().resizeCurrentWindowHeight(editor, resizeArgument)
+      injector.windowResize.resizeCurrentWindowHeight(editor, resizeArgument)
     }
     return ExecutionResult.Success
   }

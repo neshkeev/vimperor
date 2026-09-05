@@ -13,6 +13,7 @@ import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.fileEditor.impl.EditorWindow
 import com.intellij.openapi.ui.Splitter
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VimWindowResizeService
 import com.maddyhome.idea.vim.helper.EditorHelper
 import com.maddyhome.idea.vim.newapi.ij
 import java.awt.Component
@@ -23,14 +24,14 @@ import java.awt.Rectangle
  * Resizes editor windows, translating Vim's cell-based `:resize` / `:vertical resize` semantics onto
  * IntelliJ's proportion-based [Splitter] model.
  */
-internal class ResizeService {
+internal class ResizeService : VimWindowResizeService {
 
   /** Sets the *height* of the window currently holding [editor] (Vim's `:resize`). */
-  fun resizeCurrentWindowHeight(editor: VimEditor, argument: ResizeArgument): Unit =
+  override fun resizeCurrentWindowHeight(editor: VimEditor, argument: ResizeArgument): Unit =
     resize(editor, argument, Axis.HEIGHT)
 
   /** Sets the *width* of the window currently holding [editor] (Vim's `:vertical resize`). */
-  fun resizeCurrentWindowWidth(editor: VimEditor, argument: ResizeArgument): Unit =
+  override fun resizeCurrentWindowWidth(editor: VimEditor, argument: ResizeArgument): Unit =
     resize(editor, argument, Axis.WIDTH)
 
   /**
@@ -40,7 +41,7 @@ internal class ResizeService {
    * sizing every splitter by how many windows live on each side: a side holding more windows keeps a
    * proportionally larger share. Unlike a single `:resize`, this balances 3-or-more-way splits too.
    */
-  fun equalizeWindows(editor: VimEditor) {
+  override fun equalizeWindows(editor: VimEditor) {
     val ijEditor = editor.ij
     val project = ijEditor.project ?: return
     val splittersRoot = FileEditorManagerEx.getInstanceEx(project).splitters

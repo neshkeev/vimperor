@@ -26,9 +26,10 @@ import kotlin.test.assertTrue
  * `:!` needed a process and `:read` needed to open a file, and both of those are host questions the
  * engine already asks through an interface. They are in `vim-engine` now.
  *
- * What is left needs something this host genuinely does not have, and each line says what. The
- * assertion is on the whole list, in both directions: moving one out of the IntelliJ module has to
- * come with taking it off this list, and adding a new IntelliJ-only command has to be noticed.
+ * **The list is empty now.** Every ex command IdeaVim declares is either in `vim-engine`, where
+ * both hosts get it, or declared by this host itself. The assertion is still on the whole list and
+ * still in both directions - it is what would notice a new IntelliJ-only command arriving, and it
+ * is what would notice one being added here without being reachable.
  */
 class ExCommandsOnlyInIntelliJTest {
 
@@ -88,8 +89,12 @@ class ExCommandsOnlyInIntelliJTest {
      * kept, which is all the command needed. It is this host's own now, declared through
      * `commandProviders` next to the tutor, so it is registered above and not listed here.
      *
-     * `:resize` sizes a split. VS Code has no API for the size of an editor group - only commands
-     * to grow or shrink one by an unspecified amount.
+     * `:resize` was the last one, with the reason that "VS Code has no API for the size of an
+     * editor group - only commands to grow or shrink one by an unspecified amount". Both halves are
+     * true and only the first was a reason: `:resize +3` and `:resize -3` are three of those
+     * unspecified steps, and `:resize` with no argument is a maximise. `:resize 20` is the one that
+     * genuinely does not translate, and it now says so at the command line instead of the whole
+     * command being absent.
      *
      * `:vertical` was here beside it, and was not really the same thing: IdeaVim's copy accepted
      * `:vertical resize` and reported `E492` for everything else, where Vim's `:vertical` is a
@@ -101,12 +106,10 @@ class ExCommandsOnlyInIntelliJTest {
      * tabs rather than buffers, and its tab model does not carry the modified/loaded state Vim
      * prints in that table". The first clause is a difference that does not matter and the second
      * was wrong: `Tab.isDirty` and `Tab.isActive` are Vim's `+` and `%`. They are engine commands
-     * now. That makes four of these notes that turned out to be about which API had been looked at
-     * rather than about VS Code, so a line here is a claim to be checked, not a decision that is
-     * already made.
+     * now. That makes five of these notes that turned out to be about which API had been looked at
+     * rather than about VS Code - and the fifth emptied the list. A line here was a claim to be
+     * checked, never a decision that was already made.
      */
-    val EXPECTED = """
-      res[ize]
-    """.trimIndent()
+    val EXPECTED = """"""
   }
 }

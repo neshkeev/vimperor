@@ -228,6 +228,9 @@ open class VsCodeInjector(
   /** The Explorer, which `NERDTree`'s ex commands show and hide. See [VsCodeFileTree]. */
   override val fileTree: VimFileTreeService by lazy { VsCodeFileTree(hostCommands) }
 
+  /** `<C-W>+` and `:resize`, over the editor groups. See [VsCodeWindowResize]. */
+  override val windowResize: VimWindowResizeService by lazy { VsCodeWindowResize(hostCommands) }
+
   /** A coloured range an extension asked for. See [VsCodeHighlightingService]. */
   override val highlightingService: VimHighlightingService by lazy { VsCodeHighlightingService() }
 

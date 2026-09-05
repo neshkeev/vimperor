@@ -197,6 +197,10 @@ abstract class HeadlessInjectorBase : VimInjector {
   override val fileTree: VimFileTreeService
     get() = TODO("headless host has no file tree")
 
+  /** Nothing headless has a window, so there is nothing to make bigger. */
+  override val windowResize: VimWindowResizeService
+    get() = TODO("headless host has no windows to resize")
+
   override val vimscriptExecutor: VimscriptExecutor
     get() = TODO("headless host does not provide vimscriptExecutor yet")
 

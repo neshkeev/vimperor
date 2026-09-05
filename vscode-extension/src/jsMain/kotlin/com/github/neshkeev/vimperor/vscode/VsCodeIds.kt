@@ -197,6 +197,24 @@ internal object VsCodeCommands {
   const val FOCUS_RIGHT_GROUP = "workbench.action.focusRightGroup"
   const val FOCUS_NEXT_GROUP = "workbench.action.focusNextGroup"
   const val FOCUS_PREVIOUS_GROUP = "workbench.action.focusPreviousGroup"
+  /**
+   * `<C-W>+` and friends: how big the current editor group is.
+   *
+   * VS Code resizes in steps of its own choosing and has no command that takes a size, which is why
+   * `ResizeArgument.Absolute` is refused rather than approximated - see [VsCodeWindowResize].
+   *
+   * `EVEN_EDITOR_WIDTHS` is the whole of `<C-W>=` here: there is no command for evening the
+   * heights. `MAXIMIZE_EDITOR_GROUP` takes both dimensions, which is more than `<C-W>_` asks for
+   * and the nearest thing to it.
+   */
+  const val INCREASE_VIEW_HEIGHT = "workbench.action.increaseViewHeight"
+  const val DECREASE_VIEW_HEIGHT = "workbench.action.decreaseViewHeight"
+  const val INCREASE_VIEW_WIDTH = "workbench.action.increaseViewWidth"
+  const val DECREASE_VIEW_WIDTH = "workbench.action.decreaseViewWidth"
+  const val EVEN_EDITOR_WIDTHS = "workbench.action.evenEditorWidths"
+  const val TOGGLE_EDITOR_WIDTHS = "workbench.action.toggleEditorWidths"
+  const val MAXIMIZE_EDITOR_GROUP = "workbench.action.toggleMaximizeEditorGroup"
+
   const val SPLIT_EDITOR_DOWN = "workbench.action.splitEditorDown"
   const val SPLIT_EDITOR_RIGHT = "workbench.action.splitEditorRight"
   const val CLOSE_EDITORS_AND_GROUP = "workbench.action.closeEditorsAndGroup"
@@ -249,6 +267,8 @@ internal object VsCodeCommands {
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,
     FOCUS_ABOVE_GROUP, FOCUS_BELOW_GROUP, FOCUS_LEFT_GROUP, FOCUS_RIGHT_GROUP,
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,
+    INCREASE_VIEW_HEIGHT, DECREASE_VIEW_HEIGHT, INCREASE_VIEW_WIDTH, DECREASE_VIEW_WIDTH,
+    EVEN_EDITOR_WIDTHS, TOGGLE_EDITOR_WIDTHS, MAXIMIZE_EDITOR_GROUP,
     SPLIT_EDITOR_DOWN, SPLIT_EDITOR_RIGHT,
     CLOSE_EDITORS_AND_GROUP, CLOSE_EDITORS_IN_OTHER_GROUPS, CLOSE_ALL_GROUPS,
     NEW_UNTITLED_FILE, DIFF,

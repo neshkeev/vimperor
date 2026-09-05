@@ -2,9 +2,5 @@
   "actionl[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
     "standardConstructor": true
-  },
-  "res[ize]": {
-    "class": "com.maddyhome.idea.vim.resize.ResizeCommand",
-    "standardConstructor": true
   }
 }

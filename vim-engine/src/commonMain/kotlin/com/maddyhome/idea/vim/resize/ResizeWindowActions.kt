@@ -12,6 +12,7 @@ import com.intellij.vim.annotations.CommandOrMotion
 import com.intellij.vim.annotations.Mode
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
@@ -31,7 +32,7 @@ class IncreaseWindowHeightAction : VimActionHandler.SingleExecution() {
     cmd: Command,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    ResizeService().resizeCurrentWindowHeight(editor, ResizeArgument.Relative(cmd.count))
+    injector.windowResize.resizeCurrentWindowHeight(editor, ResizeArgument.Relative(cmd.count))
     return true
   }
 }
@@ -51,7 +52,7 @@ class DecreaseWindowHeightAction : VimActionHandler.SingleExecution() {
     cmd: Command,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    ResizeService().resizeCurrentWindowHeight(editor, ResizeArgument.Relative(-cmd.count))
+    injector.windowResize.resizeCurrentWindowHeight(editor, ResizeArgument.Relative(-cmd.count))
     return true
   }
 }
@@ -73,7 +74,7 @@ class MaximizeWindowHeightAction : VimActionHandler.SingleExecution() {
     operatorArguments: OperatorArguments,
   ): Boolean {
     val argument = if (cmd.rawCount == 0) ResizeArgument.Maximize else ResizeArgument.Absolute(cmd.rawCount)
-    ResizeService().resizeCurrentWindowHeight(editor, argument)
+    injector.windowResize.resizeCurrentWindowHeight(editor, argument)
     return true
   }
 }
@@ -93,7 +94,7 @@ class IncreaseWindowWidthAction : VimActionHandler.SingleExecution() {
     cmd: Command,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    ResizeService().resizeCurrentWindowWidth(editor, ResizeArgument.Relative(cmd.count))
+    injector.windowResize.resizeCurrentWindowWidth(editor, ResizeArgument.Relative(cmd.count))
     return true
   }
 }
@@ -113,7 +114,7 @@ class DecreaseWindowWidthAction : VimActionHandler.SingleExecution() {
     cmd: Command,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    ResizeService().resizeCurrentWindowWidth(editor, ResizeArgument.Relative(-cmd.count))
+    injector.windowResize.resizeCurrentWindowWidth(editor, ResizeArgument.Relative(-cmd.count))
     return true
   }
 }
@@ -135,7 +136,7 @@ class MaximizeWindowWidthAction : VimActionHandler.SingleExecution() {
     operatorArguments: OperatorArguments,
   ): Boolean {
     val argument = if (cmd.rawCount == 0) ResizeArgument.Maximize else ResizeArgument.Absolute(cmd.rawCount)
-    ResizeService().resizeCurrentWindowWidth(editor, argument)
+    injector.windowResize.resizeCurrentWindowWidth(editor, argument)
     return true
   }
 }
@@ -155,7 +156,7 @@ class EqualizeWindowsAction : VimActionHandler.SingleExecution() {
     cmd: Command,
     operatorArguments: OperatorArguments,
   ): Boolean {
-    ResizeService().equalizeWindows(editor)
+    injector.windowResize.equalizeWindows(editor)
     return true
   }
 }

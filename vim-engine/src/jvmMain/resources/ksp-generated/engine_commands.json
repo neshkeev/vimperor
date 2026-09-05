@@ -610,6 +610,16 @@
     "modes": "C"
   },
   {
+    "keys": "<C-W>+",
+    "class": "com.maddyhome.idea.vim.resize.IncreaseWindowHeightAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-W>-",
+    "class": "com.maddyhome.idea.vim.resize.DecreaseWindowHeightAction",
+    "modes": "N"
+  },
+  {
     "keys": "<C-W><C-H>",
     "class": "com.maddyhome.idea.vim.action.window.WindowLeftAction",
     "modes": "N"
@@ -650,6 +660,11 @@
     "modes": "N"
   },
   {
+    "keys": "<C-W><C-_>",
+    "class": "com.maddyhome.idea.vim.resize.MaximizeWindowHeightAction",
+    "modes": "N"
+  },
+  {
     "keys": "<C-W><Down>",
     "class": "com.maddyhome.idea.vim.action.window.WindowDownAction",
     "modes": "N"
@@ -670,6 +685,21 @@
     "modes": "N"
   },
   {
+    "keys": "<C-W><lt>",
+    "class": "com.maddyhome.idea.vim.resize.DecreaseWindowWidthAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-W>=",
+    "class": "com.maddyhome.idea.vim.resize.EqualizeWindowsAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-W>>",
+    "class": "com.maddyhome.idea.vim.resize.IncreaseWindowWidthAction",
+    "modes": "N"
+  },
+  {
     "keys": "<C-W>S",
     "class": "com.maddyhome.idea.vim.action.window.HorizontalSplitAction",
     "modes": "N"
@@ -677,6 +707,11 @@
   {
     "keys": "<C-W>W",
     "class": "com.maddyhome.idea.vim.action.window.WindowPrevAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-W>_",
+    "class": "com.maddyhome.idea.vim.resize.MaximizeWindowHeightAction",
     "modes": "N"
   },
   {
@@ -722,6 +757,11 @@
   {
     "keys": "<C-W>w",
     "class": "com.maddyhome.idea.vim.action.window.WindowNextAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-W>|",
+    "class": "com.maddyhome.idea.vim.resize.MaximizeWindowWidthAction",
     "modes": "N"
   },
   {

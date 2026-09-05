@@ -33,9 +33,27 @@ largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
-that VS Code has no command for, 24 IntelliJ-only options,
+that VS Code has no command for, 14 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
+
+**Fourteen, not twenty-four.** This file said 24 and the number counted the file
+rather than the concept, exactly as "26 extensions" did: `IjOptions` declares 24 and
+ten of them - `wrap`, `list`, `cursorline`, `relativenumber`, `textwidth`,
+`breakindent`, `colorcolumn`, `bomb`, `fileencoding`, `fileformat` - are ordinary Vim
+options this host already has. The fourteen that are left are the `idea*` family plus
+`lookupkeys`, `trackactionids`, `visualdelay`, `closenotebooks`, `oldundo` and
+`unifyjumps`, and most describe IDE behaviour VS Code has no analogue for.
+
+**The command-line window is the only key left that reaches an unbuilt part of this
+host.** `VsCodeUnimplementedTest` presses everything the engine registers and asserts
+the list; it is down to one line, `q:` `q/` `q?`. Getting there took three kinds of
+answer and they are worth telling apart, because the second kind is easy to miss: a
+service gets written; or a service turns out to have been written already under
+another name, which is how `[m` and `]m` left - their note said "needs a language
+server" and stopped being true when `DocumentSymbols` cached the Outline tree; or the
+honest answer is *no*, and saying no is an implementation - `[s` and `]s` answer -1,
+the engine's "no such motion", and beep.
 
 **Twenty-four, not twenty-six.** This file said 26 for a long time and the number was
 never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points, and
@@ -213,7 +231,9 @@ uses to press `g@`. What stayed behind is in `VimExtensionFacadeIj.kt`
 functions rather than members, since Kotlin cannot add a member to an object from
 another module. `inputKeyStroke` is the only one with a real reason to stay: its
 unit-test branch reads IntelliJ's `TestInputModel`. Ex commands are
-at parity - 401 in the engine, two IntelliJ-only.
+at parity outright: every one IdeaVim declares is either in the engine or declared by
+this host - `:resize` was the last to move and `:actionlist` is the VS Code host's
+own. `ExCommandsOnlyInIntelliJTest` asserts the empty list, in both directions.
 
 **The extensions were never blocked on `getchar()`, and the two that read a key are
 not blocked any more either.** The standing explanation was wrong in its details -

@@ -176,6 +176,9 @@ interface VimInjector {
   /** The project's file tree, which `NERDTree` shows and hides. See [VimFileTreeService]. */
   val fileTree: VimFileTreeService
 
+  /** How big the current window is - `<C-W>+` and `:resize`. See [VimWindowResizeService]. */
+  val windowResize: VimWindowResizeService
+
   val vimscriptExecutor: VimscriptExecutor
 
   val vimscriptParser: VimscriptParser

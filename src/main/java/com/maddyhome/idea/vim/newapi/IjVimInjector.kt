@@ -60,6 +60,8 @@ import com.maddyhome.idea.vim.api.VimPluginActivator
 import com.maddyhome.idea.vim.api.VimProcessGroup
 import com.maddyhome.idea.vim.api.VimCommentService
 import com.maddyhome.idea.vim.api.VimFileTreeService
+import com.maddyhome.idea.vim.api.VimWindowResizeService
+import com.maddyhome.idea.vim.resize.ResizeService
 import com.maddyhome.idea.vim.api.VimPsiService
 import com.maddyhome.idea.vim.api.VimRedrawService
 import com.maddyhome.idea.vim.api.VimRegexServiceBase
@@ -183,6 +185,9 @@ internal class IjVimInjector : VimInjectorBase() {
 
   /** The Project view, which `NERDTree`'s ex commands show and hide. See [IjFileTreeService]. */
   override val fileTree: VimFileTreeService by lazy { IjFileTreeService() }
+
+  /** `<C-W>+` and `:resize`, over IntelliJ's splitters. See [ResizeService]. */
+  override val windowResize: VimWindowResizeService by lazy { ResizeService() }
   override val nativeActionManager: NativeActionManager
     get() = service()
   override val messages: VimMessages
