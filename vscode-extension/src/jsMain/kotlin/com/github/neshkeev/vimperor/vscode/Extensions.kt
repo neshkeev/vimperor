@@ -37,6 +37,7 @@ import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
+import com.maddyhome.idea.vim.extension.vimeverywhere.init as vimEverywhereInit
 import com.maddyhome.idea.vim.extension.yankring.disposeYankRing
 import com.maddyhome.idea.vim.extension.yankring.init as yankRingInit
 import com.maddyhome.idea.vim.api.injector
@@ -190,6 +191,11 @@ internal object VsCodeExtensions {
     // tree are not here and cannot be - a key pressed in the sidebar never reaches an extension -
     // and what `package.json` binds there instead is listed with them.
     "NERDTree" to { api -> api.nerdTreeInit() },
+
+    // `VimEverywhere`: Vim keys in lists and trees, and `<C-W>hjkl` between panes. It registers
+    // nothing - a key pressed outside an editor never reaches an extension in VS Code, so the keys
+    // are in `package.json` and this is the switch that gates them. See the engine file.
+    "VimEverywhere" to { api -> api.vimEverywhereInit() },
   )
 
   /**

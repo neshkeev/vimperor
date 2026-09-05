@@ -69,23 +69,24 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 3 of IdeaVim's 24 bundled extensions — matchit, VimEverywhere and
-youcompleteme are still in the plugin. The other twenty-one are ported:
+What does not: 2 of IdeaVim's 24 bundled extensions — matchit and youcompleteme are
+still in the plugin. The other twenty-two are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj` and `NERDTree`.
+`functextobj`, `classtextobj`, `NERDTree` and `VimEverywhere`.
 
-The three still in the plugin are not there for want of a seam. `matchit` wants a
-syntax tree, `VimEverywhere` popups and `java.awt.Robot`, and `youcompleteme` works by
-taking `<Tab>` out of an IntelliJ-only option. Each would be a rewrite against a
-different UI, not a move.
+The two still in the plugin are not there for want of a seam. `matchit` needs to know
+what a *token* is, and the most VS Code will say about a file's structure is where its
+functions and classes are; `youcompleteme` works by taking `<Tab>` out of an
+IntelliJ-only option. Each would be a rewrite against a different UI, not a move.
 
-`NERDTree` is bundled but is half an extension. Its ex commands work; the keys it maps
-*inside* the tree are declared in `package.json` rather than by the engine, because a
-key pressed in VS Code's sidebar never reaches an extension. Seventeen of the thirty
-have equivalents.
+`NERDTree` and `VimEverywhere` are bundled but are half an extension each. Their ex
+commands and options work; the keys they map *outside* the editor — in the file tree,
+in any list, `<C-W>` between panes — are declared in `package.json` rather than by the
+engine, because a key pressed outside a VS Code editor never reaches an extension.
+VimEverywhere's IDE-wide link hints have no VS Code equivalent at all.
 
 [`vscode-extension/DEVELOPMENT.md`](vscode-extension/DEVELOPMENT.md) is the real account: what
 works, how it is tested, and what only a real window found.

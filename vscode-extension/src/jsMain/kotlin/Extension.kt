@@ -100,19 +100,25 @@ fun activate(context: ExtensionContext) {
   var styledEditor: TextEditor? = null
 
   /**
-   * `vimperor.nerdtree`, which gates the file-tree keys `package.json` declares.
+   * The context keys that gate the keybindings `package.json` declares for keys pressed *outside*
+   * an editor.
    *
    * Those keys cannot be installed at runtime - see `VimHost.isExtensionEnabled` - so the manifest
-   * declares them all and this decides whether they apply. Tracked separately from the mode and
-   * sent only on a change, for the same reason: `setContext` re-evaluates every `when` clause in
-   * the window and this runs after every keystroke.
+   * declares them all and these decide whether they apply. `vimperor.nerdtree` gates the file-tree
+   * keys, `vimperor.vimeverywhere` the list and pane keys.
+   *
+   * Sent only on a change, for the same reason the mode is: `setContext` re-evaluates every `when`
+   * clause in the window, and this runs after every keystroke.
    */
-  var lastNerdTree: Boolean? = null
+  val extensionContexts = mapOf("vimperor.nerdtree" to "NERDTree", "vimperor.vimeverywhere" to "VimEverywhere")
+  val lastEnabled = mutableMapOf<String, Boolean>()
   fun refreshExtensionContexts() {
-    val nerdTree = vim.isExtensionEnabled("NERDTree")
-    if (nerdTree != lastNerdTree) {
-      lastNerdTree = nerdTree
-      commands.executeCommand("setContext", "vimperor.nerdtree", nerdTree)
+    for ((contextKey, extension) in extensionContexts) {
+      val enabled = vim.isExtensionEnabled(extension)
+      if (lastEnabled[contextKey] != enabled) {
+        lastEnabled[contextKey] = enabled
+        commands.executeCommand("setContext", contextKey, enabled)
+      }
     }
   }
 

@@ -206,18 +206,18 @@ class ExtensionProviderTest {
    * to fail because the extension is absent, not because the name was never recognised. The two
    * fail identically to a user and differently to whoever adds the extension.
    *
-   * `VimEverywhere` is the example. It was `surround` until `surround` was ported, `yankring` until
-   * `runAfterHostCatchesUp` let that one in, and `NERDTree` until the half of it that is six ex
-   * commands turned out to be portable after all - so the example is now the one extension whose
-   * whole substance is a thing this host does not have. `VimEverywhere` puts a Vim cursor in
-   * IntelliJ's popups and dialogs, using `java.awt.Robot` to do it; there is no VS Code half of
-   * that to write.
+   * `matchit` is the example, and the list of predecessors is the reason to expect it to be the
+   * last one: `surround`, then `yankring`, then `NERDTree`, then `VimEverywhere`, each of which
+   * looked unportable until it was looked at. `matchit` is different in kind. It makes `%` jump
+   * between `if` and `endif` and between an opening and closing HTML tag, which needs to know what
+   * a *token* is - and the one thing VS Code will tell an extension about a file's structure is
+   * where its symbols are, which is functions and classes and nothing smaller.
    */
   @Test
   fun `test a known alias with no extension behind it still fails`() {
     Session()
 
-    assertEquals("VimEverywhere", injector.extensionRegistrator.getExtensionNameByAlias("VimEverywhere"))
-    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("VimEverywhere"))
+    assertEquals("matchit", injector.extensionRegistrator.getExtensionNameByAlias("vim-matchit"))
+    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("vim-matchit"))
   }
 }

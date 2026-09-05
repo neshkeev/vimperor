@@ -32,8 +32,9 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 3 of the 24 bundled extensions, most of NERDTree's in-tree
-keys, 24 IntelliJ-only options,
+What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree and
+VimEverywhere map that VS Code has no command for, VimEverywhere's hints, 24
+IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
@@ -46,21 +47,22 @@ It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj` and `NERDTree` - which is every one that is not a piece
-of IntelliJ furniture. Each lives in
+`functextobj`, `classtextobj`, `NERDTree` and `VimEverywhere` - which is every one
+that is not a piece of IntelliJ furniture. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The three that are left - `matchit`, `VimEverywhere` and `youcompleteme` - are not
-waiting on a seam. `matchit` wants a syntax tree, `VimEverywhere` popups and
-`java.awt.Robot`, and `youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`,
-which is an IntelliJ-only option. Each would be a rewrite against a different UI
-rather than a move.
+The two that are left - `matchit` and `youcompleteme` - are not waiting on a seam.
+`matchit` wants to know what a *token* is, so that `%` can jump between `if` and
+`endif` and between HTML tags, and the one thing VS Code tells an extension about a
+file's structure is where its symbols are - functions and classes, nothing smaller.
+`youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`, an IntelliJ-only option
+describing a completion popup this host does not have.
 
-**`NERDTree` is bundled but it is half an extension, and the half is the interesting
-part.** It is two things sharing a name. Six ex commands - `:NERDTree`,
+**`NERDTree` and `VimEverywhere` are bundled but they are half an extension each, and
+the half is the interesting part.** It is two things sharing a name. Six ex commands - `:NERDTree`,
 `:NERDTreeToggle`, `:NERDTreeFind` - say nothing but "show me the file tree", and
 those moved to the engine: IdeaVim wrote them as IntelliJ action ids
 (`ActivateProjectToolWindow`), which was the only reason they could not travel, and
@@ -82,6 +84,28 @@ Seventeen of the thirty keys have honest equivalents. The other thirteen are lis
 with their reasons in `NerdTreeManifestTest` - mostly depth-aware navigation (`p`,
 `P`, `J`, `K`, `<C-J>`, `<C-K>`), which VS Code's list commands do not have, and
 changing the tree's root (`C`, `u`, `cd`), which its Explorer does not allow.
+
+`VimEverywhere` is the same shape one step wider, and **it registers nothing at all**.
+On IntelliJ it is four things: `h`/`j`/`k`/`l` in any Swing `Tree`, the same in any
+`JTable`, `<C-W>hjkl` from inside a tool window, and vimium-style hints painted on a
+glass pane. The first three become nine list keys under `listFocus` and twelve
+`<C-W>` chords under `!editorTextFocus`, all in the manifest; the fourth has **no VS
+Code equivalent of any kind** - an extension cannot draw over the workbench, and no
+seam would give it one. So the engine half of that extension is an empty `init`, and
+saying so plainly beats inventing engine work to make it look thicker.
+
+**The gap `VimEverywhere` walked into was bigger than itself: `set <name>` did not
+work on this host at all.** IdeaVim's documentation enables every extension that way
+and `Plug` is the other route, for a config borrowed from Vim - but only `Plug` was
+wired here, so `set surround` was `E518` and a config runs with errors suppressed, so
+it failed silently for all twenty-two. `registerExtensionOptions` is what
+`VimExtensionRegistrar` does for IntelliJ: a global toggle option per extension whose
+listener enables and disables it. Two traps in it, both found by a red test. The
+option is declared on `Options`, a Kotlin object that outlives an injector, while the
+*listener* lives on the option group, which does not - so registering only when the
+option is absent leaves every later host with an option nothing listens to. And the
+loader writes the option back in both directions, because the engine's own `:Plug` and
+`:packadd` reach `enableExtension` without passing through an alias at all.
 
 `textobj-user` is the one exception to "two-line", and it says something about the
 engine rather than about that extension: it registers Vimscript *function

@@ -15,6 +15,11 @@
     "className": "com.maddyhome.idea.vim.extension.replacewithregister.ReplaceWithRegisterNewApiKt"
   },
   {
+    "extensionName": "VimEverywhere",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.vimeverywhere.VimEverywhereKt"
+  },
+  {
     "extensionName": "abolish",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.abolish.AbolishKt"

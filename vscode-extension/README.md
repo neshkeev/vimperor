@@ -90,9 +90,10 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 3 of IdeaVim's 24 bundled extensions are not
-  available — `matchit`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code has nothing
-  shaped like. The other twenty-one work, and they are enabled the way you would in IdeaVim:
+- **Vim plugins.** There is no `pack/` directory, and 2 of IdeaVim's 24 bundled extensions are not
+  available — `matchit` and `youcompleteme` want IDE machinery VS Code has nothing shaped like. The
+  other twenty-two work, and they are enabled the way you would in IdeaVim — with `set <name>`, or
+  with a `Plug` line for a config borrowed from Vim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
@@ -116,6 +117,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'kana/vim-textobj-function'         " am aM im — a function without its doc comment, with it, its body
   Plug 'kana/vim-textobj-class'            " ac — the class, interface, struct or enum you are inside
   Plug 'preservim/nerdtree'                " :NERDTree and friends, plus j k o s in the Explorer
+  set VimEverywhere                        " j k h l in any list; <C-W>hjkl between panes
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
@@ -149,6 +151,19 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   `X`, `I`, `f`, `F`, `B`, `m`, `A`, and everything that changes the tree's root — the Explorer is
   rooted at the workspace folder and an extension cannot move it. These keys are left alone rather
   than bound to something approximate.
+
+  `VimEverywhere` is the same idea one step wider, and is the reason it is worth having both. Where
+  NERDTree's keys apply in the file tree, these apply in *any* list or tree — Search results,
+  Problems, Source Control, Testing, Outline, and trees other extensions contribute:
+
+  `j` `k` to move, `h` `l` to collapse and expand, `gg` `G` to the ends, `o` to open, `ctrl+d` and
+  `ctrl+u` by the page. Plus `<C-W>h` `<C-W>j` `<C-W>k` `<C-W>l` to move between panes wherever you
+  are — out of the terminal, into the sidebar, back to the editor — in all three spellings IdeaVim
+  accepts (`<C-W>h`, `<C-W><C-H>`, `<C-W><Left>`).
+
+  Its fourth feature does not come across at all: on IntelliJ, VimEverywhere paints vimium-style
+  hints over every clickable thing in the window and clicks the one you type. An extension cannot
+  draw over VS Code's workbench, so there is no version of that here.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.
