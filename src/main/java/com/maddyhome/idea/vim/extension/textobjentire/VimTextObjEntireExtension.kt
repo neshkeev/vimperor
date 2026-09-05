@@ -9,56 +9,14 @@
 package com.maddyhome.idea.vim.extension.textobjentire
 
 import com.intellij.vim.api.VimInitApi
-import com.intellij.vim.api.getVariable
-import com.intellij.vim.api.scopes.TextObjectRange
 import com.maddyhome.idea.vim.extension.VimExtension
 
 /**
- * Port of vim-textobj-entire:
- * https://github.com/kana/vim-textobj-entire
- *
- * vim-textobj-entire provides two text objects:
- * - `ae` targets the entire content of the current buffer.
- * - `ie` is similar to `ae`, but does not include leading and trailing empty lines.
- *
- * See also the reference manual for more details:
- * https://github.com/kana/vim-textobj-entire/blob/master/doc/textobj-entire.txt
+ * The IntelliJ extension point's way in; the extension itself is in `vim-engine`, so that both
+ * hosts get it from one source. See `ParagraphMotion` for the same shape.
  */
 internal class VimTextObjEntireExtension : VimExtension {
+  override fun getName(): String = TEXT_OBJ_ENTIRE
 
-  override fun getName(): String = "textobj-entire"
-
-  override fun init(initApi: VimInitApi) {
-    val skipDefaults = initApi.getVariable<Boolean>("g:textobj_entire_no_default_mappings") ?: false
-
-    initApi.textObjects {
-      register("ae", registerDefaultMapping = !skipDefaults) { _ ->
-        TextObjectRange.CharacterWise(0, editor { read { textLength.toInt() } })
-      }
-
-      register("ie", registerDefaultMapping = !skipDefaults) { _ ->
-        val content = editor { read { text.toString() } }
-        var start = 0
-        var end = content.length
-
-        // Find first non-whitespace character
-        for (i in content.indices) {
-          if (!content[i].isWhitespace()) {
-            start = i
-            break
-          }
-        }
-
-        // Find last non-whitespace character
-        for (i in content.indices.reversed()) {
-          if (!content[i].isWhitespace()) {
-            end = i + 1
-            break
-          }
-        }
-
-        TextObjectRange.CharacterWise(start, end)
-      }
-    }
-  }
+  override fun init(initApi: VimInitApi) = initApi.init()
 }

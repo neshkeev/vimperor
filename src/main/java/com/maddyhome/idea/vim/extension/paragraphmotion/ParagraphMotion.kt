@@ -1,5 +1,5 @@
 /*
- * Copyright 2003-2025 The IdeaVim authors
+ * Copyright 2003-2026 The IdeaVim authors
  *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE.txt file or at
@@ -8,53 +8,18 @@
 
 package com.maddyhome.idea.vim.extension.paragraphmotion
 
-import com.intellij.vim.api.VimApi
 import com.intellij.vim.api.VimInitApi
-import com.intellij.vim.api.getVariable
-import com.intellij.vim.api.scopes.nmapPluginAction
-import com.intellij.vim.api.scopes.omapPluginAction
-import com.intellij.vim.api.scopes.xmapPluginAction
 import com.maddyhome.idea.vim.extension.VimExtension
 
+/**
+ * The IntelliJ extension point's way in.
+ *
+ * The extension itself moved to `vim-engine/src/commonMain` so that the VS Code host can load it
+ * too - it is a `@VimPlugin` function there, which needs no classloader. This is the adapter that
+ * keeps `set vim-paragraph-motion` working in IntelliJ, and it goes when the plugin does.
+ */
 internal class ParagraphMotion : VimExtension {
-  override fun getName(): String = "vim-paragraph-motion"
+  override fun getName(): String = PARAGRAPH_MOTION
 
-  override fun init(initApi: VimInitApi) {
-    initApi.mappings {
-      nmapPluginAction("}", "<Plug>(ParagraphNextMotion)", keepDefaultMapping = true) {
-        moveParagraph(1)
-      }
-      nmapPluginAction("{", "<Plug>(ParagraphPrevMotion)", keepDefaultMapping = true) {
-        moveParagraph(-1)
-      }
-      xmapPluginAction("}", "<Plug>(ParagraphNextMotion)", keepDefaultMapping = true) {
-        moveParagraph(1)
-      }
-      xmapPluginAction("{", "<Plug>(ParagraphPrevMotion)", keepDefaultMapping = true) {
-        moveParagraph(-1)
-      }
-      omapPluginAction("}", "<Plug>(ParagraphNextMotion)", keepDefaultMapping = true) {
-        moveParagraph(1)
-      }
-      omapPluginAction("{", "<Plug>(ParagraphPrevMotion)", keepDefaultMapping = true) {
-        moveParagraph(-1)
-      }
-    }
-  }
-}
-
-internal fun VimApi.moveParagraph(direction: Int) {
-  val count = getVariable<Int>("v:count1") ?: 1
-  val actualCount = count * direction
-
-  editor {
-    change {
-      forEachCaret {
-        val newOffset = getNextParagraphBoundOffset(actualCount, includeWhitespaceLines = true)
-        if (newOffset != null) {
-          updateCaret(offset = newOffset)
-        }
-      }
-    }
-  }
+  override fun init(initApi: VimInitApi) = initApi.init()
 }

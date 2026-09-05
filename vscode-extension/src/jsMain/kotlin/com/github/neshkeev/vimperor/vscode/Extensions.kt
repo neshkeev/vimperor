@@ -10,7 +10,9 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
+import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
+import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.ListenerOwner
 import com.maddyhome.idea.vim.extension.ExtensionBean
@@ -67,6 +69,12 @@ internal object VsCodeExtensions {
     // what `@VimPlugin` annotates, and it is an extension function on `VimInitApi` rather than one
     // taking it - hence the lambda rather than a reference.
     "ReplaceWithRegisterNew" to { api -> api.replaceWithRegisterInit() },
+
+    // `{` and `}` that treat a line of only whitespace as blank, which Vim's own do not.
+    "vim-paragraph-motion" to { api -> api.paragraphMotionInit() },
+
+    // `ae` and `ie`: the whole buffer as a text object, so `gUie` composes where `ggVG` does not.
+    "textobj-entire" to { api -> api.textObjEntireInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

@@ -32,14 +32,21 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 25 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 23 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-`ReplaceWithRegister` is the one that is ported, and it is the pattern for the
-rest: it lives in `vim-engine/src/commonMain/.../extension/replacewithregister/`,
-compiles to both hosts from one source, and the VS Code host lists it in
-`VsCodeExtensions.BUNDLED`. Adding the next is one entry there plus a source file
-the engine can compile. Ex commands are
+Three are ported - `ReplaceWithRegister`, `vim-paragraph-motion` and
+`textobj-entire` - and they are the pattern for the rest. Each lives in
+`vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
+VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
+two-line `VimExtension` adapter that calls the same function so IntelliJ is
+unaffected. The adapter goes when the plugin does.
+
+The candidates are the extensions whose *bodies* already use only the thin API and
+the engine, which is more of them than it looks: `camelcasemotion` (318 lines) and
+`miniai` (217) are portable today; `yankring` needs one engine helper;
+`commentary` and `textobjuser` need `VimExtensionFacade` and the `newapi` bridge.
+The rest are old-style `VimExtension` classes whose bodies touch IntelliJ. Ex commands are
 at parity - 401 in the engine, two IntelliJ-only.
 
 **The extensions are not blocked on `getchar()`.** That was the standing

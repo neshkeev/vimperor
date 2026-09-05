@@ -3,5 +3,15 @@
     "extensionName": "ReplaceWithRegisterNew",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.replacewithregister.ReplaceWithRegisterNewApiKt"
+  },
+  {
+    "extensionName": "textobj-entire",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.textobjentire.TextObjEntireNewApiKt"
+  },
+  {
+    "extensionName": "vim-paragraph-motion",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.paragraphmotion.ParagraphMotionNewApiKt"
   }
 ]
