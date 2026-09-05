@@ -37,6 +37,7 @@ import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
+import com.maddyhome.idea.vim.extension.youcompleteme.init as youCompleteMeInit
 import com.maddyhome.idea.vim.extension.yankring.disposeYankRing
 import com.maddyhome.idea.vim.extension.yankring.init as yankRingInit
 import com.maddyhome.idea.vim.api.injector
@@ -190,6 +191,11 @@ internal object VsCodeExtensions {
     // tree are not here and cannot be - a key pressed in the sidebar never reaches an extension -
     // and what `package.json` binds there instead is listed with them.
     "NERDTree" to { api -> api.nerdTreeInit() },
+
+    // `youcompleteme`: `<Tab>` walks the completion list instead of accepting from it. Registers
+    // nothing - VS Code will not tell an extension whether the popup is open, so the two keys are
+    // in `package.json` behind `suggestWidgetVisible` and this is the switch. See the engine file.
+    "youcompleteme" to { api -> api.youCompleteMeInit() },
   )
 
   /**

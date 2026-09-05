@@ -96,6 +96,19 @@ internal object VsCodeCommands {
   const val EXPLORER_COPY = "filesExplorer.copy"
   const val EXPLORER_PASTE = "filesExplorer.paste"
 
+  /**
+   * `youcompleteme`: `<Tab>` and `<S-Tab>` walking the completion list rather than accepting from
+   * it. Same arrangement as the NERDTree block above - this extension never sends them, VS Code
+   * runs them when the manifest's `when` clause matches, and they are listed here so that
+   * activation asks the real window whether they exist.
+   *
+   * These two are the only place in this host where a `when` clause reads a state the extension
+   * itself cannot see: `suggestWidgetVisible` is write-only for an extension, which is why
+   * `lookupManager` answers null and why this cannot be done in the engine.
+   */
+  const val SELECT_NEXT_SUGGESTION = "selectNextSuggestion"
+  const val SELECT_PREV_SUGGESTION = "selectPrevSuggestion"
+
 
   /**
    * `=`. Re-indents the selected lines, which is what Vim's `=` does and the whole of what it does.
@@ -209,6 +222,7 @@ internal object VsCodeCommands {
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
+    SELECT_NEXT_SUGGESTION, SELECT_PREV_SUGGESTION,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

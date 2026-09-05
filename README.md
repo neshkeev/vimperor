@@ -69,19 +69,19 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 3 of IdeaVim's 24 bundled extensions — matchit, VimEverywhere and
-youcompleteme are still in the plugin. The other twenty-one are ported:
+What does not: 2 of IdeaVim's 24 bundled extensions — matchit and VimEverywhere are
+still in the plugin. The other twenty-two are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj` and `NERDTree`.
+`functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`.
 
-The three still in the plugin are not there for want of a seam. `matchit` needs to know
+The two still in the plugin are not there for want of a seam. `matchit` needs to know
 what a *token* is, and the most VS Code will say about a file's structure is where its
-functions and classes are; `youcompleteme` works by taking `<Tab>` out of an
-IntelliJ-only option. `VimEverywhere` labels every clickable thing in the IDE window
-and clicks the one you type, and an extension cannot draw over VS Code's workbench.
+functions and classes are. `VimEverywhere` labels every clickable thing in the IDE
+window and clicks the one you type, and an extension cannot draw over VS Code's
+workbench.
 
 `NERDTree` is bundled but is half an extension. Its ex commands work; the keys it maps
 *inside* the tree are declared in `package.json` rather than by the engine, because a

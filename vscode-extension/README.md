@@ -90,10 +90,10 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 3 of IdeaVim's 24 bundled extensions are not
-  available — `matchit`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code has nothing
-  shaped like. The other twenty-one work, and they are enabled the way you would in IdeaVim — with
-  `set <name>`, or with a `Plug` line for a config borrowed from Vim:
+- **Vim plugins.** There is no `pack/` directory, and 2 of IdeaVim's 24 bundled extensions are not
+  available — `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like. The
+  other twenty-two work, and they are enabled the way you would in IdeaVim — with `set <name>`, or
+  with a `Plug` line for a config borrowed from Vim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
@@ -117,6 +117,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'kana/vim-textobj-function'         " am aM im — a function without its doc comment, with it, its body
   Plug 'kana/vim-textobj-class'            " ac — the class, interface, struct or enum you are inside
   Plug 'preservim/nerdtree'                " :NERDTree and friends, plus j k o s in the Explorer
+  set youcompleteme                        " Tab walks the completion list instead of accepting
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that

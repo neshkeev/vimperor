@@ -104,14 +104,17 @@ fun activate(context: ExtensionContext) {
    * an editor.
    *
    * Those keys cannot be installed at runtime - see `VimHost.isExtensionEnabled` - so the manifest
-   * declares them all and these decide whether they apply. One extension needs it today,
-   * `NERDTree`; a map rather than a field because the next one to need it should be a line here
-   * rather than a second copy of this.
+   * declares them all and these decide whether they apply. `vimperor.nerdtree` gates the keys that
+   * work inside the file tree, `vimperor.youcompleteme` the two that work while the completion
+   * popup is open.
    *
    * Sent only on a change, for the same reason the mode is: `setContext` re-evaluates every `when`
    * clause in the window, and this runs after every keystroke.
    */
-  val extensionContexts = mapOf("vimperor.nerdtree" to "NERDTree")
+  val extensionContexts = mapOf(
+    "vimperor.nerdtree" to "NERDTree",
+    "vimperor.youcompleteme" to "youcompleteme",
+  )
   val lastEnabled = mutableMapOf<String, Boolean>()
   fun refreshExtensionContexts() {
     for ((contextKey, extension) in extensionContexts) {

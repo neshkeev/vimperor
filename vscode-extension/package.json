@@ -479,6 +479,16 @@
         "key": "ctrl+r",
         "command": "renameFile",
         "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "tab",
+        "command": "selectNextSuggestion",
+        "when": "editorTextFocus && suggestWidgetVisible && vimperor.youcompleteme"
+      },
+      {
+        "key": "shift+tab",
+        "command": "selectPrevSuggestion",
+        "when": "editorTextFocus && suggestWidgetVisible && vimperor.youcompleteme"
       }
     ],
     "configuration": {

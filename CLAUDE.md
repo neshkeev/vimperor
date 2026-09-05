@@ -32,7 +32,7 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 3 of the 24 bundled extensions, the in-tree keys NERDTree maps
+What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
@@ -46,22 +46,32 @@ It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj` and `NERDTree` - which is every one whose substance this
-host can carry. Each lives in
+`functextobj`, `classtextobj`, `NERDTree` and `youcompleteme` - which is every one
+whose substance this host can carry. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The three that are left - `matchit`, `VimEverywhere` and `youcompleteme` - are not
-waiting on a seam. `matchit` wants to know what a *token* is, so that `%` can jump
-between `if` and `endif` and between HTML tags, and the one thing VS Code tells an
-extension about a file's structure is where its symbols are - functions and classes,
-nothing smaller. `youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`, an
-IntelliJ-only option describing a completion popup this host does not have.
+The two that are left - `matchit` and `VimEverywhere` - are not waiting on a seam.
+`matchit` wants to know what a *token* is, so that `%` can jump between `if` and
+`endif` and between HTML tags, and the one thing VS Code tells an extension about a
+file's structure is where its symbols are - functions and classes, nothing smaller.
+
+**`youcompleteme` was on that list twice over and should not have been**, and the
+mistake is instructive. The reason given was that it edits `'lookupkeys'`, an
+IntelliJ-only option - true of how it is written and not the obstacle. The obstacle is
+that VS Code will not tell an extension whether the completion popup is open:
+`suggestWidgetVisible` is a context key and context keys are write-only, which is why
+`VsCodeInjector.lookupManager` answers null. But a `when` clause *can* read it, and the
+whole extension is one sentence - `<Tab>` cycles the list instead of accepting from it
+- so two manifest bindings carry all of it. Reading the file was what settled it; the
+import list said `IjOptions` and the body said `injector.lookupManager`.
 
 **`VimEverywhere` was built for this host and then taken out again, which is worth
-recording so it is not built a second time.** It is four features. `h`/`j`/`k`/`l` in
+recording so it is not built a second time.** Compare `youcompleteme`, which has the
+same shape and was kept: the test is not whether the keys live in `package.json` but
+whether what the manifest can carry is the whole extension or a fraction of it. It is four features. `h`/`j`/`k`/`l` in
 any Swing `Tree` becomes nine keys under `listFocus` and works. `<C-W>hjkl` from
 inside a tool window becomes twelve chords under `!editorTextFocus` and half works -
 outside the editor it crosses into other panes, inside it the engine's own `<C-W>` uses
