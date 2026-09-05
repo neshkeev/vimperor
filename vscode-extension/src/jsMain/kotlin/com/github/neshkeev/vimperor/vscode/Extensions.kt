@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
+import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
@@ -75,6 +76,10 @@ internal object VsCodeExtensions {
 
     // `ae` and `ie`: the whole buffer as a text object, so `gUie` composes where `ggVG` does not.
     "textobj-entire" to { api -> api.textObjEntireInit() },
+
+    // `a`/`i` text objects that search for their delimiter rather than needing the caret inside
+    // it, so `ci(` works from anywhere on the line.
+    "mini-ai" to { api -> api.miniAiInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

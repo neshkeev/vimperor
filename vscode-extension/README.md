@@ -90,7 +90,7 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 23 of IdeaVim's 26 bundled extensions —
+- **Vim plugins.** There is no `pack/` directory, and 22 of IdeaVim's 26 bundled extensions —
   surround, commentary, targets and the rest — are not ported yet. Three are, and they are enabled
   the way you would in IdeaVim:
 

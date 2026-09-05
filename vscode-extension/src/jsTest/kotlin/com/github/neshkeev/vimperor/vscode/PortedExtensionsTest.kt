@@ -128,6 +128,39 @@ class PortedExtensionsTest {
     assertEquals("ONE TWO\n", session.content)
   }
 
+  // ---- mini-ai ---------------------------------------------------------------------------------
+
+  /**
+   * The difference from Vim's own `ci(`, and the reason people install this: Vim needs the caret
+   * already inside the parentheses, and this searches forward for them.
+   */
+  @Test
+  fun `test ci paren works from outside the parentheses`() {
+    val session = Session("call(one)\n", "mini-ai")
+
+    session.type("di(")
+
+    assertEquals("call()\n", session.content)
+  }
+
+  @Test
+  fun `test the around form takes the delimiters with it`() {
+    val session = Session("call(one)\n", "mini-ai")
+
+    session.type("da(")
+
+    assertEquals("call\n", session.content)
+  }
+
+  @Test
+  fun `test it finds quotes the same way`() {
+    val session = Session("say \"hello\" now\n", "mini-ai")
+
+    session.type("di\"")
+
+    assertEquals("say \"\" now\n", session.content)
+  }
+
   @Test
   fun `test yanking the whole buffer puts it in the register`() {
     val session = Session("one\ntwo\n", "textobj-entire")
