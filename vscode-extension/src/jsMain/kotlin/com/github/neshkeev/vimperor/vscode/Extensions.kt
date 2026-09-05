@@ -45,6 +45,11 @@ import com.maddyhome.idea.vim.extension.ExtensionBean
 import com.maddyhome.idea.vim.extension.ExtensionLoader
 import com.maddyhome.idea.vim.extension.JsonExtensionProvider
 import com.maddyhome.idea.vim.key.MappingOwner
+import com.maddyhome.idea.vim.api.setToggleOption
+import com.maddyhome.idea.vim.api.unsetToggleOption
+import com.maddyhome.idea.vim.options.OptionAccessScope
+import com.maddyhome.idea.vim.options.OptionDeclaredScope
+import com.maddyhome.idea.vim.options.ToggleOption
 import com.maddyhome.idea.vim.thinapi.VimApiImpl
 
 /**
@@ -235,6 +240,55 @@ internal object VsCodeExtensions {
 }
 
 /**
+ * `set surround`, which is how an `.ideavimrc` actually turns an extension on - and which did
+ * nothing at all on this host until now.
+ *
+ * IdeaVim's own documentation enables every one of these with `set <name>`; `Plug` is the *other*
+ * way in, for a config borrowed from Vim. Both hosts were reaching `enableExtension` through
+ * `Plug`, so `Plug 'tpope/vim-surround'` worked here and `set surround` was `E518: Unknown option`
+ * - silently, because a config runs with errors suppressed. Every bundled extension was affected
+ * and nothing said so.
+ *
+ * What was missing is exactly what `VimExtensionRegistrar` does for IntelliJ: registering an
+ * extension has to register a global toggle option named after it, and the option's listener is
+ * what enables and disables it. That also makes `set nosurround` work, which nothing here could
+ * express before, and makes `:set surround?` answer truthfully.
+ *
+ * `VimEverywhere` is the extension that made this impossible to leave: it has no repository and no
+ * `Plug` line anywhere in the wild, so `set VimEverywhere` is the only way anyone turns it on.
+ */
+internal fun registerExtensionOptions() {
+  VsCodeExtensions.BUNDLED.keys.forEach { name ->
+    // The option and its listener have different lifetimes, and conflating them cost an afternoon.
+    // `Options` is a Kotlin object, so an option declared by one host is still declared for the
+    // next one in the same process; the *listener* lives on the option group, which is new with
+    // every injector. Skipping the whole block when the option already existed left every host
+    // after the first with an option nothing was listening to - which is `set surround` silently
+    // doing nothing all over again, one layer down.
+    val option = injector.optionGroup.getOption(name) as? ToggleOption
+      ?: ToggleOption(name, OptionDeclaredScope.GLOBAL, abbreviationFor(name), false)
+        .also { injector.optionGroup.addOption(it) }
+    injector.optionGroup.addGlobalOptionChangeListener(option) {
+      val on = injector.optionGroup.getOptionValue(option, OptionAccessScope.GLOBAL(null)).booleanValue
+      if (on) {
+        injector.jsonExtensionProvider.getExtension(name)?.let { injector.extensionLoader.enableExtension(it) }
+      } else {
+        injector.extensionLoader.disableExtension(name)
+      }
+    }
+  }
+}
+
+/**
+ * An option's short form, which for all but one of these is the name itself.
+ *
+ * `NERDTree` is the exception and it is IdeaVim's, kept because a config written for IdeaVim may
+ * use it: an abbreviation that differs only in case is how `set nerdtree` is made to work at all,
+ * since option names are matched case-sensitively.
+ */
+private fun abbreviationFor(name: String): String = if (name == "NERDTree") "nerdtree" else name
+
+/**
  * The catalogue of extensions this host could enable.
  *
  * IntelliJ's implementation of this interface reads and writes a JSON file under the config
@@ -303,6 +357,7 @@ internal class VsCodeExtensionLoader : ExtensionLoader {
     // during its own initialisation would otherwise look disabled to whatever the mapping calls.
     enabled[name] = extension
     init(VimInitApi(VimApiImpl(ListenerOwner.Plugin.get(name), MappingOwner.Plugin.get(name), null)))
+    optionFor(name)?.let { injector.optionGroup.setToggleOption(it, OptionAccessScope.GLOBAL(null)) }
   }
 
   override fun disableExtension(name: String) {
@@ -310,7 +365,22 @@ internal class VsCodeExtensionLoader : ExtensionLoader {
     injector.keyGroup.removeKeyMapping(MappingOwner.Plugin.get(name))
     injector.listenersNotifier.unloadListeners(ListenerOwner.Plugin.get(name))
     VsCodeExtensions.TEARDOWN[name]?.invoke()
+    optionFor(name)?.let { injector.optionGroup.unsetToggleOption(it, OptionAccessScope.GLOBAL(null)) }
   }
+
+  /**
+   * The option is the state, and the loader keeps it in step - in both directions.
+   *
+   * Writing it back here rather than only in [VsCodeExtensionRegistrator] is what makes the two
+   * ways in agree. The engine's own `:Plug` and `:packadd` call `enableExtension` straight, without
+   * going near an alias, and a test calls `disableExtension` straight; each of those would
+   * otherwise leave the option saying the opposite of the truth, and the next `set surround` would
+   * be a no-op because the value it wanted was already there.
+   *
+   * The recursion this appears to invite does not happen: setting the option calls back into these
+   * two, and both return at once when the extension is already in the state asked for.
+   */
+  private fun optionFor(name: String): ToggleOption? = injector.optionGroup.getOption(name) as? ToggleOption
 }
 
 /**
@@ -328,6 +398,14 @@ internal class VsCodeExtensionLoader : ExtensionLoader {
  */
 internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
 
+  /**
+   * Straight to the loader, which sets the option on the way - see `VsCodeExtensionLoader`.
+   *
+   * `Plug 'tpope/vim-surround'` and `set surround` have to leave the same state behind, or
+   * `set nosurround` after a `Plug` line would find the option still false and do nothing. That is
+   * arranged in the loader rather than here, because the engine's own `:Plug` and `:packadd` reach
+   * the loader without passing through this at all.
+   */
   override fun setOptionByPluginAlias(alias: String): Boolean {
     val name = getExtensionNameByAlias(alias) ?: return false
     val bean = injector.jsonExtensionProvider.getExtension(name) ?: return false

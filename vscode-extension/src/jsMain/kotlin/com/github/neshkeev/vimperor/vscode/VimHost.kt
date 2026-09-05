@@ -95,6 +95,10 @@ class VimHost(
     // that point, and `addOption` on it goes to `undefined` - the same declaration-order rule that
     // `VsCodeEditor.pushedSelections` and the tutor's host both had to be moved for.
     VsCodeOptions.initialise()
+    // After the options are declared and before the config runs: `set surround` is an option like
+    // any other, and one that is not registered yet is `E518: Unknown option` rather than an option
+    // with no effect.
+    registerExtensionOptions()
     watchLineNumbers()
   }
 
