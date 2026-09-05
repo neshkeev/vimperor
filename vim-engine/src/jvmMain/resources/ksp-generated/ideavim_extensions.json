@@ -10,6 +10,11 @@
     "className": "com.maddyhome.idea.vim.extension.replacewithregister.ReplaceWithRegisterNewApiKt"
   },
   {
+    "extensionName": "abolish",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.abolish.AbolishKt"
+  },
+  {
     "extensionName": "indentwise",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.indentwise.IndentWiseKt"

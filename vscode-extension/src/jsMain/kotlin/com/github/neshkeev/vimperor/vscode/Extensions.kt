@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
+import com.maddyhome.idea.vim.extension.abolish.init as abolishInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
@@ -100,6 +101,11 @@ internal object VsCodeExtensions {
     // `targets.vim`: seeking text objects. `ci(` when the caret is nowhere near a paren, `cin(` for
     // the next one, `cil(` for the last, and `I`/`A` for the whitespace-trimmed and -extended forms.
     "targets" to { api -> api.targetsInit() },
+
+    // `vim-abolish`: `crs` `crc` `crm` and the rest, recasing the word under the caret between
+    // snake, camel, Pascal and friends; plus `:Subvert`, a search and replace that carries the
+    // case of what it replaced.
+    "abolish" to { api -> api.abolishInit() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

@@ -42,6 +42,19 @@ class PortedExtensionsTest {
     fun script(line: String) =
       injector.vimscriptExecutor.execute(line, host.editorFor(fake), VsCodeExecutionContext, skipHistory = true)
 
+    /**
+     * An ex command as a user runs one: typed, then `<CR>`.
+     *
+     * Not [script], which is the same command by a shorter road and stops short of the buffer. The
+     * engine writes an edit into `VsCodeEditor`'s own buffer synchronously and the host flushes it
+     * out to the document when the key that caused it has been handled - so a command that edits
+     * has to arrive as keys, or the edit is made and never seen.
+     */
+    fun ex(command: String) {
+      type(":$command")
+      host.key(fake, "<CR>")
+    }
+
     val content: String get() = fake.document.content
     val caret: Int get() = host.editorFor(fake).primaryCaret().offset
   }
@@ -191,6 +204,86 @@ class PortedExtensionsTest {
     session.type("di\"")
 
     assertEquals("say \"\" now\n", session.content)
+  }
+
+  // ---- abolish -------------------------------------------------------------------------------------
+
+  /**
+   * `vim-abolish`, and the half people actually install it for: `crs` on `getUserName` gives
+   * `get_user_name`, `crc` gives it back, without retyping the word.
+   */
+  @Test
+  fun `test the coercions recase the word under the caret`() {
+    val snake = Session("val getUserName = 1\n", "abolish")
+    snake.type("wcrs")
+    assertEquals("val get_user_name = 1\n", snake.content, "crs")
+
+    val camel = Session("val get_user_name = 1\n", "abolish")
+    camel.type("wcrc")
+    assertEquals("val getUserName = 1\n", camel.content, "crc")
+
+    val upper = Session("val getUserName = 1\n", "abolish")
+    upper.type("wcru")
+    assertEquals("val GET_USER_NAME = 1\n", upper.content, "cru")
+
+    val kebab = Session("val getUserName = 1\n", "abolish")
+    kebab.type("wcr-")
+    assertEquals("val get-user-name = 1\n", kebab.content, "cr-")
+  }
+
+  /**
+   * The `<Plug>` half is operator-pending, so a coercion takes a motion. That path goes through
+   * `opfunc` and `g@`, which is `executeNormalWithoutMapping` - one of the functions that only
+   * followed the extension into the engine because `VimExtensionFacade` moved first.
+   */
+  @Test
+  fun `test a coercion takes a motion through opfunc`() {
+    val session = Session("getUserName rest\n", "abolish")
+
+    session.host.key(session.fake, "<Plug>(abolish-coerce-snake)")
+    session.type("iw")
+
+    assertEquals("get_user_name rest\n", session.content)
+  }
+
+  /**
+   * `:Subvert` is the other half: a substitution that carries the case of what it replaced, so one
+   * command fixes `child`, `Child` and `CHILD` at once where `:s` would need three.
+   *
+   * The space after the command name is not optional - abolish parses its arguments as everything
+   * past the first space, so `:S/x/y/` is not a command it recognises. That is tpope's own
+   * behaviour and the plugin's tests spell it the same way.
+   */
+  @Test
+  fun `test Subvert replaces every case variant at once`() {
+    val session = Session("child Child CHILD\n", "abolish")
+
+    session.ex("Subvert /child/adult/g")
+
+    assertEquals("adult Adult ADULT\n", session.content)
+  }
+
+  /** `:S` is the short form, and the same handler behind it. */
+  @Test
+  fun `test S is an alias for Subvert`() {
+    val session = Session("child Child\n", "abolish")
+
+    session.ex("S /child/adult/g")
+
+    assertEquals("adult Adult\n", session.content)
+  }
+
+  /**
+   * Brace alternatives, which is what separates `:S` from a case-insensitive `:s`: one command
+   * takes the singular and the plural, in every case, to their own replacements.
+   */
+  @Test
+  fun `test brace alternatives pair up`() {
+    val session = Session("box Box BOX boxes Boxes BOXES\n", "abolish")
+
+    session.ex("S /box{,es}/bag{,s}/g")
+
+    assertEquals("bag Bag BAG bags Bags BAGS\n", session.content)
   }
 
   // ---- targets -----------------------------------------------------------------------------------

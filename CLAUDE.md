@@ -32,12 +32,12 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 18 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 17 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-Eight are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user` and
-`targets` - and they are the pattern for the rest. Each lives in
+Nine are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
+`targets` and `abolish` - and they are the pattern for the rest. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -57,8 +57,9 @@ name filter useless.
 `VimExtensionFacade` is in the engine now, which was worth more than any single
 port: it is what an extension calls to register a mapping, and while it lived in
 the plugin a portable extension still could not follow. Moving it unblocked
-`camelcasemotion` and `indentwise` immediately, and left `abolish` needing only
-the `newapi` bridge. What stayed behind is in `VimExtensionFacadeIj.kt`
+`camelcasemotion` and `indentwise` immediately, and `abolish` could not have
+followed without it either - `executeNormalWithoutMapping` is what `cr{motion}`
+uses to press `g@`. What stayed behind is in `VimExtensionFacadeIj.kt`
 - the functions taking an IntelliJ `Editor` or `DataContext`, as top-level
 functions rather than members, since Kotlin cannot add a member to an object from
 another module. `inputKeyStroke` is the only one with a real reason to stay: its
@@ -74,15 +75,17 @@ against `com.intellij` - which is the measure that matters, because IdeaVim's ow
 IntelliJ bridge lives in `newapi`, `helper` and `listener` and does not say
 `com.intellij` - most of what is left is a single package away, and that package
 is always `newapi`: a cast to `IjVimEditor` or `IjVimCaret` for something the
-engine can now do itself. `abolish` (786 lines), `functextobj` and `classtextobj`
-are in that group.
+engine can now do itself. `functextobj` and `classtextobj` are what is left in
+that group, and both also want PSI.
 
 **"Imports `newapi`" measures the import, not the debt.** `textobj-user` (489
-lines) and `targets` (808) were both on that list, and both cost exactly one line:
+lines), `targets` (808) and `abolish` (786) were all on that list, and none of
+them cost more than a handful of lines. The first two cost exactly one:
 `(caret as IjVimCaret).caret.moveToInlayAwareOffset(...)`, where
 `moveToInlayAwareOffset` is a member of the engine's own `VimCaret` and the cast
-reached IntelliJ's `Caret` to call what the engine already offered. Open the file
-before believing the estimate.
+reached IntelliJ's `Caret` to call what the engine already offered. `abolish` cost
+three - `editor.ij` twice and `VimPlugin.getVariableService()`, which is
+`injector.variableService`. Open the file before believing the estimate.
 
 ### How an extension is meant to reach VS Code
 

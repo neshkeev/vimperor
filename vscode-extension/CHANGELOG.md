@@ -20,6 +20,7 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
 - The first of IdeaVim's bundled extensions: `ReplaceWithRegister` (`gr`, `grr`),
   `vim-paragraph-motion` (`{` and `}` stopping at whitespace-only lines), `textobj-entire`
   (`ae`, `ie`), `mini-ai` (`ci(` from anywhere on the line), `CamelCaseMotion`, `indentwise`,
-  `textobj-user` — `textobj#user#plugin()`, for declaring text objects of your own — and `targets`
-  (seeking text objects: `cin(` for the next pair, `cil(` for the last), each enabled with the
-  `Plug` line you would use in IdeaVim.
+  `textobj-user` — `textobj#user#plugin()`, for declaring text objects of your own — `targets`
+  (seeking text objects: `cin(` for the next pair, `cil(` for the last) and `abolish` (`crs` `crc`
+  `crm` to recase a word, and `:S`, a substitute that carries the case of what it replaced), each
+  enabled with the `Plug` line you would use in IdeaVim.

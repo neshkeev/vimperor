@@ -8,7 +8,6 @@
 
 package com.maddyhome.idea.vim.extension.abolish
 
-import com.maddyhome.idea.vim.VimPlugin
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
@@ -52,5 +51,5 @@ internal fun runVariantSubstitution(
 private fun storeAsLastDict(dictionary: Map<String, String>) {
   val entries = LinkedHashMap<VimString, VimDataType>()
   dictionary.forEach { (key, value) -> entries[VimString(key)] = VimString(value) }
-  VimPlugin.getVariableService().storeGlobalVariable("abolish_last_dict", VimDictionary(entries))
+  injector.variableService.storeGlobalVariable("abolish_last_dict", VimDictionary(entries))
 }
