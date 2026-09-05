@@ -90,9 +90,11 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 9 of IdeaVim's 26 bundled extensions —
-  matchit, NERDTree and the rest — are not ported yet. Seventeen are, and they are enabled the way
-  you would in IdeaVim:
+- **Vim plugins.** There is no `pack/` directory, and 7 of IdeaVim's 24 bundled extensions are not
+  available — `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code
+  has nothing shaped like, and `yankring`, `functextobj` and `classtextobj` are built but not
+  enabled, each waiting on an answer this host can only give asynchronously. Seventeen work, and
+  they are enabled the way you would in IdeaVim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it

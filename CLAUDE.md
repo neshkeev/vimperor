@@ -32,9 +32,14 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 9 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 7 of the 24 bundled extensions, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
+
+**Twenty-four, not twenty-six.** This file said 26 for a long time and the number was
+never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points, and
+`windownavigation` - which looks like a 25th in `src/main/java` - is not one of them.
+It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 
 Seventeen are ported and bundled - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
