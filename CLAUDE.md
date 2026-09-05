@@ -40,10 +40,41 @@ at parity - 401 in the engine, two IntelliJ-only.
 explanation and it is wrong: of the 26, exactly one - `surround` - asks for a key
 at all. What blocks them is where they live and how they register. They are in
 `src/main/java/`, which compiles for the JVM only, and `VimExtensionRegistrar`
-hangs off an IntelliJ extension point. Five of them import nothing from IntelliJ
-whatsoever (`abolish`, `classtextobj`, `functextobj`, `indentwise`, `targets`) and
-four more import a single class; those are engine code sitting in the plugin's
-module.
+hangs off an IntelliJ extension point. Measured against `vim-engine` rather than
+against `com.intellij` - which is the measure that matters, because IdeaVim's own
+IntelliJ bridge lives in `newapi`, `helper` and `listener` and does not say
+`com.intellij` - exactly one is portable as it stands: `indentwise`, 224 lines.
+Four more are a single package away, and that package is always `newapi`: a cast
+to `IjVimEditor` or `IjVimCaret` for something the engine can now do itself.
+`abolish` (786 lines), `targets` (808), `functextobj` and `classtextobj` are in
+that group.
+
+### How an extension is meant to reach VS Code
+
+There are two extension systems in this repository, and only one of them is worth
+porting to.
+
+The old one is the `VimExtension` interface registered through the IntelliJ
+extension point `IdeaVIM.vimExtension`. Eighteen of the twenty-six still use it.
+
+The new one is the **thin API**: a function annotated `@VimPlugin`, written
+against `com.intellij.vim.api.VimInitApi`, found by the KSP `ExtensionsProcessor`
+and emitted as JSON for a host to read. Eight extensions have already been
+migrated to it - `commentary`, `replacewithregister`, `yankring`,
+`camelcasemotion`, `paragraphmotion`, `textobjentire`, `textobjuser`, `miniai` -
+and **the `api` module is already Kotlin Multiplatform with a JS target**. So the
+thin API is the route: nothing about it is IntelliJ-shaped.
+
+What is missing is the host half. IntelliJ has `IjPluginExtensionsScanner` (68
+lines, reads the generated JSON) and `IjJsonExtensionProvider` (228 lines). The VS
+Code host has neither, and `VsCodeInjectorBase` says so:
+`TODO("the VS Code host does not provide extensionRegistrator yet")`. It already
+imports `ExtensionLoader` and `JsonExtensionProvider`, so the shape is anticipated.
+
+**That provider is the next piece of work, and it is the gate for all eight.**
+Until it exists no extension can register in VS Code however portable it is;
+once it does, the question for each extension becomes only whether its own
+imports are engine-only.
 
 Most of the machinery to fix this is already in `vim-engine`:
 `extension/ExtensionHandler.kt`, `ExtensionLoader.kt`, `ExtensionBean.kt` and
