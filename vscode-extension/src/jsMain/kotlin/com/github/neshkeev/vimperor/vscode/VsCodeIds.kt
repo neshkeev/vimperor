@@ -96,26 +96,6 @@ internal object VsCodeCommands {
   const val EXPLORER_COPY = "filesExplorer.copy"
   const val EXPLORER_PASTE = "filesExplorer.paste"
 
-  /**
-   * What `VimEverywhere`'s keys are bound to, for the same reason and with the same caveat as the
-   * NERDTree block above: this extension never sends them, and listing them here is what gets them
-   * checked against a real window.
-   *
-   * The `list.*` ones apply wherever `listFocus` is set, which is every list and tree in the
-   * workbench - Explorer, Search, Problems, Source Control, Testing, Outline, and any tree a third
-   * party contributes. That breadth is the whole of what "Everywhere" means here.
-   *
-   * The `navigate*` four are `<C-W>h` and friends. Not `focus*Group`, which is what the engine's
-   * own `<C-W>` uses inside the editor: those move between *editor groups* and stop at the edge of
-   * the editor area, and the point of this extension is to cross that edge.
-   */
-  const val LIST_PAGE_DOWN = "list.focusPageDown"
-  const val LIST_PAGE_UP = "list.focusPageUp"
-  const val LIST_EXPAND = "list.expand"
-  const val NAVIGATE_LEFT = "workbench.action.navigateLeft"
-  const val NAVIGATE_RIGHT = "workbench.action.navigateRight"
-  const val NAVIGATE_UP = "workbench.action.navigateUp"
-  const val NAVIGATE_DOWN = "workbench.action.navigateDown"
 
   /**
    * `=`. Re-indents the selected lines, which is what Vim's `=` does and the whole of what it does.
@@ -229,8 +209,6 @@ internal object VsCodeCommands {
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
-    LIST_PAGE_DOWN, LIST_PAGE_UP, LIST_EXPAND,
-    NAVIGATE_LEFT, NAVIGATE_RIGHT, NAVIGATE_UP, NAVIGATE_DOWN,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

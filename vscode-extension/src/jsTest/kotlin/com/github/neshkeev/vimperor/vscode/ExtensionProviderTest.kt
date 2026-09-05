@@ -207,11 +207,13 @@ class ExtensionProviderTest {
    * fail identically to a user and differently to whoever adds the extension.
    *
    * `matchit` is the example, and the list of predecessors is the reason to expect it to be the
-   * last one: `surround`, then `yankring`, then `NERDTree`, then `VimEverywhere`, each of which
-   * looked unportable until it was looked at. `matchit` is different in kind. It makes `%` jump
-   * between `if` and `endif` and between an opening and closing HTML tag, which needs to know what
-   * a *token* is - and the one thing VS Code will tell an extension about a file's structure is
-   * where its symbols are, which is functions and classes and nothing smaller.
+   * last one: `surround`, then `yankring`, then `NERDTree`, each of which looked unportable until
+   * it was looked at. (`VimEverywhere` went the other way - it was bundled for a while and then
+   * taken out, because what could be ported was not the half the name is for.) `matchit` is
+   * different in kind. It makes `%` jump between `if` and `endif` and between an opening and
+   * closing HTML tag, which needs to know what a *token* is - and the one thing VS Code will tell
+   * an extension about a file's structure is where its symbols are, which is functions and classes
+   * and nothing smaller.
    */
   @Test
   fun `test a known alias with no extension behind it still fails`() {

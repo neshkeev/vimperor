@@ -32,9 +32,8 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree and
-VimEverywhere map that VS Code has no command for, VimEverywhere's hints, 24
-IntelliJ-only options,
+What is still missing: 3 of the 24 bundled extensions, the in-tree keys NERDTree maps
+that VS Code has no command for, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
@@ -47,19 +46,43 @@ It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj`, `NERDTree` and `VimEverywhere` - which is every one
-that is not a piece of IntelliJ furniture. Each lives in
+`functextobj`, `classtextobj` and `NERDTree` - which is every one whose substance this
+host can carry. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The two that are left - `matchit` and `youcompleteme` - are not waiting on a seam.
-`matchit` wants to know what a *token* is, so that `%` can jump between `if` and
-`endif` and between HTML tags, and the one thing VS Code tells an extension about a
-file's structure is where its symbols are - functions and classes, nothing smaller.
-`youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`, an IntelliJ-only option
-describing a completion popup this host does not have.
+The three that are left - `matchit`, `VimEverywhere` and `youcompleteme` - are not
+waiting on a seam. `matchit` wants to know what a *token* is, so that `%` can jump
+between `if` and `endif` and between HTML tags, and the one thing VS Code tells an
+extension about a file's structure is where its symbols are - functions and classes,
+nothing smaller. `youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`, an
+IntelliJ-only option describing a completion popup this host does not have.
+
+**`VimEverywhere` was built for this host and then taken out again, which is worth
+recording so it is not built a second time.** It is four features. `h`/`j`/`k`/`l` in
+any Swing `Tree` becomes nine keys under `listFocus` and works. `<C-W>hjkl` from
+inside a tool window becomes twelve chords under `!editorTextFocus` and half works -
+outside the editor it crosses into other panes, inside it the engine's own `<C-W>` uses
+`focus*Group`, which stops at the edge of the editor area, so the obvious case of
+`<C-W>h` from the editor into the file tree does nothing. `h`/`l` across a `JTable`'s
+columns has no target at all: VS Code has no table an extension can bind into.
+
+And the fourth is the one it is named for. `ToggleHintsAction` walks the Swing
+accessibility tree from the root pane and labels *every clickable component in the
+window* - tool window buttons, tabs, gutter icons, dialog controls - then clicks the
+one you type. **Be precise about why that cannot come across**, because the loose
+version of this claim is wrong: an extension can certainly draw labels over editor
+*text*, with the same `TextEditorDecorationType` that `highlightedyank` uses, and that
+is how every easymotion-style VS Code extension works. What it cannot do is touch the
+workbench - there is no overlay API and no accessibility tree to enumerate, so the
+activity bar, the tabs, the sidebar rows and the status bar are unreachable. An
+editor-only version would be a different extension wearing this one's name.
+
+Two of four, one of them half, and none of them the feature the name promises. That
+was judged not worth shipping. What the attempt did leave behind is the `set <name>`
+fix below, which was worth the whole detour.
 
 **`NERDTree` and `VimEverywhere` are bundled but they are half an extension each, and
 the half is the interesting part.** It is two things sharing a name. Six ex commands - `:NERDTree`,
@@ -85,17 +108,8 @@ with their reasons in `NerdTreeManifestTest` - mostly depth-aware navigation (`p
 `P`, `J`, `K`, `<C-J>`, `<C-K>`), which VS Code's list commands do not have, and
 changing the tree's root (`C`, `u`, `cd`), which its Explorer does not allow.
 
-`VimEverywhere` is the same shape one step wider, and **it registers nothing at all**.
-On IntelliJ it is four things: `h`/`j`/`k`/`l` in any Swing `Tree`, the same in any
-`JTable`, `<C-W>hjkl` from inside a tool window, and vimium-style hints painted on a
-glass pane. The first three become nine list keys under `listFocus` and twelve
-`<C-W>` chords under `!editorTextFocus`, all in the manifest; the fourth has **no VS
-Code equivalent of any kind** - an extension cannot draw over the workbench, and no
-seam would give it one. So the engine half of that extension is an empty `init`, and
-saying so plainly beats inventing engine work to make it look thicker.
-
-**The gap `VimEverywhere` walked into was bigger than itself: `set <name>` did not
-work on this host at all.** IdeaVim's documentation enables every extension that way
+**The gap the `VimEverywhere` attempt walked into was bigger than itself: `set <name>`
+did not work on this host at all.** IdeaVim's documentation enables every extension that way
 and `Plug` is the other route, for a config borrowed from Vim - but only `Plug` was
 wired here, so `set surround` was `E518` and a config runs with errors suppressed, so
 it failed silently for all twenty-two. `registerExtensionOptions` is what

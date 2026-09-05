@@ -37,7 +37,6 @@ import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
-import com.maddyhome.idea.vim.extension.vimeverywhere.init as vimEverywhereInit
 import com.maddyhome.idea.vim.extension.yankring.disposeYankRing
 import com.maddyhome.idea.vim.extension.yankring.init as yankRingInit
 import com.maddyhome.idea.vim.api.injector
@@ -191,11 +190,6 @@ internal object VsCodeExtensions {
     // tree are not here and cannot be - a key pressed in the sidebar never reaches an extension -
     // and what `package.json` binds there instead is listed with them.
     "NERDTree" to { api -> api.nerdTreeInit() },
-
-    // `VimEverywhere`: Vim keys in lists and trees, and `<C-W>hjkl` between panes. It registers
-    // nothing - a key pressed outside an editor never reaches an extension in VS Code, so the keys
-    // are in `package.json` and this is the switch that gates them. See the engine file.
-    "VimEverywhere" to { api -> api.vimEverywhereInit() },
   )
 
   /**
@@ -260,8 +254,10 @@ internal object VsCodeExtensions {
  * what enables and disables it. That also makes `set nosurround` work, which nothing here could
  * express before, and makes `:set surround?` answer truthfully.
  *
- * `VimEverywhere` is the extension that made this impossible to leave: it has no repository and no
- * `Plug` line anywhere in the wild, so `set VimEverywhere` is the only way anyone turns it on.
+ * It was found while trying to enable `VimEverywhere`, which is IdeaVim's own name for an extension
+ * with no repository behind it and so no `Plug` line anywhere in the world - `set` is the only way
+ * in. That extension is not bundled here in the end, but the hole it fell down was never its own:
+ * every extension this host has was reachable one way and documented the other.
  */
 internal fun registerExtensionOptions() {
   VsCodeExtensions.BUNDLED.keys.forEach { name ->

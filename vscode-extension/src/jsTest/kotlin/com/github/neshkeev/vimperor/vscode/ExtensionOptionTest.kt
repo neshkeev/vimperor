@@ -24,8 +24,9 @@ import kotlin.test.assertTrue
  * `Plug`, so `set surround` was `E518: Unknown option` - and a config runs with errors suppressed,
  * so the line failed **silently** and the user's surround simply was not there.
  *
- * `VimEverywhere` made it impossible to leave rather than merely wrong: it has no repository and no
- * `Plug` line anywhere in the wild, so the option is the only way in.
+ * It surfaced while trying to enable `VimEverywhere`, which has no repository behind it and so no
+ * `Plug` line anywhere in the world - `set` is the only way in, so the hole had nothing to hide
+ * behind. That extension is not bundled here in the end; the hole it fell down was never its own.
  */
 class ExtensionOptionTest {
 
