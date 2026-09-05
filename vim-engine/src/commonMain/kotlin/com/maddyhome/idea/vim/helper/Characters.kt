@@ -142,6 +142,24 @@ fun isSpaceChar(c: Char): Boolean = when (c.category) {
 }
 
 /**
+ * True if [c] may *begin* a Java identifier, as `java.lang.Character.isJavaIdentifierStart` defines
+ * it: a letter, a letter number, a currency symbol, or connecting punctuation.
+ *
+ * Strictly narrower than [isIdentifierPart], and the difference is the point wherever both are used
+ * together - a digit continues an identifier and cannot start one.
+ */
+fun isIdentifierStart(c: Char): Boolean {
+  if (c.isLetter()) return true
+  return when (c.category) {
+    CharCategory.LETTER_NUMBER,
+    CharCategory.CURRENCY_SYMBOL,
+    CharCategory.CONNECTOR_PUNCTUATION,
+    -> true
+    else -> false
+  }
+}
+
+/**
  * True if [c] may appear after the first character of a Java identifier, as
  * `java.lang.Character.isJavaIdentifierPart` defines it. This backs Vim's `\i` and `[:ident:]`.
  *

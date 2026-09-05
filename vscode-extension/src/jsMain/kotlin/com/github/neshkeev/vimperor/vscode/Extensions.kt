@@ -11,6 +11,7 @@ package com.github.neshkeev.vimperor.vscode
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
 import com.maddyhome.idea.vim.extension.abolish.init as abolishInit
+import com.maddyhome.idea.vim.extension.argtextobj.init as argTextObjInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
@@ -112,6 +113,10 @@ internal object VsCodeExtensions {
     // `vim-indent-object`: `ai` and `ii` for a block at the caret's indentation level, which in
     // Python or YAML is the block itself.
     "textobj-indent" to { api -> api.textObjIndentInit() },
+
+    // `argtextobj.vim`: `ia` and `aa` for one argument of a call, commas and nesting and quoted
+    // strings all accounted for.
+    "argtextobj" to { api -> api.argTextObjInit() },
   )
 
   /**

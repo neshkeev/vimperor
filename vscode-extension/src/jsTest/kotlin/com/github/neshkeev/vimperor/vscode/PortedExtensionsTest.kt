@@ -359,6 +359,90 @@ class PortedExtensionsTest {
     assertEquals("( () )\n", session.content, "the second `ib` stepped out one level")
   }
 
+  // ---- argtextobj ----------------------------------------------------------------------------------
+
+  /**
+   * `argtextobj.vim`: `ia` and `aa` for one argument of a call.
+   *
+   * The work is in what it does *not* split on - a comma inside a nested call, or inside a string -
+   * which is why the fixture is the plugin's own, commas and quotes and all.
+   */
+  private fun call(): Session {
+    val session = Session("function(int arg1,    char* arg2=\"a,b,c(d,e)\")\n", "argtextobj")
+    session.type("f*")
+    return session
+  }
+
+  @Test
+  fun `test aa deletes the argument and its separator`() {
+    val session = call()
+
+    session.type("daa")
+
+    assertEquals("function(int arg1)\n", session.content)
+  }
+
+  @Test
+  fun `test ia leaves the separator behind`() {
+    val session = call()
+
+    session.type("dia")
+
+    assertEquals("function(int arg1,    )\n", session.content)
+  }
+
+  /** The first argument, where the separator to take is the one *after* it. */
+  @Test
+  fun `test aa on the first argument takes the comma after it`() {
+    val session = Session("function(int arg1, int arg2)\n", "argtextobj")
+    session.type("fa")
+
+    session.type("daa")
+
+    assertEquals("function(int arg2)\n", session.content)
+  }
+
+  /**
+   * A count takes that many arguments *along the list*, not outward through the nesting - so `d2ia`
+   * from inside the inner call empties the inner call and leaves the outer one alone. Asserted
+   * because "count" reads like "one level out" and does not mean that here.
+   */
+  @Test
+  fun `test a count takes more arguments from the same list`() {
+    val session = Session("outer(a, inner(b, c), d)\n", "argtextobj")
+    session.type("fb")
+
+    session.type("d2ia")
+
+    assertEquals("outer(a, inner(), d)\n", session.content)
+  }
+
+  /** And the nesting is what keeps the inner comma out of the outer list's reckoning. */
+  @Test
+  fun `test a nested call is one argument of the outer list`() {
+    val session = Session("outer(a, inner(b, c), d)\n", "argtextobj")
+    session.type("fi")
+
+    session.type("dia")
+
+    assertEquals("outer(a, , d)\n", session.content)
+  }
+
+  /**
+   * `g:argtextobj_pairs` widens what counts as an argument list, and a value it cannot parse has to
+   * say so rather than fail silently. The message lives in the *engine* bundle now, having moved
+   * out of the plugin's with the extension.
+   */
+  @Test
+  fun `test a bad argtextobj_pairs setting reports itself`() {
+    val session = Session("function(a, b)\n", "argtextobj")
+    session.script("let g:argtextobj_pairs = 'unbalanced'")
+
+    session.type("dia")
+
+    assertEquals("function(a, b)\n", session.content, "nothing is deleted when the setting is unusable")
+  }
+
   // ---- textobj-indent ------------------------------------------------------------------------------
 
   /**

@@ -15,6 +15,11 @@
     "className": "com.maddyhome.idea.vim.extension.abolish.AbolishKt"
   },
   {
+    "extensionName": "argtextobj",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.argtextobj.ArgTextObjKt"
+  },
+  {
     "extensionName": "indentwise",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.indentwise.IndentWiseKt"

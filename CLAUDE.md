@@ -32,13 +32,14 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 16 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 15 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-Ten are ported - `ReplaceWithRegister`, `vim-paragraph-motion`, `textobj-entire`,
-`mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`, `targets`, `abolish`
-and `textobj-indent` - and they are the pattern for the rest. An eleventh,
-`yankring`, is in the engine and deliberately *not* bundled: see below. Each lives in
+Eleven are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
+`targets`, `abolish`, `textobj-indent` and `argtextobj` - and they are the pattern
+for the rest. A twelfth, `yankring`, is in the engine and deliberately *not*
+bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -103,9 +104,18 @@ it walked the carets through IntelliJ's `CaretModel.runForEachCaret` and wrapped
 each one back into an `IjVimCaret` to hand to engine code. Open the file before
 believing the estimate.
 
-The inverse also holds. `yankring` imports no IntelliJ at all and still did not
-compile for JS, because `Math.floorMod` is `java.lang.Math` and needs no import. An
-import list overstates what is IntelliJ-shaped and understates what is JVM-shaped.
+The inverse also holds, and it is the half that actually costs time. `yankring`
+imports no IntelliJ at all and still did not compile for JS, because
+`Math.floorMod` is `java.lang.Math` and needs no import. `argtextobj` was the same
+story four times over: `Character.isWhitespace`, `Character.isJavaIdentifierPart`,
+`Character.isJavaIdentifierStart` and six `assert` calls - `kotlin.assert` is
+JVM-only - none of which appear in an import list. An import list overstates what
+is IntelliJ-shaped and understates what is JVM-shaped.
+
+The engine already answers most of those: `isVimWhitespace`, `isIdentifierPart` and
+now `isIdentifierStart` in `helper/Characters.kt` are the JDK's own rules spelled
+out for both targets, and `StrictMode.assert` is IdeaVim's idiom for an internal
+invariant. Look there before writing an approximation.
 
 ### How an extension is meant to reach VS Code
 
