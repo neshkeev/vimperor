@@ -15,6 +15,8 @@ import com.maddyhome.idea.vim.extension.argtextobj.init as argTextObjInit
 import com.maddyhome.idea.vim.extension.camelcasemotion.init as camelCaseMotionInit
 import com.maddyhome.idea.vim.extension.commentary.COMMENTARY_COMMAND
 import com.maddyhome.idea.vim.extension.commentary.init as commentaryInit
+import com.maddyhome.idea.vim.extension.exchange.disposeExchange
+import com.maddyhome.idea.vim.extension.exchange.init as exchangeInit
 import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
@@ -130,6 +132,10 @@ internal object VsCodeExtensions {
     // `vim-highlightedyank`: the text a yank covered flashes, so you can see what you took.
     // `g:highlightedyank_highlight_duration` and `..._color` set how long and what colour.
     "highlightedyank" to { api -> api.highlightedYankInit() },
+
+    // `vim-exchange`: `cx{motion}` marks a region, `cx` on a second one swaps the two. `cxx` for
+    // lines, `X` in visual, `cxc` to forget the mark.
+    "exchange" to { api -> api.exchangeInit() },
   )
 
   /**
@@ -154,6 +160,9 @@ internal object VsCodeExtensions {
     // Its yank and mode listeners, which go straight onto `listenersNotifier` rather than through
     // the thin API's listener scope - so no owner covers them - plus any highlight still showing.
     "highlightedyank" to { disposeHighlightedYank() },
+
+    // A region marked and never exchanged, and the highlight showing where it is.
+    "exchange" to { disposeExchange() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

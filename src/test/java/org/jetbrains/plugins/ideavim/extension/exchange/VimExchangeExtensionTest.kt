@@ -10,7 +10,9 @@ package org.jetbrains.plugins.ideavim.extension.exchange
 
 import com.intellij.openapi.editor.markup.HighlighterTargetArea
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.extension.exchange.VimExchangeExtension
+import com.maddyhome.idea.vim.extension.exchange.pendingExchangeHighlight
+import com.maddyhome.idea.vim.newapi.vim
+import com.maddyhome.idea.vim.thinapi.IjHighlightId
 import com.maddyhome.idea.vim.state.mode.Mode
 import org.jetbrains.plugins.ideavim.VimBehaviorDiffers
 import org.jetbrains.plugins.ideavim.VimTestCase
@@ -252,7 +254,7 @@ class VimExchangeExtensionTest : VimTestCase() {
     configureByText(before)
     typeText(injector.parser.parseKeys("Vj" + "X"))
 
-    assertHighlighter(0, 19, HighlighterTargetArea.LINES_IN_RANGE)
+    assertHighlighter(0, 19, HighlighterTargetArea.EXACT_RANGE)
 
     // Exit vim-exchange
     exitExchange()
@@ -408,7 +410,7 @@ class VimExchangeExtensionTest : VimTestCase() {
     // Note that this is the range of the motion. The implementation will select the text with linewise 'V', so the
     // correct text is yanked. The LINES_IN_RANGE means the highlight is drawn across the whole line
     // so the correct text is
-    assertHighlighter(4, 14, HighlighterTargetArea.LINES_IN_RANGE)
+    assertHighlighter(4, 14, HighlighterTargetArea.EXACT_RANGE)
 
     // Exit vim-exchange
     exitExchange()
@@ -427,7 +429,7 @@ class VimExchangeExtensionTest : VimTestCase() {
 
     // Note that this is the range of the motion. The implementation will select the text with linewise 'V', so the
     // correct text is yanked. The LINES_IN_RANGE means the highlight is drawn across the whole line
-    assertHighlighter(0, 4, HighlighterTargetArea.LINES_IN_RANGE)
+    assertHighlighter(0, 4, HighlighterTargetArea.EXACT_RANGE)
 
     // Exit vim-exchange
     exitExchange()
@@ -437,9 +439,16 @@ class VimExchangeExtensionTest : VimTestCase() {
     typeText(injector.parser.parseKeys("cxc"))
   }
 
+  /**
+   * The highlight on the region waiting for its partner.
+   *
+   * Reached through the extension rather than through the editor's user data, because the extension
+   * is in `vim-engine` now and the engine has no per-editor storage. What comes back is a
+   * `HighlightId`, which on this host wraps the same `RangeHighlighter` this used to read directly.
+   */
   private fun assertHighlighter(start: Int, end: Int, area: HighlighterTargetArea) {
-    val currentExchange = fixture.editor.getUserData(VimExchangeExtension.Util.EXCHANGE_KEY)!!
-    val highlighter = currentExchange.getHighlighter()!!
+    val id = pendingExchangeHighlight(fixture.editor.vim)!! as IjHighlightId
+    val highlighter = id.ijHighlighter
     kotlin.test.assertEquals(start, highlighter.startOffset)
     kotlin.test.assertEquals(end, highlighter.endOffset)
     kotlin.test.assertEquals(area, highlighter.targetArea)

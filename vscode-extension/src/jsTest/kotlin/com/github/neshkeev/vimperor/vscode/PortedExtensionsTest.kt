@@ -443,6 +443,95 @@ class PortedExtensionsTest {
     assertEquals("function(a, b)\n", session.content, "nothing is deleted when the setting is unusable")
   }
 
+  // ---- exchange ------------------------------------------------------------------------------------
+
+  /**
+   * `vim-exchange`: `cx{motion}` marks a region, `cx` over a second one swaps the two.
+   *
+   * The fixtures are the plugin's own `VimExchangeExtensionTest`. What this adds is that the mark
+   * survives on a host where it is a decoration rather than an IntelliJ `RangeHighlighter`, and
+   * that the state finds its way from one `cx` to the next without the editor user data IdeaVim
+   * kept it in.
+   */
+  @Test
+  fun `test cx swaps two words`() {
+    val session = Session("The quick brown fox catch over\n", "exchange")
+    session.type("ww")
+
+    session.type("cxe")
+    session.type("w")
+    session.type("cxe")
+
+    assertEquals("The quick fox brown catch over\n", session.content)
+  }
+
+  @Test
+  fun `test it works right to left as well`() {
+    val session = Session("The quick brown fox catch over\n", "exchange")
+    session.type("www")
+
+    session.type("cxe")
+    session.type("b")
+    session.type("cxe")
+
+    assertEquals("The quick fox brown catch over\n", session.content)
+  }
+
+  /** `cxx` is the linewise form, and `.` repeats the second half of an exchange. */
+  @Test
+  fun `test cxx swaps two lines`() {
+    val session = Session("one\ntwo\nthree\n", "exchange")
+
+    session.type("cxx")
+    session.type("j")
+    session.type("cxx")
+
+    assertEquals("two\none\nthree\n", session.content)
+  }
+
+  /** `X` in visual mode, which is the same operator over a selection. */
+  @Test
+  fun `test X exchanges a visual selection`() {
+    val session = Session("The quick brown fox catch over\n", "exchange")
+    session.type("ww")
+
+    session.type("veX")
+    session.type("w")
+    session.type("veX")
+
+    assertEquals("The quick fox brown catch over\n", session.content)
+  }
+
+  /**
+   * The first `cx` marks and lights the region; the second swaps and takes the light off. That the
+   * highlight goes is the half a leak would show up in, since nothing else removes it.
+   */
+  @Test
+  fun `test the marked region is highlighted until the exchange happens`() {
+    val session = Session("The quick brown fox catch over\n", "exchange")
+    session.type("ww")
+
+    session.type("cxe")
+    assertEquals(1, session.fake.decorations.values.count { it.isNotEmpty() }, "the mark is showing")
+
+    session.type("w")
+    session.type("cxe")
+    assertEquals(0, session.fake.decorations.values.count { it.isNotEmpty() }, "and gone once it happened")
+  }
+
+  /** `cxc` forgets a mark, which is the other way a pending exchange ends. */
+  @Test
+  fun `test cxc clears a pending exchange`() {
+    val session = Session("The quick brown fox catch over\n", "exchange")
+    session.type("ww")
+    session.type("cxe")
+
+    session.type("cxc")
+
+    assertEquals(0, session.fake.decorations.values.count { it.isNotEmpty() })
+    assertEquals("The quick brown fox catch over\n", session.content, "and the buffer is untouched")
+  }
+
   // ---- textobj-indent ------------------------------------------------------------------------------
 
   /**

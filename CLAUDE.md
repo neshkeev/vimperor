@@ -32,15 +32,16 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 13 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 12 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
-Thirteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
+Fourteen are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
-`targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary` and
-`highlightedyank` - and they are the pattern for the rest. A fourteenth,
-`yankring`, is in the engine and deliberately *not* bundled: see below. Each lives in
+`targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
+`highlightedyank` and `exchange` - and they are the pattern for the rest. A
+fifteenth, `yankring`, is in the engine and deliberately *not* bundled: see below.
+Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -69,8 +70,13 @@ make them so. Toggling a comment needs to know that a comment is `//` here and `
 there; a flash that fades needs a timer. Both are facts about the host, so the
 engine names the capability - `injector.commentService`, `VimApplication.schedule`,
 `VimHighlightingService.addSearchHighlighter` - and each host supplies it. In every
-case both hosts already had it and neither exposed it. What is left of `sneak` and
-`exchange` is the same shape: a capability to name, not code to move.
+case both hosts already had it and neither exposed it, and `exchange` then needed
+nothing new at all - the two seams those two added were the whole of its debt.
+
+The engine has **no per-editor storage**, and `IjVimEditor` throws from `equals` so
+it cannot be a map key either. An extension that kept state in IntelliJ's editor user
+data keys it by `editor.getPath()` instead - see `exchange`. `sneak` is the last one
+of this shape.
 
 A candidate is an extension whose *body* uses only the thin API and the engine,
 whatever its registration does. Screen by compiling, not by grepping imports - the

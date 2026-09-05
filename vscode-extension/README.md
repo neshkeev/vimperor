@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 13 of IdeaVim's 26 bundled extensions —
-  surround, matchit, sneak and the rest — are not ported yet. Thirteen are, and they are enabled
+- **Vim plugins.** There is no `pack/` directory, and 12 of IdeaVim's 26 bundled extensions —
+  surround, matchit, sneak and the rest — are not ported yet. Fourteen are, and they are enabled
   the way you would in IdeaVim:
 
   ```vim
@@ -108,6 +108,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'vim-scripts/argtextobj.vim'        " ia aa — one argument of a call, nesting and strings and all
   Plug 'tpope/vim-commentary'              " gc{motion}, gcc, gcu and :Commentary
   Plug 'machakann/vim-highlightedyank'     " the text a yank covered flashes
+  Plug 'tommcdo/vim-exchange'              " cx{motion} marks a region, cx on a second swaps them
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that

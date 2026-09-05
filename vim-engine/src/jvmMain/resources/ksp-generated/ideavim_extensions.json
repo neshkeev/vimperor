@@ -25,6 +25,11 @@
     "className": "com.maddyhome.idea.vim.extension.commentary.CommentaryKt"
   },
   {
+    "extensionName": "exchange",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.exchange.ExchangeKt"
+  },
+  {
     "extensionName": "highlightedyank",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.highlightedyank.HighlightedYankKt"

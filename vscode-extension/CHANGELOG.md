@@ -25,5 +25,6 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
   `crm` to recase a word, and `:S`, a substitute that carries the case of what it replaced) and
   `textobj-indent` (`ai` `ii` `aI` — the block at the caret's indentation level), `argtextobj`
   (`ia` `aa` — one argument of a call), `commentary` (`gc{motion}`, `gcc`, `gcu`, `:Commentary`) and
-  `highlightedyank` (the text a yank covered flashes), each enabled with the `Plug` line you would
-  use in IdeaVim.
+  `highlightedyank` (the text a yank covered flashes) and `exchange` (`cx{motion}` marks a region,
+  `cx` over a second one swaps the two), each enabled with the `Plug` line you would use in
+  IdeaVim.
