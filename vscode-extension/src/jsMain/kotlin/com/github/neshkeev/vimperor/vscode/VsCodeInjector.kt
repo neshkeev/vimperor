@@ -103,6 +103,11 @@ open class VsCodeInjector(
    * this runs outside a window.
    */
   private val symbols: DocumentSymbols = DocumentSymbols.None,
+  /**
+   * How `q:`'s buffer is opened. Injectable so a test need not wait on a promise for the thing it
+   * is about to press a key in.
+   */
+  private val openVirtualBuffer: (String, (TextDocument) -> Unit) -> Unit = ::openUntitledDocument,
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -230,6 +235,17 @@ open class VsCodeInjector(
 
   /** `<C-W>+` and `:resize`, over the editor groups. See [VsCodeWindowResize]. */
   override val windowResize: VimWindowResizeService by lazy { VsCodeWindowResize(hostCommands) }
+
+  /** The buffer behind `q:`, `q/` and `q?`. See [VsCodeVirtualBuffers]. */
+  override val virtualBufferGroup: VirtualBufferGroup by lazy {
+    VsCodeVirtualBuffers(hostCommands, openVirtualBuffer)
+  }
+
+  /**
+   * `q:` itself, which is the engine's now - it never had a line of host in it. See
+   * [SearchWindowGroupBase], which was `IjSearchWindowGroup` with no `com.intellij` import in it.
+   */
+  override val searchWindowGroup: SearchWindowGroup by lazy { SearchWindowGroupBase() }
 
   /** A coloured range an extension asked for. See [VsCodeHighlightingService]. */
   override val highlightingService: VimHighlightingService by lazy { VsCodeHighlightingService() }

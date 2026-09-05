@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.api.VimCaretListener
 import com.maddyhome.idea.vim.api.VimDocument
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimEditorBase
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
@@ -135,6 +136,25 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   private val identity: String = "${nativeEditor.document.uri.scheme}://${nativeEditor.document.uri.path}"
 
   override fun getPath(): String = identity
+
+  /**
+   * Whether this editor is Vim's command-line window, and which flavour of it.
+   *
+   * The engine asks in two places that matter: `<CR>` runs the line rather than moving down, and
+   * `q:` inside `q:` reports E1292 rather than nesting. Both go through this, and both answer null
+   * for every ordinary editor.
+   *
+   * Read from [VsCodeVirtualBuffers] rather than held here, so that one thing knows what is open.
+   * An editor is created and thrown away whenever VS Code hands out a new `TextEditor` for the same
+   * document - moving a file to a split is enough - and a flag on the editor would go with it.
+   */
+  override fun getVirtualBufferKind(): VirtualBufferKind? = virtualBuffers()?.kindOf(identity)
+
+  /** The editor `q:` was opened from, which is where `<CR>` runs the line. */
+  override fun getCmdwinOriginalEditor(): VimEditor? = virtualBuffers()?.originalEditorFor(identity)
+
+  private fun virtualBuffers(): VsCodeVirtualBuffers? =
+    injector.virtualBufferGroup as? VsCodeVirtualBuffers
 
   override fun extractProtocol(): String? = nativeEditor.document.uri.scheme
 

@@ -60,12 +60,14 @@ class VimHost(
    * cache that asked a stub for symbols would only ever be told nothing, slowly.
    */
   private val symbols: DocumentSymbols = DocumentSymbols.None,
+  /** How `q:`'s buffer is opened. See [VsCodeVirtualBuffers]; injectable for the same reason. */
+  private val openVirtualBuffer: (String, (TextDocument) -> Unit) -> Unit = ::openUntitledDocument,
 ) : HostCommandRunner {
 
   private val vimInjector =
     VsCodeInjector(
       sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener, matchHighlighter,
-      signDisplay, symbols,
+      signDisplay, symbols, openVirtualBuffer,
     )
 
   /**
@@ -319,6 +321,17 @@ class VimHost(
         // computed was against text that is no longer there. Saying so beats writing over it.
         sink.error("Vimperor: the document changed while a command was running, so it was not applied.")
       }
+    }
+    // A keystroke normally edits the editor it was typed into, and exactly one does not: `<CR>` in
+    // the command-line window runs its line against the editor `q:` was opened from. Flushing only
+    // the editor the key went to left that edit in the buffer and never on screen - `:s` from `q:`
+    // appeared to do nothing.
+    //
+    // Every other flush here is a comparison and nothing else: `DocumentBuffer.flush` returns at
+    // once when the text is already what it last wrote, which it is for every editor a keystroke
+    // did not touch.
+    for (other in editors.values) {
+      if (other !== editor) other.flush()
     }
     // Vim owns the gutter and the language mode, so the host writes them whenever Vim's answer
     // has changed - which the option listeners alone cannot guarantee. See [watchLineNumbers].

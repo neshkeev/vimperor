@@ -252,8 +252,9 @@ class VsCodeUnimplementedTest {
     /**
      * What is not built. Each line is one missing piece of host and the keys that reach it.
      *
-     * **One entry left, and it is Vim's command-line window.** Everything else has come off, by
-     * one of the three ways a key leaves this list, and the three are worth telling apart.
+     * **The list is empty.** Every key the engine registers now reaches something this host has
+     * built, or a refusal that is itself an answer. It got there by one of three routes, and they
+     * are worth telling apart because the second is easy to miss.
      *
      * A service gets written, which is how the ordinary Vim keys went, up to `S`.
      *
@@ -268,6 +269,15 @@ class VsCodeUnimplementedTest {
      * checker and says what to do instead. `[s` and `]s` have now followed them and could not use
      * the same trick - a motion has nowhere to put a message - so they answer `-1`, the engine's
      * "no such motion", and beep. A beep is what Vim does in a file with nothing to find.
+     *
+     * `q:`, `q/` and `q?` were the last, and they went by the first route with a twist worth
+     * keeping: most of the work turned out to be on the wrong side of the line already.
+     * `IjSearchWindowGroup` had no `com.intellij` import in it at all - it is
+     * `SearchWindowGroupBase` in the engine now - and what a host actually owes is one level down,
+     * a light editor over no file. See `VsCodeVirtualBuffers`.
+     *
+     * An empty list is not the end of the port. It says every key lands somewhere, not that every
+     * key is right; the fixtures and the suites say that.
      */
     const val EXPECTED_SETTINGS = """
 """
@@ -275,9 +285,6 @@ class VsCodeUnimplementedTest {
     const val EXPECTED_EX = """
 """
 
-    const val EXPECTED = """
-the VS Code host does not provide searchWindowGroup yet
-    q/ q: q?
-"""
+    const val EXPECTED = """"""
   }
 }

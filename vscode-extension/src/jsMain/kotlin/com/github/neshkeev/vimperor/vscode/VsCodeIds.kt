@@ -182,6 +182,16 @@ internal object VsCodeCommands {
 
   const val SAVE = "workbench.action.files.save"
   const val SAVE_ALL = "workbench.action.files.saveAll"
+  /**
+   * Closes the command-line window without asking to save it.
+   *
+   * `q:` is an untitled document - the only kind of non-file editor VS Code lets an extension write
+   * to - and closing a dirty untitled document normally raises a save prompt. Reverting first
+   * leaves nothing to ask about, which is right for a scratch buffer whose whole life is one
+   * keystroke. See [VsCodeVirtualBuffers].
+   */
+  const val REVERT_AND_CLOSE = "workbench.action.revertAndCloseActiveEditor"
+
   const val CLOSE_ACTIVE_EDITOR = "workbench.action.closeActiveEditor"
   const val CLOSE_OTHER_EDITORS = "workbench.action.closeOtherEditors"
 
@@ -262,7 +272,7 @@ internal object VsCodeCommands {
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
     SELECT_NEXT_SUGGESTION, SELECT_PREV_SUGGESTION,
-    SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
+    SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS, REVERT_AND_CLOSE,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,
     FOCUS_ABOVE_GROUP, FOCUS_BELOW_GROUP, FOCUS_LEFT_GROUP, FOCUS_RIGHT_GROUP,

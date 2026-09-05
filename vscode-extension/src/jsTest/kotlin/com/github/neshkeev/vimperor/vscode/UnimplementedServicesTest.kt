@@ -106,11 +106,16 @@ class UnimplementedServicesTest {
      * switched off and on from its status-bar icon; this host's on and off are VS Code's own
      * `activate` and `deactivate`, in `Extension.kt`.
      *
-     * `searchWindowGroup` and `virtualBufferGroup` are Vim's command-line window - `q:`, `q/` - and
-     * the buffers behind it. A real editor buffer that is not a file, holding history, that closes
-     * on Enter.
-     *
      * Gone from this list, and why the reasons were wrong:
+     *
+     * `searchWindowGroup` and `virtualBufferGroup` were described here as "Vim's command-line
+     * window and the buffers behind it - a real editor buffer that is not a file, holding history,
+     * that closes on Enter". Accurate, and it hid that the two were not the same problem.
+     * `searchWindowGroup` is the *feature* and had no host in it whatsoever - `IjSearchWindowGroup`
+     * was in `src/main/java` with not one `com.intellij` import, and is `SearchWindowGroupBase` in
+     * the engine now, shared. What a host owes is one level down: `virtualBufferGroup`, an editor
+     * over no file. VS Code has exactly one editable kind, an untitled document, and the save
+     * prompt it would raise on the way out is answered by reverting before closing.
      *
      * `highlightingService` adds a coloured range by request, and was described here as reachable
      * from nowhere but `Transaction.addHighlight` in the thin API - which was true and was the wrong
@@ -139,8 +144,6 @@ class UnimplementedServicesTest {
      */
     val EXPECTED = """
       pluginActivator
-      searchWindowGroup
-      virtualBufferGroup
     """.trimIndent()
   }
 }

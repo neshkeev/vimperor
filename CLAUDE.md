@@ -34,8 +34,8 @@ largest outside check on the port and it has to survive the deletion, so
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 14 IntelliJ-only options,
-12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
-`pluginActivator`, which nothing in the engine calls, and the command-line window.
+12 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+`pluginActivator`, which nothing in the engine calls.
 
 **Fourteen, not twenty-four.** This file said 24 and the number counted the file
 rather than the concept, exactly as "26 extensions" did: `IjOptions` declares 24 and
@@ -45,15 +45,33 @@ options this host already has. The fourteen that are left are the `idea*` family
 `lookupkeys`, `trackactionids`, `visualdelay`, `closenotebooks`, `oldundo` and
 `unifyjumps`, and most describe IDE behaviour VS Code has no analogue for.
 
-**The command-line window is the only key left that reaches an unbuilt part of this
-host.** `VsCodeUnimplementedTest` presses everything the engine registers and asserts
-the list; it is down to one line, `q:` `q/` `q?`. Getting there took three kinds of
-answer and they are worth telling apart, because the second kind is easy to miss: a
-service gets written; or a service turns out to have been written already under
-another name, which is how `[m` and `]m` left - their note said "needs a language
-server" and stopped being true when `DocumentSymbols` cached the Outline tree; or the
-honest answer is *no*, and saying no is an implementation - `[s` and `]s` answer -1,
-the engine's "no such motion", and beep.
+**Every key the engine registers now reaches something this host has built, or a
+refusal that is itself an answer.** `VsCodeUnimplementedTest` presses all of them and
+asserts the list; the list is empty. Getting there took three kinds of answer and they
+are worth telling apart, because the second is easy to miss: a service gets written;
+or a service turns out to have been written already under another name, which is how
+`[m` and `]m` left - their note said "needs a language server" and stopped being true
+when `DocumentSymbols` cached the Outline tree; or the honest answer is *no*, and
+saying no is an implementation - `[s` and `]s` answer -1, the engine's "no such
+motion", and beep.
+
+`q:`, `q/` and `q?` were the last, and they went the second way with a twist worth
+keeping. The feature is history in a buffer you can edit, and `IjSearchWindowGroup` -
+in `src/main/java`, named `Ij` - had **no `com.intellij` import in it at all**. It is
+`SearchWindowGroupBase` in the engine now. What a host actually owes is one level
+down: `VirtualBufferGroup`, an editor over no file. VS Code has exactly one editable
+kind of those, an untitled document, and the save prompt it would raise on the way out
+is answered by reverting before closing.
+
+That port also found a hole nothing else could have: **a keystroke can edit an editor
+other than the one it was typed into**, which is what `<CR>` in the command-line window
+does, and `VimHost.handle` flushed only the editor the key went to. `:s` from `q:`
+edited the buffer and never reached the screen. Every editor is flushed now, which
+costs a comparison each - `DocumentBuffer.flush` returns at once when the text is
+already what it last wrote.
+
+An empty list is not the end of the port. It says every key lands somewhere, not that
+every key is right; the fixtures and the suites say that.
 
 **Twenty-four, not twenty-six.** This file said 26 for a long time and the number was
 never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points, and
