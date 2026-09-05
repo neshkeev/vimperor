@@ -41,6 +41,16 @@ internal object VsCodeCommands {
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
   /**
+   * `K` - what Vim calls the keyword-lookup program and every IDE answers with documentation.
+   *
+   * Vim runs `'keywordprg'`, which is `man` by default; IdeaVim substitutes IntelliJ's Quick
+   * Documentation, on the grounds that a documentation popup is what a user pressing `K` in an IDE
+   * wants. This is that same substitution with VS Code's own hover, which is where its
+   * documentation lives.
+   */
+  const val SHOW_HOVER = "editor.action.showHover"
+
+  /**
    * Where the functions and classes in a file are, asked of whichever language server owns it.
    *
    * One of VS Code's "execute a provider" commands, which is how an extension reaches a provider it
@@ -226,7 +236,7 @@ internal object VsCodeCommands {
   val all: List<String> = listOf(
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
-    REVEAL_DEFINITION, DOCUMENT_SYMBOLS, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
+    REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,

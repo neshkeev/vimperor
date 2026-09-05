@@ -44,9 +44,9 @@ import com.maddyhome.idea.vim.vimscript.model.functions.toVimFuncref
  * The Vim commands that vim-engine does not declare.
  *
  * Nearly all of Vim lives in the engine - 250 of the 264 actions IdeaVim registers. The remaining
- * fourteen are declared by the IntelliJ plugin, and most of those are IntelliJ furniture: inlays,
- * the plugin toggle, a redraw, `K` for quick documentation, the insert-mode arrow keys that
- * delegate to the IDE's own caret movement. A host that is not IntelliJ has no use for any of it.
+ * fourteen are declared by the IntelliJ plugin, and some of those are IntelliJ furniture: inlays,
+ * the plugin toggle, a redraw, the insert-mode arrow keys that delegate to the IDE's own caret
+ * movement. A host that is not IntelliJ has no use for any of it.
  *
  * But four of the fourteen are ordinary Vim, declared there only because IdeaVim's implementations
  * reach for the IDE: `J` and `gJ` consult the `ideajoin` option and can hand the join to IntelliJ's
@@ -59,6 +59,10 @@ import com.maddyhome.idea.vim.vimscript.model.functions.toVimFuncref
  *
  * `g@` is the fourth, and it is here for a different reason: IdeaVim's version reaches for the IDE
  * only to compute the motion's range, and the engine can compute that itself.
+ *
+ * `K` is a fifth kind again: it is not furniture and it is not engine work, it is a *substitution*.
+ * Vim runs `'keywordprg'`; IdeaVim runs IntelliJ's Quick Documentation instead; this runs VS Code's
+ * hover. Each host answers "what is this thing" in its own way, so each declares its own.
  */
 object VsCodeCommandProvider : CommandProvider {
   override fun getCommands(): Collection<LazyVimCommand> = listOf(
@@ -69,6 +73,7 @@ object VsCodeCommandProvider : CommandProvider {
     command(".", MappingMode.NORMAL, "RepeatChangeAction") { RepeatChangeAction() },
     command("g@", MappingMode.NORMAL, "OperatorAction") { OperatorAction() },
     command("g@", MappingMode.VISUAL, "VisualOperatorAction") { VisualOperatorAction() },
+    command("K", MappingMode.NORMAL, "VimQuickJavaDoc") { VimQuickDocumentation() },
     command("<Del>", MappingMode.INSERT, "VimEditorDelete") { VimEditorDelete() },
     command("<Tab>", MappingMode.INSERT, "VimEditorTab") { VimEditorTab() },
     command("<Up>", MappingMode.INSERT, "VimEditorUp") { VimEditorUp() },
@@ -83,6 +88,34 @@ object VsCodeCommandProvider : CommandProvider {
     className: String,
     factory: () -> EditorActionHandlerBase,
   ) = LazyVimCommand(setOf(injector.parser.parseKeys(keys)), setOf(mode), className, factory)
+}
+
+/**
+ * `K` - documentation for whatever is under the caret.
+ *
+ * Vim runs the program named by `'keywordprg'`, which is `man` unless the filetype says otherwise.
+ * IdeaVim substitutes IntelliJ's Quick Documentation, and this substitutes VS Code's hover, which
+ * is the same trade for the same reason: in an editor that already knows what the symbol is, a
+ * documentation popup is what pressing `K` is for.
+ *
+ * It keeps IdeaVim's action id - `VimQuickJavaDoc` - because that is the name a `sethandler` line
+ * or an `:action` mapping in a borrowed config would use. The class is named for what it does.
+ *
+ * Not waited on: a popup changes what is on screen and not what is in the buffer, so holding the
+ * keyboard for it would only make the editor feel slow.
+ */
+internal class VimQuickDocumentation : VimActionHandler.SingleExecution() {
+  override val type: Command.Type = Command.Type.OTHER_READONLY
+
+  override fun execute(
+    editor: VimEditor,
+    context: ExecutionContext,
+    cmd: Command,
+    operatorArguments: OperatorArguments,
+  ): Boolean {
+    injector.actionExecutor.executeAction(editor, VsCodeCommands.SHOW_HOVER, context)
+    return true
+  }
 }
 
 /**
