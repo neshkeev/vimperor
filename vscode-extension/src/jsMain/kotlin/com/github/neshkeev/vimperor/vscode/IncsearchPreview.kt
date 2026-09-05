@@ -8,10 +8,15 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.maddyhome.idea.vim.api.IncsearchPreviewRequest
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.globalOptions
+import com.maddyhome.idea.vim.api.incsearchPreviewRequest
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.api.pattern
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.helper.exitVisualMode
+import com.maddyhome.idea.vim.state.mode.inVisualMode
 
 /**
  * `'incsearch'` - the matches shown while a search is still being typed.
@@ -29,6 +34,12 @@ import com.maddyhome.idea.vim.common.TextRange
  * moving a caret in Visual mode is what moves the end of a selection. Fourteen of IdeaVim's
  * fixtures say so. The saved offset is the one every search starts from, so typing another
  * character re-searches from where the user was rather than from the previous match.
+ *
+ * `'incsearch'` is not only about `/` and `?`. Vim previews `:s`, `:g` and `:v` too, and those need
+ * the command line taken apart - a range, a command name, a separator, and only then a pattern.
+ * That parse is [incsearchPreviewRequest], in the engine where both hosts can reach it; it used to
+ * be a private method of the plugin's `ExEntryPanel`, next to a Swing document listener, which is
+ * the only reason this host previewed one prompt and not the other.
  */
 internal class IncsearchPreview(private val highlighter: Highlighter) {
 
@@ -54,20 +65,37 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
   fun update(editor: VimEditor, label: String, text: String) {
     val vsCode = editor as? VsCodeEditor ?: return
     if (!injector.globalOptions().incsearch) return
-    val direction = directionOf(label) ?: return
     val from = caretBefore ?: vsCode.primaryCaret().offset.also { caretBefore = it }
 
-    val pattern = patternIn(text, label)
+    val request = incsearchPreviewRequest(vsCode, label, text)
+    if (request !is IncsearchPreviewRequest.Show) {
+      // `Reset` means `'hlsearch'` had something of its own on screen before the preview covered it
+      // and this is the moment to give it back; `None` means there was never anything to show.
+      clear(vsCode)
+      restoreCaret(vsCode)
+      if (request is IncsearchPreviewRequest.Reset) {
+        injector.searchGroup.updateSearchHighlightsAfterGlobalCommand()
+      }
+      return
+    }
+
+    val pattern = request.pattern()
     if (pattern.isEmpty()) {
       clear(vsCode)
       restoreCaret(vsCode)
       return
     }
 
+    // A command's own range is where it looks *and* where it starts looking: `:%s/dolor` previews
+    // the first match in the file, not the first one after the caret. A search prompt has no range
+    // and starts from where the prompt opened.
+    val startLine = request.searchRange?.startLine ?: 0
+    val endLine = request.searchRange?.endLine ?: -1
+
     // A pattern being typed is an unfinished one - `\(` on its way to `\(foo\)` is not a regex yet -
     // so a failure here is the normal state of a half-typed search, not an error to report.
     val matches = try {
-      injector.searchHelper.findAll(vsCode, pattern, 0, -1, shouldIgnoreCase(pattern))
+      injector.searchHelper.findAll(vsCode, pattern, startLine, endLine, shouldIgnoreCase(pattern))
     } catch (e: Throwable) {
       emptyList()
     }
@@ -80,8 +108,18 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
 
     showing = true
     highlighter.showMatches(vsCode, matches)
-    val current = nextMatch(matches, from, direction)
+    val current = if (request.isExCommand) {
+      matches.first()
+    } else {
+      nextMatch(matches, from, directionOf(label) ?: 1)
+    }
     highlighter.showCurrentMatch(vsCode, current)
+    // A command's preview has nothing to do with the selection, so the selection goes: `V` then
+    // `:<C-U>%s/foo` is a command over the whole file that happens to have been started from Visual
+    // mode. `v` then `/foo` is the opposite - there the caret move *is* the selection move - which
+    // is why this is only done for a command. Exiting Visual leaves the command line open, because
+    // the engine's mode is Command-line with Visual pending.
+    if (request.isExCommand && vsCode.inVisualMode) vsCode.exitVisualMode()
     // The engine's move rather than the native one, because in Visual mode moving the caret is what
     // moves the end of the selection - which is the whole of what this preview shows there.
     vsCode.primaryCaret().moveToOffset(current.startOffset)
@@ -133,31 +171,6 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
       "/" -> 1
       "?" -> -1
       else -> null
-    }
-
-    /**
-     * The pattern out of what has been typed, which is not all of it: `/foo/e+1` searches for `foo`.
-     *
-     * Vim ends the pattern at the first unescaped separator, and the separator is whichever of `/`
-     * or `?` opened the prompt. A trailing backslash escapes the separator that has not been typed
-     * yet, so it belongs to the pattern.
-     */
-    fun patternIn(text: String, label: String): String {
-      val separator = label.firstOrNull() ?: return text
-      val end = StringBuilder()
-      var index = 0
-      while (index < text.length) {
-        val character = text[index]
-        if (character == '\\' && index + 1 < text.length) {
-          end.append(character).append(text[index + 1])
-          index += 2
-          continue
-        }
-        if (character == separator) break
-        end.append(character)
-        index++
-      }
-      return end.toString()
     }
 
     /**

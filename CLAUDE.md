@@ -28,22 +28,20 @@ away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
 repository. It is kept for its tests. 11,727 of them, plus the 1,047 fixtures the
-VS Code host mines out of `src/test` and replays (1,044 pass). That corpus is the
+VS Code host mines out of `src/test` and replays (1,045 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 14 IntelliJ-only options,
-3 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Three, and two of them name an IntelliJ action.** Until recently it was twelve, and
-nine of those were one bug about carets seen from eight angles plus one that was never
-this host's bug at all - which is the second time a fixture turned out to be measuring
-the harness. The remaining three are `ideajoin`, an `<Action>` mapping that runs
-`EditorToggleCase`, and incsearch previewing an *ex command* - `:%s/dolor` shows its
-match while it is still being typed, which needs the command line parsed for a range
-and a pattern before it runs. Only the last is work this host can do.
+**Two, and both name an IntelliJ action.** Until recently it was twelve. There is nothing
+left on that list this host could do and has not: `ideajoin` is IntelliJ's language-aware
+join and `partial Action mapping` runs `EditorToggleCase`, an action id with no VS Code
+command behind it - there is no toggle-case command, only `transformToUppercase` and its
+twin.
 
 **What the eight had in common was blockwise Visual, and the fix was three rules a host
 owes the engine.** A block's caret goes in the *active corner's* column, not the block's
@@ -63,6 +61,22 @@ primary flag is usually one that has never run anything: without the mirror `1v`
 once and not twice. `vimSelectionStart` is the same story with a different default -
 IdeaVim's is the far end of whatever that caret has selected, this host's was zero, and a
 caret drawing a linewise selection from its own anchor drew one from the top of the file.
+
+**The tenth was `'incsearch'` previewing an ex command, and it was in the plugin all
+along.** This file had it recorded as needing "the command line parsed for a range and a
+pattern before it is run, which is a different piece of machinery from previewing `/`".
+True, and the machinery already existed: `parseCommandLineForPreview` in `ExEntryPanel`,
+sitting in `src/main/java` beside a Swing document listener with no `com.intellij` in the
+body of it. Same shape as `IjSearchWindowGroup`, and the same answer - it is
+`incsearchPreviewRequest` in `vim-engine` now, 64 lines lighter in the plugin, and both
+hosts read it. Vim has previewed `:s`, `:g` and `:v` since 8.0; this host previewed `/`
+and `?` only, and a test here asserted that as correct.
+
+Two things a command's preview does that a search's does not, and both are in the
+fixture: it searches from the *range* rather than from the caret, so `:%s/dolor` shows
+the first match in the file; and it **drops the Visual selection**, because `v` then
+`:<C-U>%s/foo` is a command over the whole file that merely started in Visual mode. `v`
+then `/foo` is the opposite - there the caret move *is* the selection move.
 
 **And the harness was harvesting tests IdeaVim has `@Disabled`.** Two of the twelve were
 that: `search in one time from select mode` sat here as "expected [81], actual [82]" when

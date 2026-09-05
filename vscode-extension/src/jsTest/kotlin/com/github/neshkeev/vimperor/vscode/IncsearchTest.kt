@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.state.mode.inVisualMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -192,12 +193,70 @@ class IncsearchTest {
     assertNull(session.highlighter.current, "the preview's current match belongs to the prompt")
   }
 
-  /** A `:` prompt is not a search, and a `:s` preview is a different feature Vim does not have. */
+  /**
+   * `'incsearch'` previews `:s`, `:g` and `:v` as well, which this file used to say Vim does not do.
+   *
+   * It does, and has since Vim 8.0, and IdeaVim does too - the parse that finds the pattern inside
+   * an ex command was simply in `src/main/java` where only one host could reach it.
+   */
   @Test
-  fun `test a colon command line paints nothing`() {
+  fun `test a substitute previews its pattern`() {
     val session = Session("one two one")
     session.type(":")
-    session.type("s/one/two/g")
+    session.type("s/one")
+
+    assertEquals(listOf("one", "one"), session.highlighter.matchedIn(session.text))
+    assertEquals(0, session.highlighter.current?.startOffset, "a command previews from its range, not the caret")
+  }
+
+  /** A rangeless `:s` is the current line, so a match on another line is not previewed. */
+  @Test
+  fun `test a substitute previews only inside its range`() {
+    val session = Session("one two\nthree one")
+    session.type(":")
+    session.type("s/one")
+
+    assertEquals(listOf("one"), session.highlighter.matchedIn(session.text))
+    assertEquals(0, session.highlighter.current?.startOffset)
+  }
+
+  /** `%` is the whole file, and the preview starts at the range rather than at the caret. */
+  @Test
+  fun `test a substitute over the whole file previews from the top`() {
+    val session = Session("one two\nthree one")
+    session.type("G")
+    session.type(":")
+    session.type("%s/one")
+
+    assertEquals(listOf("one", "one"), session.highlighter.matchedIn(session.text))
+    assertEquals(0, session.highlighter.current?.startOffset, "from the range's first line, not the caret's")
+  }
+
+  /**
+   * A command's preview drops the Visual selection; a search's preview extends it.
+   *
+   * `v` then `:<C-U>%s/foo` is a command over the whole file that happens to have been started from
+   * Visual mode, and Vim removes the selection rather than leaving it looking like the command's
+   * range. `v` then `/foo` is the opposite: there the caret move *is* the selection move.
+   */
+  @Test
+  fun `test a substitute preview removes the Visual selection`() {
+    val session = Session("one two one")
+    session.type("v")
+    session.type(":")
+    session.key("<C-U>")
+    session.type("%s/one")
+
+    assertEquals(false, session.host.editorFor(session.fake).inVisualMode)
+    assertEquals(0, session.caretOffset, "the caret is on the previewed match")
+  }
+
+  /** A `:` command with no pattern in it is not a preview at all. */
+  @Test
+  fun `test a colon command with no pattern paints nothing`() {
+    val session = Session("one two one")
+    session.type(":")
+    session.type("write")
 
     assertEquals(emptyList(), session.highlighter.matches)
   }

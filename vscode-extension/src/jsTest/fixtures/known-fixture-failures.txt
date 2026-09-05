@@ -5,28 +5,27 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1044 of the 1047 harvested fixtures pass. Three are left and none of them is a caret: two name an
-# IntelliJ action and the third is a piece of machinery nobody has written yet.
+# 1045 of the 1047 harvested fixtures pass, and the two left both name an IntelliJ action. There is
+# nothing on this list any more that this host could do and has not.
 #
-# The nine that left this list most recently were one bug seen from eight angles plus one that was
-# never a bug at all, and both halves are worth recording.
+# The ten that left it most recently are worth telling apart, because only eight were bugs here.
 #
-# Every multi-caret Visual and Select fixture failed because a blockwise selection put its carets in
-# the wrong column and kept carets IdeaVim does not have. A block's caret goes in the *active*
-# corner's column - which is the right edge only while the block is being drawn rightwards, so
-# `<C-V>jl` read the same either way and `<C-V>bjj` did not - and a line too short to hold the
-# block's slice contributes no caret at all. Three more followed from carets that had stopped being
-# different carets and were never merged, and one from `vimSelectionStart` defaulting to zero on a
-# caret the block had just invented. The details are at each fix; `VsCodeBlockVisualTest` is where
-# the numbers live.
+# Eight were blockwise Visual, and one bug: a block's caret goes in the *active corner's* column
+# rather than the block's right edge, a line too short to hold the block's slice contributes no
+# caret at all, carets that have stopped being different carets merge, and two pieces of per-caret
+# state have to outlive the caret that recorded them. `VsCodeBlockVisualTest` has the numbers.
 #
-# The other one was a harness bug, and it is the second of its kind: the harness was harvesting
-# tests IdeaVim has `@Disabled`. `search in one time from select mode` sat here as "expected [81],
-# actual [82]" when IdeaVim's own caret is at 82 - the test is switched off over there, with the
-# note "Ctrl-o doesn't work yet in select mode". `repeat command with execution of ij action` was
-# the same, disabled with "This test throws `Recursive runForEachCaret invocations are not
-# allowed`", and its entry here blamed the missing IntelliJ action instead. Before believing an
+# One was the harness harvesting tests IdeaVim has `@Disabled`. `search in one time from select
+# mode` sat here as "expected [81], actual [82]" when IdeaVim's own caret is at 82, and `repeat
+# command with execution of ij action` had a reason written against it - a missing IntelliJ action -
+# that was not why it failed. A disabled test does not pass over there either. Before believing an
 # entry in this file, check that the fixture passes in the plugin.
+#
+# And one was `'incsearch'` previewing an ex command, which this port had recorded as needing "a
+# different piece of machinery from previewing `/`". True, and the machinery already existed: it was
+# `parseCommandLineForPreview` in `ExEntryPanel`, in `src/main/java` next to a Swing document
+# listener, with no IntelliJ in the body of it. It is `incsearchPreviewRequest` in the engine now
+# and both hosts read it.
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #
@@ -40,10 +39,3 @@
 # whole of what VS Code offers.
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
-
-# --- Incsearch for an ex command, which is a different machine from incsearch for `/`.
-#
-# `:%s/dolor` shows its match and drops the Visual selection while it is still being typed. That
-# needs the command line parsed for a range and a pattern before it is run, where previewing `/`
-# only ever has a pattern. Nothing about it is host-shaped.
-src/test/java/org/jetbrains/plugins/ideavim/group/search/IncsearchTests.kt:test incsearch removes Visual when searching with no Visual range
