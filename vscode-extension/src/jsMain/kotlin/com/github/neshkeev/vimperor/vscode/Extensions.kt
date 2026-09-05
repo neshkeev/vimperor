@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionI
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
+import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
 import com.maddyhome.idea.vim.api.injector
@@ -107,6 +108,10 @@ internal object VsCodeExtensions {
     // snake, camel, Pascal and friends; plus `:Subvert`, a search and replace that carries the
     // case of what it replaced.
     "abolish" to { api -> api.abolishInit() },
+
+    // `vim-indent-object`: `ai` and `ii` for a block at the caret's indentation level, which in
+    // Python or YAML is the block itself.
+    "textobj-indent" to { api -> api.textObjIndentInit() },
   )
 
   /**

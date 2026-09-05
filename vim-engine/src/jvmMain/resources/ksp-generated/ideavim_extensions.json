@@ -35,6 +35,11 @@
     "className": "com.maddyhome.idea.vim.extension.textobjentire.TextObjEntireNewApiKt"
   },
   {
+    "extensionName": "textobj-indent",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.textobjindent.IndentObjectKt"
+  },
+  {
     "extensionName": "textobj-user",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.textobjuser.TextObjUserKt"

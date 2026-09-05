@@ -21,6 +21,7 @@ First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScri
   `vim-paragraph-motion` (`{` and `}` stopping at whitespace-only lines), `textobj-entire`
   (`ae`, `ie`), `mini-ai` (`ci(` from anywhere on the line), `CamelCaseMotion`, `indentwise`,
   `textobj-user` — `textobj#user#plugin()`, for declaring text objects of your own — `targets`
-  (seeking text objects: `cin(` for the next pair, `cil(` for the last) and `abolish` (`crs` `crc`
-  `crm` to recase a word, and `:S`, a substitute that carries the case of what it replaced), each
-  enabled with the `Plug` line you would use in IdeaVim.
+  (seeking text objects: `cin(` for the next pair, `cil(` for the last), `abolish` (`crs` `crc`
+  `crm` to recase a word, and `:S`, a substitute that carries the case of what it replaced) and
+  `textobj-indent` (`ai` `ii` `aI` — the block at the caret's indentation level), each enabled with
+  the `Plug` line you would use in IdeaVim.

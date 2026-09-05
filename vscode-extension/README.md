@@ -90,8 +90,8 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 17 of IdeaVim's 26 bundled extensions —
-  surround, commentary, matchit and the rest — are not ported yet. Nine are, and they are enabled
+- **Vim plugins.** There is no `pack/` directory, and 16 of IdeaVim's 26 bundled extensions —
+  surround, commentary, matchit and the rest — are not ported yet. Ten are, and they are enabled
   the way you would in IdeaVim:
 
   ```vim
@@ -104,6 +104,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'kana/vim-textobj-user'             " textobj#user#plugin() — declare text objects of your own
   Plug 'wellle/targets.vim'                " ci( from anywhere, cin( for the next pair, cil( the last
   Plug 'tpope/vim-abolish'                 " crs crc crm recase a word; :S, a case-carrying :s
+  Plug 'michaeljsmith/vim-indent-object'   " ai ii aI — the block at the caret's indentation level
   ```
 
   `yankring` is the one that compiles for this host and is deliberately left out. Its `<C-P>` works

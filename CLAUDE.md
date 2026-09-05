@@ -32,12 +32,12 @@ VS Code host mines out of `src/test` and replays (1,036 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 17 of the 26 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 16 of the 26 bundled extensions, 24 IntelliJ-only options,
 13 of the replayed fixtures, and three `TODO` seams in `VsCodeInjector`.
 
-Nine are ported - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
-`targets` and `abolish` - and they are the pattern for the rest. A tenth,
+Ten are ported - `ReplaceWithRegister`, `vim-paragraph-motion`, `textobj-entire`,
+`mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`, `targets`, `abolish`
+and `textobj-indent` - and they are the pattern for the rest. An eleventh,
 `yankring`, is in the engine and deliberately *not* bundled: see below. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
@@ -88,16 +88,24 @@ IntelliJ bridge lives in `newapi`, `helper` and `listener` and does not say
 `com.intellij` - most of what is left is a single package away, and that package
 is always `newapi`: a cast to `IjVimEditor` or `IjVimCaret` for something the
 engine can now do itself. `functextobj` and `classtextobj` are what is left in
-that group, and both also want PSI.
+that group, and both also want PSI, so neither is a move.
 
 **"Imports `newapi`" measures the import, not the debt.** `textobj-user` (489
-lines), `targets` (808) and `abolish` (786) were all on that list, and none of
-them cost more than a handful of lines. The first two cost exactly one:
+lines), `targets` (808), `abolish` (786) and `textobj-indent` (279) were all on
+that list, and none of them cost more than a handful of lines. The middle two cost
+exactly one:
 `(caret as IjVimCaret).caret.moveToInlayAwareOffset(...)`, where
 `moveToInlayAwareOffset` is a member of the engine's own `VimCaret` and the cast
 reached IntelliJ's `Caret` to call what the engine already offered. `abolish` cost
 three - `editor.ij` twice and `VimPlugin.getVariableService()`, which is
-`injector.variableService`. Open the file before believing the estimate.
+`injector.variableService` - and `textobj-indent` cost two reads and a loop, where
+it walked the carets through IntelliJ's `CaretModel.runForEachCaret` and wrapped
+each one back into an `IjVimCaret` to hand to engine code. Open the file before
+believing the estimate.
+
+The inverse also holds. `yankring` imports no IntelliJ at all and still did not
+compile for JS, because `Math.floorMod` is `java.lang.Math` and needs no import. An
+import list overstates what is IntelliJ-shaped and understates what is JVM-shaped.
 
 ### How an extension is meant to reach VS Code
 

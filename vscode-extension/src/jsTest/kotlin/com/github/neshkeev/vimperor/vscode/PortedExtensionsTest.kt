@@ -359,6 +359,60 @@ class PortedExtensionsTest {
     assertEquals("( () )\n", session.content, "the second `ib` stepped out one level")
   }
 
+  // ---- textobj-indent ------------------------------------------------------------------------------
+
+  /**
+   * `vim-indent-object`, and the reason it exists: in a language whose blocks *are* indentation,
+   * `dii` deletes the block without a parser knowing what a block is.
+   *
+   * The fixtures are the plugin's own `VimIndentObjectTest`, which is where the expectations come
+   * from - what this file adds is that they hold on a host with VS Code's document and carets.
+   */
+  private fun indented(): Session {
+    val session = Session("one\n  two\n  three\nfour\n", "textobj-indent")
+    session.type("2G")
+    return session
+  }
+
+  @Test
+  fun `test ii is the indented block alone`() {
+    val session = indented()
+
+    session.type("dii")
+
+    assertEquals("one\nfour\n", session.content)
+  }
+
+  /** `ai` takes the line that opened the block with it, which is what makes it "an" indent. */
+  @Test
+  fun `test ai takes the line above too`() {
+    val session = indented()
+
+    session.type("dai")
+
+    assertEquals("four\n", session.content)
+  }
+
+  /** `aI` takes the line below as well, so a whole `if`/`end` pair goes at once. */
+  @Test
+  fun `test aI takes the lines above and below`() {
+    val session = indented()
+
+    session.type("daI")
+
+    assertEquals("", session.content)
+  }
+
+  /** With no indentation anywhere, the block is the file - `dii` on flat text empties it. */
+  @Test
+  fun `test a file with no indentation is one block`() {
+    val session = Session("one\ntwo\nthree\n", "textobj-indent")
+
+    session.type("dii")
+
+    assertEquals("", session.content)
+  }
+
   // ---- textobj-user ----------------------------------------------------------------------------
 
   /**
