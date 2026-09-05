@@ -456,6 +456,11 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * not here.
    */
   private fun flushCarets() {
+    // A command is waiting to read the selection `selectForHostCommand` put there. Pushing the
+    // carets now would replace it with a collapsed caret and the command would act on the wrong
+    // range - see `selectForHostCommand`. The host flushes again once the command has landed.
+    if (selectionHandedToHostCommand) return
+
     // Primary first, because that is where VS Code takes its own primary from - `selections[0]`.
     // With a block drawn downwards the primary is the *last* caret in the document, and pushing
     // them in document order would leave the blinking caret at the top of the block.
@@ -581,14 +586,26 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * Written straight to `selections` rather than by moving the engine's carets, and that is the
    * point: the carets are Vim's state, and `=` ends in normal mode with no selection. Borrowing a
    * visual selection to describe the range would mean the engine believing in one afterwards.
-   * [flushCarets] overwrites this on the next keystroke, which is exactly when it should.
+   *
+   * It also has to *survive* until the command runs, which is what [selectionHandedToHostCommand]
+   * is for. The keystroke that asks for the command finishes by flushing its carets, and that flush
+   * would push a collapsed caret over this selection before VS Code had read it - so `=` in normal
+   * mode (`==`, `=j`, `=ap`) re-indented whatever line the caret was on rather than the range, and
+   * only the visual-mode form worked, because there the carets happened to describe the same range.
    */
   internal fun selectForHostCommand(ranges: List<TextRange>) {
     if (ranges.isEmpty()) return
     nativeEditor.selections = ranges
       .map { Selection(positionOf(it.startOffset), positionOf(it.endOffset)) }
       .toTypedArray()
+    selectionHandedToHostCommand = true
   }
+
+  /**
+   * Whether [selectForHostCommand] has handed VS Code a selection that a pending command still has
+   * to read. Cleared by the host once the command has landed.
+   */
+  internal var selectionHandedToHostCommand: Boolean = false
 
   private fun positionOf(offset: Int): Position {
     val position = offsetToBufferPosition(offset)

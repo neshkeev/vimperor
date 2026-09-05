@@ -329,6 +329,8 @@ class VimHost(
     // The command changed the document, and it changed it without going through the buffer - so
     // every editor has to be re-read before anything else looks at one.
     for (editor in editors.values) {
+      // The command has read whatever selection it was handed, so carets may be pushed again.
+      editor.selectionHandedToHostCommand = false
       if (editor.buffer.syncIfDocumentMoved()) {
         editor.syncCaretsFromEditor()
         // The document is a different length now, and what VS Code last said about the viewport
@@ -345,6 +347,9 @@ class VimHost(
     val after = landed.toList()
     landed.clear()
     after.forEach { it() }
+    // A hook that moved a caret - which is what every one of them is for - has to reach VS Code.
+    // Nothing else will: the keystroke that asked for the command flushed long before this.
+    if (after.isNotEmpty()) editors.values.forEach { it.flush() }
 
     val waiting = queued.toList()
     queued.clear()

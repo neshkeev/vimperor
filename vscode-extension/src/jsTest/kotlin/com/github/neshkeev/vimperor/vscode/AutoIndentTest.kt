@@ -41,6 +41,24 @@ class AutoIndentTest {
     override fun status(text: String?) {}
   }
 
+  /**
+   * A session whose commands are left in flight, so a test can look at what VS Code was handed.
+   *
+   * [Session] uses the stub's own runner, which resolves at once - and by the time it returns, the
+   * host has already cleared the selection the command was given, correctly. Nothing is wrong with
+   * that; it just leaves nothing to assert on.
+   */
+  private class PendingSession(text: String) {
+    val fake = FakeEditor(text)
+    val host = VimHost(runCommand = { _, _, _ -> }).also { it.start() }
+
+    init {
+      KeyHandler.getInstance().fullReset(host.editorFor(fake))
+    }
+
+    fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
+  }
+
   private class Session(text: String) {
     val fake = FakeEditor(text)
     val sink = RecordingSink()
@@ -125,8 +143,7 @@ class AutoIndentTest {
 
   /**
    * The command reads the focused editor's selection and takes no argument, so the range has to be
-   * handed over as a selection first. Checked directly, because the next keystroke's caret flush
-   * overwrites it - correctly, and too soon for an assertion after the fact.
+   * handed over as a selection first.
    */
   @Test
   fun `test the range is handed over as a VS Code selection`() {
@@ -139,6 +156,28 @@ class AutoIndentTest {
     val selection = session.fake.selections[0]
     assertEquals(1, selection.anchor.line, "starts on the second line")
     assertEquals(2, selection.active.line, "ends on the third")
+  }
+
+  /**
+   * And it has to still be there when the command runs, which for a long time it was not.
+   *
+   * The keystroke that asks for the command ends by flushing its carets, and that flush pushed a
+   * collapsed caret over the selection before VS Code had read it. So `=j` re-indented one line -
+   * whatever line the caret was on - rather than two, and `=ap` re-indented one line rather than a
+   * paragraph. Only the visual-mode form worked, and only by accident: there the carets describe
+   * the same range the command was given, so overwriting one with the other changed nothing. This
+   * is the case that has no such luck.
+   */
+  @Test
+  fun `test the selection survives the keystroke that asked for it`() {
+    val session = PendingSession("zero\none\ntwo\nthree")
+
+    session.type("j=j")
+
+    assertEquals(1, session.fake.selections.size)
+    val selection = session.fake.selections[0]
+    assertEquals(1, selection.anchor.line, "`=j` covers the caret's line")
+    assertEquals(2, selection.active.line, "and the one below it")
   }
 
   @Test
