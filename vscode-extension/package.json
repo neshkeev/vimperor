@@ -394,6 +394,91 @@
         "mac": "cmd+v",
         "command": "vimperor.pasteInCommandLine",
         "when": "editorTextFocus && vimperor.mode == 'COMMAND'"
+      },
+      {
+        "key": "o",
+        "command": "list.select",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "s",
+        "command": "explorer.openToSide",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "shift+o",
+        "command": "list.expandAll",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "x",
+        "command": "list.collapse",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "j",
+        "command": "list.focusDown",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "k",
+        "command": "list.focusUp",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "g g",
+        "command": "list.focusFirst",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "shift+g",
+        "command": "list.focusLast",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "r",
+        "command": "workbench.files.action.refreshFilesExplorer",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "shift+r",
+        "command": "workbench.files.action.refreshFilesExplorer",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "q",
+        "command": "workbench.action.closeSidebar",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "n",
+        "command": "explorer.newFile",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "shift+n",
+        "command": "explorer.newFolder",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "d",
+        "command": "deleteFile",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "y",
+        "command": "filesExplorer.copy",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "v",
+        "command": "filesExplorer.paste",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
+      },
+      {
+        "key": "ctrl+r",
+        "command": "renameFile",
+        "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
       }
     ],
     "configuration": {

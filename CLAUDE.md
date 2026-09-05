@@ -32,7 +32,8 @@ VS Code host mines out of `src/test` and replays (1,037 pass). That corpus is th
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
-What is still missing: 4 of the 24 bundled extensions, 24 IntelliJ-only options,
+What is still missing: 3 of the 24 bundled extensions, most of NERDTree's in-tree
+keys, 24 IntelliJ-only options,
 12 of the replayed fixtures, and two `TODO` seams in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls, and the command-line window.
 
@@ -45,18 +46,42 @@ It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj` and `classtextobj` - which is every one that is not a piece of IntelliJ
-furniture. Each lives in
+`functextobj`, `classtextobj` and `NERDTree` - which is every one that is not a piece
+of IntelliJ furniture. Each lives in
 `vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The four that are left - `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` -
-are not waiting on a seam. `matchit` wants a syntax tree, `NERDTree` a project tool
-window, `VimEverywhere` popups and `java.awt.Robot`, and `youcompleteme` works by
-taking `<Tab>` out of `'lookupkeys'`, which is an IntelliJ-only option. Each would be
-a rewrite against a different UI rather than a move.
+The three that are left - `matchit`, `VimEverywhere` and `youcompleteme` - are not
+waiting on a seam. `matchit` wants a syntax tree, `VimEverywhere` popups and
+`java.awt.Robot`, and `youcompleteme` works by taking `<Tab>` out of `'lookupkeys'`,
+which is an IntelliJ-only option. Each would be a rewrite against a different UI
+rather than a move.
+
+**`NERDTree` is bundled but it is half an extension, and the half is the interesting
+part.** It is two things sharing a name. Six ex commands - `:NERDTree`,
+`:NERDTreeToggle`, `:NERDTreeFind` - say nothing but "show me the file tree", and
+those moved to the engine: IdeaVim wrote them as IntelliJ action ids
+(`ActivateProjectToolWindow`), which was the only reason they could not travel, and
+`injector.fileTree` is what they say now. Thirty *other* keys - `j`, `k`, `o`, `s`,
+`d` - apply while the cursor is inside the tree, and those are not portable and are
+not waiting on anything: **a key pressed in the sidebar never reaches an extension**.
+`type` is the editor's command and the Explorer is not an editor.
+
+So the VS Code half of those keys is `package.json`, which is a mechanism nothing
+else in this port uses: declarative, fixed at install time, unable to be turned on by
+`set NERDTree` or remapped by `g:NERDTreeMapOpenSplit`. The one thing still decided at
+runtime is a `when` clause, and `vimperor.nerdtree` is it - set from
+`VimHost.isExtensionEnabled`. That gate is not a nicety. `d` in the Explorer deletes a
+file, and an ungated binding would arm it for everyone who installs the extension.
+`NerdTreeManifestTest` exists to say so, and the stub host now checks that any binding
+running a *VS Code* command is gated at all.
+
+Seventeen of the thirty keys have honest equivalents. The other thirteen are listed
+with their reasons in `NerdTreeManifestTest` - mostly depth-aware navigation (`p`,
+`P`, `J`, `K`, `<C-J>`, `<C-K>`), which VS Code's list commands do not have, and
+changing the tree's root (`C`, `u`, `cd`), which its Explorer does not allow.
 
 `textobj-user` is the one exception to "two-line", and it says something about the
 engine rather than about that extension: it registers Vimscript *function

@@ -452,10 +452,29 @@ assert.ok(registeredCommands.has('vimperor.key'), 'the extension registered no h
 
 // Every keybinding in the manifest has to reach a command that exists, or the key does nothing and
 // VS Code reports no error worth reading.
+//
+// Two kinds of binding, and the difference is who owns the command. Almost all of them go to this
+// extension - `type`, `vimperor.key` - and those have to be registered here or the key is dead.
+// NERDTree's file-tree keys go to VS Code's own commands instead, because a key pressed in the
+// sidebar never reaches an extension and there is nothing for the engine to do with it. Those must
+// *not* be registered here, and what has to be true of them instead is that they are gated: they
+// claim keys as ordinary as `d` and `y` from every user of this extension, so a missing `when`
+// clause is the failure worth catching.
 for (const binding of manifest.contributes.keybindings) {
+  if (binding.command.startsWith('vimperor.') || binding.command === 'type') {
+    assert.ok(
+      registeredCommands.has(binding.command),
+      `the manifest binds ${binding.key} to \`${binding.command}\`, which the extension never registers`,
+    )
+    continue
+  }
   assert.ok(
-    registeredCommands.has(binding.command),
-    `the manifest binds ${binding.key} to \`${binding.command}\`, which the extension never registers`,
+    !registeredCommands.has(binding.command),
+    `the manifest binds ${binding.key} to VS Code's \`${binding.command}\`, but the extension registers one too`,
+  )
+  assert.ok(
+    /vimperor\.[a-z]+/.test(binding.when || ''),
+    `${binding.key} runs VS Code's \`${binding.command}\` for every user of this extension. when: ${binding.when}`,
   )
 }
 

@@ -219,6 +219,21 @@ class VimHost(
   // the ones VS Code actually reports are fired - there is no point inventing a `BufWritePre` this
   // host cannot see coming.
 
+  /**
+   * Whether an extension is switched on, for the `when` clauses in `package.json`.
+   *
+   * One extension needs this and the reason is worth recording, because it is the only place in the
+   * port where a Vim setting has to reach VS Code's *manifest*. `NERDTree` maps keys that apply
+   * inside the file tree, and a key pressed in the sidebar never reaches this extension - `type` is
+   * the editor's command and the Explorer is not an editor. So those keys can only be declared
+   * statically, in `package.json`, and the one thing that can still be decided at runtime is a
+   * `when` clause. `vimperor.nerdtree` is that clause: without it, `set NERDTree` would have no
+   * effect on the tree keys and - worse - `d` in the Explorer would delete a file for every user of
+   * this extension, whether or not they asked for NERDTree.
+   */
+  fun isExtensionEnabled(name: String): Boolean =
+    injector.extensionLoader.getEnabledExtensions().any { it.extensionName == name }
+
   /** The editor `BufLeave` will name, remembered because VS Code has stopped calling it active. */
   private var lastActiveEditor: TextEditor? = null
 

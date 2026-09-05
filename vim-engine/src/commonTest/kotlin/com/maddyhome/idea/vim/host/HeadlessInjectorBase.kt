@@ -193,6 +193,10 @@ abstract class HeadlessInjectorBase : VimInjector {
   override val commentService: VimCommentService
     get() = TODO("headless host does not provide commentService yet")
 
+  /** Nothing headless has a file tree, and nothing headless runs `NERDTree`. */
+  override val fileTree: VimFileTreeService
+    get() = TODO("headless host has no file tree")
+
   override val vimscriptExecutor: VimscriptExecutor
     get() = TODO("headless host does not provide vimscriptExecutor yet")
 

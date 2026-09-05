@@ -98,6 +98,24 @@ fun activate(context: ExtensionContext) {
    */
   var lastMode: String? = null
   var styledEditor: TextEditor? = null
+
+  /**
+   * `vimperor.nerdtree`, which gates the file-tree keys `package.json` declares.
+   *
+   * Those keys cannot be installed at runtime - see `VimHost.isExtensionEnabled` - so the manifest
+   * declares them all and this decides whether they apply. Tracked separately from the mode and
+   * sent only on a change, for the same reason: `setContext` re-evaluates every `when` clause in
+   * the window and this runs after every keystroke.
+   */
+  var lastNerdTree: Boolean? = null
+  fun refreshExtensionContexts() {
+    val nerdTree = vim.isExtensionEnabled("NERDTree")
+    if (nerdTree != lastNerdTree) {
+      lastNerdTree = nerdTree
+      commands.executeCommand("setContext", "vimperor.nerdtree", nerdTree)
+    }
+  }
+
   fun refreshMode() {
     val mode = vim.modeName()
     status.text = "-- " + mode + " --"
@@ -121,6 +139,7 @@ fun activate(context: ExtensionContext) {
       lastMode = mode
       commands.executeCommand("setContext", "vimperor.mode", mode)
     }
+    refreshExtensionContexts()
   }
   refreshMode()
 
@@ -228,6 +247,10 @@ fun activate(context: ExtensionContext) {
       output.appendLine("managers, autocommands, syntax - are skipped without complaint.")
     }
   }
+
+  // After the config, because `set NERDTree` in it is the whole point: the first `refreshMode` ran
+  // before the config was read, so without this the tree keys would stay off until the first key.
+  refreshExtensionContexts()
 
   output.appendLine("Vimperor is running. ${window.visibleTextEditors.size} editor(s) open.")
 

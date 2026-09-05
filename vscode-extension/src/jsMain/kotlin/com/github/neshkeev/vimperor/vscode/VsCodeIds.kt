@@ -54,6 +54,49 @@ internal object VsCodeCommands {
   const val DOCUMENT_SYMBOLS = "vscode.executeDocumentSymbolProvider"
 
   /**
+   * The Explorer, which is what `NERDTree`'s ex commands ask about.
+   *
+   * `workbench.view.explorer` both reveals the sidebar and puts the keyboard in the file tree,
+   * which is the whole of what `:NERDTree` and `:NERDTreeFocus` mean here.
+   *
+   * `TOGGLE_SIDEBAR` is a toggle of the *sidebar*, not of the Explorer: with the Search view
+   * showing, `:NERDTreeToggle` hides the sidebar rather than switching to the files. That is the
+   * closest VS Code has - there is no "toggle this view" - and it is the same thing the Explorer's
+   * own `Ctrl+B` does, so it is at least what a user expects from the key they already press.
+   */
+  const val FOCUS_EXPLORER = "workbench.view.explorer"
+  const val TOGGLE_SIDEBAR = "workbench.action.toggleSidebarVisibility"
+  const val CLOSE_SIDEBAR = "workbench.action.closeSidebar"
+  const val REVEAL_IN_EXPLORER = "workbench.files.action.showActiveFileInExplorer"
+  const val REFRESH_EXPLORER = "workbench.files.action.refreshFilesExplorer"
+
+  /**
+   * What NERDTree's in-tree keys are bound to in `package.json`.
+   *
+   * This extension never sends these - VS Code runs them itself when a key is pressed in the
+   * Explorer, because a key pressed in the sidebar never reaches an extension. They are listed here
+   * for one reason: [all] is what activation asks the real window about, and an id in a manifest is
+   * exactly as unverifiable offline as an id in this file, with the added problem that a wrong one
+   * fails by doing nothing at all. Putting them here turns that into a line of output.
+   *
+   * See `NerdTreeManifestTest` for which NERDTree keys these cover and which have no equivalent.
+   */
+  const val LIST_FOCUS_DOWN = "list.focusDown"
+  const val LIST_FOCUS_UP = "list.focusUp"
+  const val LIST_FOCUS_FIRST = "list.focusFirst"
+  const val LIST_FOCUS_LAST = "list.focusLast"
+  const val LIST_SELECT = "list.select"
+  const val LIST_EXPAND_ALL = "list.expandAll"
+  const val LIST_COLLAPSE = "list.collapse"
+  const val EXPLORER_OPEN_TO_SIDE = "explorer.openToSide"
+  const val EXPLORER_NEW_FILE = "explorer.newFile"
+  const val EXPLORER_NEW_FOLDER = "explorer.newFolder"
+  const val DELETE_FILE = "deleteFile"
+  const val RENAME_FILE = "renameFile"
+  const val EXPLORER_COPY = "filesExplorer.copy"
+  const val EXPLORER_PASTE = "filesExplorer.paste"
+
+  /**
    * `=`. Re-indents the selected lines, which is what Vim's `=` does and the whole of what it does.
    *
    * Measured rather than argued, with Vim 9.1 and `-u NONE`: `ggVG=` on `{ "hello": "world"}`
@@ -161,6 +204,10 @@ internal object VsCodeCommands {
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     REVEAL_DEFINITION, DOCUMENT_SYMBOLS, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     COMMENT_LINE, BLOCK_COMMENT,
+    FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
+    LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
+    LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
+    DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,

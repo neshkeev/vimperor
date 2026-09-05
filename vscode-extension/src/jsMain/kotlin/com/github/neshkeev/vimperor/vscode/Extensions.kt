@@ -24,6 +24,8 @@ import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankI
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.multiplecursors.disposeMultipleCursors
+import com.maddyhome.idea.vim.extension.nerdtree.disposeNerdTree
+import com.maddyhome.idea.vim.extension.nerdtree.init as nerdTreeInit
 import com.maddyhome.idea.vim.extension.multiplecursors.init as multipleCursorsInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
@@ -177,6 +179,12 @@ internal object VsCodeExtensions {
     // VS Code's own Outline view knows, refreshed in the background, because the question is asked
     // in the middle of a keystroke and the answer arrives over a promise.
     "classtextobj" to { api -> api.classTextObjInit() },
+
+    // `NERDTree`, or the half of it that is not a Swing tree: `:NERDTree`, `:NERDTreeToggle`,
+    // `:NERDTreeFind` and their friends, over the Explorer. The keys NERDTree maps *inside* the
+    // tree are not here and cannot be - a key pressed in the sidebar never reaches an extension -
+    // and what `package.json` binds there instead is listed with them.
+    "NERDTree" to { api -> api.nerdTreeInit() },
   )
 
   /**
@@ -214,6 +222,9 @@ internal object VsCodeExtensions {
     // `:YRShow`, `:YRClear` and `:YRReplace`, held by the command group, plus the register listener
     // that fills the ring, which goes onto `listenersNotifier` under no owner at all.
     "yankring" to { disposeYankRing() },
+
+    // Its six ex commands, held by the command group.
+    "NERDTree" to { disposeNerdTree() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */

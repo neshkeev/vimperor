@@ -93,20 +93,24 @@ import kotlin.concurrent.write
  * + A........Zoom (maximize/minimize) the NERDTree window...............|NERDTree-A|
  * ?........Toggle the display of the quick help.......................|NERDTree-?|
  */
+/**
+ * The IntelliJ half of NERDTree, which is the tree's own key mappings.
+ *
+ * The six ex commands are in `vim-engine` now - see the engine's `nerdtree` package - because they
+ * say nothing but "show me the file tree" and both hosts have one. What is left here is what only
+ * IntelliJ can do: `j`, `k`, `o`, `s`, `P` and the rest, which apply while the cursor is inside the
+ * Project view and are installed as a shortcut set on its Swing component. A key pressed in a file
+ * tree never reaches an extension in VS Code, so there is nothing to port and nothing waiting on a
+ * seam; see the engine file for the full account.
+ */
 internal class NerdTree : VimExtension {
-  override fun getName(): String = PLUGIN_NAME
+  override fun getName(): String = NERD_TREE
 
   override fun init() {
     LOG.info("IdeaVim: Initializing NERDTree extension. Disable this extension if you observe a strange behaviour of the project tree. E.g. moving down on 'j'")
     lock.write {
       enabled = true
-
-      VimExtensionFacade.addCommand("NERDTreeFocus", IjCommandHandler("ActivateProjectToolWindow"))
-      VimExtensionFacade.addCommand("NERDTree", IjCommandHandler("ActivateProjectToolWindow"))
-      VimExtensionFacade.addCommand("NERDTreeToggle", ToggleHandler())
-      VimExtensionFacade.addCommand("NERDTreeClose", CloseHandler())
-      VimExtensionFacade.addCommand("NERDTreeFind", IjCommandHandler("SelectInProjectView"))
-      VimExtensionFacade.addCommand("NERDTreeRefreshRoot", IjCommandHandler("Synchronize"))
+      registerNerdTree()
     }
     ProjectManager.getInstance().openProjects.forEach(::installDispatcher)
   }
@@ -114,7 +118,7 @@ internal class NerdTree : VimExtension {
   override fun dispose() {
     lock.write {
       enabled = false
-      // TODO remove ex-commands
+      disposeNerdTree()
       ProjectManager.getInstance().openProjects.forEach { project ->
         val component = (ProjectView.getInstance(project) as ProjectViewImpl).component
         if (component != null) {
@@ -127,34 +131,6 @@ internal class NerdTree : VimExtension {
     super.dispose()
   }
 
-  class IjCommandHandler(private val actionId: String) : CommandAliasHandler {
-    override fun execute(command: String, range: Range, editor: VimEditor, context: ExecutionContext) {
-      NerdTreeAction.callAction(editor, actionId)
-    }
-  }
-
-  class ToggleHandler : CommandAliasHandler {
-    override fun execute(command: String, range: Range, editor: VimEditor, context: ExecutionContext) {
-      val project = editor.ij.project ?: return
-      val toolWindow = ToolWindowManagerEx.getInstanceEx(project).getToolWindow(ToolWindowId.PROJECT_VIEW) ?: return
-      if (toolWindow.isVisible) {
-        toolWindow.hide()
-      } else {
-        NerdTreeAction.callAction(editor, "ActivateProjectToolWindow")
-      }
-    }
-  }
-
-  class CloseHandler : CommandAliasHandler {
-    override fun execute(command: String, range: Range, editor: VimEditor, context: ExecutionContext) {
-      val project = editor.ij.project ?: return
-      val toolWindow = ToolWindowManagerEx.getInstanceEx(project).getToolWindow(ToolWindowId.PROJECT_VIEW) ?: return
-      if (toolWindow.isVisible) {
-        toolWindow.hide()
-      }
-    }
-  }
-
   class NerdStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
       installDispatcher(project)
@@ -162,7 +138,7 @@ internal class NerdTree : VimExtension {
   }
 
   @Service(Service.Level.PROJECT)
-  class NerdDispatcher : AbstractDispatcher(PLUGIN_NAME, createMappings()) {
+  class NerdDispatcher : AbstractDispatcher(NERD_TREE, createMappings()) {
     companion object {
       fun getInstance(project: Project): NerdDispatcher {
         return project.service<NerdDispatcher>()
@@ -171,7 +147,6 @@ internal class NerdTree : VimExtension {
   }
 
   companion object {
-    const val PLUGIN_NAME = "NERDTree"
     private val LOG = vimLogger<NerdTree>()
   }
 }

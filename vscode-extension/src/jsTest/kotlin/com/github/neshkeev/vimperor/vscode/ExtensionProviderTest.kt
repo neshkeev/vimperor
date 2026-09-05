@@ -206,17 +206,18 @@ class ExtensionProviderTest {
    * to fail because the extension is absent, not because the name was never recognised. The two
    * fail identically to a user and differently to whoever adds the extension.
    *
-   * `NERDTree` is the example, and it is chosen to stay one: it is a project tree in a tool window,
-   * which is not a thing this host is ever going to grow. So the alias resolves and the extension
-   * does not arrive, which is exactly the distinction this test exists for. It was `surround`
-   * until `surround` was ported, and then `yankring` until `runAfterHostCatchesUp` let that one in
-   * too - twice is enough to stop picking an example that is merely waiting its turn.
+   * `VimEverywhere` is the example. It was `surround` until `surround` was ported, `yankring` until
+   * `runAfterHostCatchesUp` let that one in, and `NERDTree` until the half of it that is six ex
+   * commands turned out to be portable after all - so the example is now the one extension whose
+   * whole substance is a thing this host does not have. `VimEverywhere` puts a Vim cursor in
+   * IntelliJ's popups and dialogs, using `java.awt.Robot` to do it; there is no VS Code half of
+   * that to write.
    */
   @Test
   fun `test a known alias with no extension behind it still fails`() {
     Session()
 
-    assertEquals("NERDTree", injector.extensionRegistrator.getExtensionNameByAlias("preservim/nerdtree"))
-    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("preservim/nerdtree"))
+    assertEquals("VimEverywhere", injector.extensionRegistrator.getExtensionNameByAlias("VimEverywhere"))
+    assertTrue(!injector.extensionRegistrator.setOptionByPluginAlias("VimEverywhere"))
   }
 }

@@ -173,6 +173,9 @@ interface VimInjector {
   /** Toggling comments, which only the host knows the syntax for. See [VimCommentService]. */
   val commentService: VimCommentService
 
+  /** The project's file tree, which `NERDTree` shows and hides. See [VimFileTreeService]. */
+  val fileTree: VimFileTreeService
+
   val vimscriptExecutor: VimscriptExecutor
 
   val vimscriptParser: VimscriptParser

@@ -5,6 +5,11 @@
     "className": "com.maddyhome.idea.vim.extension.camelcasemotion.CamelCaseMotionNewApiKt"
   },
   {
+    "extensionName": "NERDTree",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.nerdtree.NerdTreeKt"
+  },
+  {
     "extensionName": "ReplaceWithRegisterNew",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.replacewithregister.ReplaceWithRegisterNewApiKt"

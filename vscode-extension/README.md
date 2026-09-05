@@ -90,10 +90,9 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
-- **Vim plugins.** There is no `pack/` directory, and 4 of IdeaVim's 24 bundled extensions are not
-  available — `matchit`, `NERDTree`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code
-  has nothing shaped like. The other twenty work, and they are enabled the way you would in
-  IdeaVim:
+- **Vim plugins.** There is no `pack/` directory, and 3 of IdeaVim's 24 bundled extensions are not
+  available — `matchit`, `VimEverywhere` and `youcompleteme` want IDE machinery VS Code has nothing
+  shaped like. The other twenty-one work, and they are enabled the way you would in IdeaVim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
@@ -116,6 +115,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'vim-scripts/YankRing.vim'          " every yank in a ring; <C-P>/<C-N> cycle the last paste
   Plug 'kana/vim-textobj-function'         " am aM im — a function without its doc comment, with it, its body
   Plug 'kana/vim-textobj-class'            " ac — the class, interface, struct or enum you are inside
+  Plug 'preservim/nerdtree'                " :NERDTree and friends, plus j k o s in the Explorer
   ```
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
@@ -132,6 +132,23 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   of a keystroke and a language server answers over a promise. For the moment between an edit and
   the answer, those four keys do nothing rather than using a range that has moved. In a language
   with no symbol provider they do nothing at all, which is the same answer the Outline view gives.
+
+  `NERDTree` is half an extension here, and it is worth knowing which half. Its ex commands work —
+  `:NERDTree`, `:NERDTreeFocus`, `:NERDTreeToggle`, `:NERDTreeClose`, `:NERDTreeFind`,
+  `:NERDTreeRefreshRoot` — over the Explorer. The keys it maps *inside* the tree are a different
+  matter: a key pressed in VS Code's sidebar never reaches an extension, so they are declared in
+  the extension's manifest and run VS Code's own commands, and they apply only while you have
+  `NERDTree` enabled. Seventeen of the thirty have equivalents:
+
+  `j` `k` `gg` `G` to move, `o` to open or expand, `s` to open beside, `O` to expand everything,
+  `x` to collapse, `r` and `R` to refresh, `q` to close the sidebar, `n` and `N` for a new file and
+  folder, `d` to delete, `y` and `v` to copy and paste, `ctrl+r` to rename.
+
+  What has no equivalent: `i`, `gi`, `gs`, `go` and `T` (VS Code opens beside or not at all), `p`,
+  `P`, `J`, `K`, `<C-J>` and `<C-K>` (its list commands move by row and know nothing about depth),
+  `X`, `I`, `f`, `F`, `B`, `m`, `A`, and everything that changes the tree's root — the Explorer is
+  rooted at the workspace folder and an extension cannot move it. These keys are left alone rather
+  than bound to something approximate.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
 - **The command-line window** (`q:`, `q/`) and the preview window.
