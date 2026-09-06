@@ -493,7 +493,7 @@
       {
         "key": "escape",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && !inputFocus && (sideBarFocus || panelFocus || auxiliaryBarFocus)"
+        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && (!inputFocus || editorTextFocus) && (sideBarFocus || panelFocus || auxiliaryBarFocus)"
       }
     ],
     "configuration": {
@@ -507,7 +507,7 @@
         "vimperor.escapeReturnsToEditor": {
           "type": "boolean",
           "default": true,
-          "description": "Pressing Escape outside the editor puts the cursor back in the document, the way IntelliJ does. Contexts where Escape already has a job keep it: the terminal, and any text input such as the Search box or a rename field."
+          "description": "Pressing Escape outside the editor puts the cursor back in the document, the way IntelliJ does. Contexts where Escape already has a job keep it: the terminal, and text inputs such as the Search box or a rename field."
         }
       }
     }

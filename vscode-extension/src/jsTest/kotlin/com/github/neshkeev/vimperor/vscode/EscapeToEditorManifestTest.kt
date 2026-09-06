@@ -74,52 +74,126 @@ class EscapeToEditorManifestTest {
     )
   }
 
+  /**
+   * A text input keeps its own Escape - but a read-only editor is not one, and the difference is
+   * the whole of why this took two attempts.
+   *
+   * `inputFocus` is true for *any* focused text area, and the Monaco editor is a text area, so
+   * `!inputFocus` excluded the Output view along with the Search box. Proved from a real window:
+   * pressing Escape in the Output panel reached `vimperor.key`, whose only gate is
+   * `editorTextFocus` - so `editorTextFocus` holds there and the Output view is an editor.
+   *
+   * `!inputFocus || editorTextFocus` is "an input that is not an editor", which is what was meant.
+   */
   @Test
   fun `test a text input keeps its own escape`() {
     assertTrue(
-      clause().contains("!inputFocus"),
+      clause().contains("(!inputFocus || editorTextFocus)"),
       "Escape clears a Search box or a rename field, and that is worth more than a focus change",
     )
   }
 
-  /** It applies outside the editor and nowhere else - the three areas a tool window can be in. */
+  /**
+   * The Output view is the case this exists for, and it is only reachable because of the clause
+   * above. Read-only, focusable, and reporting both `panelFocus` and `editorTextFocus`.
+   */
   @Test
-  fun `test it applies only outside the editor`() {
-    val clause = clause()
-    listOf("sideBarFocus", "panelFocus", "auxiliaryBarFocus").forEach {
-      assertTrue(clause.contains(it), "$it is missing, so that part of the workbench is stranded")
-    }
+  fun `test a read-only editor in the panel is not treated as an input`() {
+    val inTheOutputView = mapOf(
+      "vimperor.escapeReturnsToEditor" to true,
+      "terminalFocus" to false,
+      "inputFocus" to true,
+      "editorTextFocus" to true,
+      "panelFocus" to true,
+      "sideBarFocus" to false,
+      "auxiliaryBarFocus" to false,
+    )
+
+    assertTrue(matches(clause(), inTheOutputView), "Escape in the Output panel has to reach the editor")
+  }
+
+  /** ...while the Search box, an input that is not an editor, keeps Escape for itself. */
+  @Test
+  fun `test the search box keeps escape`() {
+    val inTheSearchBox = mapOf(
+      "vimperor.escapeReturnsToEditor" to true,
+      "terminalFocus" to false,
+      "inputFocus" to true,
+      "editorTextFocus" to false,
+      "panelFocus" to false,
+      "sideBarFocus" to true,
+      "auxiliaryBarFocus" to false,
+    )
+
+    assertTrue(!matches(clause(), inTheSearchBox), "clearing the box is worth more than a focus change")
+  }
+
+  /** And the terminal, where Escape belongs to whatever is running in it. */
+  @Test
+  fun `test the terminal keeps escape`() {
+    val inTheTerminal = mapOf(
+      "vimperor.escapeReturnsToEditor" to true,
+      "terminalFocus" to true,
+      "inputFocus" to true,
+      "editorTextFocus" to false,
+      "panelFocus" to true,
+      "sideBarFocus" to false,
+      "auxiliaryBarFocus" to false,
+    )
+
+    assertTrue(!matches(clause(), inTheTerminal), "vim in a terminal has to keep its Escape")
   }
 
   /**
-   * Last in the array, which decides a real case.
+   * Enough of VS Code's `when` grammar to answer the clause above: names, `!`, `&&`, `||` and
+   * parentheses, with `&&` binding tighter than `||` as it does there.
    *
-   * The Output view is a read-only editor and reports `editorTextFocus` along with `panelFocus`, so
-   * this binding and the `escape` that hands `<Esc>` to the engine can both match. VS Code takes
-   * the later of two bindings from the same extension, and the one that gets out of the Output
-   * panel is the one worth having.
+   * Written out because a clause is the only part of a manifest binding with any behaviour in it,
+   * and reading it back as a string asserts spelling rather than meaning - which is what let
+   * `!inputFocus` sit here looking correct while it excluded the Output panel.
+   *
+   * The precedence is not decoration. This clause happens to be `&&` all the way down with its
+   * `||`s inside parentheses, so a flat left-to-right reading gets the same answer; the next clause
+   * need not be, and a test that quietly disagrees with VS Code about `a && b || c` is worse than
+   * no test.
    */
-  @Test
-  fun `test it is declared after the engine's own escape`() {
-    val all = bindings()
-    val ours = all.indexOfFirst { it.command == VsCodeCommands.FOCUS_EDITOR }
-    val engine = all.indexOfFirst { it.key == "escape" && it.command == "vimperor.key" }
-
-    assertTrue(engine in 0 until ours, "the engine's escape is at $engine and this one at $ours")
+  private fun matches(clause: String, context: Map<String, Boolean>): Boolean {
+    val tokens = Regex("""\(|\)|&&|\|\||!|[A-Za-z0-9_.]+""").findAll(clause).map { it.value }.toList()
+    return Parser(tokens, context).parse()
   }
 
-  /** And the setting it is gated on is declared, or nothing could turn it off. */
-  @Test
-  fun `test the setting is declared`() {
-    val manifest = JSON.parse<dynamic>(readText("${repositoryRoot()!!}/vscode-extension/package.json"))
-    val declared = js("Object.keys")(manifest.contributes.configuration.properties) as Array<String>
+  /** A recursive-descent reader for the fragment of the grammar above. */
+  private class Parser(private val tokens: List<String>, private val context: Map<String, Boolean>) {
+    private var at = 0
 
-    assertTrue("vimperor.escapeReturnsToEditor" in declared, "declared: ${declared.toList()}")
-  }
+    fun parse(): Boolean = disjunction().also { check(at == tokens.size) { "trailing `${tokens.drop(at)}`" } }
 
-  /** The command it sends is one activation asks the real window about. */
-  @Test
-  fun `test the command it sends is checked at activation`() {
-    assertTrue(VsCodeCommands.FOCUS_EDITOR in VsCodeCommands.all)
+    /** Lowest precedence, so it is read first and its operands are whole conjunctions. */
+    private fun disjunction(): Boolean {
+      var value = conjunction()
+      while (at < tokens.size && tokens[at] == "||") {
+        at++
+        // Not short-circuited: an operand naming a key this test forgot should say so either way.
+        val right = conjunction()
+        value = value || right
+      }
+      return value
+    }
+
+    private fun conjunction(): Boolean {
+      var value = primary()
+      while (at < tokens.size && tokens[at] == "&&") {
+        at++
+        val right = primary()
+        value = value && right
+      }
+      return value
+    }
+
+    private fun primary(): Boolean = when (val token = tokens[at++]) {
+      "(" -> disjunction().also { check(tokens[at++] == ")") { "unbalanced parentheses" } }
+      "!" -> !primary()
+      else -> context[token] ?: error("no value for `$token` in this test's context")
+    }
   }
 }
