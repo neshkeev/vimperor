@@ -5,8 +5,14 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1045 of the 1047 harvested fixtures pass, and the two left both name an IntelliJ action. There is
+# 1140 of the 1142 harvested fixtures pass, and the two left both name an IntelliJ action. There is
 # nothing on this list any more that this host could do and has not.
+#
+# The corpus grew by 95 when the harness stopped looking only for backtick-quoted test names.
+# IdeaVim writes 578 of its tests as `fun testSurroundWordParens()`, and those methods were
+# *invisible* rather than refused - they never reached the skip counts either, so the yield looked
+# higher than it was. One of the 95 failed, and it was a real bug: `.` after an insert that
+# backspaced over itself replayed the typing without the deleting.
 #
 # The ten that left it most recently are worth telling apart, because only eight were bugs here.
 #

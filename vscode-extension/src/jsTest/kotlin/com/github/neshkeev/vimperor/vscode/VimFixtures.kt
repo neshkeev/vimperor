@@ -367,7 +367,7 @@ internal object VimFixtures {
   /** Every `fun \`test ...\`()` body, found by matching braces rather than by a regex over them. */
   private fun testMethods(source: String): List<Triple<String, String, Int>> {
     val found = mutableListOf<Triple<String, String, Int>>()
-    for (match in Regex("""fun\s+`([^`]+)`\s*\([^)]*\)\s*\{""").findAll(source)) {
+    for (match in TEST_METHOD.findAll(source)) {
       val open = match.range.last
       var depth = 0
       var index = open
@@ -381,7 +381,8 @@ internal object VimFixtures {
         if (character == '}') {
           depth--
           if (depth == 0) {
-            found += Triple(match.groupValues[1], source.substring(open + 1, index), match.range.first)
+            val name = match.groupValues[1].ifEmpty { match.groupValues[2] }
+            found += Triple(name, source.substring(open + 1, index), match.range.first)
             break
           }
         }
@@ -390,4 +391,14 @@ internal object VimFixtures {
     }
     return found
   }
+
+  /**
+   * A test method's name, backticked or not.
+   *
+   * IdeaVim writes most of them backticked and 578 of them not - `fun testSurroundWordParens()` -
+   * and this only ever looked for the first kind, so those methods were invisible rather than
+   * refused. They did not appear in the skip counts either, which is why the yield looked higher
+   * than it was: the harness was measuring what it could parse out of what it could see.
+   */
+  private val TEST_METHOD = Regex("""fun\s+(?:`([^`]+)`|([A-Za-z_][A-Za-z0-9_]*))\s*\([^)]*\)\s*\{""")
 }
