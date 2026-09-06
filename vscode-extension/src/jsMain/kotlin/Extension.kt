@@ -114,19 +114,44 @@ fun activate(context: ExtensionContext) {
    * Sent only on a change, for the same reason the mode is: `setContext` re-evaluates every `when`
    * clause in the window, and this runs after every keystroke.
    */
+  /**
+   * The context key that gates the Escape binding, and the setting behind it.
+   *
+   * Both spellings are the same word on purpose - one is a VS Code setting, the other a context
+   * key, and they are different namespaces - so there is only one name to remember.
+   */
+  val ESCAPE_TO_EDITOR = "vimperor.escapeReturnsToEditor"
+
+  fun escapeReturnsToEditor(): Boolean = try {
+    workspace.getConfiguration("vimperor").get("escapeReturnsToEditor") != false
+  } catch (e: Throwable) {
+    true
+  }
+
   val extensionContexts = mapOf(
     "vimperor.nerdtree" to "NERDTree",
     "vimperor.youcompleteme" to "youcompleteme",
   )
   val lastEnabled = mutableMapOf<String, Boolean>()
+
+  /** `setContext` only when the answer moved: it re-evaluates every `when` clause in the window. */
+  fun setContextKey(contextKey: String, enabled: Boolean) {
+    if (lastEnabled[contextKey] == enabled) return
+    lastEnabled[contextKey] = enabled
+    commands.executeCommand("setContext", contextKey, enabled)
+  }
+
   fun refreshExtensionContexts() {
     for ((contextKey, extension) in extensionContexts) {
-      val enabled = vim.isExtensionEnabled(extension)
-      if (lastEnabled[contextKey] != enabled) {
-        lastEnabled[contextKey] = enabled
-        commands.executeCommand("setContext", contextKey, enabled)
-      }
+      setContextKey(contextKey, vim.isExtensionEnabled(extension))
     }
+    // Whether Escape outside the editor puts the cursor back in the document. A setting rather than
+    // an extension, but the same shape: a `when` clause is the only thing about a manifest binding
+    // that can still be decided at runtime, so an off switch has to be a context key.
+    //
+    // Read here rather than through `onDidChangeConfiguration` because [set] writes only on a
+    // change and a configuration read is answered from memory. Absent means on.
+    setContextKey(ESCAPE_TO_EDITOR, escapeReturnsToEditor())
   }
 
   /**

@@ -100,6 +100,12 @@ internal object VsCodeCommands {
    */
   const val TOGGLE_PANEL = "workbench.action.togglePanel"
   const val TOGGLE_AUXILIARY_BAR = "workbench.action.toggleAuxiliaryBar"
+
+  /**
+   * Back to the document. Sent by the manifest's Escape binding rather than from here, but declared
+   * so that activation asks the real window about it the way it does every other id.
+   */
+  const val FOCUS_EDITOR = "workbench.action.focusActiveEditorGroup"
   const val REVEAL_IN_EXPLORER = "workbench.files.action.showActiveFileInExplorer"
   const val REFRESH_EXPLORER = "workbench.files.action.refreshFilesExplorer"
 
@@ -291,7 +297,7 @@ internal object VsCodeCommands {
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, CLOSE_PANEL, CLOSE_AUXILIARY_BAR,
-    TOGGLE_PANEL, TOGGLE_AUXILIARY_BAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
+    TOGGLE_PANEL, TOGGLE_AUXILIARY_BAR, FOCUS_EDITOR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,

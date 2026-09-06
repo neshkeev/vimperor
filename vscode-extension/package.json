@@ -489,6 +489,11 @@
         "key": "shift+tab",
         "command": "selectPrevSuggestion",
         "when": "editorTextFocus && suggestWidgetVisible && vimperor.youcompleteme"
+      },
+      {
+        "key": "escape",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && !inputFocus && (sideBarFocus || panelFocus || auxiliaryBarFocus)"
       }
     ],
     "configuration": {
@@ -498,6 +503,11 @@
           "type": "boolean",
           "default": false,
           "description": "Write what each keystroke did to the Vimperor output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
+        },
+        "vimperor.escapeReturnsToEditor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pressing Escape outside the editor puts the cursor back in the document, the way IntelliJ does. Contexts where Escape already has a job keep it: the terminal, and any text input such as the Search box or a rename field."
         }
       }
     }
