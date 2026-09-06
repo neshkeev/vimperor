@@ -238,11 +238,50 @@ class ActionCommandTest {
     assertEquals(emptyList(), unanswered, "every name in that file has to resolve to something")
   }
 
+  /**
+   * `HideAllWindows` hides every area a tool window can be in, not just the sidebar.
+   *
+   * Reported from a real window: with the Explorer and the Output panel both open, `:action
+   * HideAllWindows` hid the Explorer and left the Output panel exactly where it was. The alias
+   * pointed at `workbench.action.toggleSidebarVisibility` and the sidebar is one of three places
+   * VS Code puts these.
+   */
+  @Test
+  fun `test HideAllWindows closes the panel and the bars as well as the sidebar`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows")
+
+    assertEquals(
+      listOf(
+        VsCodeCommands.CLOSE_SIDEBAR,
+        VsCodeCommands.CLOSE_PANEL,
+        VsCodeCommands.CLOSE_AUXILIARY_BAR,
+      ),
+      session.dispatched,
+    )
+  }
+
+  /**
+   * Closed rather than toggled, which is the rule `'wrap'` paid three attempts for.
+   *
+   * VS Code will not say whether a panel is showing, so a toggle would *open* the panel for anyone
+   * who had already closed it - the action would mean its opposite half the time. Asserted on the
+   * command ids because that is the only place the difference is visible.
+   */
+  @Test
+  fun `test HideAllWindows sends no toggle`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows")
+
+    assertEquals(emptyList(), session.dispatched.filter { it.contains("toggle", ignoreCase = true) })
+  }
+
   // The table itself.
 
   @Test
   fun `test no alias is blank on either side`() {
-    val blank = IdeaActionAliases.all.filter { (key, value) -> key.isBlank() || value?.isBlank() == true }
+    val blank = IdeaActionAliases.all
+      .filter { (key, commands) -> key.isBlank() || commands?.any { it.isBlank() } == true }
     assertEquals(emptyMap(), blank)
   }
 

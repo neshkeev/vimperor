@@ -85,8 +85,8 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     if (id in VsCodeCommands.all) return ResolvedAction.Command(id)
 
     if (IdeaActionAliases.contains(id)) {
-      val command = IdeaActionAliases.commandFor(id)
-      return if (command == null) ResolvedAction.IntelliJOnly(id) else ResolvedAction.Command(command)
+      val commands = IdeaActionAliases.commandsFor(id)
+      return if (commands.isEmpty()) ResolvedAction.IntelliJOnly(id) else ResolvedAction.Command(commands)
     }
 
     return if (ids == null) ResolvedAction.Command(id) else ResolvedAction.Unknown
@@ -136,7 +136,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     // Before the editor is looked at, because a VS Code command is not addressed to one: it goes to
     // whatever has focus, and `:action` from the fallback window is still a command worth running.
     if (action is HostCommandAction) {
-      host.run(action.id)
+      action.ids.forEach { host.run(it) }
       return true
     }
     if (action is IntelliJOnlyAction) {
@@ -187,7 +187,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     // A name this host cannot place is still sent. The window is the authority on what it has and
     // says so when a command is missing - refusing here instead would mean a stale or unfinished
     // id list could silently disable a mapping that works.
-    host.run(if (resolved is ResolvedAction.Command) resolved.id else name.trim())
+    if (resolved is ResolvedAction.Command) resolved.ids.forEach { host.run(it) } else host.run(name.trim())
     return true
   }
 
@@ -209,7 +209,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
    * Before the id list has arrived nothing can be ruled out, so nothing is - see [known].
    */
   override fun getAction(actionId: String): NativeAction? = when (val resolved = resolve(actionId)) {
-    is ResolvedAction.Command -> HostCommandAction(resolved.id)
+    is ResolvedAction.Command -> HostCommandAction(resolved.ids)
     // Found, so that `:action` reports what is actually wrong with it rather than "not found".
     is ResolvedAction.IntelliJOnly -> IntelliJOnlyAction(resolved.ideaId)
     ResolvedAction.Unknown -> null
@@ -240,8 +240,8 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
  * `AnAction` in it. This host has nothing to put but the id, since a command is only ever a string
  * until it is executed.
  */
-private data class HostCommandAction(val id: String) : NativeAction {
-  override val action: Any get() = id
+private data class HostCommandAction(val ids: List<String>) : NativeAction {
+  override val action: Any get() = ids
 }
 
 /**
@@ -257,7 +257,15 @@ private data class IntelliJOnlyAction(val ideaId: String) : NativeAction {
 
 /** What a name turned out to mean. See [VsCodeActionExecutor.resolve]. */
 private sealed interface ResolvedAction {
-  data class Command(val id: String) : ResolvedAction
+  /**
+   * One or more VS Code commands, run in order.
+   *
+   * More than one because an IntelliJ action need not be a single command here: `HideAllWindows`
+   * is three, one per workbench area that can hold a tool window. See [IdeaActionAliases].
+   */
+  data class Command(val ids: List<String>) : ResolvedAction {
+    constructor(id: String) : this(listOf(id))
+  }
   data class IntelliJOnly(val ideaId: String) : ResolvedAction
   object Unknown : ResolvedAction
 }

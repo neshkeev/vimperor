@@ -77,6 +77,15 @@ internal object VsCodeCommands {
   const val FOCUS_EXPLORER = "workbench.view.explorer"
   const val TOGGLE_SIDEBAR = "workbench.action.toggleSidebarVisibility"
   const val CLOSE_SIDEBAR = "workbench.action.closeSidebar"
+
+  /**
+   * The bottom panel and the secondary sidebar, which are the rest of what IntelliJ calls a tool
+   * window. `CLOSE_PANEL` takes the whole panel - Output, Terminal, Problems, Debug Console - and
+   * not one view within it, which is right for `HideAllWindows` and the reason it is closed rather
+   * than toggled. See [IdeaActionAliases].
+   */
+  const val CLOSE_PANEL = "workbench.action.closePanel"
+  const val CLOSE_AUXILIARY_BAR = "workbench.action.closeAuxiliaryBar"
   const val REVEAL_IN_EXPLORER = "workbench.files.action.showActiveFileInExplorer"
   const val REFRESH_EXPLORER = "workbench.files.action.refreshFilesExplorer"
 
@@ -267,7 +276,8 @@ internal object VsCodeCommands {
     REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
-    FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
+    FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, CLOSE_PANEL, CLOSE_AUXILIARY_BAR,
+    REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
@@ -311,8 +321,7 @@ internal object VsCodeCommands {
  * more than nothing happening.
  *
  * Every mapping here is a judgement about what two editors mean by the same word, and some are
- * closer than others - `HideAllWindows` against a sidebar toggle is a practical answer rather than
- * an exact one. The ids themselves are strings typed from documentation, which is this module's
+ * closer than others. The ids themselves are strings typed from documentation, which is this module's
  * least checkable kind of fact, so [missingFrom] compares them against the real window at
  * activation the way [VsCodeCommands.missingFrom] does.
  */
@@ -395,7 +404,6 @@ internal object IdeaActionAliases {
     "ToggleDistractionFreeMode" to "workbench.action.toggleZenMode",
     // Not exact. IntelliJ hides every tool window at once; the sidebar is the one that is usually
     // in the way, and toggling it is what people bind this to.
-    "HideAllWindows" to "workbench.action.toggleSidebarVisibility",
     "ActivateProjectToolWindow" to "workbench.view.explorer",
     "ActivateTerminalToolWindow" to "workbench.action.terminal.toggleTerminal",
     "ActivateVersionControlToolWindow" to "workbench.view.scm",
@@ -433,16 +441,50 @@ internal object IdeaActionAliases {
   )
 
   /** Whether this is a name this table has an answer for, including "nothing does this". */
-  fun contains(ideaId: String): Boolean = ideaId in aliases
+  /**
+   * The actions that are more than one VS Code command.
+   *
+   * `HideAllWindows` is the reason this exists, and it was answered with
+   * `workbench.action.toggleSidebarVisibility` for a long time - which hid the Explorer and left
+   * the Output panel exactly where it was. IntelliJ's action hides every tool window; VS Code keeps
+   * three areas that a tool window can be in and has a separate command for each, so the honest
+   * translation is all three.
+   *
+   * **Closed, not toggled**, which is the rule `'wrap'` paid for. A toggle cannot be pointed at a
+   * state, VS Code will not say whether a panel is showing - `panelVisible` is a context key and
+   * context keys are write-only to an extension - so a toggle here would *open* the panel for
+   * anyone who had already closed it. The close commands take an absolute state and always mean
+   * what they say.
+   *
+   * The cost is real and is IntelliJ's second press: there, `HideAllWindows` restores what it hid.
+   * That needs the visibility this cannot read, and VS Code has no "restore the panels" command
+   * either, so it is not available rather than not done.
+   */
+  private val sequences: Map<String, List<String>> = mapOf(
+    "HideAllWindows" to listOf(
+      VsCodeCommands.CLOSE_SIDEBAR,
+      VsCodeCommands.CLOSE_PANEL,
+      VsCodeCommands.CLOSE_AUXILIARY_BAR,
+    ),
+  )
 
-  /** The VS Code command for [ideaId], or null when nothing in VS Code does that job. */
-  fun commandFor(ideaId: String): String? = aliases[ideaId]
+  fun contains(ideaId: String): Boolean = ideaId in aliases || ideaId in sequences
+
+  /**
+   * The VS Code commands for [ideaId], in the order they should run.
+   *
+   * Empty when nothing in VS Code does that job, which is a real answer - see the class comment.
+   * Callers ask [contains] first; an id this table has never heard of also answers empty.
+   */
+  fun commandsFor(ideaId: String): List<String> =
+    sequences[ideaId] ?: listOfNotNull(aliases[ideaId])
 
   /** The whole table, for the tests that hold it to the shape it claims. */
-  val all: Map<String, String?> get() = aliases
+  val all: Map<String, List<String>?> =
+    aliases.mapValues { (_, command) -> command?.let { listOf(it) } } + sequences
 
   /** Every command this table can send, so activation can check them against the real window. */
-  val targets: List<String> = aliases.values.filterNotNull().distinct().sorted()
+  val targets: List<String> = all.values.filterNotNull().flatten().distinct().sorted()
 
   fun missingFrom(available: Collection<String>): List<String> = targets.filterNot { it in available }
 }
