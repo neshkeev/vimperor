@@ -136,3 +136,66 @@ class LastChangeMarkTest {
     assertEquals("Aaa\nBbb\nCcc\nddd", session.content, "a motion, so nothing was changed by it")
   }
 }
+
+/**
+ * `u` after an insert that undid itself, which moves the caret and not a character.
+ *
+ * The host re-read its carets after a command only when the document had moved, and this is the
+ * sequence where that is not enough: `<C-U>` removes everything the insert added, so the undo
+ * restores a document identical to the one it started from - and a caret that is not, because VS
+ * Code puts it back where the undo entry was opened.
+ */
+class UndoCaretTest {
+
+  private class Session(text: String, caretAt: Int) {
+    val fake = FakeEditor(text)
+    val host = VimHost(runCommand = { command, _, onDone ->
+      when (command) {
+        VsCodeCommands.UNDO -> fake.undo()
+        VsCodeCommands.REDO -> fake.redo()
+      }
+      onDone(true)
+    }).also { it.start() }
+
+    init {
+      val editor = host.editorFor(fake)
+      KeyHandler.getInstance().fullReset(editor)
+      UndoStops.reset()
+      val at = fake.document.positionAt(caretAt)
+      fake.selections = arrayOf(Selection(at, at))
+      editor.syncCaretsFromEditor()
+      editor.flush()
+    }
+
+    fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
+    fun key(notation: String) = host.key(fake, notation)
+    val caret: Int get() = host.editorFor(fake).primaryCaret().offset
+    val content: String get() = fake.document.content
+  }
+
+  @Test
+  fun `test undo moves the caret back even when the text did not change`() {
+    val session = Session("Hello world", caretAt = 6)
+    session.type("i")
+    session.type("beautiful ")
+    session.key("<C-U>")
+    session.key("<Esc>")
+    session.type("u")
+
+    assertEquals("Hello world", session.content)
+    assertEquals(6, session.caret, "the undo entry was opened with the caret at 6")
+  }
+
+  /** And the ordinary case still works: undo that does change the text puts both back. */
+  @Test
+  fun `test undo of a real change restores the text and the caret`() {
+    val session = Session("Hello world", caretAt = 6)
+    session.type("i")
+    session.type("brave ")
+    session.key("<Esc>")
+    session.type("u")
+
+    assertEquals("Hello world", session.content)
+    assertEquals(6, session.caret)
+  }
+}

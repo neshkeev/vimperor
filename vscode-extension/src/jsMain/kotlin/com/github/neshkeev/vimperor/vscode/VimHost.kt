@@ -414,8 +414,18 @@ class VimHost(
     for (editor in editors.values) {
       // The command has read whatever selection it was handed, so carets may be pushed again.
       editor.selectionHandedToHostCommand = false
-      if (editor.buffer.syncIfDocumentMoved()) {
-        editor.syncCaretsFromEditor()
+      val documentMoved = editor.buffer.syncIfDocumentMoved()
+      // The carets are re-read whether or not a character changed, because a command can move them
+      // without editing anything - and `u` is the case that matters. `ibeautiful <C-U><Esc>u` puts
+      // back a document identical to the one it started from and a *caret* that is not: VS Code
+      // restores the position the undo entry was opened at. Reading only when the text moved left
+      // the engine's caret where `<Esc>` had put it, and the next flush wrote that back over the
+      // one VS Code had just restored.
+      //
+      // Free when nothing moved: `syncCaretsFromEditor` compares against what this host last
+      // pushed and returns at once when they agree.
+      editor.syncCaretsFromEditor()
+      if (documentMoved) {
         // The document is a different length now, and what VS Code last said about the viewport
         // describes the old one. Everything derived from it - where the view is, how tall it looks
         // - has to be dropped rather than reasoned from.

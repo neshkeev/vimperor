@@ -6,7 +6,7 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2410 of the 2423 harvested fixtures pass.
+# 2412 of the 2423 harvested fixtures pass.
 #
 # Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
 # assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
@@ -54,12 +54,13 @@
 # indented the line and left the caret behind. The engine moves no caret there on purpose, because
 # IntelliJ's are document markers and the edit carries them; this host holds carets as values and
 # was shifting only the *other* ones.
+#
+# The two `<C-U>` fixtures were the host re-reading its carets only when a command had changed the
+# text. `u` there restores an identical document and a different caret, so nothing was read back.
 
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:should execute undo in macro
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:testMacroWithIdeAction
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteInsertedTextActionTest.kt:test undo after delete inserted text in insert mode#3
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteInsertedTextActionTest.kt:test undo preserves text before insertion point#4
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionLastColumnActionTest.kt:test dollar motion resets intended location after motion
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/AbbrevCommandTest.kt:iabbrev does not expand after cursor moved with arrows in same insert session
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/ActionCommandTest.kt:testEditorRightAction
