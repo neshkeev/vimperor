@@ -683,10 +683,10 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
       .update(VsCodeSettings.WORD_WRAP, value, target, /* overrideInLanguage = */ true)
       .then(
         {
-          traceWrap(
-            editor,
-            "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value for this language to target $target",
-          )
+          val wrote = "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value for this language to target $target"
+          // The hint only where it can be acted on: a write the user asked for is the one whose
+          // result they are looking at. The keystroke path writes when nothing was typed.
+          traceWrap(editor, if (force) "$wrote. $OVERRIDE" else wrote)
         },
         // Reported rather than swallowed. A settings write can be refused - a workspace target with
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
