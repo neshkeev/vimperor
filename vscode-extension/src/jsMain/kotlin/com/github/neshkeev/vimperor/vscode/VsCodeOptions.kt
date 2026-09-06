@@ -593,28 +593,23 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
     .asBoolean()
   val raw = rawWordWrap(vsCode)
   val configured = raw != null && raw != VsCodeSettings.WORD_WRAP_OFF
-  // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
-  // file on disk. Only when Vim's answer and the editor's have actually parted company.
-  if (wanted == configured) {
-    // Only when the user asked, which is the listener. This also runs after every keystroke, and a
-    // line per key is not a trace, it is a wall.
-    //
-    // Worth saying at all because "nothing happened" is the hardest outcome to report and the
-    // easiest to misread: if the setting already says what Vim wants and the lines still wrap, the
-    // wrap is a per-editor override, and no `:set` can reach it. See [applyWordWrap]'s note.
-    if (asked) {
-      traceWrap(
-        editor,
-        "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} is already ${raw ?: "unset"}, so nothing to write. " +
-          OVERRIDE,
-      )
-    }
-    return
-  }
+
+  // An explicit `:set wrap` is written whatever the read says and whatever was written before.
+  //
+  // Both of the guards below are for the path that runs after *every* keystroke, where the point is
+  // not to write a settings file fifty times for a typed word. On the path where the user asked,
+  // they are two ways to refuse an instruction: the read can disagree with the screen - it has, all
+  // through this option's history - and the remembered write can be of a value the setting no
+  // longer holds. Neither is a reason to do nothing when someone typed the command.
   if (asked) {
     traceWrap(editor, "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} says ${raw ?: "unset"}, writing ${named(wanted)}")
+    writeWordWrap(vsCode, wanted, force = true)
+    return
   }
-  writeWordWrap(vsCode, wanted)
+  // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
+  // file on disk. Only when Vim's answer and the editor's have actually parted company.
+  if (wanted == configured) return
+  writeWordWrap(vsCode, wanted, force = false)
 }
 
 /** The setting as VS Code answers it, unmapped, so a trace line can show what was actually read. */
@@ -664,8 +659,8 @@ private fun traceWrap(editor: VimEditor, message: String) {
  * configuration, which has not caught up in the same turn, which is why the first version of this
  * wrote twice for one `:set wrap`.
  */
-private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
-  if (editor.wroteWordWrap == wrapping) return
+private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolean) {
+  if (!force && editor.wroteWordWrap == wrapping) return
   editor.wroteWordWrap = wrapping
   val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
   val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global

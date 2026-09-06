@@ -597,6 +597,34 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * A typed `:set` is written even when this host thinks it already wrote that value.
+   *
+   * The once-per-value guard is for the path that runs after every keystroke, so that a typed word
+   * is not fifty settings writes. On the path where the user asked it is a way to refuse an
+   * instruction, and it did: a `set nowrap` in a vimrc wrote at startup, and the `:set nowrap` the
+   * user then typed was suppressed as a repeat. The read is no better a guard - it has disagreed
+   * with the screen at every stage of this option's life.
+   */
+  @Test
+  fun `test a typed set is written even if the same value was written before`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      val editor = session.host.editorFor(session.fake)
+      session.run("set wrap")
+      // As if a vimrc had already written `nowrap` for this editor.
+      editor.wroteWordWrap = false
+      forget()
+
+      session.run("set nowrap")
+
+      assertEquals(listOf("wordWrap=off"), writes())
+    } finally {
+      reset()
+    }
+  }
+
   /** And it is written where it can be read back, so the option and the editor cannot drift. */
   @Test
   fun `test the wrap that was written is the wrap that is read`() {
