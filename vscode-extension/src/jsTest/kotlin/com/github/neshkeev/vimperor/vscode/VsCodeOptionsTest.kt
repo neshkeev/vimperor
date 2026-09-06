@@ -493,35 +493,96 @@ class VsCodeOptionsTest {
   // `'wrap'`, which is the third option here that does something rather than being accepted.
 
   /**
-   * `:set nowrap` and `:set wrap` reach VS Code's own word wrap.
+   * `:set nowrap` and `:set wrap` reach VS Code's own word wrap, by *writing* it.
    *
-   * They did nothing at all: `'wrap'` was in the accepted group, declared so that a vimrc would
-   * load and reaching nothing. VS Code has no per-editor *setting* for the wrap - only the toggle
-   * `Alt+Z` runs - so the state has to be tracked to know which way it would go. See
-   * [applyWordWrap].
+   * The first attempt at this ran `editor.action.toggleWordWrap` and kept a belief about which way
+   * the editor currently was, because VS Code will not report it. That is unfixable rather than
+   * merely fragile: one wrong belief and every command means its opposite, which is what it did in
+   * a real window - `:set nowrap` wrapped the file and `:set wrap` unwrapped it. A written value
+   * cannot be inverted, and it reads back, so `:set wrap?` answers from the editor.
    */
   @Test
-  fun `test set wrap toggles VS Code's word wrap`() {
-    val session = Session()
-    session.dispatched.clear()
+  fun `test set wrap writes VS Code's own setting`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
 
-    // The stub's `editor.wordWrap` is `off`, VS Code's own default, so this is a change.
-    session.run("set wrap")
-    assertEquals(emptyList(), session.errors)
-    assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+      session.run("set wrap")
+      assertEquals(emptyList(), session.errors)
+      assertEquals(listOf("wordWrap=on"), writes())
 
-    session.dispatched.clear()
-    session.run("set nowrap")
-    assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+      forget()
+      session.run("set nowrap")
+      assertEquals(listOf("wordWrap=off"), writes())
+    } finally {
+      reset()
+    }
+  }
+
+  /** And it is written where it can be read back, so the option and the editor cannot drift. */
+  @Test
+  fun `test the wrap that was written is the wrap that is read`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      session.run("set wrap")
+      assertTrue(configuredWordWrap(), "the setting should say the editor wraps now")
+
+      session.run("set nowrap")
+      assertEquals(false, configuredWordWrap())
+    } finally {
+      reset()
+    }
+  }
+
+  /** Setting it to what it already is writes nothing: a settings write is a file on disk. */
+  @Test
+  fun `test setting wrap to what it already is writes nothing`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      session.run("set wrap")
+      forget()
+
+      session.run("set wrap")
+      session.run("set wrap")
+
+      assertEquals(emptyList(), writes())
+    } finally {
+      reset()
+    }
   }
 
   /**
-   * An editor wrapping because of a *scoped* setting still answers `:set nowrap`.
+   * And nothing is written just because the extension loaded.
    *
-   * This is what the fix was reported against, and the read was the bug: without a scope VS Code
-   * answers for the window and ignores `"[markdown]": { "editor.wordWrap": "on" }` and a folder's
-   * settings, which is how people usually turn word wrap on. `'wrap'` came out `nowrap` while the
-   * lines wrapped, so `:set nowrap` agreed with itself and changed nothing.
+   * Vim wraps by default and VS Code does not, so an option that started at Vim's answer would turn
+   * wrapping on in every editor the moment Vimperor was installed. The option is seeded from the
+   * editor's own setting instead, which is why typing keys changes nothing.
+   */
+  @Test
+  fun `test starting up leaves the wrap alone`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      session.host.type(session.fake, "x")
+      session.host.key(session.fake, "<Esc>")
+
+      assertEquals(emptyList(), writes())
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * An editor wrapping because of a *scoped* setting is read as wrapping.
+   *
+   * Without a scope VS Code answers for the window and ignores a `[markdown]` block turning word
+   * wrap on, or a folder's settings - which is how people usually turn it on. `'wrap'` came out
+   * `nowrap` while the lines wrapped, so `:set nowrap` agreed with itself and changed nothing.
    */
   @Test
   fun `test a language override is what the wrap is read from`() {
@@ -530,51 +591,34 @@ class VsCodeOptionsTest {
     VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
-      session.dispatched.clear()
+      forget()
 
       session.run("set wrap?")
       assertTrue(
-        session.printed.any { it.contains("  wrap") && !it.contains("nowrap") },
+        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
         "the option should start where the editor is, printed: ${session.printed}",
       )
 
       session.run("set nowrap")
-      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+      assertEquals(listOf("wordWrap=off"), writes())
     } finally {
       settings["/test/buffer.txt"] = undefined
-      VsCodeOptions.wrapWasAsked = false
+      reset()
     }
   }
 
-  /** Setting it to what it already is asks VS Code for nothing: a toggle would turn it the wrong way. */
-  @Test
-  fun `test setting wrap to what it already is toggles nothing`() {
-    val session = Session()
-    session.run("set wrap")
-    session.dispatched.clear()
+  /** Every settings write the stub recorded since [forget], as `key=value`. */
+  private fun writes(): List<String> =
+    js("require('vscode').workspace.updates").unsafeCast<Array<dynamic>>().map { "${it.key}=${it.value}" }
 
-    session.run("set wrap")
-    session.run("set wrap")
-
-    assertEquals(emptyList(), session.dispatched)
+  private fun forget() {
+    js("require('vscode').workspace.updates.length = 0")
   }
 
-  /**
-   * And nothing is toggled just because the extension loaded.
-   *
-   * Vim wraps by default and VS Code does not, so an option that started at Vim's answer would turn
-   * wrapping on in every editor the moment Vimperor was installed. The default is read from
-   * `editor.wordWrap` instead, which is why typing keys changes nothing.
-   */
-  @Test
-  fun `test starting up leaves the wrap alone`() {
-    val session = Session()
-    session.dispatched.clear()
-
-    session.host.type(session.fake, "x")
-    session.host.key(session.fake, "<Esc>")
-
-    assertEquals(emptyList(), session.dispatched)
+  private fun reset() {
+    js("require('vscode').workspace.configuration.editor.wordWrap = 'off'")
+    forget()
+    VsCodeOptions.wrapWasAsked = false
   }
 
   /**

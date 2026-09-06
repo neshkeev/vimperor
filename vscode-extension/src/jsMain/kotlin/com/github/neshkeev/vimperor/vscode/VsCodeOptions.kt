@@ -555,75 +555,87 @@ internal fun watchLineNumbers() {
 }
 
 /**
- * Whether the editor is wrapping, from `'wrap'`.
+ * Whether the editor wraps, from `'wrap'`.
  *
- * VS Code has no per-editor *setting* for this. `TextEditorOptions` carries the gutter, the tab
- * size and the caret shape and not the wrap; `editor.wordWrap` is a configuration value, and
- * writing it would change every window where Vim's `'wrap'` is window-local. What there is, is a
- * toggle - the one `Alt+Z` runs - and a toggle cannot be pointed at a state, only flipped.
+ * **Written rather than toggled, and that is the whole of what makes it work.** VS Code has no
+ * per-editor setting for the wrap - `TextEditorOptions` carries the gutter, the tab size and the
+ * caret shape and not this - so the first version of this reached for
+ * `editor.action.toggleWordWrap`, which is what `Alt+Z` runs. A toggle cannot be pointed at a
+ * state, only flipped, so it needed a belief about which way the editor currently was; and VS Code
+ * will not report that either. One wrong belief and every command means its opposite, which is
+ * exactly what it did: `:set nowrap` wrapped the file and `:set wrap` unwrapped it. There is no
+ * amount of care in maintaining that belief that makes a guess safe.
  *
- * So the state is tracked: [VsCodeEditor.believedWrap], seeded from the same configuration the
- * option's default comes from, and flipped whenever the two disagree. That is the same shape as
- * the viewport's `believedTopLine`, and it has the same weakness - a user who presses `Alt+Z`
- * leaves the belief stale, and the next `:set wrap` toggles the wrong way once before agreeing
- * again. There is no API to ask; the alternative was to leave `:set nowrap` doing nothing at all,
- * which is what it did.
+ * `WorkspaceConfiguration.update` sets an absolute value, so it cannot be inverted, and the same
+ * setting reads back - so `:set wrap?` is answering from the editor rather than from a memory of
+ * what this host last asked for.
+ *
+ * The cost is that a Vim option that is *window*-local is written as a setting that is not: it
+ * lands in the workspace when there is one and in the user's settings otherwise, and it persists.
+ * That is a real difference from Vim and the better of the two trades - the alternative is a
+ * `:set nowrap` that means nothing, or means the opposite half the time.
  */
 internal fun applyWordWrap(editor: VimEditor) {
   val vsCode = editor as? VsCodeEditor ?: return
-  val believed = vsCode.believedWrap ?: seedWordWrap(vsCode)
   val wanted = injector.optionGroup
     .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
     .asBoolean()
-  vsCode.believedWrap = wanted
-  if (believed == wanted) return
-  // The toggle is addressed to whatever has focus, which is the editor a keystroke was typed into -
-  // and `:set nowrap` is a keystroke. Nothing waits for it: a command cannot report what it did.
-  (injector as? VsCodeInjector)?.commands?.run(VsCodeCommands.TOGGLE_WORD_WRAP, waitForIt = false)
+  if (wanted == configuredWordWrap(vsCode)) return
+  // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
+  // file on disk. Only when Vim's answer and the editor's have actually parted company.
+  writeWordWrap(vsCode, wanted)
+}
+
+/** `editor.wordWrap` on or off, wherever this window can write it. */
+private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
+  val target =
+    if (workspace.workspaceFolders.isNullOrEmpty()) ConfigurationTarget.Global else ConfigurationTarget.Workspace
+  val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
+  try {
+    workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
+      .update(VsCodeSettings.WORD_WRAP, value, target)
+      .then({ }, { })
+  } catch (e: Throwable) {
+    // A window that cannot be written to - no workspace and a read-only settings file - is not
+    // worth a thrown keystroke over. `:set wrap?` will keep answering what the editor says.
+  }
 }
 
 /**
- * What this editor is doing before Vim has said anything, recorded on both sides.
+ * What the editor is doing, so that Vim's option starts where the editor already is.
  *
- * The belief is one half; the *option* is the other, and seeding it too is what keeps startup
- * quiet. Vim wraps by default and VS Code does not, so an option left at Vim's answer and then
- * applied would turn wrapping on in every editor the moment Vimperor loaded. Seeded from the
- * editor, the two agree and nothing is toggled until the user asks.
+ * Vim wraps by default and VS Code does not, so an option left at Vim's answer would turn wrapping
+ * on in every editor the moment Vimperor loaded. Seeded from the editor, the two agree and nothing
+ * is written until the user asks.
  *
- * Not once the user has said something. A `~/.ideavimrc` with `set nowrap` in it means the answer
+ * Not once the user has said something: a `~/.vimperorrc` with `set nowrap` in it means the answer
  * for every window, and a window that opened afterwards must not be re-seeded back out of it.
  */
-private fun seedWordWrap(editor: VsCodeEditor): Boolean {
-  val wrapping = configuredWordWrap(editor)
-  editor.believedWrap = wrapping
-  if (!VsCodeOptions.wrapWasAsked) {
-    injector.optionGroup.setOptionValue(
-      VsCodeOptions.wrap,
-      OptionAccessScope.LOCAL(editor),
-      VimInt(if (wrapping) 1 else 0),
-    )
-  }
-  return wrapping
+private fun seedWordWrap(editor: VsCodeEditor) {
+  if (VsCodeOptions.wrapWasAsked) return
+  injector.optionGroup.setOptionValue(
+    VsCodeOptions.wrap,
+    OptionAccessScope.LOCAL(editor),
+    VimInt(if (configuredWordWrap(editor)) 1 else 0),
+  )
 }
 
 /**
  * The editor's own `wordWrap` setting, as a boolean, for the file this editor is showing.
  *
  * VS Code's four values are `off`, `on`, `wordWrapColumn` and `bounded`, and Vim's option has two -
- * so everything but `off` is wrapping. Unset reads as `off`, which is VS Code's own default and
- * what a stub with no settings in it means.
+ * so everything but `off` is wrapping. Unset reads as `off`, which is VS Code's own default.
  *
- * Scoped to the document, which is the part that is easy to leave out and was: without a scope VS
- * Code answers for the *window* and ignores a language override - a `[markdown]` block turning
- * word wrap on - which is how people usually do it. An editor that was wrapping for that reason
- * read as `off`, so `'wrap'` started at `nowrap` and `:set nowrap` had nothing to change.
+ * Scoped to the document, because without a scope VS Code answers for the *window* and ignores a
+ * language override - a `[markdown]` block turning word wrap on - which is how people usually do
+ * it.
  *
  * Read defensively: the one host that is not a VS Code window is the stub the tests run in.
  */
-private fun configuredWordWrap(editor: VsCodeEditor? = null): Boolean = try {
+internal fun configuredWordWrap(editor: VsCodeEditor? = null): Boolean = try {
   val scope = editor?.nativeEditor?.document?.uri
   val value = workspace.getConfiguration(VsCodeSettings.EDITOR, scope).get(VsCodeSettings.WORD_WRAP)
-  value != null && value != undefined && value != "off"
+  value != null && value != VsCodeSettings.WORD_WRAP_OFF
 } catch (e: Throwable) {
   false
 }
@@ -632,6 +644,7 @@ private fun configuredWordWrap(editor: VsCodeEditor? = null): Boolean = try {
 internal fun applyEditorOptions(editor: VimEditor) {
   applyLineNumbers(editor)
   applyLanguage(editor)
+  (editor as? VsCodeEditor)?.let { seedWordWrap(it) }
   applyWordWrap(editor)
 }
 

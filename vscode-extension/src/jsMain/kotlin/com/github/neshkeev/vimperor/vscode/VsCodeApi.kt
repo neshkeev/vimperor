@@ -263,6 +263,21 @@ external object workspace {
 external interface WorkspaceConfiguration {
   /** VS Code's is generic; only the boolean half is used here, and it is undefined when unset. */
   fun get(section: String): Any?
+
+  /**
+   * Writes a setting, which is the only way to put word wrap in a *known* state.
+   *
+   * [target] is a [ConfigurationTarget]. Resolves when the write has landed and rejects if the
+   * setting cannot be written there - a workspace target with no folder open, for one.
+   */
+  fun update(section: String, value: Any?, target: Int): Thenable<Unit>
+}
+
+/** Where a settings write goes. VS Code's `ConfigurationTarget`: Global 1, Workspace 2, Folder 3. */
+external object ConfigurationTarget {
+  val Global: Int
+  val Workspace: Int
+  val WorkspaceFolder: Int
 }
 
 external interface WorkspaceFolder {

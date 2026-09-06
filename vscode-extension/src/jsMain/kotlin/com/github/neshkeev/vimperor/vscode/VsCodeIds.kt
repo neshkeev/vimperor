@@ -180,15 +180,6 @@ internal object VsCodeCommands {
   /** `:e file`. One of the few built-ins that takes an argument, which is why the runner carries one. */
   const val OPEN = "vscode.open"
 
-  /**
-   * `'wrap'` and `'nowrap'`, which VS Code has no per-editor *setting* for - only this toggle.
-   *
-   * `editor.wordWrap` is a configuration value, and writing it would change every window rather
-   * than this one, where Vim's `'wrap'` is window-local. The toggle is per editor and is what
-   * `Alt+Z` runs. Its cost is that it cannot be read back: see [applyWordWrap].
-   */
-  const val TOGGLE_WORD_WRAP = "editor.action.toggleWordWrap"
-
   const val SAVE = "workbench.action.files.save"
   const val SAVE_ALL = "workbench.action.files.saveAll"
   /**
@@ -281,7 +272,6 @@ internal object VsCodeCommands {
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
     SELECT_NEXT_SUGGESTION, SELECT_PREV_SUGGESTION,
-    TOGGLE_WORD_WRAP,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS, REVERT_AND_CLOSE,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,
@@ -471,6 +461,10 @@ internal object VsCodeSettings {
 
   /** `off`, `on`, `wordWrapColumn` or `bounded`. Vim's `'wrap'` is the first against the rest. */
   const val WORD_WRAP = "wordWrap"
+
+  /** The two of those four Vim can ask for. */
+  const val WORD_WRAP_ON = "on"
+  const val WORD_WRAP_OFF = "off"
 }
 
 /**

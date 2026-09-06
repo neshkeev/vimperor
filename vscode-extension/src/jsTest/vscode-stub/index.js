@@ -250,11 +250,25 @@ const workspace = {
    */
   getConfiguration: (section, scope) => ({
     get: (key) => {
-      const scoped = scope && workspace.scopedConfiguration[scope.path]
-      const narrow = scoped && scoped[section] && scoped[section][key]
-      return narrow !== undefined ? narrow : (workspace.configuration[section] || {})[key]
+      // `== null` and not `!== undefined`: with no scope the narrow lookup is `null`, and a check
+      // against `undefined` alone answers *null* for every unscoped read. That is a stub bug that
+      // made an unscoped read look like an unset setting, so the tests agreed with each other and
+      // not with a window.
+      const scoped = scope ? workspace.scopedConfiguration[scope.path] : null
+      const narrow = scoped && scoped[section] ? scoped[section][key] : undefined
+      return narrow == null ? (workspace.configuration[section] || {})[key] : narrow
+    },
+    /** Writes where `get` will read it back from, which is what makes `'wrap'` checkable. */
+    update: (key, value, target) => {
+      const scoped = scope ? workspace.scopedConfiguration[scope.path] : null
+      const into = scoped && scoped[section] ? scoped[section] : (workspace.configuration[section] ||= {})
+      into[key] = value
+      workspace.updates.push({ section, key, value, target })
+      return { then: (onFulfilled) => (onFulfilled && onFulfilled(undefined), { then: () => {} }) }
     },
   }),
+  /** Every settings write, so a test can read back what was asked for and where. */
+  updates: [],
 }
 
 /*
@@ -274,4 +288,6 @@ class ThemeColor {
   }
 }
 
-module.exports = { extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }
+const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 }
+
+module.exports = { ConfigurationTarget, extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }

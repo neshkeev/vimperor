@@ -162,20 +162,29 @@ already has.
 **Declaring an option is not implementing it, and `'wrap'` is the warning.** `VsCodeOptions`
 has two groups on purpose: the ones that reach VS Code, and the ones declared only so that a
 `~/.vimrc` loads instead of reporting `E518` on every line. `:set nowrap` sat in the second
-group and did nothing at all, which is worse than an error - the user is told nothing. It is
-in the first group now, and the two things that made it look unportable are both worth
-knowing. VS Code has no per-editor *setting* for the wrap: `TextEditorOptions` carries the
-gutter, the tab size and the caret shape and not this, and `editor.wordWrap` is
-configuration, which would change every window where Vim's `'wrap'` is window-local. What
-there is, is `editor.action.toggleWordWrap` - and a toggle cannot be pointed at a state, only
-flipped, so the state has to be tracked. That is `VsCodeEditor.believedWrap`, the same shape
-as `believedTopLine` and with the same weakness: `Alt+Z` leaves it stale for one `:set`.
+group and did nothing at all, which is worse than an error - the user is told nothing.
 
-The other half is the default. Vim wraps and VS Code does not, so an option that started at
+Getting it out of that group took three attempts and the first two were wrong in the same
+way, which is the part worth keeping. VS Code has no per-editor setting for the wrap:
+`TextEditorOptions` carries the gutter, the tab size and the caret shape and not this. What it
+has is `editor.action.toggleWordWrap`, and **a toggle cannot be pointed at a state, only
+flipped** - so it needs to know which way the editor currently is, and VS Code will not say.
+Tracking a belief was the obvious answer and is unfixable rather than merely fragile: one
+wrong belief and every command means its opposite. In a real window it did exactly that -
+`:set nowrap` wrapped the file and `:set wrap` unwrapped it - while every test passed.
+
+`WorkspaceConfiguration.update` writes an absolute value, so it cannot be inverted, and the
+same setting reads back, so `:set wrap?` answers from the editor rather than from a memory of
+what this host last asked for. The cost is that a window-local Vim option is written as a
+setting that is not: it lands in the workspace when there is one and in the user's settings
+otherwise, and it persists. That is the better of the two trades.
+
+The default is the other half. Vim wraps and VS Code does not, so an option that started at
 Vim's answer would turn wrapping *on* in every editor the moment Vimperor loaded. It is
-seeded from `editor.wordWrap`, so nothing happens until the user asks and `:set wrap?` is
-true in the meantime. Anything else moved out of the accepted group will need the same
-question asked of it.
+seeded from the editor's own setting, scoped to the document - unscoped, VS Code answers for
+the *window* and ignores a `[markdown]` block turning wrap on, which is how people usually do
+it. Anything else moved out of the accepted group will need all three questions asked of it:
+can it be set rather than toggled, what is its default here, and is the read scoped.
 
 Three more of the `idea*` family are answered here now, and the interesting thing about
 them is how little they needed. `'ide'` is `env.appName` - the option exists because one

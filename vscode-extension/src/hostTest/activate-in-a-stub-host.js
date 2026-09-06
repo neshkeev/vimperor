@@ -388,11 +388,13 @@ const vscode = {
     // without burying everything else this host prints.
     getConfiguration: (section, scope) => ({
       get: (key) => (section === 'vimperor' && key === 'trace' ? tracing : undefined),
+      update: (key, value, target) => Promise.resolve(),
     }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
     workspaceFolders: [{ uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }],
   },
+  ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
   Uri: {
     file: (filePath) => ({ scheme: 'file', path: filePath, fsPath: filePath }),
     // `toString` because that is how VS Code's own `Uri` renders back to a URL, and `gx` is checked
