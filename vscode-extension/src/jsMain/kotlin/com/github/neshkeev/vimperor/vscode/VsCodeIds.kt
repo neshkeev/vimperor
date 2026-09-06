@@ -467,6 +467,14 @@ internal object VsCodeSettings {
   const val WORD_WRAP_OFF = "off"
 
   /** Section and key together, for a message that has to name the setting a user would search for. */
+  /**
+   * `indentSize`'s "however wide a tab is", which is VS Code's spelling of Vim's `shiftwidth=0`.
+   *
+   * A value rather than a setting name, and the only string of its kind here - `indentSize` is
+   * `number | string` and this is the string half.
+   */
+  const val INDENT_SIZE_TAB_SIZE: String = "tabSize"
+
   const val WORD_WRAP_SETTING = "$EDITOR.$WORD_WRAP"
 }
 

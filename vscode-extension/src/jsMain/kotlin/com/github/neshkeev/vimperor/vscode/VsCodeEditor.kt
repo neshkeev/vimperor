@@ -1161,7 +1161,16 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   override fun deleteFoldRegionAtOffset(offset: Int): Boolean = false
   override fun deleteFoldRegionsRecursivelyAtOffset(offset: Int): Boolean = false
   override val lfMakesNewLine: Boolean get() = TODO("VsCodeEditor.lfMakesNewLine")
-  override val indentConfig: VimIndentConfig = VsCodeIndentConfig { nativeEditor.options }
+  override val indentConfig: VimIndentConfig = VsCodeIndentConfig(this)
+
+  /**
+   * Whether this editor's indent options have been started off at what VS Code says.
+   *
+   * Per editor, not per session: VS Code resolves indentation per file, per language and - with
+   * `detectIndentation` on - from the file's own contents, so two windows genuinely have two
+   * answers. See `seedIndent`.
+   */
+  internal var seededIndent: Boolean = false
   /**
    * What `R` overwrote, so that backspace in replace mode puts it back. Held per editor because
    * replace mode is per window; the engine builds and clears it.

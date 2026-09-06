@@ -26,8 +26,15 @@ import kotlin.test.assertEquals
  */
 class RetabTest {
 
-  private class Session(text: String) {
-    val fake = FakeEditor(text)
+  /**
+   * [width] is stated rather than left to chance, and that is a change these tests needed.
+   *
+   * They used to depend on `'tabstop'` being Vim's default of 8 because nothing set it - which
+   * stopped being true when `seedIndent` began starting an editor's `'tabstop'` off at what VS Code
+   * says the file's indentation is. Eight is what they meant; the fake now says so.
+   */
+  private class Session(text: String, width: Int = 8, spaces: Boolean = true) {
+    val fake = FakeEditor(text).also { it.indentWidth = width; it.indentWithSpaces = spaces }
     val host = VimHost().also { it.start() }
 
     init {
@@ -63,6 +70,21 @@ class RetabTest {
     assertEquals("ab\tc", session.content)
   }
 
+  /**
+   * With nothing set, the width is the editor's - which is the whole point of seeding it.
+   *
+   * A VS Code user whose files are laid out at four columns and who types `:retab` means four. Vim's
+   * own default of eight is not an answer about their file, it is an answer about a terminal.
+   */
+  @Test
+  fun `test retab uses the width the editor says the file is`() {
+    val session = Session("ab\tc", width = 4)
+    session.run("set expandtab")
+    session.run("retab")
+
+    assertEquals("ab  c", session.content, "the editor says a tab is four wide, so the tab ends at column 4")
+  }
+
   /** `'tabstop'` decides how wide an existing tab is, so the answer changes with it. */
   @Test
   fun `test the tabstop decides how far a tab reaches`() {
@@ -82,7 +104,10 @@ class RetabTest {
    */
   @Test
   fun `test a width argument is left set afterwards`() {
-    val session = Session("ab\tc")
+    // A tab-indented file, said out loud. `'expandtab'` is seeded from the editor now, so a fake
+    // that indents with spaces makes `:retab` write spaces - which is right, and not this test's
+    // subject.
+    val session = Session("ab\tc", spaces = false)
     val editor = session.host.editorFor(session.fake)
 
     session.run("retab 4")

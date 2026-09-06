@@ -154,6 +154,31 @@ internal object VsCodeOptions {
   val filetype: StringOption = StringOption("filetype", LOCAL_TO_BUFFER, "ft", "")
   val syntax: StringOption = StringOption("syntax", LOCAL_TO_BUFFER, "syn", "")
 
+  /**
+   * Indentation: `'expandtab'`, `'tabstop'`, `'shiftwidth'` and `'softtabstop'`.
+   *
+   * These sat in the accepted group under a comment saying this host "reads indentation from
+   * `editor.options` rather than from Vim", because VS Code resolves it per language and per file
+   * and detects it from the file itself, "which is a better answer than one number in a vimrc".
+   * Every clause of that is true and the conclusion was wrong in the way `'wrap'` was wrong: a
+   * `~/.vimrc` that says `set shiftwidth=2` was read, accepted, and then ignored, and `>>` went on
+   * shifting by whatever VS Code had worked out.
+   *
+   * Both answers are kept by seeding rather than by choosing. `seedIndent` starts each editor off at
+   * VS Code's answer, so a user who has set nothing gets the file's own indentation and `>>` agrees
+   * with pressing Tab without Vim; `applyIndent` writes the option to the editor when the user has
+   * set one. See `VsCodeIndentConfig` for how they are read.
+   *
+   * `'shiftwidth'` starts at 0 where Vim's own default is 8, and that is deliberate. Zero is Vim's
+   * spelling of "however wide `'tabstop'` is", so the default defers to the editor along with
+   * everything else here - and 8 would mean `>>` in a four-column file shifted by eight until the
+   * user noticed. `'softtabstop'` is 0 for the same reason and in Vim as well.
+   */
+  val expandtab: ToggleOption = ToggleOption("expandtab", LOCAL_TO_BUFFER, "et", false)
+  val tabstop: NumberOption = UnsignedNumberOption("tabstop", LOCAL_TO_BUFFER, "ts", 8)
+  val shiftwidth: NumberOption = UnsignedNumberOption("shiftwidth", LOCAL_TO_BUFFER, "sw", 0)
+  val softtabstop: NumberOption = UnsignedNumberOption("softtabstop", LOCAL_TO_BUFFER, "sts", 0)
+
   // ---- Accepted. VS Code decides these, and Vim's spelling of them exists so a config loads.
 
   // How text is drawn. `renderWhitespace`, `renderLineHighlight` and the rest are user settings
@@ -171,13 +196,6 @@ internal object VsCodeOptions {
   val textwidth: NumberOption = UnsignedNumberOption("textwidth", LOCAL_TO_BUFFER, "tw", 0)
   val wrapmargin: NumberOption = UnsignedNumberOption("wrapmargin", LOCAL_TO_BUFFER, "wm", 0)
 
-  // Indentation, which this host reads from `editor.options` rather than from Vim. VS Code resolves
-  // it per language and per file and can detect it from the file itself, which is a better answer
-  // than one number in a vimrc - see the port's README.
-  val expandtab: ToggleOption = ToggleOption("expandtab", LOCAL_TO_BUFFER, "et", false)
-  val tabstop: NumberOption = UnsignedNumberOption("tabstop", LOCAL_TO_BUFFER, "ts", 8)
-  val shiftwidth: NumberOption = UnsignedNumberOption("shiftwidth", LOCAL_TO_BUFFER, "sw", 8)
-  val softtabstop: NumberOption = UnsignedNumberOption("softtabstop", LOCAL_TO_BUFFER, "sts", 0)
   val autoindent: ToggleOption = ToggleOption("autoindent", LOCAL_TO_BUFFER, "ai", false)
   val smartindent: ToggleOption = ToggleOption("smartindent", LOCAL_TO_BUFFER, "si", false)
   val smarttab: ToggleOption = ToggleOption("smarttab", GLOBAL, "sta", false)
@@ -548,6 +566,9 @@ internal fun watchLineNumbers() {
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.relativenumber) { applyLineNumbers(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.filetype) { applyLanguage(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.syntax) { applyLanguage(it) }
+  injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.tabstop) { applyIndent(it) }
+  injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.shiftwidth) { applyIndent(it) }
+  injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.expandtab) { applyIndent(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.wrap) {
     VsCodeOptions.wrapWasAsked = true
     applyWordWrap(it, asked = true)
@@ -757,28 +778,128 @@ private fun wordWrapSetting(editor: VsCodeEditor?): String? = try {
 }
 
 /**
- * Whether a language block is what decides this file's wrap.
+ * The indent options a user's `~/.vimrc` actually sets, against `TextEditorOptions`.
  *
- * Compared rather than looked up, because VS Code offers no way to ask which layer an effective
- * value came from. If the document's answer differs from the same file's answer by URI, a language
- * override is the difference - and a plain write would be shadowed by it.
+ * ## Why these three and not the whole accepted group
+ *
+ * They pass all four of the questions `'wrap'` left behind, and pass them more easily than `'wrap'`
+ * did. They can be *set* rather than toggled - `tabSize` and `insertSpaces` take absolute values.
+ * Their default comes from the editor, by [seedIndent], because Vim's own defaults are `ts=8`,
+ * `sw=8` and `noexpandtab`, and a host that applied those on open would re-indent every file
+ * anybody opened. The read is scoped by construction: `TextEditorOptions` belongs to one editor and
+ * there is no wider layer to be confused with. And the write lands exactly where the read comes
+ * from, which is the whole of what took `'wrap'` three attempts - there is no settings file here, no
+ * workspace target and no language block, because VS Code models indentation as editor state and
+ * models the wrap as configuration.
+ *
+ * That last difference is worth keeping in mind before reaching for the next option: these are
+ * *easier* than `'wrap'`, not harder, and the reason is the shape of VS Code's API rather than
+ * anything about the options themselves.
+ *
+ * ## What is written
+ *
+ * `'tabstop'` is `tabSize`, `'shiftwidth'` is `indentSize`, `'expandtab'` is `insertSpaces`. The
+ * three map one to one, which they did not before VS Code separated `indentSize` from `tabSize` in
+ * 1.85; `'shiftwidth'` at zero is written as the string `"tabSize"`, which is that API spelling
+ * Vim's "use `'tabstop'`" rule.
+ *
+ * `'softtabstop'` is not written, and that is not an omission. It governs what a *Tab keypress*
+ * covers, and this host handles Tab itself in `VimEditorTab` rather than letting VS Code see it, so
+ * writing it would tell VS Code about a key it never receives. `VsCodeIndentConfig.toNextTabStop`
+ * is where it is read.
+ *
+ * Compared against what the editor is *showing* rather than against what was last written, for the
+ * reason [applyLineNumbers] gives at length: VS Code owns these and resets them on its own account,
+ * and a memory of our own writes cannot see that happen.
  */
-private fun wrapIsLanguageScoped(editor: VsCodeEditor): Boolean = try {
-  val document = editor.nativeEditor.document
-  val withLanguage = workspace.getConfiguration(VsCodeSettings.EDITOR, document).get(VsCodeSettings.WORD_WRAP)
-  val withoutLanguage =
-    workspace.getConfiguration(VsCodeSettings.EDITOR, document.uri).get(VsCodeSettings.WORD_WRAP)
-  withLanguage != withoutLanguage
-} catch (e: Throwable) {
-  false
+internal fun applyIndent(editor: VimEditor) {
+  if (seeding) return
+  val vsCode = editor as? VsCodeEditor ?: return
+  val options = vsCode.nativeEditor.options
+  val scope = OptionAccessScope.EFFECTIVE(editor)
+
+  val tabstop = injector.optionGroup.getOptionValue(VsCodeOptions.tabstop, scope).value
+  if (tabstop > 0 && tabstop != options.tabSize) options.tabSize = tabstop
+
+  val expandtab = injector.optionGroup.getOptionValue(VsCodeOptions.expandtab, scope).asBoolean()
+  if (expandtab != options.insertSpaces) options.insertSpaces = expandtab
+
+  // Zero is Vim's "however wide a tab is", and `"tabSize"` is VS Code's spelling of the same thing.
+  val shiftwidth = injector.optionGroup.getOptionValue(VsCodeOptions.shiftwidth, scope).value
+  val wanted: dynamic = if (shiftwidth > 0) shiftwidth else VsCodeSettings.INDENT_SIZE_TAB_SIZE
+  if (wanted != options.indentSize) options.indentSize = wanted
+}
+
+/**
+ * Starts an editor's indent options off at what VS Code says this file's indentation is.
+ *
+ * The alternative is Vim's defaults, and they would be actively destructive: `ts=8 sw=8 noexpandtab`
+ * applied to a project of two-space files re-indents every one of them the first time anybody
+ * presses `>>`. Deferring to VS Code is also what makes `>>` agree with pressing Tab in the same
+ * file without Vim, which this port has always done and must go on doing.
+ *
+ * Once per editor, because [applyEditorOptions] runs after every keystroke and a `:setlocal
+ * shiftwidth=2` typed into this window must survive the next key. Per editor rather than once
+ * overall - unlike `'wrap'`, which has a single flag - because VS Code resolves indentation per
+ * file, per language and, with `detectIndentation` on, from the file's own contents: two windows
+ * genuinely have two answers.
+ *
+ * Not for an option the user has set. A `~/.vimrc` runs before any of this and its values are the
+ * global ones, so an option whose global value has moved off its default was asked for and is left
+ * alone. The one case that misses is a config setting an option to exactly Vim's default - `set
+ * tabstop=8` - which is read here as not having asked. It is the same class of ambiguity `'wrap'`
+ * has and it fails the safe way: towards the editor's own answer.
+ */
+private fun seedIndent(editor: VsCodeEditor) {
+  if (editor.seededIndent) return
+  editor.seededIndent = true
+
+  // Read before any of it is written, and written with [applyIndent] held off. Seeding one option
+  // changes its value, which fires the engine's change listener, which runs [applyIndent] - so
+  // seeding `'tabstop'` wrote the *un-seeded* `'expandtab'` onto the editor, and the next line read
+  // that back as the editor's own answer and seeded a file of spaces as a file of tabs. Reading
+  // first fixes the value; the guard stops a settings write nobody asked for on the way through.
+  val options = editor.nativeEditor.options
+  val size = options.tabSize as? Int
+  // Compared rather than cast: `insertSpaces` is `dynamic` because VS Code types it
+  // `boolean | string`, and `as? Boolean` on a `dynamic` does not narrow the way `as? Int` does.
+  val spaces: dynamic = options.insertSpaces
+
+  seeding = true
+  try {
+    size?.takeIf { it > 0 }?.let { seed(VsCodeOptions.tabstop, editor, VimInt(it)) }
+    if (spaces == true || spaces == false) {
+      seed(VsCodeOptions.expandtab, editor, VimInt(if (spaces == true) 1 else 0))
+    }
+  } finally {
+    seeding = false
+  }
+}
+
+/**
+ * Whether [seedIndent] is part-way through, so that its own writes do not look like a `:set`.
+ *
+ * One flag for the whole host rather than one per editor: seeding is synchronous and there is one
+ * thread, so no two editors are ever inside it at once.
+ */
+private var seeding: Boolean = false
+
+/** Sets an editor's local value, unless a config has already set the option globally. */
+private fun <T : VimDataType> seed(option: Option<T>, editor: VsCodeEditor, value: T) {
+  if (injector.optionGroup.getOptionValue(option, OptionAccessScope.GLOBAL(null)) != option.defaultValue) return
+  injector.optionGroup.setOptionValue(option, OptionAccessScope.LOCAL(editor), value)
 }
 
 /** Everything Vim tells VS Code about an editor, applied together. */
 internal fun applyEditorOptions(editor: VimEditor) {
   applyLineNumbers(editor)
   applyLanguage(editor)
-  (editor as? VsCodeEditor)?.let { seedWordWrap(it) }
+  (editor as? VsCodeEditor)?.let {
+    seedWordWrap(it)
+    seedIndent(it)
+  }
   applyWordWrap(editor)
+  applyIndent(editor)
 }
 
 /**

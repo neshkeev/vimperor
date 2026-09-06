@@ -208,6 +208,20 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
   var indentWithSpaces: Boolean = true
   var indentWidth: Int = 4
 
+  /**
+   * What one level of indent is, which VS Code keeps apart from [indentWidth] and Vim calls
+   * `'shiftwidth'`. `"tabSize"` - the string - is its default and means "however wide a tab is".
+   */
+  var indentStep: dynamic = VsCodeSettings.INDENT_SIZE_TAB_SIZE
+
+  /**
+   * How many times each of the three has been written.
+   *
+   * Writing an editor option is a round trip in a real window, so "did not write" is behaviour
+   * worth asserting, and it cannot be seen from the value - which is the same either way.
+   */
+  var indentWrites: Int = 0
+
   /** The caret's shape, which a Vim emulator writes and a test reads back. */
   var cursorStyle: Int = TextEditorCursorStyle.Line
 
@@ -224,11 +238,29 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
 
   override val options: TextEditorOptions
     get() = object : TextEditorOptions {
-      override val tabSize: dynamic get() = indentWidth
-      override val insertSpaces: dynamic get() = indentWithSpaces
+      // Through the editor's own fields, because VS Code's `options` is a live view onto the editor
+      // rather than a snapshot - writing `editor.options.tabSize` changes the editor.
+      override var tabSize: dynamic
+        get() = indentWidth
+        set(value) {
+          indentWidth = value as Int
+          indentWrites++
+        }
 
-      // Through the editor's own field, because VS Code's `options` is a live view onto the editor
-      // rather than a snapshot - writing `editor.options.cursorStyle` changes the editor.
+      override var indentSize: dynamic
+        get() = indentStep
+        set(value) {
+          indentStep = value
+          indentWrites++
+        }
+
+      override var insertSpaces: dynamic
+        get() = indentWithSpaces
+        set(value) {
+          indentWithSpaces = value as Boolean
+          indentWrites++
+        }
+
       override var cursorStyle: Int
         get() = this@FakeEditor.cursorStyle
         set(value) {

@@ -9,6 +9,8 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.options.OptionAccessScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -37,6 +39,17 @@ class VsCodeIndentTest {
     fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
     fun key(notation: String) = host.key(fake, notation)
     val content: String get() = fake.document.content
+
+    fun run(line: String) {
+      key("<Esc>")
+      type(":$line")
+      key("<CR>")
+    }
+
+    fun option(name: String): Int = injector.optionGroup
+      .getOptionValue(injector.optionGroup.getOption(name)!!, OptionAccessScope.EFFECTIVE(host.editorFor(fake)))
+      .toVimNumber()
+      .value
   }
 
   @Test
@@ -128,5 +141,138 @@ class VsCodeIndentTest {
     session.key("<Esc>")
 
     assertEquals("one\n  new", session.content)
+  }
+
+  // ---- What a `~/.vimrc` sets, which used to be accepted and ignored.
+  //
+  // All three of these are in nearly every Vim config ever written, this host declared all three so
+  // that such a config would load without `E518`, and then nothing read them. `set shiftwidth=2`
+  // shifted by four. That is the same silent no-op `set nowrap` was, and it is why these exist.
+
+  @Test
+  fun `test shiftwidth decides what a shift moves by`() {
+    val session = Session("x", width = 4)
+    session.run("set shiftwidth=2")
+    session.type(">>")
+
+    assertEquals("  x", session.content, "two, because the user said two - not the editor's four")
+  }
+
+  @Test
+  fun `test a shift follows the editor when nothing has been set`() {
+    val session = Session("x", width = 4)
+    session.type(">>")
+
+    assertEquals("    x", session.content, "the editor's width, which is what this port has always done")
+  }
+
+  /**
+   * The other half of that, and the one a mere behaviour test cannot see.
+   *
+   * A user who sets nothing must be left alone: their editor's indentation is VS Code's business,
+   * resolved per language, per file and by detection, and a host writing Vim's defaults over it
+   * would re-indent every file anybody opened.
+   */
+  @Test
+  fun `test an editor is not written to when nothing has been set`() {
+    val session = Session("x", width = 4)
+    session.type(">>")
+
+    assertEquals(0, session.fake.indentWrites)
+  }
+
+  @Test
+  fun `test expandtab decides whether a Tab is a tab`() {
+    val session = Session("", width = 4)
+    session.run("set noexpandtab")
+    session.type("i")
+    session.key("<Tab>")
+    session.type("x")
+    session.key("<Esc>")
+
+    assertEquals("\tx", session.content)
+  }
+
+  @Test
+  fun `test tabstop reaches the editor`() {
+    val session = Session("x", width = 4)
+    session.run("set tabstop=2")
+
+    assertEquals(2, session.fake.indentWidth, "written through TextEditorOptions, where VS Code reads it")
+  }
+
+  @Test
+  fun `test expandtab reaches the editor`() {
+    val session = Session("x", width = 4)
+    session.run("set noexpandtab")
+
+    assertEquals(false, session.fake.indentWithSpaces)
+  }
+
+  /**
+   * `'shiftwidth'` is `indentSize`, which VS Code has kept apart from `tabSize` since 1.85.
+   *
+   * Before that they were one number, which is why this host conflated them - and why `>>` in a
+   * file of eight-column tabs shifted by eight when the user had asked for two.
+   */
+  @Test
+  fun `test shiftwidth reaches the editor as indentSize`() {
+    val session = Session("x", width = 4)
+    session.run("set shiftwidth=2")
+
+    assertEquals(2, session.fake.indentStep)
+  }
+
+  /** And zero goes back to VS Code's own "however wide a tab is", which is Vim's `sw=0`. */
+  @Test
+  fun `test a shiftwidth of zero defers to the tab width`() {
+    val session = Session("x", width = 4)
+    session.run("set shiftwidth=2")
+    session.run("set shiftwidth=0")
+    session.type(">>")
+
+    assertEquals("    x", session.content)
+    assertEquals("tabSize", session.fake.indentStep)
+  }
+
+  /**
+   * A tab character is as wide as `'tabstop'` says whatever `>>` moves by.
+   *
+   * So one level of a two-column shift is two spaces even in a file written with tabs, because no
+   * tab can express column 2 when a tab is eight wide. Vim does this; the old code could not, since
+   * it had one number standing for both.
+   */
+  @Test
+  fun `test a shift narrower than a tab is written in spaces`() {
+    val session = Session("x", width = 8, spaces = false)
+    session.run("set shiftwidth=2")
+    session.type(">>")
+
+    assertEquals("  x", session.content)
+  }
+
+  /** And a shift that fills a tab is written as one. */
+  @Test
+  fun `test a shift as wide as a tab is written as a tab`() {
+    val session = Session("x", width = 8, spaces = false)
+    session.run("set shiftwidth=8")
+    session.type(">>")
+
+    assertEquals("\tx", session.content)
+  }
+
+  /**
+   * `:set tabstop?` answers the editor, not Vim's default of eight.
+   *
+   * This is what makes the option honest for a user who has set nothing, and it is the thing the
+   * accepted group cannot do: there, `:set expandtab?` answers with whatever was last set and the
+   * editor may be doing the opposite.
+   */
+  @Test
+  fun `test the options report what the editor is doing`() {
+    val session = Session("x", width = 2)
+
+    assertEquals(2, session.option("tabstop"))
+    assertEquals(1, session.option("expandtab"), "the fake indents with spaces")
   }
 }

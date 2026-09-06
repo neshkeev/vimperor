@@ -462,8 +462,26 @@ external interface TextEditor {
  * reading happens here, so the coercion is one-way.
  */
 external interface TextEditorOptions {
-  val tabSize: dynamic
-  val insertSpaces: dynamic
+  /**
+   * How wide a tab character draws, which is exactly Vim's `'tabstop'`.
+   *
+   * `dynamic` because the API is `number | string` in both directions: a read is documented as
+   * always resolved to a number, and a write may be `"auto"`. This host writes numbers and reads
+   * defensively - see `VsCodeIndentConfig`.
+   */
+  var tabSize: dynamic
+
+  /**
+   * How wide one level of indent is, which is Vim's `'shiftwidth'` under another name.
+   *
+   * Separate from [tabSize] since VS Code 1.85, and the same distinction Vim draws: `'tabstop'` is
+   * what a tab character *draws as*, `'shiftwidth'` is what `>>` *moves by*. Its default is the
+   * string `"tabSize"`, which is Vim's `shiftwidth=0` written out.
+   */
+  var indentSize: dynamic
+
+  /** Spaces rather than tab characters, which is Vim's `'expandtab'` the same way round. */
+  var insertSpaces: dynamic
 
   /**
    * The shape of the caret, which in Vim is part of knowing which mode you are in.
