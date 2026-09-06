@@ -6,7 +6,7 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2414 of the 2423 harvested fixtures pass.
+# 2415 of the 2423 harvested fixtures pass.
 #
 # Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
 # assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
@@ -65,5 +65,4 @@ src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/ActionCom
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test count is applied to action mapping
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test map enter to action
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
-src/test/java/org/jetbrains/plugins/ideavim/extension/replacewithregister/ReplaceWithRegisterTest.kt:test replace use wrong register
 src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingPasteVariantsTest.kt:test a visual mode paste is cyclable#2

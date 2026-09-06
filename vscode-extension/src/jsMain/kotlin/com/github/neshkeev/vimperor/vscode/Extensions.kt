@@ -266,15 +266,15 @@ internal object VsCodeExtensions {
  * every extension this host has was reachable one way and documented the other.
  */
 internal fun registerExtensionOptions() {
-  VsCodeExtensions.BUNDLED.keys.forEach { name ->
+  optionNames().forEach { (optionName, name) ->
     // The option and its listener have different lifetimes, and conflating them cost an afternoon.
     // `Options` is a Kotlin object, so an option declared by one host is still declared for the
     // next one in the same process; the *listener* lives on the option group, which is new with
     // every injector. Skipping the whole block when the option already existed left every host
     // after the first with an option nothing was listening to - which is `set surround` silently
     // doing nothing all over again, one layer down.
-    val option = injector.optionGroup.getOption(name) as? ToggleOption
-      ?: ToggleOption(name, OptionDeclaredScope.GLOBAL, abbreviationFor(name), false)
+    val option = injector.optionGroup.getOption(optionName) as? ToggleOption
+      ?: ToggleOption(optionName, OptionDeclaredScope.GLOBAL, abbreviationFor(optionName), false)
         .also { injector.optionGroup.addOption(it) }
     injector.optionGroup.addGlobalOptionChangeListener(option) {
       val on = injector.optionGroup.getOptionValue(option, OptionAccessScope.GLOBAL(null)).booleanValue
@@ -285,6 +285,27 @@ internal fun registerExtensionOptions() {
       }
     }
   }
+}
+
+/**
+ * Every name `set` should accept, and the extension each one enables.
+ *
+ * Not just what [VsCodeExtensions.BUNDLED] is keyed by. IdeaVim's documented name for an extension
+ * is the one on its extension point, and this host keys its map by the thin API's plugin name -
+ * which for one of them is not the same word. `ReplaceWithRegisterNew` is what runs here and
+ * `set ReplaceWithRegister` is what a config says, so the option was missing under the only name
+ * anybody writes and `gr` was never mapped. Silently: a config runs with errors suppressed, so the
+ * `E518` was never seen, and in a fixture `griw` became an insert and a typed `w`.
+ *
+ * Only aliases that look like an option name. [VsCodeExtensions.ALIASES] also carries repository
+ * paths and `script.php?script_id=2703`, which are for `Plug` to resolve and are not things `set`
+ * could ever be given.
+ */
+private fun optionNames(): List<Pair<String, String>> {
+  val bundled = VsCodeExtensions.BUNDLED.keys
+  val fromAliases = VsCodeExtensionRegistrator.optionAliases()
+    .filter { (alias, target) -> target in bundled && alias !in bundled }
+  return bundled.map { it to it } + fromAliases
 }
 
 /**
@@ -424,7 +445,23 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
   override fun getExtensionNameByAlias(alias: String): String? =
     ALIASES[alias.trim().removeSurrounding("'").removeSurrounding("\"").substringAfterLast('/')]
 
-  private companion object {
+  internal companion object {
+
+    /**
+     * The aliases that are another spelling of an extension's *own* name, with what each enables.
+     *
+     * Not every alias. Most of [ALIASES] is repository tails and `script.php?script_id=2703`, which
+     * exist for `Plug 'tpope/vim-surround'` to resolve; nobody writes `set vim-surround`, and an
+     * option for each would be a dozen names no config contains.
+     *
+     * What is wanted is the case this otherwise misses: `ReplaceWithRegister` is what IdeaVim's
+     * extension point is called and what a config says, `ReplaceWithRegisterNew` is the thin-API
+     * plugin that runs here, and the second begins with the first. Case-insensitive because
+     * `nerdtree` and `NERDTree` are the same word twice.
+     */
+    fun optionAliases(): List<Pair<String, String>> = ALIASES.entries
+      .filter { (alias, target) -> target.startsWith(alias, ignoreCase = true) }
+      .map { it.key to it.value }
     /**
      * By the repository tail, which is what `:Plug` and `Plugin` lines actually carry.
      *

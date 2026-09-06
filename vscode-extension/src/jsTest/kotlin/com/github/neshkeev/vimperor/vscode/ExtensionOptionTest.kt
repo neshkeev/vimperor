@@ -132,3 +132,66 @@ class ExtensionOptionTest {
     assertEquals(listOf("NERDTree"), session.enabled)
   }
 }
+
+/**
+ * The names `:set` accepts for an extension, which are IdeaVim's and not this host's map keys.
+ *
+ * `ReplaceWithRegisterNew` is what runs here - IdeaVim has two of them and only the thin-API one
+ * can - while `set ReplaceWithRegister` is what a config says. The option existed only under the
+ * first, so `gr` was never mapped, and silently: a config runs with errors suppressed, so the
+ * `E518` went unseen and `griw` became an insert and a typed `w`.
+ */
+class ExtensionOptionAliasTest {
+
+  private fun session(): Pair<FakeEditor, VimHost> {
+    val fake = FakeEditor("one two three")
+    val host = VimHost().also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(fake))
+    return fake to host
+  }
+
+  private fun run(command: String, fake: FakeEditor, host: VimHost) {
+    host.type(fake, ":")
+    command.forEach { host.type(fake, it.toString()) }
+    host.key(fake, "<CR>")
+  }
+
+  @Test
+  fun `test an extension can be set by the name IdeaVim documents`() {
+    val (fake, host) = session()
+    run("set ReplaceWithRegister", fake, host)
+    injector.parser.parseKeys("yiwwgriw").forEach { host.handle(fake, listOf(it)) }
+
+    assertEquals("one one three", fake.document.content)
+  }
+
+  /** And the name this host keys its own map by still works. */
+  @Test
+  fun `test the bundled name works too`() {
+    val (fake, host) = session()
+    run("set ReplaceWithRegisterNew", fake, host)
+    injector.parser.parseKeys("yiwwgriw").forEach { host.handle(fake, listOf(it)) }
+
+    assertEquals("one one three", fake.document.content)
+  }
+
+  /** An empty register replaces nothing, rather than leaving `iw` to be typed as keys. */
+  @Test
+  fun `test replacing from an empty register changes nothing`() {
+    val (fake, host) = session()
+    run("set ReplaceWithRegister", fake, host)
+    injector.parser.parseKeys("\"ayiw\"bgriw").forEach { host.handle(fake, listOf(it)) }
+
+    assertEquals("one two three", fake.document.content)
+  }
+
+  /** Only names `:set` could be given - a repository path is for `Plug` to resolve. */
+  @Test
+  fun `test a repository alias is not made into an option`() {
+    val (fake, host) = session()
+    session()
+
+    assertEquals(null, injector.optionGroup.getOption("script.php?script_id=2703"))
+    assertEquals(null, injector.optionGroup.getOption("vim-surround"))
+  }
+}
