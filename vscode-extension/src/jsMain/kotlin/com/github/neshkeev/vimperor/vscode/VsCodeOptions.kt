@@ -654,10 +654,23 @@ private fun traceWrap(editor: VimEditor, message: String) {
  * ordinary thing to have - would be written for and unaffected. The folder the file is in is the
  * narrowest target that certainly covers it; a file in no folder gets the user's settings.
  *
- * Written at most once per value: this runs after every keystroke as well as on the option change,
- * and a settings write is a file on disk. The read cannot be used to tell - it answers from the
- * configuration, which has not caught up in the same turn, which is why the first version of this
- * wrote twice for one `:set wrap`.
+ * Written at most once per value on the keystroke path: that runs after every key, and a settings
+ * write is a file on disk. The read cannot be used to tell - it answers from the configuration,
+ * which has not caught up in the same turn, which is why the first version of this wrote twice for
+ * one `:set wrap`. A typed `:set` forces its way past that guard; see [applyWordWrap].
+ *
+ * ## Always into the language block
+ *
+ * Not "when a language block is what decides this file's wrap", which is what this used to work out
+ * by comparing a document-scoped read with a URI-scoped one. That decision was made per call and
+ * came out differently for the two directions, so `:set wrap` wrote the language value and
+ * `:set nowrap` wrote the plain one - two different layers, and the second could not undo the
+ * first. It was visible in a trace as a `wrap` that wrapped and a `nowrap` that did nothing.
+ *
+ * An option has to be written where it is read. The language block is the layer that wins - a
+ * `[markdown]` block beats the plain setting at the same scope, which is exactly why people use it
+ * to turn word wrap on - so writing there is the only choice that is certain to take effect and
+ * certain to be reversible.
  */
 private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolean) {
   if (!force && editor.wroteWordWrap == wrapping) return
@@ -665,18 +678,14 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
   val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
   val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
-  // Into the language block when a language block is what decides this file's wrap, because a plain
-  // write would be written, read back, and shadowed - which is what it was.
-  val inLanguage = wrapIsLanguageScoped(editor)
   try {
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
-      .update(VsCodeSettings.WORD_WRAP, value, target, inLanguage)
+      .update(VsCodeSettings.WORD_WRAP, value, target, /* overrideInLanguage = */ true)
       .then(
         {
           traceWrap(
             editor,
-            "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target" +
-              (if (inLanguage) " for this language" else "") + ". $OVERRIDE",
+            "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value for this language to target $target",
           )
         },
         // Reported rather than swallowed. A settings write can be refused - a workspace target with

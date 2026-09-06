@@ -527,6 +527,24 @@ class VsCodeOptionsTest {
    * the workspace and nothing else, so a file opened on its own alongside a project would have been
    * written for and unaffected. Target 1 is Global, 3 is WorkspaceFolder.
    */
+  /** Both directions go to the same layer, always, or they cannot undo each other. */
+  @Test
+  fun `test both directions are written into the language block`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      session.run("set wrap")
+      session.run("set nowrap")
+
+      val updates = js("require('vscode').workspace.updates").unsafeCast<Array<dynamic>>()
+      assertEquals(listOf(true, true), updates.map { it.overrideInLanguage as Boolean })
+    } finally {
+      reset()
+    }
+  }
+
   @Test
   fun `test the wrap is written where it reaches this file`() {
     VsCodeOptions.wrapWasAsked = false
@@ -591,6 +609,14 @@ class VsCodeOptionsTest {
       assertEquals(listOf("wordWrap=off"), writes())
       assertEquals(true, js("require('vscode').workspace.updates[0].overrideInLanguage"))
       assertEquals(false, configuredWordWrap(session.host.editorFor(session.fake)))
+
+      // And back, into the same layer. Writing the two directions to *different* layers is what
+      // made `:set wrap` wrap and `:set nowrap` do nothing: the second could not undo the first.
+      forget()
+      session.run("set wrap")
+      assertEquals(listOf("wordWrap=on"), writes())
+      assertEquals(true, js("require('vscode').workspace.updates[0].overrideInLanguage"))
+      assertEquals(true, configuredWordWrap(session.host.editorFor(session.fake)))
     } finally {
       byLanguage["plaintext"] = undefined
       reset()
@@ -631,11 +657,14 @@ class VsCodeOptionsTest {
     VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
+      val editor = session.host.editorFor(session.fake)
       session.run("set wrap")
-      assertTrue(configuredWordWrap(), "the setting should say the editor wraps now")
+      // Read *for this editor*: the write goes into the file's language block, and an unscoped read
+      // does not resolve one. That asymmetry is the bug this option kept having, in miniature.
+      assertTrue(configuredWordWrap(editor), "the setting should say the editor wraps now")
 
       session.run("set nowrap")
-      assertEquals(false, configuredWordWrap())
+      assertEquals(false, configuredWordWrap(editor))
     } finally {
       reset()
     }
@@ -722,6 +751,10 @@ class VsCodeOptionsTest {
 
   private fun reset() {
     js("require('vscode').workspace.configuration.editor.wordWrap = 'off'")
+    // The language blocks too. Every write goes into one now, so a test that set the wrap left the
+    // next one's editor already wrapping - and `set wrap` is not a change, so it wrote nothing and
+    // the failure read as the write being broken.
+    js("require('vscode').workspace.languageConfiguration = {}")
     forget()
     VsCodeOptions.wrapWasAsked = false
   }
