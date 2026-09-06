@@ -1,6 +1,0 @@
-{
-  "actionl[ist]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionListCommand",
-    "standardConstructor": true
-  }
-}
