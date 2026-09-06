@@ -13,7 +13,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.MessageType
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.message.MessageHistory
+import com.github.neshkeev.vimperor.message.MessageHistory
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.ex.exExceptionMessage

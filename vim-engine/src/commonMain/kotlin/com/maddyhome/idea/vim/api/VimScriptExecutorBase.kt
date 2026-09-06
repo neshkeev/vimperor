@@ -8,8 +8,8 @@
 
 package com.maddyhome.idea.vim.api
 
-import com.maddyhome.idea.vim.match.Matches
-import com.maddyhome.idea.vim.script.SourcedScripts
+import com.github.neshkeev.vimperor.match.Matches
+import com.github.neshkeev.vimperor.script.SourcedScripts
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.ExException
 import com.maddyhome.idea.vim.ex.FinishException

@@ -649,25 +649,55 @@ replayed corpus rather than against the engine.
 
 **New code goes in `com.github.neshkeev.vimperor`.** So does anything this fork
 authored, which is what the `Copyright 2026 Nikita Eshkeev` header marks;
-inherited files keep `com.maddyhome.idea.vim` along with their own header.
+inherited files keep `com.maddyhome.idea.vim` along with their own header. That
+rule is now applied everywhere it can be seen: 213 fork-authored files, and every
+one of them has its path equal to its package.
 
-The VS Code extension and the fourteen engine packages that are wholly this
-fork's - `highlight`, `sign`, `redirect`, `path`, `diff`, `directory`, `match`,
-`message`, `profile`, `script`, `tags`, `tutor`, and the buffer and path function
-handlers - have moved. Sub-paths were preserved: only the prefix changed.
+The eighty-two that moved in the last pass came in two shapes, and the second was
+free. Sixty-six were in `com/maddyhome/idea/vim/` and moved. The other sixteen -
+`diff`, `directory`, `highlight`, `match`, `message`, `path`, `profile`,
+`redirect`, `script`, `sign`, `tags`, `tutor` - were **already** in
+`com/github/neshkeev/vimperor/` on disk while declaring `com.maddyhome.idea.vim`,
+which Kotlin permits and nothing had noticed.
 
-**Sixty-four files have not moved, and the reason they had not is gone.** They sit
-in packages that are mostly inherited - 20 ex commands among 116, one file in
-`api` among 110, the `host` test package, four function-handler packages - and
-moving them while the plugin lived would have split those packages in two.
+**Twelve packages moved whole; ten split**, and a split package is the part that
+costs. `com.maddyhome.idea.vim.vimscript.model.commands` holds 136 files of which
+20 are this fork's, so a same-package reference that needed no import before needs
+one now - in both directions, since a moved file also loses its free access to
+what stayed. That is 270 imports, and it is why this is a mechanical pass and not
+a `sed`.
 
-The plugin is deleted, so the engine belongs to this fork outright and can be
-renamed in one pass. That is the tidying job the deletion unlocked; it is not
-urgent, and it is a single mechanical commit rather than sixty-four decisions.
-Two things it has to get right: the `@ExCommand` and `@VimscriptFunction`
-registries name every class by its full package, so `:vim-engine:kspKotlinJvm`
-has to be re-run and the generated JSON committed - and `src/test`, which is
-data, refers to engine classes by name in strings that no compiler will check.
+**`kspKotlinJvm --rerun-tasks` is the check that matters.** The `@ExCommand` and
+`@VimscriptFunction` registries name every class by its full package, they are
+committed under `vim-engine/src/jvmMain/resources/ksp-generated/`, and KSP writes
+them into the source tree rather than into `build/`. Regenerate and compare
+byte-for-byte rather than trusting the rewrite - and confirm the mixed state is
+what you meant: `engine_ex_commands.json` now names 60 classes under the new root
+and 341 under the old.
+
+`src/test` is left alone. It is IdeaVim's tests as IdeaVim wrote them, compiled by
+nothing and read as text, and it names engine classes in strings no compiler
+checks.
+
+### The header is not the same thing as the authorship
+
+**146 files carry `Copyright 2003-2026 The IdeaVim authors` and IdeaVim never had
+them.** They were written here and inherited the header by copy-paste. The
+filename appears nowhere in `upstream/master` under any name, which is the only
+reliable test - comparing *paths* against upstream says nothing, because this fork
+moved the engine from `src/main` to `src/commonMain` and so every path differs.
+
+The clearest case is `com.maddyhome.idea.vim.host`: 43 files, the whole headless
+host and its tests, none of which exist upstream - `upstream/master` has no
+`vim-engine/src/commonTest` at all. Thirty-one of them carry this fork's header
+and have moved; the twelve that hold `HeadlessInjector`, `TestVimEditor` and
+`TestVimCaret` do not, and stayed. So a package IdeaVim never wrote is now split
+down the middle on the strength of which header got pasted into which file, and
+the other large buckets are `helper` (32) and 29 more ex commands.
+
+Nothing is wrong with the code. But **the header is the criterion and on those
+files the header is wrong**, so before moving any of them, fix the notice - that
+is a decision about a copyright statement, not a refactor.
 
 ## Quick Reference
 

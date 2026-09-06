@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.path
-
+package com.github.neshkeev.vimperor.path
 import com.maddyhome.idea.vim.api.injector
 
 /**

@@ -6,11 +6,10 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.path
-
+package com.github.neshkeev.vimperor.path
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.regexp.VimRegex
 import com.maddyhome.idea.vim.regexp.VimRegexOptions

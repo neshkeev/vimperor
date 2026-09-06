@@ -20,13 +20,11 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ranges.Range
-import com.maddyhome.idea.vim.tutor.TutorHost
-import com.maddyhome.idea.vim.tutor.vimTutor
+import com.github.neshkeev.vimperor.tutor.TutorHost
+import com.github.neshkeev.vimperor.tutor.vimTutor
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 import com.maddyhome.idea.vim.vimscript.model.commands.Command
 import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
-import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
-import com.maddyhome.idea.vim.vimscript.model.commands.LazyExCommandInstance
 
 /**
  * Vimperor's tutor: Vim's own lessons, opened in a buffer the reader is meant to take apart.

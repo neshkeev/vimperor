@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.diff
-
+package com.github.neshkeev.vimperor.diff
 import com.maddyhome.idea.vim.annotations.TestOnly
 
 /**

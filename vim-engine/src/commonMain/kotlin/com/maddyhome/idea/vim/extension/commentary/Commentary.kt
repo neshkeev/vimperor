@@ -38,7 +38,7 @@ import com.maddyhome.idea.vim.state.mode.SelectionType
  *
  * What kept it in the plugin was one function, and it was not the mappings or the text object: it
  * was toggling the comment itself, which needs to know that a comment is `//` here and `#` there.
- * That is [com.maddyhome.idea.vim.api.VimCommentService] now, and both hosts already had the
+ * That is [com.github.neshkeev.vimperor.api.VimCommentService] now, and both hosts already had the
  * capability - IntelliJ in a `Commenter` reached over RPC, VS Code in the language configuration
  * behind `editor.action.commentLine`.
  *

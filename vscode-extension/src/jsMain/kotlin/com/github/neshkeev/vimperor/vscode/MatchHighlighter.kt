@@ -9,11 +9,11 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.api.VimMatchHighlighter
+import com.github.neshkeev.vimperor.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.common.TextRange
-import com.maddyhome.idea.vim.highlight.HighlightAttributes
-import com.maddyhome.idea.vim.highlight.HighlightGroup
-import com.maddyhome.idea.vim.highlight.UnderlineStyle
+import com.github.neshkeev.vimperor.highlight.HighlightAttributes
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
+import com.github.neshkeev.vimperor.highlight.UnderlineStyle
 
 /**
  * `:match`, over VS Code's decorations.

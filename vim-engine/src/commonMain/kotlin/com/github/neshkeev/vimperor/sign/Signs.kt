@@ -6,12 +6,11 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.sign
-
+package com.github.neshkeev.vimperor.sign
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.highlight.Highlights
+import com.github.neshkeev.vimperor.highlight.Highlights
 
 /**
  * The signs that have been defined and the places they have been put.

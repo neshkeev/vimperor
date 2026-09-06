@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.script
-
+package com.github.neshkeev.vimperor.script
 import com.maddyhome.idea.vim.annotations.TestOnly
 
 /**

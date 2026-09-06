@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.highlight
-
+package com.github.neshkeev.vimperor.highlight
 /**
  * Turning what a `~/.vimrc` writes after `guifg=` or `ctermfg=` into a colour an editor can draw.
  *

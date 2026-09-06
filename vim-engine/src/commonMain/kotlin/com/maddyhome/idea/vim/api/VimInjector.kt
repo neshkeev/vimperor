@@ -8,6 +8,14 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.github.neshkeev.vimperor.api.NoMatchHighlighting
+import com.github.neshkeev.vimperor.api.VimCommentService
+import com.github.neshkeev.vimperor.api.VimFileTreeService
+import com.github.neshkeev.vimperor.api.VimMatchHighlighter
+import com.github.neshkeev.vimperor.api.VimWindowResizeService
+import com.github.neshkeev.vimperor.sign.NoSignDisplay
+import com.github.neshkeev.vimperor.sign.VimSignDisplay
+import com.maddyhome.idea.vim.annotations.Internal
 import com.maddyhome.idea.vim.common.VimListenersNotifier
 import com.maddyhome.idea.vim.diagnostic.VimLogger
 import com.maddyhome.idea.vim.extension.ExtensionLoader
@@ -18,8 +26,6 @@ import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.macro.VimMacro
 import com.maddyhome.idea.vim.put.VimPut
 import com.maddyhome.idea.vim.register.VimRegisterGroup
-import com.maddyhome.idea.vim.sign.NoSignDisplay
-import com.maddyhome.idea.vim.sign.VimSignDisplay
 import com.maddyhome.idea.vim.state.VimStateMachine
 import com.maddyhome.idea.vim.thinapi.VimHighlightingService
 import com.maddyhome.idea.vim.thinapi.VimPluginService
@@ -27,7 +33,6 @@ import com.maddyhome.idea.vim.undo.LineChange
 import com.maddyhome.idea.vim.undo.VimUndoRedo
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.yank.VimYankGroup
-import com.maddyhome.idea.vim.annotations.Internal
 import kotlin.reflect.KClass
 
 interface VimInjector {

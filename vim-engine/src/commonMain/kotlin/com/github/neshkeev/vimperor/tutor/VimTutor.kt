@@ -22,8 +22,7 @@
  * See https://github.com/vim/vim/blob/master/runtime/tutor/tutor
  */
 
-package com.maddyhome.idea.vim.tutor
-
+package com.github.neshkeev.vimperor.tutor
 /**
  * What a host has to say for itself in the tutor.
  *

@@ -9,7 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.ExecutionContext
-import com.maddyhome.idea.vim.api.VimCommentService
+import com.github.neshkeev.vimperor.api.VimCommentService
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.common.TextRange
 

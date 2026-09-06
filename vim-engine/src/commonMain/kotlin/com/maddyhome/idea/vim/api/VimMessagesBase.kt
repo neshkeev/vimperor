@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
-import com.maddyhome.idea.vim.message.MessageHistory
+import com.github.neshkeev.vimperor.message.MessageHistory
 
 /**
  * The half of a host's messages that is the same in every host.

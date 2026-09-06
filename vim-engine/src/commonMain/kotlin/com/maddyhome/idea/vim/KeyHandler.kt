@@ -7,8 +7,8 @@
  */
 package com.maddyhome.idea.vim
 
-import com.maddyhome.idea.vim.match.Matches
-import com.maddyhome.idea.vim.sign.Signs
+import com.github.neshkeev.vimperor.match.Matches
+import com.github.neshkeev.vimperor.sign.Signs
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.getLineEndOffset

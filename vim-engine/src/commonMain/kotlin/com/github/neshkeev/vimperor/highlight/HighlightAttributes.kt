@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.highlight
-
+package com.github.neshkeev.vimperor.highlight
 /**
  * What `:highlight` decided a group looks like, in terms a host can paint without knowing Vim.
  *

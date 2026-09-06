@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.vimscript.model.functions
 
-import com.maddyhome.idea.vim.profile.Profile
+import com.github.neshkeev.vimperor.profile.Profile
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector

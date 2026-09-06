@@ -9,7 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.api.VimWindowResizeService
+import com.github.neshkeev.vimperor.api.VimWindowResizeService
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.resize.ResizeArgument
 import kotlin.math.abs

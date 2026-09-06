@@ -10,8 +10,8 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
-import com.maddyhome.idea.vim.api.VimMatchHighlighter
-import com.maddyhome.idea.vim.sign.VimSignDisplay
+import com.github.neshkeev.vimperor.api.VimMatchHighlighter
+import com.github.neshkeev.vimperor.sign.VimSignDisplay
 import com.maddyhome.idea.vim.api.VimExternalOpener
 import com.maddyhome.idea.vim.autocmd.AutoCmdEvent
 import com.maddyhome.idea.vim.api.VimProcessGroup

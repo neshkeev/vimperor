@@ -9,7 +9,7 @@
 package com.maddyhome.idea.vim.vimscript.model.commands
 
 import com.intellij.vim.annotations.ExCommand
-import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector

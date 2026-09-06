@@ -6,10 +6,9 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.sign
-
+package com.github.neshkeev.vimperor.sign
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.highlight.HighlightGroup
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
 
 /**
  * One sign, ready to be drawn: where it is and what it looks like, with nothing left to look up.

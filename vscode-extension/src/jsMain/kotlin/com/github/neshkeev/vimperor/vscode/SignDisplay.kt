@@ -9,9 +9,9 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.highlight.HighlightGroup
-import com.maddyhome.idea.vim.sign.PlacedSign
-import com.maddyhome.idea.vim.sign.VimSignDisplay
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
+import com.github.neshkeev.vimperor.sign.PlacedSign
+import com.github.neshkeev.vimperor.sign.VimSignDisplay
 
 /**
  * `:sign`, over VS Code's decorations.

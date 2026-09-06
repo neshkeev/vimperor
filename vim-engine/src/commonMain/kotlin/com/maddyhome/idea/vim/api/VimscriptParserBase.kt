@@ -18,7 +18,7 @@ import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.commands.ExCommandTree
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.parser.DeletionInfo
-import com.maddyhome.idea.vim.vimscript.parser.LineEntryBlocks
+import com.github.neshkeev.vimperor.vimscript.parser.LineEntryBlocks
 import com.maddyhome.idea.vim.vimscript.parser.errors.IdeavimErrorListener
 import com.maddyhome.idea.vim.vimscript.parser.visitors.CommandVisitor
 import com.maddyhome.idea.vim.vimscript.parser.visitors.ExpressionVisitor

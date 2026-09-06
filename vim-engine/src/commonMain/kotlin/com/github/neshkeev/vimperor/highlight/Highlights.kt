@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.highlight
-
+package com.github.neshkeev.vimperor.highlight
 import com.maddyhome.idea.vim.annotations.TestOnly
 
 /**

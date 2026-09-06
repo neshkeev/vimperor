@@ -12,8 +12,8 @@ import com.intellij.vim.annotations.VimscriptFunction
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
-import com.maddyhome.idea.vim.directory.WorkingDirectory
-import com.maddyhome.idea.vim.path.Glob
+import com.github.neshkeev.vimperor.directory.WorkingDirectory
+import com.github.neshkeev.vimperor.path.Glob
 import com.maddyhome.idea.vim.vimscript.model.VimLContext
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimDataType
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimList

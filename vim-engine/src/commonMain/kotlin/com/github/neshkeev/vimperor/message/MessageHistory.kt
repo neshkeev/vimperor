@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.message
-
+package com.github.neshkeev.vimperor.message
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.api.MessageType
 

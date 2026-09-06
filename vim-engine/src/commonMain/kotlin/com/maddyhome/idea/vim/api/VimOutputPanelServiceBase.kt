@@ -8,7 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
-import com.maddyhome.idea.vim.redirect.Redirection
+import com.github.neshkeev.vimperor.redirect.Redirection
 
 abstract class VimOutputPanelServiceBase : VimOutputPanelService {
   override fun getOrCreate(editor: VimEditor, context: ExecutionContext): VimOutputPanel {

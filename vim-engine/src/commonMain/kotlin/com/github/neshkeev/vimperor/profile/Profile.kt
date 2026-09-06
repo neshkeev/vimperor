@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.profile
-
+package com.github.neshkeev.vimperor.profile
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.helper.currentTimeMillis
 

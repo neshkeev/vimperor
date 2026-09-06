@@ -31,8 +31,8 @@ import com.maddyhome.idea.vim.extension.VimExtensionFacade.putExtensionHandlerMa
 import com.maddyhome.idea.vim.extension.VimExtensionFacade.putKeyMappingIfMissing
 import com.maddyhome.idea.vim.extension.VimExtensionFacade.setRegisterForCaret
 import com.maddyhome.idea.vim.extension.exportOperatorFunction
-import com.maddyhome.idea.vim.extension.readCharacter
-import com.maddyhome.idea.vim.extension.readKeys
+import com.github.neshkeev.vimperor.extension.readCharacter
+import com.github.neshkeev.vimperor.extension.readKeys
 import com.maddyhome.idea.vim.group.findBlockRange
 import com.maddyhome.idea.vim.helper.exitVisualMode
 import com.maddyhome.idea.vim.key.MappingOwner

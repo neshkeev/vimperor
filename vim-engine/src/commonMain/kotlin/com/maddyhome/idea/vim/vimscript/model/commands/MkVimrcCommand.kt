@@ -15,7 +15,7 @@ import com.maddyhome.idea.vim.api.getAllMappingInfoWithMode
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.isDefaultValue
 import com.maddyhome.idea.vim.command.MappingMode
-import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.ex.ranges.Range

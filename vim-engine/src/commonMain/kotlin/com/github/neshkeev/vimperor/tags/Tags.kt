@@ -6,14 +6,13 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.tags
-
+package com.github.neshkeev.vimperor.tags
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.annotations.TestOnly
-import com.maddyhome.idea.vim.directory.WorkingDirectory
+import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.maddyhome.idea.vim.options.OptionAccessScope
 
 /**

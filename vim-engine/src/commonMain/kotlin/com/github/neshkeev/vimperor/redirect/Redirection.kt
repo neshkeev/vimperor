@@ -6,8 +6,7 @@
  * https://opensource.org/licenses/MIT.
  */
 
-package com.maddyhome.idea.vim.redirect
-
+package com.github.neshkeev.vimperor.redirect
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor

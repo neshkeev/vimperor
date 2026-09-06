@@ -10,7 +10,6 @@
 
 package com.maddyhome.idea.vim.state.mode
 
-import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.state.VimStateMachine
 
 /**

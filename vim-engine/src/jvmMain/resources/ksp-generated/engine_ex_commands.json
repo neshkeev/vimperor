@@ -48,7 +48,7 @@
     "standardConstructor": true
   },
   "a[ppend]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AppendLinesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.AppendLinesCommand",
     "standardConstructor": true
   },
   "ab[breviate]": {
@@ -116,7 +116,7 @@
     "standardConstructor": true
   },
   "ba[ll]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.AllBuffersCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.AllBuffersCommand",
     "standardConstructor": true
   },
   "bad[d]": {
@@ -128,7 +128,7 @@
     "standardConstructor": true
   },
   "be[have]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.BehaveCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.BehaveCommand",
     "standardConstructor": true
   },
   "bel[owright]": {
@@ -192,7 +192,7 @@
     "standardConstructor": true
   },
   "c[hange]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLinesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLinesCommand",
     "standardConstructor": true
   },
   "ca[bbrev]": {
@@ -224,7 +224,7 @@
     "standardConstructor": true
   },
   "cd": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeDirectoryCommand",
     "standardConstructor": true
   },
   "ce[nter]": {
@@ -248,7 +248,7 @@
     "standardConstructor": true
   },
   "chd[ir]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeDirectoryCommand",
     "standardConstructor": true
   },
   "checkt[ime]": {
@@ -296,7 +296,7 @@
     "standardConstructor": true
   },
   "colo[rscheme]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ColorschemeCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ColorschemeCommand",
     "standardConstructor": true
   },
   "com[mand]": {
@@ -364,11 +364,11 @@
     "standardConstructor": true
   },
   "diffo[ff]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffOffCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffOffCommand",
     "standardConstructor": true
   },
   "diffp[atch]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffPatchCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffPatchCommand",
     "standardConstructor": true
   },
   "diffpu[t]": {
@@ -376,15 +376,15 @@
     "standardConstructor": true
   },
   "diffs[plit]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffSplitCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffSplitCommand",
     "standardConstructor": true
   },
   "difft[his]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffThisCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffThisCommand",
     "standardConstructor": true
   },
   "diffu[pdate]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffUpdateCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffUpdateCommand",
     "standardConstructor": true
   },
   "dig[raphs]": {
@@ -464,7 +464,7 @@
     "standardConstructor": true
   },
   "filet[ype]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FiletypeCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FiletypeCommand",
     "standardConstructor": true
   },
   "filt[er]": {
@@ -488,11 +488,11 @@
     "standardConstructor": true
   },
   "foldd[oopen]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldDoOpenCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FoldDoOpenCommand",
     "standardConstructor": true
   },
   "folddoc[losed]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldDoClosedCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FoldDoClosedCommand",
     "standardConstructor": true
   },
   "foldo[pen]": {
@@ -532,11 +532,11 @@
     "standardConstructor": true
   },
   "helpt[ags]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpTagsCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.HelpTagsCommand",
     "standardConstructor": true
   },
   "hi[ghlight]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.HighlightCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.HighlightCommand",
     "standardConstructor": true
   },
   "hid[e]": {
@@ -552,7 +552,7 @@
     "standardConstructor": true
   },
   "i[nsert]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.InsertLinesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.InsertLinesCommand",
     "standardConstructor": true
   },
   "ia[bbrev]": {
@@ -652,7 +652,7 @@
     "standardConstructor": true
   },
   "lan[guage]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LanguageCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LanguageCommand",
     "standardConstructor": true
   },
   "lat[er]": {
@@ -664,11 +664,11 @@
     "standardConstructor": true
   },
   "lc[d]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "lch[dir]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "lcl[ose]": {
@@ -740,7 +740,7 @@
     "standardConstructor": false
   },
   "loadv[iew]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LoadViewCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LoadViewCommand",
     "standardConstructor": true
   },
   "lockm[arks]": {
@@ -768,7 +768,7 @@
     "standardConstructor": true
   },
   "lt[ag]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationTagCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationTagCommand",
     "standardConstructor": true
   },
   "lu[nmap]": {
@@ -780,11 +780,11 @@
     "standardConstructor": true
   },
   "lv[imgrep]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationVimGrepCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationVimGrepCommand",
     "standardConstructor": true
   },
   "lvimgrepa[dd]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LocationVimGrepAddCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationVimGrepAddCommand",
     "standardConstructor": true
   },
   "lw[indow]": {
@@ -816,11 +816,11 @@
     "standardConstructor": true
   },
   "mat[ch]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MatchCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MatchCommand",
     "standardConstructor": true
   },
   "mes[sages]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MessagesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MessagesCommand",
     "standardConstructor": true
   },
   "mk[exrc]": {
@@ -840,7 +840,7 @@
     "standardConstructor": true
   },
   "mkvie[w]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeViewCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MakeViewCommand",
     "standardConstructor": true
   },
   "n[ext]": {
@@ -900,7 +900,7 @@
     "standardConstructor": true
   },
   "ol[dfiles]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.OldFilesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.OldFilesCommand",
     "standardConstructor": true
   },
   "om[ap]": {
@@ -940,7 +940,7 @@
     "standardConstructor": true
   },
   "packl[oadall]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackLoadAllCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.PackLoadAllCommand",
     "standardConstructor": true
   },
   "pc[lose]": {
@@ -956,7 +956,7 @@
     "standardConstructor": true
   },
   "po[p]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPopCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPopCommand",
     "standardConstructor": true
   },
   "prev[ious]": {
@@ -964,7 +964,7 @@
     "standardConstructor": true
   },
   "prof[ile]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ProfileCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ProfileCommand",
     "standardConstructor": true
   },
   "ps[earch]": {
@@ -1048,7 +1048,7 @@
     "standardConstructor": true
   },
   "redi[r]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedirCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.RedirCommand",
     "standardConstructor": true
   },
   "redr[aw]": {
@@ -1084,7 +1084,7 @@
     "standardConstructor": true
   },
   "ru[ntime]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.RuntimeCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.RuntimeCommand",
     "standardConstructor": true
   },
   "rub[y]": {
@@ -1108,7 +1108,7 @@
     "standardConstructor": true
   },
   "sav[eas]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SaveAsCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SaveAsCommand",
     "standardConstructor": true
   },
   "sb[uffer]": {
@@ -1116,11 +1116,11 @@
     "standardConstructor": true
   },
   "sba[ll]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitAllBuffersCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SplitAllBuffersCommand",
     "standardConstructor": true
   },
   "scr[iptnames]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ScriptNamesCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ScriptNamesCommand",
     "standardConstructor": true
   },
   "scripte[ncoding]": {
@@ -1152,7 +1152,7 @@
     "standardConstructor": true
   },
   "sign": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SignCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SignCommand",
     "standardConstructor": true
   },
   "sil[ent]": {
@@ -1204,7 +1204,7 @@
     "standardConstructor": false
   },
   "spe[llgood]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellGoodCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellGoodCommand",
     "standardConstructor": true
   },
   "spelld[ump]": {
@@ -1224,11 +1224,11 @@
     "standardConstructor": true
   },
   "spellu[ndo]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellUndoCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellUndoCommand",
     "standardConstructor": true
   },
   "spellw[rong]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellWrongCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellWrongCommand",
     "standardConstructor": true
   },
   "spr[evious]": {
@@ -1260,7 +1260,7 @@
     "standardConstructor": true
   },
   "sun[hide]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitUnhideCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SplitUnhideCommand",
     "standardConstructor": true
   },
   "sunm[ap]": {
@@ -1276,7 +1276,7 @@
     "standardConstructor": true
   },
   "sy[ntax]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.SyntaxCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SyntaxCommand",
     "standardConstructor": true
   },
   "t": {
@@ -1284,11 +1284,11 @@
     "standardConstructor": true
   },
   "tN[ext]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPreviousCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPreviousCommand",
     "standardConstructor": true
   },
   "ta[g]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagCommand",
     "standardConstructor": true
   },
   "tab": {
@@ -1352,7 +1352,7 @@
     "standardConstructor": true
   },
   "tags": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagStackCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagStackCommand",
     "standardConstructor": true
   },
   "tc[l]": {
@@ -1360,11 +1360,11 @@
     "standardConstructor": true
   },
   "tcd": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "tch[dir]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangeLocalDirectoryCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
     "standardConstructor": true
   },
   "tearo[ff]": {
@@ -1372,15 +1372,15 @@
     "standardConstructor": true
   },
   "tf[irst]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagFirstCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagFirstCommand",
     "standardConstructor": true
   },
   "tj[ump]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagJumpCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagJumpCommand",
     "standardConstructor": true
   },
   "tl[ast]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagLastCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagLastCommand",
     "standardConstructor": true
   },
   "tm[enu]": {
@@ -1388,7 +1388,7 @@
     "standardConstructor": true
   },
   "tn[ext]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagNextCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagNextCommand",
     "standardConstructor": true
   },
   "to[pleft]": {
@@ -1396,11 +1396,11 @@
     "standardConstructor": true
   },
   "tp[revious]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagPreviousCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPreviousCommand",
     "standardConstructor": true
   },
   "tr[ewind]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagFirstCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagFirstCommand",
     "standardConstructor": true
   },
   "trus[t]": {
@@ -1408,7 +1408,7 @@
     "standardConstructor": true
   },
   "ts[elect]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.TagSelectCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagSelectCommand",
     "standardConstructor": true
   },
   "tu[nmenu]": {
@@ -1432,11 +1432,11 @@
     "standardConstructor": true
   },
   "unh[ide]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnhideCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.UnhideCommand",
     "standardConstructor": true
   },
   "uni[q]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.UniqCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.UniqCommand",
     "standardConstructor": true
   },
   "unl[et]": {
@@ -1464,7 +1464,7 @@
     "standardConstructor": false
   },
   "ve[rsion]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VersionCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VersionCommand",
     "standardConstructor": true
   },
   "verb[ose]": {
@@ -1484,11 +1484,11 @@
     "standardConstructor": true
   },
   "vim[grep]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VimGrepCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VimGrepCommand",
     "standardConstructor": true
   },
   "vimgrepa[dd]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.VimGrepAddCommand",
+    "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VimGrepAddCommand",
     "standardConstructor": true
   },
   "viu[sage]": {

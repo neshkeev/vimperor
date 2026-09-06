@@ -10,10 +10,9 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.api.VimMatchHighlighter
-import com.maddyhome.idea.vim.api.injector
+import com.github.neshkeev.vimperor.api.VimMatchHighlighter
 import com.maddyhome.idea.vim.common.TextRange
-import com.maddyhome.idea.vim.highlight.HighlightGroup
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

@@ -10,7 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
-import com.maddyhome.idea.vim.api.VimFileTreeService
+import com.github.neshkeev.vimperor.api.VimFileTreeService
 
 /**
  * The Explorer, for `NERDTree`'s ex commands.

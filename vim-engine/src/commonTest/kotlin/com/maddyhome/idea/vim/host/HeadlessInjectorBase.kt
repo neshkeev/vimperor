@@ -8,7 +8,9 @@
 
 package com.maddyhome.idea.vim.host
 
+import com.github.neshkeev.vimperor.api.*
 import com.maddyhome.idea.vim.annotations.Internal
+import com.maddyhome.idea.vim.api.*
 import com.maddyhome.idea.vim.common.VimListenersNotifier
 import com.maddyhome.idea.vim.diagnostic.VimLogger
 import com.maddyhome.idea.vim.extension.ExtensionLoader
@@ -27,8 +29,6 @@ import com.maddyhome.idea.vim.undo.VimUndoRedo
 import com.maddyhome.idea.vim.vimscript.services.VariableService
 import com.maddyhome.idea.vim.yank.VimYankGroup
 import kotlin.reflect.KClass
-// The injector names most of its services from its own package, so they arrive unqualified.
-import com.maddyhome.idea.vim.api.*
 
 /**
  * A [VimInjector] with nothing implemented yet.

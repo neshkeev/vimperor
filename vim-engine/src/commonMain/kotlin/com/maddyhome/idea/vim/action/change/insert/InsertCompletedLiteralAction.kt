@@ -13,7 +13,6 @@ import com.intellij.vim.annotations.Mode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.ex.LeaveCommandLineAction
 import com.maddyhome.idea.vim.api.ExecutionContext
-import com.maddyhome.idea.vim.api.VimCommandLine
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
