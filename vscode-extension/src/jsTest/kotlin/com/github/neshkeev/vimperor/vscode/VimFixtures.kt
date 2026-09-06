@@ -262,7 +262,9 @@ internal object VimFixtures {
    */
   private fun evaluate(expression: String, bindings: Map<String, String> = emptyMap()): String? {
     bindings[expression]?.let { return it }
-    if (expression.startsWith("listOf(")) {
+    // `Lists.newArrayList("a", "b")` is Guava's, and IdeaVim's older tests reach for it where the
+    // newer ones write `listOf`. The two build the same list of keys and this only ever joins them.
+    if (LIST_BUILDERS.any { expression.startsWith(it) }) {
       val parts = argumentSpans(expression, expression.indexOf('(')) ?: return null
       val pieces = parts.map { (from, to) -> evaluate(expression.substring(from, to).trim(), bindings) }
       if (pieces.any { it == null }) return null
@@ -292,6 +294,9 @@ internal object VimFixtures {
       index += expression.substring(index).takeWhile { it.isWhitespace() }.length
     }
   }
+
+  /** The ways these tests build a list of keys, all of which mean the same thing here. */
+  private val LIST_BUILDERS = listOf("listOf(", "Lists.newArrayList(", "mutableListOf(", "arrayListOf(")
 
   /** A string literal and the `trimIndent`/`dotToSpace` calls that so often follow one. */
   private fun readString(text: String, start: Int): Pair<String, Int>? {
@@ -643,6 +648,18 @@ internal object VimFixtures {
    * told from `val before = "..."`.
    */
   private fun readStringExpression(text: String, start: Int): Pair<String, Int>? {
+    // `val keys = listOf("F<C-K>O:")` binds a list, and a list of keys is a string as far as the
+    // replay is concerned - it types them in order. Without this the binding is unreadable, and an
+    // unreadable statement standing before a `doTest` refuses the call after it.
+    for (builderName in LIST_BUILDERS) {
+      if (!text.startsWith(builderName, start)) continue
+      val open = start + builderName.length - 1
+      val parts = argumentSpans(text, open) ?: return null
+      val pieces = parts.map { (from, to) -> evaluate(text.substring(from, to).trim()) }
+      if (pieces.any { it == null }) return null
+      return pieces.joinToString("") { it!! } to parts.last().second + 1
+    }
+
     val builder = StringBuilder()
     var index = start
     var read = 0
