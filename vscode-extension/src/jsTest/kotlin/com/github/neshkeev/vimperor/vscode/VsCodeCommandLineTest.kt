@@ -441,6 +441,7 @@ class VsCodeCommandLineTest {
   private class FakeStatusBarItem : StatusBarItem {
     override var text: String = ""
     override var tooltip: String? = null
+    override var color: ThemeColor? = null
     var visible: Boolean = false
       private set
 

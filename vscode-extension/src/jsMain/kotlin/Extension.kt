@@ -13,27 +13,30 @@
 import com.github.neshkeev.vimperor.vscode.DecorationHighlighter
 import com.github.neshkeev.vimperor.vscode.Disposable
 import com.github.neshkeev.vimperor.vscode.ExtensionContext
-import com.github.neshkeev.vimperor.vscode.VsCodeDocumentSymbols
 import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
-import com.github.neshkeev.vimperor.vscode.isVimsOwnConfig
 import com.github.neshkeev.vimperor.vscode.MessageSink
 import com.github.neshkeev.vimperor.vscode.NodeFileSystem
-import com.github.neshkeev.vimperor.vscode.contributedKeybindings
-import com.github.neshkeev.vimperor.vscode.hostPlatform
-import com.github.neshkeev.vimperor.vscode.readDefaultKeybindings
-import com.github.neshkeev.vimperor.vscode.userKeybindings
-import com.github.neshkeev.vimperor.vscode.userKeybindingsPath
-import com.github.neshkeev.vimperor.vscode.openTutor
 import com.github.neshkeev.vimperor.vscode.OutputChannel
 import com.github.neshkeev.vimperor.vscode.OutputChannelPanelService
 import com.github.neshkeev.vimperor.vscode.StatusBarAlignment
 import com.github.neshkeev.vimperor.vscode.StatusBarItem
 import com.github.neshkeev.vimperor.vscode.StatusBarPrompt
+import com.github.neshkeev.vimperor.vscode.StatusIcon
 import com.github.neshkeev.vimperor.vscode.TextEditor
+import com.github.neshkeev.vimperor.vscode.ThemeColor
 import com.github.neshkeev.vimperor.vscode.VimHost
 import com.github.neshkeev.vimperor.vscode.VsCodeClipboard
 import com.github.neshkeev.vimperor.vscode.VsCodeCommands
+import com.github.neshkeev.vimperor.vscode.VsCodeDocumentSymbols
 import com.github.neshkeev.vimperor.vscode.commands
+import com.github.neshkeev.vimperor.vscode.contributedKeybindings
+import com.github.neshkeev.vimperor.vscode.hostPlatform
+import com.github.neshkeev.vimperor.vscode.isVimsOwnConfig
+import com.github.neshkeev.vimperor.vscode.openTutor
+import com.github.neshkeev.vimperor.vscode.readDefaultKeybindings
+import com.github.neshkeev.vimperor.vscode.statusIcon
+import com.github.neshkeev.vimperor.vscode.userKeybindings
+import com.github.neshkeev.vimperor.vscode.userKeybindingsPath
 import com.github.neshkeev.vimperor.vscode.window
 import com.github.neshkeev.vimperor.vscode.workspace
 
@@ -126,9 +129,24 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  /**
+   * `'ideastatusicon'`, applied to the mode indicator. Only on a change: `refreshMode` runs after
+   * every keystroke and writing a status bar item is a round trip.
+   */
+  var lastIcon: StatusIcon? = null
+
   fun refreshMode() {
     val mode = vim.modeName()
     status.text = "-- " + mode + " --"
+
+    val icon = statusIcon()
+    if (icon != lastIcon) {
+      lastIcon = icon
+      if (icon == StatusIcon.HIDDEN) status.hide() else status.show()
+      // The theme's own muted colour rather than a literal grey, so that "gray" reads as gray on a
+      // light theme too. Null is the foreground, which is what `enabled` means.
+      status.color = if (icon == StatusIcon.GRAY) ThemeColor("descriptionForeground") else null
+    }
 
     // The caret's shape, which is the mode indicator a user actually reads - a block in Normal and
     // Visual, a bar in Insert, an underline in Replace, which is Vim's own default `guicursor`.

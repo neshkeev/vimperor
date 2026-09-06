@@ -69,6 +69,57 @@ internal object VsCodeOptions {
 
   // ---- Implemented.
 
+  /**
+   * `'ide'` - the name of the editor this is running in, which a shared config branches on.
+   *
+   * IdeaVim's, not Vim's, and the reason it exists is that one `~/.ideavimrc` is read by every
+   * JetBrains IDE: `if &ide =~? 'clion'`. A config shared with a VS Code install wants to ask the
+   * same question, and `env.appName` is the same answer - "Visual Studio Code", or "Cursor", or
+   * "Code - Insiders", whichever fork the user is in.
+   *
+   * Settable, as it is in IdeaVim. Vim has no such option, so nothing else reads it and there is
+   * nothing to break by writing it; a script that wants to pretend it is somewhere else may.
+   */
+  val ide: StringOption = StringOption("ide", GLOBAL, "ide", appName())
+
+  /**
+   * `'ideastatusicon'` - whether the plugin puts anything on the status bar, and how loudly.
+   *
+   * IdeaVim's is about a clickable Vim icon whose menu switches the plugin off. This host has no
+   * such icon; what it has on the status bar is the mode indicator, and the option's three values
+   * carry over to it without straining: `enabled` shows it, `disabled` hides it, and `gray` draws
+   * it in the theme's own muted colour rather than the foreground. Someone who sets
+   * `ideastatusicon=disabled` wants a clean status bar and gets one.
+   */
+  val ideastatusicon: StringOption = StringOption(
+    "ideastatusicon",
+    GLOBAL,
+    "ideastatusicon",
+    "enabled",
+    boundedValues = setOf("enabled", "gray", "disabled"),
+  )
+
+  /**
+   * `'ideawrite'` - whether `:w` saves this file or every open one.
+   *
+   * **The default here is `file` where IdeaVim's is `all`, which is a deliberate divergence.**
+   * IdeaVim's reason for `all` is that IntelliJ writes your buffers on its own account anyway, so
+   * `:w` meaning "save everything" costs nothing there and saves a `:wa`. VS Code does not autosave
+   * unless it is asked to, so the same default would write files the user never mentioned - through
+   * format-on-save, and whatever else a save is wired to. Vim's `:w` writes one buffer, and that is
+   * the safer of the two to be wrong about.
+   *
+   * `set ideawrite=all` is IdeaVim's behaviour for anyone who wants it, and both commands were
+   * already here - `workbench.action.files.save` and its `saveAll`.
+   */
+  val ideawrite: StringOption = StringOption(
+    "ideawrite",
+    GLOBAL,
+    "ideawrite",
+    "file",
+    boundedValues = setOf("all", "file"),
+  )
+
   /** `'relativenumber'`, with `'number'`, against `editor.lineNumbers`. See [applyLineNumbers]. */
   val relativenumber: ToggleOption = ToggleOption("relativenumber", LOCAL_TO_WINDOW, "rnu", false)
 
@@ -256,6 +307,9 @@ internal object VsCodeOptions {
    * Declared last on purpose: it reads the properties, so it has to come after all of them.
    */
   private val declared: List<Option<out VimDataType>> = listOf(
+    ide,
+    ideastatusicon,
+    ideawrite,
     relativenumber,
     filetype,
     syntax,
@@ -482,3 +536,42 @@ internal fun applyEditorOptions(editor: VimEditor) {
   applyLineNumbers(editor)
   applyLanguage(editor)
 }
+
+/**
+ * What `env.appName` says, defensively.
+ *
+ * This is read while [VsCodeOptions] is initialising, which is early - and the one host that is not
+ * a VS Code window is the stub the tests run in. A missing `appName` there would be a
+ * `TypeError` thrown out of option registration, which is a bad way to find out; the fallback is
+ * the name of the editor this extension is for.
+ */
+private fun appName(): String = try {
+  env.appName.ifEmpty { "Visual Studio Code" }
+} catch (e: Throwable) {
+  "Visual Studio Code"
+}
+
+/** What `'ideastatusicon'` asks of the mode indicator. */
+internal enum class StatusIcon {
+  SHOWN,
+  GRAY,
+  HIDDEN,
+}
+
+/**
+ * `'ideastatusicon'`, read.
+ *
+ * A function rather than a listener because the mode indicator is rewritten after every keystroke
+ * anyway - see `refreshMode` in `Extension.kt` - so there is nothing for a listener to do that
+ * asking here does not already do, and one fewer thing to unregister.
+ */
+internal fun statusIcon(): StatusIcon =
+  when (injector.optionGroup.getOptionValue(VsCodeOptions.ideastatusicon, OptionAccessScope.GLOBAL(null)).asString()) {
+    "disabled" -> StatusIcon.HIDDEN
+    "gray" -> StatusIcon.GRAY
+    else -> StatusIcon.SHOWN
+  }
+
+/** Whether `:w` saves every open file, which is `set ideawrite=all` - not the default here. */
+internal fun writesEveryFile(): Boolean =
+  injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).asString() == "all"

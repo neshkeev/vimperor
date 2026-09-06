@@ -33,7 +33,7 @@ largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
-that VS Code has no command for, 14 IntelliJ-only options,
+that VS Code has no command for, 11 IntelliJ-only options,
 2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
@@ -89,13 +89,34 @@ same keys and prints `caretModel.allCarets`, under a read action and after
 `PlatformTestUtil.dispatchAllInvocationEventsInIdeEventQueue()`, which is what `doTest`
 does before it asserts.
 
-**Fourteen, not twenty-four.** This file said 24 and the number counted the file
-rather than the concept, exactly as "26 extensions" did: `IjOptions` declares 24 and
-ten of them - `wrap`, `list`, `cursorline`, `relativenumber`, `textwidth`,
-`breakindent`, `colorcolumn`, `bomb`, `fileencoding`, `fileformat` - are ordinary Vim
-options this host already has. The fourteen that are left are the `idea*` family plus
-`lookupkeys`, `trackactionids`, `visualdelay`, `closenotebooks`, `oldundo` and
-`unifyjumps`, and most describe IDE behaviour VS Code has no analogue for.
+**Eleven, not twenty-four.** This file said 24 and the number counted the file rather
+than the concept, exactly as "26 extensions" did: `IjOptions` declares 24 and ten of
+them - `wrap`, `list`, `cursorline`, `relativenumber`, `textwidth`, `breakindent`,
+`colorcolumn`, `bomb`, `fileencoding`, `fileformat` - are ordinary Vim options this host
+already has.
+
+Three more of the `idea*` family are answered here now, and the interesting thing about
+them is how little they needed. `'ide'` is `env.appName` - the option exists because one
+`~/.ideavimrc` is read by every JetBrains IDE and branches on `if &ide =~? 'clion'`, and
+a config shared with a VS Code install wants the same question answered rather than
+`E518`. `'ideastatusicon'` is IdeaVim's clickable Vim icon; this host has the mode
+indicator instead, and `enabled`/`gray`/`disabled` carry over to it without straining.
+`'ideawrite'` picks between `workbench.action.files.save` and its `saveAll`, both of
+which were already written.
+
+**`'ideawrite'` defaults to `file` here where IdeaVim's is `all`, deliberately.** IdeaVim
+can afford `all` because IntelliJ writes your buffers on its own account anyway; VS Code
+does not autosave unless asked, so the same default would save files the user never
+mentioned - through format-on-save and whatever else a save is wired to. Vim's `:w`
+writes one buffer. `set ideawrite=all` is there for anyone who wants IdeaVim's.
+
+The eleven left are `ideacopypreprocess`, `ideajoin`, `ideamarks`, `idearefactormode`,
+`ideavimsupport`, `lookupkeys`, `trackactionids`, `visualdelay`, `closenotebooks`,
+`oldundo` and `unifyjumps`. They are not a backlog: `ideamarks` wants a bookmarks API,
+`unifyjumps` a navigation history an extension can read, `trackactionids` the ability to
+observe another command running, `lookupkeys` a completion popup an extension can see -
+and `visualdelay`, `oldundo` and `closenotebooks` are IntelliJ dev flags and a workaround
+for a JetBrains bug, so there is nothing to port at all.
 
 **Every key the engine registers now reaches something this host has built, or a
 refusal that is itself an answer.** `VsCodeUnimplementedTest` presses all of them and

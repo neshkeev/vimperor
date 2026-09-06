@@ -63,8 +63,15 @@ internal class VsCodeFile(
     return "\"$name\"$modified line ${position.line + 1} of $lines --$percent%-- col ${position.column + 1}"
   }
 
+  /**
+   * `:w` - this file, or every open one under `set ideawrite=all`.
+   *
+   * The default is `file`, Vim's own meaning, and not IdeaVim's `all`: IntelliJ writes your buffers
+   * anyway so `all` costs nothing there, and VS Code does not, so it would save files the user
+   * never mentioned. See [VsCodeOptions.ideawrite].
+   */
   override fun saveFile(editor: VimEditor, context: ExecutionContext) =
-    host.run(VsCodeCommands.SAVE)
+    host.run(if (writesEveryFile()) VsCodeCommands.SAVE_ALL else VsCodeCommands.SAVE)
 
   override fun saveFiles(editor: VimEditor, context: ExecutionContext) =
     host.run(VsCodeCommands.SAVE_ALL)

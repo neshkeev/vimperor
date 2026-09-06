@@ -36,12 +36,25 @@ class VsCodeOptionsTest {
     val fake = FakeEditor(text)
     val errors: MutableList<String> = mutableListOf()
     val messages: MutableList<String> = mutableListOf()
+
+    /**
+     * Where `:set name?` prints, which is not where a message goes: `SetCommand` writes the option
+     * and its value to `injector.outputPanel`, so a test that only watched the sink saw nothing.
+     */
+    val printed: MutableList<String> = mutableListOf()
     val host = VimHost(
       sink = object : MessageSink {
         override fun message(text: String?) { messages += text.orEmpty() }
         override fun error(text: String?) { errors += text.orEmpty() }
         override fun status(text: String?) {}
       },
+      outputPanel = OutputChannelPanelService(object : OutputChannel {
+        override fun appendLine(value: String) { printed += value }
+
+        @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+        override fun show(preserveFocus: Boolean) {}
+        override fun dispose() {}
+      }),
     ).also { it.start() }
 
     init {
@@ -390,6 +403,90 @@ class VsCodeOptionsTest {
     }
   }
 
+  // The three IdeaVim options this host can answer. The other eleven `IjOptions` declares describe
+  // IDE behaviour VS Code has no analogue for - `ideamarks` wants bookmarks, `idearefactormode` a
+  // refactoring template, `lookupkeys` a completion popup an extension can read.
+
+  /**
+   * `&ide` names the editor, which is what a config shared with a JetBrains IDE asks it for.
+   *
+   * `if &ide =~? 'clion'` is in IdeaVim's own documentation, and a `~/.ideavimrc` that Vimperor also
+   * reads wants the same question answered rather than `E518`.
+   */
+  @Test
+  fun `test the ide option names the editor`() {
+    val session = Session()
+    session.run("set ide?")
+
+    assertEquals(emptyList(), session.errors)
+    assertTrue(
+      session.printed.any { it.contains("Visual Studio Code") },
+      "`:set ide?` should name the editor, printed: ${session.printed}",
+    )
+  }
+
+  /** And it is settable, as IdeaVim's is - nothing else reads it, so there is nothing to break. */
+  @Test
+  fun `test the ide option can be set`() {
+    val session = Session()
+    session.run("set ide=Cursor")
+    session.run("set ide?")
+
+    assertEquals(emptyList(), session.errors)
+    assertTrue(session.printed.any { it.contains("Cursor") }, "printed: ${session.printed}")
+  }
+
+  /**
+   * `'ideawrite'` decides whether `:w` saves this file or every open one.
+   *
+   * IdeaVim's default is `all`, and this asserts the switch rather than the saving: what reaches VS
+   * Code is one of two command ids, and which one is the whole of the option.
+   */
+  @Test
+  fun `test ideawrite chooses between saving one file and saving all`() {
+    val session = Session()
+    assertEquals(false, writesEveryFile(), "the default here is Vim's, not IdeaVim's")
+
+    session.run("set ideawrite=all")
+    assertEquals(emptyList(), session.errors)
+    assertTrue(writesEveryFile())
+
+    session.run("set ideawrite=file")
+    assertEquals(false, writesEveryFile())
+  }
+
+  /** A value the option does not have is an error, not a silent third state. */
+  @Test
+  fun `test ideawrite rejects a value it does not have`() {
+    val session = Session()
+    session.run("set ideawrite=sometimes")
+
+    assertTrue(session.errors.isNotEmpty(), "an invalid value should report")
+    assertEquals(false, writesEveryFile(), "and should leave the option alone")
+  }
+
+  /**
+   * `'ideastatusicon'` decides what the mode indicator does.
+   *
+   * IdeaVim's option is about a clickable Vim icon; this host has the mode indicator instead, and
+   * the three values carry over to it - shown, muted, gone.
+   */
+  @Test
+  fun `test ideastatusicon chooses what the status bar shows`() {
+    val session = Session()
+    assertEquals(StatusIcon.SHOWN, statusIcon())
+
+    session.run("set ideastatusicon=gray")
+    assertEquals(emptyList(), session.errors)
+    assertEquals(StatusIcon.GRAY, statusIcon())
+
+    session.run("set ideastatusicon=disabled")
+    assertEquals(StatusIcon.HIDDEN, statusIcon())
+
+    session.run("set ideastatusicon=enabled")
+    assertEquals(StatusIcon.SHOWN, statusIcon())
+  }
+
   /**
    * None of these shadows an option the engine already declares.
    *
@@ -620,6 +717,7 @@ class VsCodeOptionsTest {
 
     /** Every option [VsCodeOptions] declares, by name. */
     val HOST_OPTIONS = listOf(
+      "ide", "ideastatusicon", "ideawrite",
       "relativenumber", "wrap", "linebreak", "list", "cursorline", "cursorcolumn", "breakindent",
       "colorcolumn", "signcolumn", "numberwidth", "conceallevel", "textwidth", "wrapmargin",
       "expandtab", "tabstop", "shiftwidth", "softtabstop", "autoindent", "smartindent", "smarttab",

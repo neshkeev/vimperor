@@ -180,6 +180,8 @@ const languages = {
 }
 
 const env = {
+  /** What `&ide` answers with. The real one names the fork the user is in. */
+  appName: 'Visual Studio Code',
   /** What `gx` and `:help` handed to the operating system, so a test can read it back. */
   opened: [],
   openExternal(uri) {

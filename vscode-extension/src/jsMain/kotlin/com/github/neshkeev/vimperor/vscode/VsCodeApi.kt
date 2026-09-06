@@ -112,6 +112,13 @@ external interface StatusBarItem : Disposable {
 
   /** VS Code's type is `string | MarkdownString | undefined`; only the string half is used here. */
   var tooltip: String?
+
+  /**
+   * The text's colour. VS Code's type is `string | ThemeColor | undefined`; only the theme half is
+   * used here, because a literal has to be right on both a light theme and a dark one and a theme
+   * colour already is. Null is the status bar's own foreground.
+   */
+  var color: ThemeColor?
   fun show()
   fun hide()
 }
@@ -159,6 +166,9 @@ external interface Extension {
 }
 
 external object env {
+  /** The name of the editor this is running in - "Visual Studio Code", "Cursor", "Code - Insiders". */
+  val appName: String
+
   val clipboard: Clipboard
 
   /** Hands a URL to whatever the operating system opens it with. `gx` and `:help` are the callers. */
