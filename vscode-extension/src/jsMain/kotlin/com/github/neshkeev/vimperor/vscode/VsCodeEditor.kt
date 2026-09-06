@@ -68,6 +68,14 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * that differs from the last one seen is the editor saying where it actually is - because the
    * user scrolled, or because it caught up - and that is adopted. Anything else keeps Vim's answer.
    */
+  /**
+   * The last value `'wrap'` wrote for this editor, so that it is written once rather than per key.
+   *
+   * The configuration read cannot serve: it answers from a value VS Code has not finished updating
+   * in the same turn, so the keystroke after `:set wrap` still saw `off` and wrote `on` again.
+   */
+  internal var wroteWordWrap: Boolean? = null
+
   internal var believedTopLine: Int? = null
   internal var lastReportedTopLine: Int? = null
 

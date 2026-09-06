@@ -520,6 +520,47 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * A file outside every workspace folder is written for in the user's settings.
+   *
+   * The target is not "workspace if the window has one": a workspace setting covers the folders in
+   * the workspace and nothing else, so a file opened on its own alongside a project would have been
+   * written for and unaffected. Target 1 is Global, 3 is WorkspaceFolder.
+   */
+  @Test
+  fun `test the wrap is written where it reaches this file`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      session.run("set wrap")
+
+      val target = js("require('vscode').workspace.updates[0].target")
+      assertEquals(1, target, "the stub has no folders, so nothing is inside one")
+    } finally {
+      reset()
+    }
+  }
+
+  /** Written once per value, not once per keystroke: a settings write is a file on disk. */
+  @Test
+  fun `test the wrap is written once for one set`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      session.run("set wrap")
+      session.host.type(session.fake, "x")
+      session.host.key(session.fake, "<Esc>")
+
+      assertEquals(listOf("wordWrap=on"), writes())
+    } finally {
+      reset()
+    }
+  }
+
   /** And it is written where it can be read back, so the option and the editor cannot drift. */
   @Test
   fun `test the wrap that was written is the wrap that is read`() {

@@ -239,6 +239,8 @@ const workspace = {
   // and the one that keeps `:e` tests honest: every path they use has to be absolute, so nothing
   // passes because a stub happened to root it somewhere convenient.
   workspaceFolders: undefined,
+  /** No folders, so nothing is inside one - which is what `workspaceFolders: undefined` means. */
+  getWorkspaceFolder: () => undefined,
   /** Settings a test can write, in VS Code's own shape. `wordWrap` defaults to VS Code's default. */
   configuration: { editor: { wordWrap: 'off' } },
   /** The same, per resource path - VS Code's language and folder overrides, which are scoped. */

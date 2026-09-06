@@ -645,10 +645,24 @@ private fun traceWrap(editor: VimEditor, message: String) {
   if (tracing) injector.messages.showMessage(editor, message)
 }
 
-/** `editor.wordWrap` on or off, wherever this window can write it. */
+/**
+ * `editor.wordWrap` on or off, where it will reach *this file*.
+ *
+ * The target is not "workspace if there is one". A workspace setting covers the folders in the
+ * workspace and nothing else, so a file opened on its own alongside a project - which is an
+ * ordinary thing to have - would be written for and unaffected. The folder the file is in is the
+ * narrowest target that certainly covers it; a file in no folder gets the user's settings.
+ *
+ * Written at most once per value: this runs after every keystroke as well as on the option change,
+ * and a settings write is a file on disk. The read cannot be used to tell - it answers from the
+ * configuration, which has not caught up in the same turn, which is why the first version of this
+ * wrote twice for one `:set wrap`.
+ */
 private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
-  val target =
-    if (workspace.workspaceFolders.isNullOrEmpty()) ConfigurationTarget.Global else ConfigurationTarget.Workspace
+  if (editor.wroteWordWrap == wrapping) return
+  editor.wroteWordWrap = wrapping
+  val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
+  val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
   try {
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)

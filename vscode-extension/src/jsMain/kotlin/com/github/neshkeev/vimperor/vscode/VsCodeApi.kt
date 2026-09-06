@@ -252,6 +252,14 @@ external object workspace {
   fun getConfiguration(section: String, scope: Any? = definedExternally): WorkspaceConfiguration
 
   /**
+   * The workspace folder a resource lives in, or null when it lives outside all of them.
+   *
+   * A file opened on its own alongside a project is an ordinary thing to have, and a workspace
+   * setting does not reach it - which is what decides where `'wrap'` writes.
+   */
+  fun getWorkspaceFolder(uri: Uri): WorkspaceFolder?
+
+  /**
    * The folders open in this window, which is what a relative path in `:e` is relative to.
    *
    * Vim resolves against the current directory; a VS Code window has no current directory, it has a

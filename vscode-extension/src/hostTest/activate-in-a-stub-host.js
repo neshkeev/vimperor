@@ -393,6 +393,10 @@ const vscode = {
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
     workspaceFolders: [{ uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }],
+    getWorkspaceFolder: (uri) =>
+      uri && typeof uri.path === 'string' && uri.path.startsWith(home)
+        ? { uri: { scheme: 'file', path: home, fsPath: home }, name: 'stub' }
+        : undefined,
   },
   ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
   Uri: {
