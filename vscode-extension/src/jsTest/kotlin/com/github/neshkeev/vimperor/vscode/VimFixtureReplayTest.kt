@@ -165,10 +165,16 @@ class VimFixtureReplayTest {
             injector.parser.parseKeys("<CR>")
           for (stroke in keys) {
             handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+            editor.flush()
           }
         }
         for (stroke in injector.parser.parseKeys(fixture.keys)) {
           handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+          // After every key, which is what `VimHost.handle` does. Flushing once at the end looks
+          // like an optimisation and is a different program: the document is written once, so `u`
+          // asks VS Code to undo a document that has not been touched yet and there is nothing on
+          // the stack. Every undo fixture failed on that alone.
+          editor.flush()
         }
         editor.flush()
         actualText = fake.document.content
@@ -298,6 +304,7 @@ class VimFixtureReplayTest {
      */
     fun resetEngineState() {
       (injector.searchGroup as VimSearchGroupBase).resetState()
+      UndoStops.reset()
       injector.registerGroup.resetRegisters()
       injector.markService.resetAllMarks()
       injector.jumpService.resetJumps()

@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.LiveRange
+import kotlin.js.json
 
 /**
  * The engine's synchronous view of an asynchronous document.
@@ -273,7 +274,10 @@ class DocumentBuffer(private val editor: TextEditor) {
     val range = Range(startPosition, Position(line, end - lineStart))
     val replacement = withDocumentLineEndings(target.substring(start, target.length - (flushed.length - end)))
 
-    editor.edit { it.replace(range, replacement) }.then({ applied ->
+    // One entry per Vim command rather than per keystroke - see [UndoStops], which is what decides
+    // whether this edit opens a new one. Never a stop *after*: the next boundary closes the entry.
+    val options = json("undoStopBefore" to UndoStops.takeStopBefore(), "undoStopAfter" to false)
+    editor.edit({ it.replace(range, replacement) }, options.unsafeCast<EditOptions>()).then({ applied ->
       if (applied) {
         flushed = target
       } else {
@@ -296,5 +300,53 @@ class DocumentBuffer(private val editor: TextEditor) {
       index++
     }
     return index
+  }
+}
+
+/**
+ * Where one undoable change ends, which VS Code has to be told and this host was not telling it.
+ *
+ * A Vim command reaches the document as one `editor.edit` per *keystroke* - the buffer flushes once
+ * per key - and VS Code's default is an undo stop before and after every edit an extension makes.
+ * So `u` walked back one keystroke at a time: `ciwfoo<Esc>u` put back `fo` rather than the word.
+ * 128 of IdeaVim's replayed fixtures said so.
+ *
+ * The engine already says where the boundaries are, through the three calls of
+ * `VimKeyBasedUndoService`, and this host implemented all three as no-ops under a comment claiming
+ * they were unnecessary because it "gives VS Code a whole command as a single edit". It does not.
+ *
+ * What the three mean, from their callers in the engine rather than from their names:
+ *
+ *  - `updateNonMergeUndoKey` runs before a change command - `EditorActionHandlerBase.updateUndoKey`
+ *    calls it for anything that is not a motion, a mode change, insert-mode typing, or a command
+ *    that handles undo itself. A new entry.
+ *  - `setInsertNonMergeUndoKey` runs when an insert session starts, and again for `<C-G>u`, which
+ *    exists to split one. A new entry, after which the typing merges into it - and it merges by
+ *    itself, because `updateUndoKey` returns early in insert mode and nothing else asks.
+ *  - `setMergeUndoKey` runs before a motion or a mode change. Nothing to open: a motion makes no
+ *    edit, and one *inside* an insert is Vim breaking the insert's undo block, which is a new entry
+ *    for whatever is typed next.
+ *
+ * Only the first edit after one of those carries the stop, and none of them carries a stop after -
+ * the next boundary is what closes an entry, so asking for both would put every entry's end and the
+ * next one's beginning in the same place and gain nothing.
+ *
+ * One holder for the process rather than one per editor, because a Vim command runs on one editor
+ * at a time and the boundary belongs to the command.
+ */
+internal object UndoStops {
+  private var pending = true
+
+  /** A new undo entry begins at the next edit. */
+  fun startNewEntry() {
+    pending = true
+  }
+
+  /** Whether the edit about to be made opens a new entry. Asking is answering: it is consumed. */
+  fun takeStopBefore(): Boolean = pending.also { pending = false }
+
+  /** Between fixtures and between tests, where nothing should be carried over. */
+  fun reset() {
+    pending = true
   }
 }

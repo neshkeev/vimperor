@@ -285,27 +285,38 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
   var refuseEdits: Boolean = false
 
   /** Previous contents, so the fake can undo the way VS Code's `undo` command does. */
-  private val history: MutableList<String> = mutableListOf()
+  private val history: MutableList<Snapshot> = mutableListOf()
 
-  /** VS Code's undo, as a command would perform it: the document changes, nothing is reported. */
+  /**
+   * VS Code's undo, as a command would perform it: the document changes, nothing is reported.
+   *
+   * The selections come back with the text, which is not decoration - it is where Vim expects the
+   * caret after `u`, and IdeaVim gets it the same way, from IntelliJ's `UndoManager`. What is
+   * restored is where the carets were when the entry *began*, which is before the change was made.
+   */
   fun undo() {
     val previous = history.removeLastOrNull() ?: return
-    undone += document.content
-    document.content = previous
+    undone += Snapshot(document.content, selections)
+    document.content = previous.text
+    selections = previous.selections
     document.version++
   }
 
   /** And `<C-R>`, which puts back what the last [undo] took away. */
   fun redo() {
     val next = undone.removeLastOrNull() ?: return
-    history += document.content
-    document.content = next
+    history += Snapshot(document.content, selections)
+    document.content = next.text
+    selections = next.selections
     document.version++
   }
 
-  private val undone: MutableList<String> = mutableListOf()
+  private class Snapshot(val text: String, val selections: Array<Selection>)
 
-  override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
+  private val undone: MutableList<Snapshot> = mutableListOf()
+
+  @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+  override fun edit(callback: (TextEditorEdit) -> Unit, options: EditOptions): Thenable<Boolean> {
     val builder = FakeEditBuilder(document)
     callback(builder)
     if (refuseEdits) return resolved(false)
@@ -314,7 +325,11 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
     // what VS Code's "resolved against the pre-edit document" guarantee amounts to.
     val edits = builder.edits.sortedByDescending { it.start }
     if (edits.isNotEmpty()) {
-      history += document.content
+      // An undo entry covers every edit since the last stop, which is what makes `u` undo a Vim
+      // command rather than a keystroke. Without a stop the document changes and the history does
+      // not, so undo goes back to before the whole group. See `UndoStops`.
+      val stopBefore = options == undefined || options.undoStopBefore
+      if (stopBefore) history += Snapshot(document.content, selections)
       // A new edit ends the redo chain, which is what every editor does and what Vim does too.
       undone.clear()
     }

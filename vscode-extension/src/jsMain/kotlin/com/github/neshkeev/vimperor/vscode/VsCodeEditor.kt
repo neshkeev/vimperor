@@ -594,7 +594,14 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   fun dropSelectionLeftByCommand() {
     if (mode is Mode.VISUAL || mode is Mode.SELECT) return
     if (vimCarets.none { it.hasSelection() }) return
-    vimCarets.forEach { it.removeSelection() }
+    // To the start of what was selected, not to wherever the selection's active end was. VS Code's
+    // undo restores the selection a change was made over - `Vj<C-X>` then `u` gives back two
+    // selected lines - and Vim's `u` is not Visual mode: it leaves the caret on the first line of
+    // the change. Five fixtures, all of them `V`-mode operators followed by `u`.
+    vimCarets.forEach {
+      if (it.hasSelection()) it.moveToOffsetNative(it.selectionStart)
+      it.removeSelection()
+    }
     // Pushed back rather than left for the next keystroke, which would mean the user looking at a
     // highlight that no key can act on.
     flushCarets()

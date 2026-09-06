@@ -40,6 +40,9 @@ class VimHostTest {
       callbacks += onDone
     }
 
+    /** Run for every command as it lands, for a test that does not want to spell each one out. */
+    var performOnComplete: ((String) -> Unit)? = null
+
     /** Lets the commands land, in the order they were asked for. */
     fun complete(perform: (String) -> Unit) {
       val commands = dispatched.toList()
@@ -47,7 +50,7 @@ class VimHostTest {
       dispatched.clear()
       arguments.clear()
       callbacks.clear()
-      commands.forEach(perform)
+      commands.forEach { performOnComplete?.invoke(it); perform(it) }
       waiting.forEach { it(!rejectEverything) }
     }
   }
@@ -91,6 +94,60 @@ class VimHostTest {
     session.type("u")
 
     assertEquals(listOf("undo", "undo", "undo"), session.commands.dispatched)
+  }
+
+  /**
+   * `u` undoes a Vim command, not a keystroke.
+   *
+   * This host writes to VS Code once per keystroke, and VS Code's default is an undo stop before
+   * and after every edit an extension makes - so `ciwfoo<Esc>u` put back `fo`. The engine says
+   * where an undoable unit begins, through `VimKeyBasedUndoService`; this host answered all three
+   * of those with nothing. See [UndoStops]. 128 of IdeaVim's replayed fixtures said so.
+   */
+  @Test
+  fun `test u undoes a whole change, not one keystroke of it`() {
+    val session = Session("one two three")
+    session.commands.performOnComplete = { session.fake.undo() }
+    session.type("ciwfoo")
+    session.key("<Esc>")
+    assertEquals("foo two three", session.content)
+
+    session.type("u")
+    session.commands.complete { }
+
+    assertEquals("one two three", session.content)
+  }
+
+  /** And an insert of its own is one unit too, however many characters were typed. */
+  @Test
+  fun `test u undoes a whole insert`() {
+    val session = Session("")
+    session.commands.performOnComplete = { session.fake.undo() }
+    session.type("ihello world")
+    session.key("<Esc>")
+    assertEquals("hello world", session.content)
+
+    session.type("u")
+    session.commands.complete { }
+
+    assertEquals("", session.content)
+  }
+
+  /** Two commands are two units: `u` walks back one at a time, not all the way. */
+  @Test
+  fun `test each command is its own undo step`() {
+    val session = Session("abc")
+    session.commands.performOnComplete = { session.fake.undo() }
+    session.type("xx")
+    assertEquals("c", session.content)
+
+    session.type("u")
+    session.commands.complete { }
+    assertEquals("bc", session.content)
+
+    session.type("u")
+    session.commands.complete { }
+    assertEquals("abc", session.content)
   }
 
   @Test

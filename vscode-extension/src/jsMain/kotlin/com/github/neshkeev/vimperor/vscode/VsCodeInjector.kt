@@ -1079,10 +1079,12 @@ open class VsCodeInjector(
   /**
    * Undo, in the two halves the engine asks about separately.
    *
-   * The boundary calls are the ones every change makes: IntelliJ needs to be told where one
-   * undoable unit ends, because a Vim command reaches its document as many small changes. This host
-   * gives VS Code a whole command as a single edit, so the boundaries IntelliJ has to be told about
-   * are already where they belong - which makes these no-ops rather than gaps.
+   * The boundary calls are the ones every change makes: a host has to be told where one undoable
+   * unit ends, because a Vim command reaches its document as many small changes. This host used to
+   * answer all three with nothing, under a comment saying it "gives VS Code a whole command as a
+   * single edit" so the boundaries were already where they belonged. It does not - it gives VS Code
+   * one edit per *keystroke* - and the result was that `u` walked back a keystroke at a time.
+   * [UndoStops] is where they go now.
    *
    * `u` and `<C-R>` themselves are the other half, and they are VS Code's `undo` command:
    * asynchronous, with no way to ask what it did.
@@ -1114,9 +1116,23 @@ open class VsCodeInjector(
         return true
       }
 
-      override fun setMergeUndoKey() {}
-      override fun updateNonMergeUndoKey() {}
-      override fun setInsertNonMergeUndoKey(refresh: Boolean) {}
+      /**
+       * Before a motion or a mode change, which make no edit of their own.
+       *
+       * What matters is the one inside an insert: Vim breaks an insert's undo block when the caret
+       * is moved, so what is typed next is a new entry. See [UndoStops] for the other two.
+       */
+      override fun setMergeUndoKey() {
+        UndoStops.startNewEntry()
+      }
+
+      override fun updateNonMergeUndoKey() {
+        UndoStops.startNewEntry()
+      }
+
+      override fun setInsertNonMergeUndoKey(refresh: Boolean) {
+        UndoStops.startNewEntry()
+      }
     }
   }
 

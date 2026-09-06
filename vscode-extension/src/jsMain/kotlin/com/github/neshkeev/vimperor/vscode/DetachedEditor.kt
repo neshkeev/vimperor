@@ -40,7 +40,9 @@ internal class DetachedTextEditor : TextEditor {
       selections = arrayOf(value)
     }
 
-  override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
+  /** Undo stops mean nothing here: a detached editor has no undo stack for VS Code to mark. */
+  @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+  override fun edit(callback: (TextEditorEdit) -> Unit, options: EditOptions): Thenable<Boolean> {
     val document = document as DetachedDocument
     val edits = mutableListOf<Triple<Int, Int, String>>()
     callback(

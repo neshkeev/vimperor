@@ -107,6 +107,18 @@ external interface TextEditorSelectionChangeEvent {
   val kind: Int?
 }
 
+/**
+ * Where VS Code puts the undo stops around an [TextEditor.edit].
+ *
+ * VS Code types this as an inline object rather than a named interface, so there is nothing in
+ * `@types/vscode` for `checkVsCodeApiDeclarations` to check this against; the names are from the
+ * `TextEditor.edit` signature.
+ */
+external interface EditOptions {
+  val undoStopBefore: Boolean
+  val undoStopAfter: Boolean
+}
+
 external interface StatusBarItem : Disposable {
   var text: String
 
@@ -353,8 +365,12 @@ external interface TextEditor {
   /**
    * Applies edits and resolves with whether they landed. The callback's edits are all resolved
    * against the pre-edit document, so two edits cannot be chained inside one call.
+   *
+   * [options] decides where the undo stops go. Both default to true, which is one undo entry per
+   * call - and this host calls `edit` once per keystroke, so `u` walked back a keystroke at a time.
+   * See [UndoStops].
    */
-  fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean>
+  fun edit(callback: (TextEditorEdit) -> Unit, options: EditOptions = definedExternally): Thenable<Boolean>
 
   /**
    * Scrolls so that [range] is on screen.
