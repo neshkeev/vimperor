@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -262,18 +263,60 @@ class ActionCommandTest {
   }
 
   /**
-   * Closed rather than toggled, which is the rule `'wrap'` paid three attempts for.
+   * ...and the second press puts them back, which is what IntelliJ's does.
    *
-   * VS Code will not say whether a panel is showing, so a toggle would *open* the panel for anyone
-   * who had already closed it - the action would mean its opposite half the time. Asserted on the
-   * command ids because that is the only place the difference is visible.
+   * The hide direction closes - `closeSidebar` means one thing whatever the layout - and the show
+   * direction toggles, because this host knows it closed them a press ago and because a toggle does
+   * not steal focus from the editor the way a `focus*` command would.
    */
   @Test
-  fun `test HideAllWindows sends no toggle`() {
+  fun `test a second HideAllWindows puts the windows back`() {
     val session = Session(known = null)
     session.run("action HideAllWindows")
+    session.dispatched.clear()
 
-    assertEquals(emptyList(), session.dispatched.filter { it.contains("toggle", ignoreCase = true) })
+    session.run("action HideAllWindows")
+
+    assertEquals(
+      listOf(
+        VsCodeCommands.TOGGLE_SIDEBAR,
+        VsCodeCommands.TOGGLE_PANEL,
+        VsCodeCommands.TOGGLE_AUXILIARY_BAR,
+      ),
+      session.dispatched,
+    )
+  }
+
+  /** And a third hides again, so the two directions alternate rather than latching. */
+  @Test
+  fun `test HideAllWindows alternates`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows")
+    session.run("action HideAllWindows")
+    session.dispatched.clear()
+
+    session.run("action HideAllWindows")
+
+    assertEquals(VsCodeCommands.CLOSE_SIDEBAR, session.dispatched.first())
+  }
+
+  /**
+   * Asking whether the action exists must not spend a press.
+   *
+   * `:action` looks a name up before running it, so a toggle that advanced on lookup would flip
+   * twice per press and never appear to do anything. This is the reason the direction moves in
+   * `executeAction` rather than in `resolve`.
+   */
+  @Test
+  fun `test looking the action up does not move the toggle`() {
+    val session = Session(known = null)
+    val executor = injector.actionExecutor
+
+    executor.getAction("HideAllWindows")
+    executor.getAction("HideAllWindows")
+    session.run("action HideAllWindows")
+
+    assertEquals(VsCodeCommands.CLOSE_SIDEBAR, session.dispatched.first(), "the first press still hides")
   }
 
   // The table itself.

@@ -86,6 +86,20 @@ internal object VsCodeCommands {
    */
   const val CLOSE_PANEL = "workbench.action.closePanel"
   const val CLOSE_AUXILIARY_BAR = "workbench.action.closeAuxiliaryBar"
+
+  /**
+   * The same three areas, put back.
+   *
+   * Toggles rather than the `focus*` commands, for two reasons. They certainly exist - `Ctrl+B` and
+   * `Ctrl+J` are bound to two of them - where a `workbench.action.focusPanel` is an id typed from
+   * memory. And they do not move focus: a `focus*` command opens the area *and* puts the cursor in
+   * it, which is the wrong end of a restore for someone who is about to keep typing.
+   *
+   * A toggle is only safe here because [WorkbenchToggle] knows it closed them; see the trap it
+   * describes.
+   */
+  const val TOGGLE_PANEL = "workbench.action.togglePanel"
+  const val TOGGLE_AUXILIARY_BAR = "workbench.action.toggleAuxiliaryBar"
   const val REVEAL_IN_EXPLORER = "workbench.files.action.showActiveFileInExplorer"
   const val REFRESH_EXPLORER = "workbench.files.action.refreshFilesExplorer"
 
@@ -277,7 +291,7 @@ internal object VsCodeCommands {
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, CLOSE_PANEL, CLOSE_AUXILIARY_BAR,
-    REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
+    TOGGLE_PANEL, TOGGLE_AUXILIARY_BAR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
@@ -442,51 +456,109 @@ internal object IdeaActionAliases {
 
   /** Whether this is a name this table has an answer for, including "nothing does this". */
   /**
-   * The actions that are more than one VS Code command.
-   *
-   * `HideAllWindows` is the reason this exists, and it was answered with
-   * `workbench.action.toggleSidebarVisibility` for a long time - which hid the Explorer and left
-   * the Output panel exactly where it was. IntelliJ's action hides every tool window; VS Code keeps
-   * three areas that a tool window can be in and has a separate command for each, so the honest
-   * translation is all three.
-   *
-   * **Closed, not toggled**, which is the rule `'wrap'` paid for. A toggle cannot be pointed at a
-   * state, VS Code will not say whether a panel is showing - `panelVisible` is a context key and
-   * context keys are write-only to an extension - so a toggle here would *open* the panel for
-   * anyone who had already closed it. The close commands take an absolute state and always mean
-   * what they say.
-   *
-   * The cost is real and is IntelliJ's second press: there, `HideAllWindows` restores what it hid.
-   * That needs the visibility this cannot read, and VS Code has no "restore the panels" command
-   * either, so it is not available rather than not done.
+   * The actions that alternate between two sets of commands, of which `HideAllWindows` is the only
+   * one. The state is [WorkbenchToggle]'s; this table only says which ids have one.
    */
-  private val sequences: Map<String, List<String>> = mapOf(
-    "HideAllWindows" to listOf(
-      VsCodeCommands.CLOSE_SIDEBAR,
-      VsCodeCommands.CLOSE_PANEL,
-      VsCodeCommands.CLOSE_AUXILIARY_BAR,
+  private val toggles: Map<String, WorkbenchToggle> = mapOf(
+    "HideAllWindows" to WorkbenchToggle(
+      hide = listOf(
+        VsCodeCommands.CLOSE_SIDEBAR,
+        VsCodeCommands.CLOSE_PANEL,
+        VsCodeCommands.CLOSE_AUXILIARY_BAR,
+      ),
+      show = listOf(
+        VsCodeCommands.TOGGLE_SIDEBAR,
+        VsCodeCommands.TOGGLE_PANEL,
+        VsCodeCommands.TOGGLE_AUXILIARY_BAR,
+      ),
     ),
   )
 
-  fun contains(ideaId: String): Boolean = ideaId in aliases || ideaId in sequences
+  fun contains(ideaId: String): Boolean = ideaId in aliases || ideaId in toggles
+
+  /** The toggle for [ideaId], or null when it is an ordinary one-way action. */
+  fun toggleFor(ideaId: String): WorkbenchToggle? = toggles[ideaId]
+
+  /**
+   * Points every toggle back at "the workbench is showing", which is what a fresh host has to
+   * assume: it has just started and has no idea what the layout is, and VS Code will not tell it.
+   *
+   * Called from `VimHost.start`, because the belief belongs to one activation. It is also what
+   * keeps the toggle out of the next test - a module-level singleton otherwise carries a press from
+   * one test into another, which is how this was found.
+   */
+  fun resetToggles() {
+    toggles.values.forEach { it.reset() }
+  }
 
   /**
    * The VS Code commands for [ideaId], in the order they should run.
    *
    * Empty when nothing in VS Code does that job, which is a real answer - see the class comment.
-   * Callers ask [contains] first; an id this table has never heard of also answers empty.
+   * Callers ask [contains] first; an id this table has never heard of also answers empty. A toggle
+   * is not answered here, because which commands it sends depends on which way it is pointing:
+   * ask [toggleFor].
    */
-  fun commandsFor(ideaId: String): List<String> =
-    sequences[ideaId] ?: listOfNotNull(aliases[ideaId])
+  fun commandsFor(ideaId: String): List<String> = listOfNotNull(aliases[ideaId])
 
   /** The whole table, for the tests that hold it to the shape it claims. */
   val all: Map<String, List<String>?> =
-    aliases.mapValues { (_, command) -> command?.let { listOf(it) } } + sequences
+    aliases.mapValues { (_, command) -> command?.let { listOf(it) } } +
+      toggles.mapValues { (_, toggle) -> toggle.everything }
 
   /** Every command this table can send, so activation can check them against the real window. */
   val targets: List<String> = all.values.filterNotNull().flatten().distinct().sorted()
 
   fun missingFrom(available: Collection<String>): List<String> = targets.filterNot { it in available }
+}
+
+/**
+ * An IntelliJ action that hides the workbench one press and puts it back the next.
+ *
+ * `HideAllWindows` is a toggle in IntelliJ: it hides every tool window, and pressing it again with
+ * only the editor showing brings them back. Getting the second half needs to know whether anything
+ * is currently showing, and **VS Code will not say**. `sideBarVisible` and `panelVisible` are
+ * context keys, which an extension may write and only a `when` clause may read; the only `visible`
+ * the API offers belongs to views an extension owns itself - a `TreeView` or a `WebviewView` - and
+ * the Explorer and the Output panel are neither.
+ *
+ * So this remembers instead, which is the thing `'wrap'` spent three attempts proving unsafe. The
+ * difference is worth stating, because the resemblance is close enough to invite a "fix" back:
+ *
+ * - `'wrap'` wrote a **persistent setting** from a belief. A belief that had drifted inverted every
+ *   later command with no way to resync, and the user saw a `:set nowrap` that wrapped.
+ * - This drives **transient layout** that the user is looking at while they press it. A press that
+ *   goes the wrong way is undone by the next press, and the state is corrected by that same press.
+ *   There is no accumulating error and nothing is written down.
+ *
+ * The remaining divergence from IntelliJ is what "all" means on the way back. IntelliJ restores the
+ * tool windows it hid; this cannot know which of the three areas were open, so it hides all three
+ * and shows all three. Someone whose layout is the Explorer alone gets the panel as well when they
+ * restore. Reading the layout is the only fix and there is nothing to read it with.
+ */
+internal class WorkbenchToggle(private val hide: List<String>, private val show: List<String>) {
+
+  private var hidden: Boolean = false
+
+  /**
+   * The commands for this press, and the flip that decides the next one.
+   *
+   * Called once per press and only while executing - never from a lookup. `:action` asks whether a
+   * name exists before running it, and answering that question by advancing the toggle would make
+   * every press a no-op pair.
+   */
+  fun press(): List<String> {
+    hidden = !hidden
+    return if (hidden) hide else show
+  }
+
+  /** Back to "showing", which is what a host that has just started must assume. */
+  fun reset() {
+    hidden = false
+  }
+
+  /** Both directions, so activation can check the ids against the real window. */
+  val everything: List<String> get() = hide + show
 }
 
 /**

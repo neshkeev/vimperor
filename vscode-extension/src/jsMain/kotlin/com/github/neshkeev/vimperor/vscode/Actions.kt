@@ -85,6 +85,9 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     if (id in VsCodeCommands.all) return ResolvedAction.Command(id)
 
     if (IdeaActionAliases.contains(id)) {
+      // Resolved, not pressed. This runs for `:action`'s existence check as well as for the press
+      // itself, and advancing the toggle here would spend it on the question.
+      IdeaActionAliases.toggleFor(id)?.let { return ResolvedAction.Toggle(it) }
       val commands = IdeaActionAliases.commandsFor(id)
       return if (commands.isEmpty()) ResolvedAction.IntelliJOnly(id) else ResolvedAction.Command(commands)
     }
@@ -139,6 +142,10 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
       action.ids.forEach { host.run(it) }
       return true
     }
+    if (action is WorkbenchToggleAction) {
+      action.toggle.press().forEach { host.run(it) }
+      return true
+    }
     if (action is IntelliJOnlyAction) {
       report(editor, action.ideaId)
       return false
@@ -187,7 +194,11 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     // A name this host cannot place is still sent. The window is the authority on what it has and
     // says so when a command is missing - refusing here instead would mean a stale or unfinished
     // id list could silently disable a mapping that works.
-    if (resolved is ResolvedAction.Command) resolved.ids.forEach { host.run(it) } else host.run(name.trim())
+    when (resolved) {
+      is ResolvedAction.Command -> resolved.ids.forEach { host.run(it) }
+      is ResolvedAction.Toggle -> resolved.toggle.press().forEach { host.run(it) }
+      else -> host.run(name.trim())
+    }
     return true
   }
 
@@ -210,6 +221,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
    */
   override fun getAction(actionId: String): NativeAction? = when (val resolved = resolve(actionId)) {
     is ResolvedAction.Command -> HostCommandAction(resolved.ids)
+    is ResolvedAction.Toggle -> WorkbenchToggleAction(resolved.toggle)
     // Found, so that `:action` reports what is actually wrong with it rather than "not found".
     is ResolvedAction.IntelliJOnly -> IntelliJOnlyAction(resolved.ideaId)
     ResolvedAction.Unknown -> null
@@ -251,6 +263,14 @@ private data class HostCommandAction(val ids: List<String>) : NativeAction {
  * "Action not found" would send the reader looking for a typo; what they need to hear is that the
  * name is right and the feature is IntelliJ's.
  */
+/**
+ * `HideAllWindows`, which sends one set of commands or the other depending on which way it is
+ * pointing. The direction lives in the [WorkbenchToggle] and moves only when this is executed.
+ */
+private data class WorkbenchToggleAction(val toggle: WorkbenchToggle) : NativeAction {
+  override val action: Any get() = toggle
+}
+
 private data class IntelliJOnlyAction(val ideaId: String) : NativeAction {
   override val action: Any get() = ideaId
 }
@@ -266,6 +286,9 @@ private sealed interface ResolvedAction {
   data class Command(val ids: List<String>) : ResolvedAction {
     constructor(id: String) : this(listOf(id))
   }
+  /** An action whose commands depend on which way it is pointing. See [WorkbenchToggle]. */
+  data class Toggle(val toggle: WorkbenchToggle) : ResolvedAction
+
   data class IntelliJOnly(val ideaId: String) : ResolvedAction
   object Unknown : ResolvedAction
 }

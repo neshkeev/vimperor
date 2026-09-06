@@ -85,6 +85,10 @@ class VimHost(
     // and without it every deferred continuation would run immediately - which is the answer for a
     // host whose edits are synchronous and the wrong one here. See [afterHostCatchesUp].
     SingleThreadedApplication.hostCatchUp = ::afterHostCatchesUp
+    // A host that has just started does not know whether the workbench is showing, so it assumes it
+    // is. `HideAllWindows` is a toggle and its direction is a belief; the belief belongs to this
+    // activation and nothing earlier. See [WorkbenchToggle].
+    IdeaActionAliases.resetToggles()
     // The engine owns the builtin command trie but does not fill it. Without this the key handler
     // recognises nothing, and every keystroke is silently discarded.
     engineCommandProvider.getCommands().forEach { vimInjector.keyGroup.registerCommandAction(it) }
