@@ -10,7 +10,9 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.api.VimSearchGroupBase
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -129,6 +131,7 @@ class VimFixtureReplayTest {
         val host = VimHost().also { it.start() }
         val editor = host.editorFor(fake)
         KeyHandler.getInstance().fullReset(editor)
+        resetEngineState()
         // Through VS Code's selections rather than by moving the engine's caret, because that is
         // the only way a second caret can arrive in a real window - the user alt-clicks, VS Code
         // reports a selection change, and the host rebuilds its carets from it.
@@ -242,6 +245,37 @@ class VimFixtureReplayTest {
         carets = caretsAt
         selections = starts.zip(ends)
       }
+    }
+
+    /**
+     * Everything a new [VimHost] does *not* make new, cleared before each fixture.
+     *
+     * A fresh host builds a fresh injector, so almost all of the engine's state goes with it. Some
+     * of it does not: `VimSearchGroupBase` keeps `lastPatternTrailing`, `lastDirection`,
+     * `lastPatternType` and `lastIgnoreSmartCase` in a `protected companion object`, which is one
+     * per process however many search groups exist. IdeaVim can afford that - an IntelliJ
+     * application has one search group - and its own tests call `resetState()` between tests for
+     * exactly this reason.
+     *
+     * Without it the fixtures are order-dependent, which is worse than any single failure: the one
+     * that found this ran after `/and/3<CR>n`, inherited the `3`, and answered three lines below
+     * the match it had correctly found. It was recorded as a bug in this host and was not one, and
+     * every other fixture was being replayed into whatever its neighbour had left behind.
+     *
+     * The rest of the list is IdeaVim's own, from `VimTestCase.setUp`. Most of it is per-injector
+     * here and costs nothing to call; it is written out rather than trimmed because which of these
+     * is shared is not a fact about the engine, it is a fact about how the engine was written, and
+     * that changes.
+     */
+    fun resetEngineState() {
+      (injector.searchGroup as VimSearchGroupBase).resetState()
+      injector.registerGroup.resetRegisters()
+      injector.markService.resetAllMarks()
+      injector.jumpService.resetJumps()
+      injector.historyGroup.resetHistory()
+      injector.changeGroup.resetRepeat()
+      injector.vimState.reset()
+      VimChangeList.reset()
     }
 
     val MARKERS = listOf(VimFixtures.CARET, VimFixtures.SELECTION_START, VimFixtures.SELECTION_END)

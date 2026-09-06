@@ -5,7 +5,7 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1226 of the 1236 harvested fixtures pass.
+# 1228 of the 1236 harvested fixtures pass.
 #
 # The corpus has grown by 189 in two steps, and both were the harness looking at less of `src/test`
 # than it thought. First it only found backtick-quoted test names, so IdeaVim's 578 plainly-named
@@ -14,8 +14,14 @@
 # method whose body *started* with `doTest`, so a method that bound its text first, or called
 # `doTest` more than once, gave up everything but the first call.
 #
-# Nine of the 189 failed and every one was a real gap in this host. One is fixed - `.` after an
-# insert that backspaced over itself replayed the typing without the deleting - and eight are below.
+# Nine of the 189 failed. Seven were real gaps in this host; the other two were this file being
+# read in isolation when the fixtures are not replayed in isolation. `VimSearchGroupBase` keeps
+# `lastPatternTrailing` and three of its neighbours in a `protected companion object` - one per
+# process, however many search groups exist - so `n` after `:s` inherited the `3` from a `/and/3`
+# two fixtures earlier and answered three lines below the match it had correctly found. The replay
+# resets the engine between fixtures now, the way IdeaVim's own `VimTestCase.setUp` does. Order
+# dependence is worse than any single failure: every fixture was being replayed into whatever its
+# neighbour had left behind.
 #
 # The ten that left it most recently are worth telling apart, because only eight were bugs here.
 #
@@ -48,13 +54,6 @@ src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAb
 src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text
 src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text 1
 src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below with multiple carets
-
-# --- `:s` does not leave its pattern where `n` and `N` look for it.
-#
-# `:s/it/I` then `n` should find the next `it`, because a substitute sets the last search pattern
-# exactly as `/` does. Here `n` searched for whatever was there before.
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchAgainNextActionTest.kt:test search next after substitute command
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchAgainPreviousActionTest.kt:test search previous after substitute command
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #
