@@ -76,8 +76,11 @@ internal class DetachedTextEditor : TextEditor {
   override val visibleRanges: Array<Range> = arrayOf(Range(Position(0, 0), Position(0, 0)))
 
   override val options: TextEditorOptions = object : TextEditorOptions {
-    override val tabSize: dynamic get() = 4
-    override val insertSpaces: dynamic get() = true
+    // Writable because VS Code's are, and `applyIndent` writes them - into nothing, here. Four
+    // spaces is VS Code's own default and this editor is never on screen to show anything else.
+    override var tabSize: dynamic = 4
+    override var indentSize: dynamic = VsCodeSettings.INDENT_SIZE_TAB_SIZE
+    override var insertSpaces: dynamic = true
 
     /** Nothing is on screen, so the caret has no shape; it is written and never read. */
     override var cursorStyle: Int = TextEditorCursorStyle.Block
