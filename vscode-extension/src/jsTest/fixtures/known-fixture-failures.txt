@@ -5,7 +5,7 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1228 of the 1236 harvested fixtures pass.
+# 1234 of the 1236 harvested fixtures pass, and both of the two left name an IntelliJ action.
 #
 # The corpus has grown by 189 in two steps, and both were the harness looking at less of `src/test`
 # than it thought. First it only found backtick-quoted test names, so IdeaVim's 578 plainly-named
@@ -14,7 +14,8 @@
 # method whose body *started* with `doTest`, so a method that bound its text first, or called
 # `doTest` more than once, gave up everything but the first call.
 #
-# Nine of the 189 failed. Seven were real gaps in this host; the other two were this file being
+# Nine of the 189 failed. Seven were real gaps in this host and all seven are fixed; the other two
+# were this file being
 # read in isolation when the fixtures are not replayed in isolation. `VimSearchGroupBase` keeps
 # `lastPatternTrailing` and three of its neighbours in a `protected companion object` - one per
 # process, however many search groups exist - so `n` after `:s` inherited the `3` from a `/and/3`
@@ -42,18 +43,6 @@
 # listener, with no IntelliJ in the body of it. It is `incsearchPreviewRequest` in the engine now
 # and both hosts read it.
 
-# --- `o` and `O` do not match the indent of the line they open from.
-#
-# Six fixtures, one gap. `VsCodeInjector`'s `InsertNewLineAction` says so out loud - "Vim's own `o`
-# would indent the new line to match; `'autoindent'` is not wired up yet, so this is the newline and
-# nothing else" - and these are IdeaVim saying what the indent should be. Nothing about it is
-# host-shaped: the indent of a line is a prefix of that line.
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above matches indent for first line of plain text
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above matches indent for plain text
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above with multiple carets
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text 1
-src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below with multiple carets
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #

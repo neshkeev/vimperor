@@ -27,8 +27,8 @@ day it goes: anything written into `src/main/java/` is work that will be thrown
 away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 1,047 fixtures the
-VS Code host mines out of `src/test` and replays (1,045 pass). That corpus is the
+repository. It is kept for its tests. 11,727 of them, plus the 1,236 fixtures the
+VS Code host mines out of `src/test` and replays (1,234 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
@@ -37,11 +37,40 @@ that VS Code has no command for, 11 IntelliJ-only options,
 2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Two, and both name an IntelliJ action.** Until recently it was twelve. There is nothing
-left on that list this host could do and has not: `ideajoin` is IntelliJ's language-aware
-join and `partial Action mapping` runs `EditorToggleCase`, an action id with no VS Code
-command behind it - there is no toggle-case command, only `transformToUppercase` and its
-twin.
+**Two, and both name an IntelliJ action.** Until recently it was twelve of 1,049. There is
+nothing left on that list this host could do and has not: `ideajoin` is IntelliJ's
+language-aware join and `partial Action mapping` runs `EditorToggleCase`, an action id with
+no VS Code command behind it - there is no toggle-case command, only
+`transformToUppercase` and its twin.
+
+**The corpus grew from 1,047 to 1,236 by fixing the harness, and that is where the next
+fixtures are too.** Twice it turned out to be looking at less of `src/test` than it thought.
+It only found backtick-quoted test names, so IdeaVim's 578 plainly-named tests were
+*invisible* rather than refused - they never reached the skip counts either, so the reported
+yield was measuring what could be parsed out of what could be seen. And it only read a method
+whose body *started* with `doTest`, so a method that bound its text first, or called `doTest`
+more than once, gave up everything but the first call.
+
+Getting that second one honest took three things, each of which is a rule about IdeaVim
+rather than about parsing. A statement standing *before* a `doTest` may be its setup -
+`setRegister('a', "World")` and then a paste of register `a` - so anything the harness cannot
+read refuses the calls after it, and only those; refusing all of them costs 95 fixtures.
+Options an earlier `doTest` set are still set for a later one, because each call re-seeds the
+text and none of them re-seeds the options, so the setup accumulates. And a trailing lambda
+ends at its own brace, which with one call per method was indistinguishable from the rest of
+the method.
+
+Nine of the 189 failed. Seven were real gaps here and all seven are fixed; the other two were
+**order dependence**, which was the worst thing this found. `VimSearchGroupBase` keeps
+`lastPatternTrailing` and three neighbours in a `protected companion object` - one per
+process, however many search groups exist - so `n` after `:s` inherited a `3` from a `/and/3`
+two fixtures earlier. Every fixture was being replayed into whatever its neighbour had left
+behind, so a pass meant less than it looked like it did. The replay resets the engine between
+fixtures now, the way IdeaVim's own `VimTestCase.setUp` does.
+
+There is more of this: 2,746 `doTest` calls exist under `src/test` and 1,236 are harvested.
+The 1,039 under `/extension/` are skipped wholesale on a reason that went stale when
+twenty-two of the twenty-four extensions were ported.
 
 **What the eight had in common was blockwise Visual, and the fix was three rules a host
 owes the engine.** A block's caret goes in the *active corner's* column, not the block's

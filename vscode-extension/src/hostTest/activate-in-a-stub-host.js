@@ -781,9 +781,13 @@ type('S')
 for (const character of 'new') type(character)
 press('<Esc>')
 
+// `rest` is indented too, and by the Enter above rather than by `S`: Enter carries the indent of
+// the line it was pressed on, in insert mode as well as for `o` and `O`. IdeaVim does the same -
+// measured, `i    one two<CR>rest` gives `    one two\n    rest` there - because its Enter is
+// IntelliJ's, which indents. Vim without `'autoindent'` would not, and this follows IdeaVim.
 assert.strictEqual(
   editor.document._text,
-  '    new\nrest',
+  '    new\n    rest',
   `S did not keep the line's indent. Got: ${JSON.stringify(editor.document._text)}`,
 )
 

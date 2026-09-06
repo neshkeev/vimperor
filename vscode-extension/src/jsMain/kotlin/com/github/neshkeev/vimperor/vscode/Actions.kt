@@ -146,9 +146,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     val vsCode = editor as? VsCodeEditor ?: return false
     return when (action) {
       is InsertNewLineAction -> {
-        // Vim's own `o` would indent the new line to match; `'autoindent'` is not wired up yet, so
-        // this is the newline and nothing else.
-        vsCode.typeAtCarets("\n")
+        vsCode.insertNewLineAtCarets()
         true
       }
 

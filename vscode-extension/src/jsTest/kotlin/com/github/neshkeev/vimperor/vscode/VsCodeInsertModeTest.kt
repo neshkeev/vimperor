@@ -340,4 +340,38 @@ class VsCodeInsertModeTest {
     session.type("X<Esc>")
     assertEquals("Xbc", session.fake.document.content)
   }
+
+  /**
+   * `o` and `O` start the new line at the indent of the one they opened from.
+   *
+   * The engine leaves this to the host on purpose - its comment on `O` says it goes to the end of
+   * the previous line and presses Enter because "we get better indent positioning ... especially
+   * with plain text files" - and this host's Enter wrote a bare newline, so an `o` on an indented
+   * line started the next one in column zero. IntelliJ's `EditorEnter` indents and so does VS
+   * Code's own Enter; only this host's shortcut did not.
+   *
+   * Six of IdeaVim's fixtures say so, and they were invisible until the harness learned to read a
+   * method that binds its text before calling `doTest`.
+   */
+  @Test
+  fun `test o keeps the indent of the line it opened from`() {
+    assertEquals("    one\n    \n    two", type("    one\n    two", "o<Esc>", caretOffset = 4))
+  }
+
+  @Test
+  fun `test O keeps the indent of the line above`() {
+    assertEquals("    one\n    \n    two", type("    one\n    two", "O<Esc>", caretOffset = 12))
+  }
+
+  /** On the first line there is no line above, so `O` matches the line it is pushing down. */
+  @Test
+  fun `test O on the first line keeps that line's indent`() {
+    assertEquals("    \n    one", type("    one", "O<Esc>", caretOffset = 4))
+  }
+
+  /** Enter in Select mode replaces the selection rather than pushing it along. */
+  @Test
+  fun `test enter in select mode replaces the selection`() {
+    assertEquals("Lorem ip\num", type("Lorem ipsum", "gh<CR><Esc>", caretOffset = 8))
+  }
 }

@@ -396,6 +396,52 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   /**
+   * Enter, carrying the indent of the line it was pressed on to the new line.
+   *
+   * This is what `o`, `O` and `cc` reach through `runEnterAction`, and the indent is the whole
+   * reason they go through the host at all: the engine's own comment on `O` says it goes to the end
+   * of the previous line and presses Enter because "we get better indent positioning ... especially
+   * with plain text files". IntelliJ's `EditorEnter` indents; so does VS Code's own Enter; this host
+   * wrote a bare newline, so `o` on an indented line started the new one in column zero.
+   *
+   * Per caret, because with more than one they are on different lines and the indent is the line's.
+   *
+   * A selection is replaced rather than pushed along, which is what Enter means in Select mode -
+   * `gh<CR>` deletes the selected character and opens a line where it was.
+   */
+  fun insertNewLineAtCarets() {
+    val spans = vimCarets.associateWith { caret ->
+      if (caret.hasSelection()) caret.selectionStart to caret.selectionEnd else caret.offset to caret.offset
+    }
+    val texts = vimCarets.associateWith { caret ->
+      "\n" + indentOfLine(offsetToBufferPosition(spans.getValue(caret).first).line)
+    }
+    val sorted = vimCarets.sortedBy { spans.getValue(it).first }
+    for (caret in sorted.reversed()) {
+      val (from, to) = spans.getValue(caret)
+      if (to > from) buffer.replace(from, to, texts.getValue(caret)) else buffer.insert(from, texts.getValue(caret))
+    }
+    var shift = 0
+    for (caret in sorted) {
+      val (from, to) = spans.getValue(caret)
+      val text = texts.getValue(caret)
+      caret.removeSelection()
+      caret.moveToOffsetNative(from + shift + text.length)
+      shift += text.length - (to - from)
+    }
+  }
+
+  /** The leading whitespace of [line], which is what a new line below it starts with. */
+  private fun indentOfLine(line: Int): String {
+    val start = getLineStartOffset(line)
+    val end = getLineEndOffset(line)
+    val text = buffer.text
+    var index = start
+    while (index < end && (text[index] == ' ' || text[index] == '\t')) index++
+    return text.substring(start, index)
+  }
+
+  /**
    * Deletes the character *after* every caret, which is the Delete key.
    *
    * Nothing types it - Vim's own `x` and `<Del>` are the engine's - and it exists because a repeat
