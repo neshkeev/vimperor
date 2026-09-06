@@ -5,44 +5,64 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1234 of the 1236 harvested fixtures pass, and both of the two left name an IntelliJ action.
+# 1602 of the 1615 harvested fixtures pass.
 #
-# The corpus has grown by 189 in two steps, and both were the harness looking at less of `src/test`
-# than it thought. First it only found backtick-quoted test names, so IdeaVim's 578 plainly-named
-# tests were *invisible* rather than refused - they never reached the skip counts either, so the
-# reported yield was measuring what could be parsed out of what could be seen. Then it only read a
-# method whose body *started* with `doTest`, so a method that bound its text first, or called
-# `doTest` more than once, gave up everything but the first call.
+# The corpus has grown from 1,047 to 1,615 in three steps, and every one of them was the harness
+# looking at less of `src/test` than it thought.
 #
-# Nine of the 189 failed. Seven were real gaps in this host and all seven are fixed; the other two
-# were this file being
-# read in isolation when the fixtures are not replayed in isolation. `VimSearchGroupBase` keeps
+# It only found backtick-quoted test names, so IdeaVim's 578 plainly-named tests were *invisible*
+# rather than refused - they never reached the skip counts either, so the reported yield was
+# measuring what could be parsed out of what could be seen. It only read a method whose body
+# *started* with `doTest`, so a method that bound its text first, or called `doTest` more than once,
+# gave up everything but the first call. And it skipped the 1,039 `doTest` calls under `/extension/`
+# wholesale, on the grounds that "the extension tests need plugins this host has not ported" -
+# twenty-two of the twenty-four are ported now.
+#
+# What kept the extension tests out after that was where their setup lives: `enableExtensions`, and
+# the `let` that has to precede it, are in `setUp` - a *different method*, and the harness only ever
+# looked at the one it was in. `enableExtensions` sets the extension's toggle option, which is what
+# `:set surround` does, and `set <name>` was `E518` here until the extension options were
+# registered; these fixtures could not have been replayed before that was fixed either. 461 of the
+# 1,039 are `matchit`, which is not ported and is not going to be.
+#
+# Twenty of the 568 failed. Seven were real gaps in this host and all seven are fixed. Two were
+# order dependence, which was the worst thing this found: `VimSearchGroupBase` keeps
 # `lastPatternTrailing` and three of its neighbours in a `protected companion object` - one per
 # process, however many search groups exist - so `n` after `:s` inherited the `3` from a `/and/3`
 # two fixtures earlier and answered three lines below the match it had correctly found. The replay
-# resets the engine between fixtures now, the way IdeaVim's own `VimTestCase.setUp` does. Order
-# dependence is worse than any single failure: every fixture was being replayed into whatever its
-# neighbour had left behind.
+# resets the engine between fixtures now, the way IdeaVim's own `VimTestCase.setUp` does. Every
+# fixture had been replayed into whatever its neighbour left behind, so a pass meant less than it
+# looked like it did.
 #
-# The ten that left it most recently are worth telling apart, because only eight were bugs here.
+# The other eleven are one gap and are below.
 #
-# Eight were blockwise Visual, and one bug: a block's caret goes in the *active corner's* column
-# rather than the block's right edge, a line too short to hold the block's slice contributes no
-# caret at all, carets that have stopped being different carets merge, and two pieces of per-caret
-# state have to outlive the caret that recorded them. `VsCodeBlockVisualTest` has the numbers.
-#
-# One was the harness harvesting tests IdeaVim has `@Disabled`. `search in one time from select
-# mode` sat here as "expected [81], actual [82]" when IdeaVim's own caret is at 82, and `repeat
-# command with execution of ij action` had a reason written against it - a missing IntelliJ action -
-# that was not why it failed. A disabled test does not pass over there either. Before believing an
-# entry in this file, check that the fixture passes in the plugin.
-#
-# And one was `'incsearch'` previewing an ex command, which this port had recorded as needing "a
-# different piece of machinery from previewing `/`". True, and the machinery already existed: it was
-# `parseCommandLineForPreview` in `ExEntryPanel`, in `src/main/java` next to a Swing document
-# listener, with no IntelliJ in the body of it. It is `incsearchPreviewRequest` in the engine now
-# and both hosts read it.
+# Before believing an entry in this file, check that the fixture passes in the plugin. Two of them
+# did not: `search in one time from select mode` sat here as "expected [81], actual [82]" when
+# IdeaVim's own caret is at 82, and `repeat command with execution of ij action` had a reason
+# written against it that was not why it failed. Both are `@Disabled` over there, and the harness
+# now skips those.
 
+# --- `.` does not repeat what an extension did.
+#
+# Eleven fixtures, one gap, and it arrived with the extension tests: `ysiw)l.` surrounds once and
+# the `.` does nothing, `dsb.` re-runs and deletes the wrong thing, `cxiww.` exchanges the pair back
+# instead of exchanging the next one. Both extensions are ported and both work; it is only the
+# repeat that does not.
+#
+# `Extension.consumeKeystroke` is where to start. A repeat of an extension mapping re-runs the
+# *handler* rather than the keys, so whatever the handler read has to have been recorded and handed
+# back - which is the same machinery `readKeys` uses, and CLAUDE.md describes it from the other end.
+src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeExtensionTest.kt:test exchange words dot repeat
+src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeExtensionTest.kt:test exchange words right to left with dot
+src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeWithClipboardTest.kt:test exchange words dot repeat
+src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeWithClipboardTest.kt:test exchange words right to left with dot
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatChangeSurroundingParens
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatDeleteSurroundParens
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatDifferentChanges
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatSurround
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatSurroundDouble
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatWrapWithFunction
+src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatWrapWithTag
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #

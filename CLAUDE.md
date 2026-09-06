@@ -27,21 +27,22 @@ day it goes: anything written into `src/main/java/` is work that will be thrown
 away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 1,236 fixtures the
-VS Code host mines out of `src/test` and replays (1,234 pass). That corpus is the
+repository. It is kept for its tests. 11,727 of them, plus the 1,615 fixtures the
+VS Code host mines out of `src/test` and replays (1,602 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 11 IntelliJ-only options,
-2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+13 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Two, and both name an IntelliJ action.** Until recently it was twelve of 1,049. There is
-nothing left on that list this host could do and has not: `ideajoin` is IntelliJ's
-language-aware join and `partial Action mapping` runs `EditorToggleCase`, an action id with
-no VS Code command behind it - there is no toggle-case command, only
-`transformToUppercase` and its twin.
+**Thirteen of 1,615, and eleven of them are one thing.** `.` does not repeat what an
+extension did - `ysiw)l.` surrounds once and the `.` does nothing, `cxiww.` exchanges the
+pair back instead of the next one. Both extensions are ported and both work; only the
+repeat does not, and `Extension.consumeKeystroke` is where it lives. The other two name an
+IntelliJ action: `ideajoin` is IntelliJ's language-aware join, and `partial Action mapping`
+runs `EditorToggleCase`, an action id with no VS Code command behind it.
 
 **The corpus grew from 1,047 to 1,236 by fixing the harness, and that is where the next
 fixtures are too.** Twice it turned out to be looking at less of `src/test` than it thought.
@@ -68,9 +69,18 @@ two fixtures earlier. Every fixture was being replayed into whatever its neighbo
 behind, so a pass meant less than it looked like it did. The replay resets the engine between
 fixtures now, the way IdeaVim's own `VimTestCase.setUp` does.
 
-There is more of this: 2,746 `doTest` calls exist under `src/test` and 1,236 are harvested.
-The 1,039 under `/extension/` are skipped wholesale on a reason that went stale when
-twenty-two of the twenty-four extensions were ported.
+The third step was the extension tests - 1,039 `doTest` calls skipped wholesale on the
+grounds that "the extension tests need plugins this host has not ported", which stopped
+being true when twenty-two of the twenty-four were. What kept them out after that was where
+their setup lives: `enableExtensions`, and the `let` that has to precede it for
+`camelcasemotion`, are in `setUp` - a *different method* - and `enableExtensions` sets the
+extension's toggle option, which is what `:set surround` does. So `set <name>` being `E518`
+here until the extension options were registered was the other half of it: these fixtures
+could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
+
+2,746 `doTest` calls exist under `src/test` and 1,615 are harvested. What is refused is
+counted and printed with every run, and the largest buckets now are tests that set something
+up in Kotlin, tests IdeaVim marks `@VimBehaviorDiffers`, and arguments that need a compiler.
 
 **What the eight had in common was blockwise Visual, and the fix was three rules a host
 owes the engine.** A block's caret goes in the *active corner's* column, not the block's

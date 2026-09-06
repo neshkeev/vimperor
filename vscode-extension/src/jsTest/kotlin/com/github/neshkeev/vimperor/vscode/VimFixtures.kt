@@ -61,15 +61,23 @@ internal object VimFixtures {
     skipped.clear()
     val fixtures = mutableListOf<VimFixture>()
     for (path in kotlinFilesUnder("$repositoryRoot/src/test")) {
-      // The extension tests need plugins this host has not ported. They would all fail, and they
-      // would fail for a reason that is already written down.
-      if (path.contains("/extension/")) continue
       val source = readText(path)
       // A file with its own `doTest` means something else entirely by the name - `GlobalCommandTest`
       // takes an ex command where `VimTestCase` takes keys - and reading those as keystrokes
       // produces nonsense that looks like a failure.
       if (source.contains("fun doTest(")) { skip("the file defines its own doTest"); continue }
+      // What the class does for every test in it. Nearly always `enableExtensions("surround")` in
+      // `setUp`, which is the only reason the extension tests could not be read: it is a statement
+      // in a *different method*, and the harness only ever looked at the one it was in.
+      val setUpBody = testMethods(source).firstOrNull { it.first == "setUp" }?.second
+      val fromSetUp = if (setUpBody == null) emptyList<String>() to emptyList<String>() else {
+        setUpCommands(stripLineComments(setUpBody))
+      }
+      val fileSetup = fromSetUp?.first
+      val fileExtensions = fromSetUp?.second ?: emptyList()
+
       for ((method, body, at) in testMethods(source)) {
+        if (method == "setUp" || method == "tearDown") continue
         // Annotations that mean the fixture is not the plain thing it looks like. The method's, not
         // the call's - a method that carries one carries it for every `doTest` in it.
         val head = source.substring(maxOf(0, at - 400), at)
@@ -91,12 +99,15 @@ internal object VimFixtures {
         // literals meant the call looked unevaluatable rather than unread.
         val parsed = analyse(trimmed)
         if (parsed.calls.isEmpty()) continue
+        val enables = enableCalls(trimmed)
 
         // Options an earlier `doTest` in the same method set are still set for a later one: each
         // call re-seeds the text and none of them re-seeds the options. `test smartcase option`
         // turns on this - its fourth call sets only `ignorecase` and expects `smartcase` from its
         // second - so the setup accumulates rather than being read per call.
         val accumulated = mutableListOf<String>()
+        val turnedOn = mutableListOf<String>()
+        turnedOn += fileExtensions
         var ordinal = 0
         for ((index, call) in parsed.calls.withIndex()) {
           ordinal++
@@ -105,6 +116,12 @@ internal object VimFixtures {
           // stay stable because it is the key in the baseline file, and it does: `upstream` is
           // read-only, so the calls in a method do not move.
           val name = if (ordinal == 1) method else "$method#$ordinal"
+          // Whatever the method turned on before this call, as well as whatever the class did.
+          turnedOn += enables.filter { it.first < call }.flatMap { it.second }
+          if (turnedOn.any { it in NOT_HERE }) {
+            skip("the test needs an extension this host does not have"); continue
+          }
+          if (fileSetup == null) { skip("the test sets something up this cannot repeat"); continue }
           // A statement this cannot read, standing before this call. `testInsertFromRegister` is
           // `setRegister('a', "World")` and then a `doTest` that pastes register `a`; reading the
           // call and not the line above it would record a failure that is entirely the harness's.
@@ -153,7 +170,7 @@ internal object VimFixtures {
             keys,
             before,
             after,
-            accumulated.toList(),
+            fileSetup + turnedOn.drop(fileExtensions.size).distinct().map { "set $it" } + accumulated.toList(),
           )
         }
       }
@@ -494,6 +511,15 @@ internal object VimFixtures {
       spans += (call - "doTest".length)..(end - 1)
     }
 
+    // An `enableExtensions(...)` is a statement this *can* read - it becomes a `:set` in the
+    // fixture's setup - so it must not count as leftover and refuse the calls after it.
+    for ((at, names) in enableCalls(body)) {
+      val open = body.indexOf('(', at)
+      val end = argumentSpans(body, open)?.last()?.second ?: continue
+      if (names.isEmpty()) continue
+      spans += at..end
+    }
+
     val consumed = BooleanArray(body.length)
     for (span in spans) for (index in span) if (index in consumed.indices) consumed[index] = true
     val leftover = body.indices.firstOrNull { !consumed[it] && !body[it].isWhitespace() }
@@ -591,6 +617,98 @@ internal object VimFixtures {
 
   private fun isIdentifierChar(character: Char?): Boolean =
     character != null && (character.isLetterOrDigit() || character == '_' || character == '.')
+
+  /**
+   * What a class's `setUp` does, as ex commands, in the order it does them.
+   *
+   * The extension tests keep their setup here rather than in a trailing lambda, and the order is
+   * load-bearing: `camelcasemotion` reads `g:camelcasemotion_key` when it is enabled, so the `let`
+   * has to come before the `set`. Thirty-one fixtures turn on that one line.
+   *
+   * Null when `setUp` does something this cannot reproduce. `super.setUp` and `configureByText` are
+   * read and ignored - the first is the fixture harness's own equivalent of itself, and the second
+   * seeds text that every fixture replaces anyway.
+   */
+  private fun setUpCommands(body: String): Pair<List<String>, List<String>>? {
+    val commands = mutableListOf<String>()
+    val extensions = mutableListOf<String>()
+    val spans = mutableListOf<IntRange>()
+
+    for ((at, names) in enableCalls(body)) {
+      val open = body.indexOf('(', at)
+      val end = argumentSpans(body, open)?.last()?.second ?: return null
+      spans += at..end
+      names.forEach { commands += "at:$at set $it" }
+      extensions += names
+    }
+    for (name in listOf("enterCommand", "configureByText", "super.setUp", "typeText")) {
+      var index = 0
+      while (true) {
+        index = body.indexOf("$name(", index)
+        if (index < 0) break
+        val open = index + name.length
+        val arguments = argumentSpans(body, open) ?: return null
+        spans += index..arguments.last().second
+        if (name == "enterCommand") {
+          val value = evaluate(body.substring(arguments[0].first, arguments[0].second).trim()) ?: return null
+          commands += "at:$index $value"
+        }
+        index = arguments.last().second + 1
+      }
+    }
+
+    val consumed = BooleanArray(body.length)
+    for (span in spans) for (index in span) if (index in consumed.indices) consumed[index] = true
+    if (body.indices.any { !consumed[it] && !body[it].isWhitespace() }) return null
+
+    // Back into order, which is why each one carries where it came from.
+    val ordered = commands
+      .sortedBy { it.substringAfter("at:").substringBefore(' ').toInt() }
+      .map { it.substringAfter(' ') }
+    return ordered to extensions
+  }
+
+  /**
+   * The `enableExtensions("surround")` calls in a body, with where each one is.
+   *
+   * `VimTestCase.enableExtensions` sets the extension's toggle option, which is what `:set surround`
+   * does - so a fixture's setup can say it in one line. That was not always true here: `set <name>`
+   * was `E518` on this host until the extension options were registered, and a config runs with
+   * errors suppressed, so it failed silently for all twenty-two. Extension fixtures could not have
+   * been replayed before that was fixed.
+   *
+   * `enableExtensionsNewApi` is the same thing for a thin-API extension and reads the same here.
+   */
+  private fun enableCalls(body: String): List<Pair<Int, List<String>>> {
+    val found = mutableListOf<Pair<Int, List<String>>>()
+    for (name in listOf("enableExtensions", "enableExtensionsNewApi")) {
+      var index = 0
+      while (true) {
+        index = body.indexOf("$name(", index)
+        if (index < 0) break
+        val open = index + name.length
+        val spans = argumentSpans(body, open)
+        if (spans == null) { index = open + 1; continue }
+        val names = spans.mapNotNull { (from, to) -> evaluate(body.substring(from, to).trim()) }
+        if (names.size == spans.size) found += index to names
+        index = spans.last().second + 1
+      }
+    }
+    return found.sortedBy { it.first }
+  }
+
+  /**
+   * Extensions this host does not have, so a fixture that needs one is refused rather than failed.
+   *
+   * `matchit` and `VimEverywhere` are not ported and are not going to be - see CLAUDE.md for what
+   * each of them wants that VS Code does not offer. `TestExtension` is one the test registers for
+   * itself, in Kotlin, which is a different thing again.
+   *
+   * Everything else that reaches here is an option rather than an extension - `enableExtensions`
+   * sets a toggle option and two of IdeaVim's tests use it for `ignorecase` and `smartcase` - and
+   * `:set` is the right answer for those too.
+   */
+  private val NOT_HERE = setOf("matchit", "VimEverywhere", "TestExtension")
 
   /**
    * A test method's name, backticked or not.
