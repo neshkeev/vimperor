@@ -107,6 +107,7 @@ class EscapeToEditorManifestTest {
       "panelFocus" to true,
       "sideBarFocus" to false,
       "auxiliaryBarFocus" to false,
+      "activityBarFocus" to false,
     )
 
     assertTrue(matches(clause(), inTheOutputView), "Escape in the Output panel has to reach the editor")
@@ -123,6 +124,7 @@ class EscapeToEditorManifestTest {
       "panelFocus" to false,
       "sideBarFocus" to true,
       "auxiliaryBarFocus" to false,
+      "activityBarFocus" to false,
     )
 
     assertTrue(!matches(clause(), inTheSearchBox), "clearing the box is worth more than a focus change")
@@ -139,9 +141,51 @@ class EscapeToEditorManifestTest {
       "panelFocus" to true,
       "sideBarFocus" to false,
       "auxiliaryBarFocus" to false,
+      "activityBarFocus" to false,
     )
 
     assertTrue(!matches(clause(), inTheTerminal), "vim in a terminal has to keep its Escape")
+  }
+
+  /**
+   * The activity bar is what a *collapsed* sidebar leaves behind.
+   *
+   * Reported: with the sidebar collapsed, clicking its empty space and pressing Escape did nothing.
+   * There is no sidebar container to click when it is collapsed - the click lands on the icon strip,
+   * which sets `activityBarFocus` and not `sideBarFocus`.
+   */
+  @Test
+  fun `test escape returns from the activity bar`() {
+    val onTheIconStrip = mapOf(
+      "vimperor.escapeReturnsToEditor" to true,
+      "terminalFocus" to false,
+      "inputFocus" to false,
+      "editorTextFocus" to false,
+      "panelFocus" to false,
+      "sideBarFocus" to false,
+      "auxiliaryBarFocus" to false,
+      "activityBarFocus" to true,
+    )
+
+    assertTrue(matches(clause(), onTheIconStrip))
+  }
+
+  /**
+   * Every area of the workbench chrome that can take focus is named, and the list is enumerated
+   * rather than inverted.
+   *
+   * The trade is deliberate. A positive that is missing means Escape does nothing there, which is a
+   * gap; an *exclusion* that is missing means Escape is taken from something that needed it, which
+   * is a bug. Both reports against this feature have been missing positives, which is the cheaper
+   * way to be wrong - and the reason the next one should be another name here rather than a rewrite
+   * of the clause into `!editorTextFocus`.
+   */
+  @Test
+  fun `test every area of the workbench chrome is named`() {
+    val clause = clause()
+    listOf("sideBarFocus", "panelFocus", "auxiliaryBarFocus", "activityBarFocus").forEach {
+      assertTrue(clause.contains(it), "$it is missing, so that part of the workbench is stranded")
+    }
   }
 
   /**

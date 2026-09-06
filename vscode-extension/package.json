@@ -493,7 +493,7 @@
       {
         "key": "escape",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && (!inputFocus || editorTextFocus) && (sideBarFocus || panelFocus || auxiliaryBarFocus)"
+        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && (!inputFocus || editorTextFocus) && (sideBarFocus || panelFocus || auxiliaryBarFocus || activityBarFocus)"
       }
     ],
     "configuration": {
