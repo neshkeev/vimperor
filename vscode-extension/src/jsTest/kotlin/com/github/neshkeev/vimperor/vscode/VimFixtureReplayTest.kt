@@ -175,7 +175,7 @@ class VimFixtureReplayTest {
           }
         }
         for (stroke in injector.parser.parseKeys(fixture.keys)) {
-          handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+          host.handle(fake, listOf(stroke))
           // After every key, which is what `VimHost.handle` does. Flushing once at the end looks
           // like an optimisation and is a different program: the document is written once, so `u`
           // asks VS Code to undo a document that has not been touched yet and there is nothing on

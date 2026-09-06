@@ -44,7 +44,14 @@ class VsCodeCaret(
 
   /** Mutable, because editing and motion both move it, and this caret is never replaced. */
   override var offset: Int = offset
-    private set
+    private set(value) {
+      // A move makes the remembered column stale unless whoever moved the caret says otherwise -
+      // which a motion that carries an intended column does, immediately afterwards. See
+      // [vimLastColumn], and `MotionActionHandler.moveToAdjustedOffset`, which sets it on both
+      // sides of the move for exactly this reason.
+      if (value != field) lastColumnSetAt = -1
+      field = value
+    }
 
   override val editor: VimEditor get() = vimEditor
 
@@ -102,6 +109,11 @@ class VsCodeCaret(
 
   override var vimLastColumn: Int
     get() {
+      // Invalidated by the move rather than inferred from the offset. Comparing offsets looks like
+      // the same question and is not: `$hl` leaves the caret exactly where `$` had put it, so the
+      // offsets agreed and `j` was still aiming at `LAST_COLUMN` - the end of the next line rather
+      // than the column `l` had just returned to. IdeaVim does not have the problem because
+      // IntelliJ's own caret drops its desired column on every move.
       if (offset != lastColumnSetAt) vimLastColumn = getBufferPosition().column
       return lastColumn
     }

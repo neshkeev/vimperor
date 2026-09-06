@@ -20,6 +20,9 @@ import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
+import com.maddyhome.idea.vim.common.ModeChangeListener
+import com.maddyhome.idea.vim.key.noteCaretMoveInInsertSession
+import com.maddyhome.idea.vim.key.resetAbbreviationSession
 
 /**
  * The running extension: keys in, edits out.
@@ -85,6 +88,18 @@ class VimHost(
     // and without it every deferred continuation would run immediately - which is the answer for a
     // host whose edits are synchronous and the wrong one here. See [afterHostCatchesUp].
     SingleThreadedApplication.hostCatchUp = ::afterHostCatchesUp
+    // Vim starts an abbreviation session fresh on every entry to Insert mode. IdeaVim registers the
+    // same listener; only where the document's stamp comes from differs.
+    vimInjector.listenersNotifier.modeChangeListeners.add(
+      object : ModeChangeListener {
+        override fun modeChanged(editor: VimEditor, oldMode: Mode) {
+          val vsCode = editor as? VsCodeEditor ?: return
+          if (oldMode !is Mode.INSERT && vsCode.mode is Mode.INSERT) {
+            resetAbbreviationSession(vsCode, vsCode.documentStamp())
+          }
+        }
+      },
+    )
     // A host that has just started does not know whether the workbench is showing, so it assumes it
     // is. `HideAllWindows` is a toggle and its direction is a belief; the belief belongs to this
     // activation and nothing earlier. See [WorkbenchToggle].
@@ -295,7 +310,15 @@ class VimHost(
   private fun postedKeys(): List<com.maddyhome.idea.vim.key.VimKeyStroke> =
     (injector.application as? PostingApplication)?.takePostedKeys() ?: emptyList()
 
-  private fun handle(textEditor: TextEditor, keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>) {
+  /**
+   * Internal rather than private so the fixture replay can feed it parsed strokes.
+   *
+   * The replay used to drive `KeyHandler` itself, which meant everything this method does around a
+   * keystroke - the flush after each one, the queue that holds keys behind a host command, the
+   * per-key hooks - was outside the corpus. A fixture that turned on one of them could not pass and
+   * could not be seen to fail for the right reason.
+   */
+  internal fun handle(textEditor: TextEditor, keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>) {
     if (pending > 0) {
       // A VS Code command the engine asked for has not finished. Running these keys now would
       // compute them against text the command is about to change, and the command would then land
@@ -314,7 +337,18 @@ class VimHost(
     val remaining = keys.toMutableList()
     while (remaining.isNotEmpty()) {
       val stroke = remaining.removeAt(0)
+      val caretBefore = editor.primaryCaret().offset
       handler.handleKey(editor, stroke, VsCodeExecutionContext, state)
+      // Vim's `arrow_used`: an abbreviation does not expand once the caret has been moved during
+      // this insert by something that was not an edit. IdeaVim hears about that from IntelliJ's
+      // caret listener; this host has none, so the keystroke loop is where a caret move is visible.
+      //
+      // On a move only, which is what a caret listener would fire on. `noteCaretMoveInInsertSession`
+      // decides which kind of move it was by whether the document changed with it, so calling it
+      // when nothing moved would report a pure caret move on every keystroke.
+      if (editor.mode is Mode.INSERT && editor.primaryCaret().offset != caretBefore) {
+        noteCaretMoveInInsertSession(editor, editor.documentStamp())
+      }
       // A key the engine asked to have handled after this one - `<C-V>065x` ends its literal on the
       // `x`, which is not part of it. Ahead of the rest, because Vim replays it immediately.
       remaining.addAll(0, postedKeys())
@@ -407,6 +441,17 @@ class VimHost(
   private fun afterHostCatchesUp(action: () -> Unit) {
     if (pending == 0) action() else landed += action
   }
+
+  /**
+   * A number that changes whenever the text does, which is all the abbreviation session wants.
+   *
+   * The buffer's revision and not `document.version`. VS Code's version moves when the *document*
+   * is written, which this host does once per keystroke at [VsCodeEditor.flush] - after the key has
+   * been handled. Read during the keystroke it still describes the text as it was, so every typed
+   * character looked like a caret that had moved without an edit, and `foo` invalidated its own
+   * abbreviation before the space arrived.
+   */
+  private fun VsCodeEditor.documentStamp(): Long = buffer.revision.toLong()
 
   private fun hostCommandsFinished() {
     // The command changed the document, and it changed it without going through the buffer - so
