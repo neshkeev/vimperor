@@ -183,8 +183,20 @@ The default is the other half. Vim wraps and VS Code does not, so an option that
 Vim's answer would turn wrapping *on* in every editor the moment Vimperor loaded. It is
 seeded from the editor's own setting, scoped to the document - unscoped, VS Code answers for
 the *window* and ignores a `[markdown]` block turning wrap on, which is how people usually do
-it. Anything else moved out of the accepted group will need all three questions asked of it:
-can it be set rather than toggled, what is its default here, and is the read scoped.
+it.
+
+**And a setting has to be written where it is read**, which cost one more round. Whether the
+`[markdown]` block or the plain value decided a file's wrap was being worked out per call, by
+comparing a document-scoped read against a URI-scoped one - so `:set wrap` wrote the language
+value and took effect while `:set nowrap` wrote the plain one and was shadowed by what the
+previous command had just written. The two directions were not the same setting, so the second
+could not undo the first. Every write goes into the language block now: it is the layer that
+wins, which is both why people use it and why it is the only one certain to be reversible. The
+cost is that `:set nowrap` on a Kotlin file writes `"[kotlin]"` into the user's settings.
+
+Anything else moved out of the accepted group will need all four questions asked of it: can it
+be set rather than toggled, what is its default here, is the read scoped, and does the write
+land in the layer the read comes from.
 
 **And it still cannot reach everything.** VS Code lets an editor carry a word wrap of its own
 *on top of* the setting - `Alt+Z` sets one, and so does `editor.action.toggleWordWrap`. It
