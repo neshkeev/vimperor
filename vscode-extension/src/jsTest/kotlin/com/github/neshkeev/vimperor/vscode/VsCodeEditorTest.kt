@@ -147,9 +147,16 @@ class VsCodeEditorTest {
     editor.flush()
 
     assertEquals("goodbye world", fake.document.content)
-    // Against the edited document: offset 6 is inside "goodbye", not where it was before the edit.
+    // The caret moves with the text, because an edit before it makes it later in the document.
+    //
+    // This asserted 6 for a long time, on the reading that the engine hands offsets already in
+    // post-edit terms so a host must not adjust them. That is true of every operation that places
+    // the caret *after* editing - which is nearly all of them, and why the difference stayed
+    // invisible - and it is not the contract the engine is written against. IntelliJ's carets are
+    // document markers, so a caret set before an edit and not touched again moves; `<C-T>` in
+    // Insert mode is an operation that relies on exactly that and moves no caret of its own.
     assertEquals(0, fake.selection.active.line)
-    assertEquals(6, fake.selection.active.character)
+    assertEquals(8, fake.selection.active.character)
   }
 
   @Test

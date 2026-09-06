@@ -152,6 +152,10 @@ class VsCodeCaret(
   }
 
   private fun adjustOffset(value: Int, start: Int, end: Int, delta: Int): Int = when {
+    // Text inserted exactly where the caret is carries it, which is what an editor whose carets are
+    // document markers does without being asked. `<C-T>` in Insert mode is the case: the engine
+    // indents the line and moves nothing, because in IntelliJ the document moves the caret for it.
+    start == end && value == start -> value + delta
     value <= start -> value
     value >= end -> value + delta
     else -> start

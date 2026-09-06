@@ -310,7 +310,6 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * the reason their own comments give: they edit at *every* caret and have to work backwards.
    */
   private fun shiftCaretsAfterEdit(start: Int, end: Int, newLength: Int) {
-    if (vimCarets.size <= 1) return
     val delta = newLength - (end - start)
     if (delta == 0) return
     vimCarets.forEach { it.adjustForEdit(start, end, delta) }
