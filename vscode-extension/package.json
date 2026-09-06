@@ -493,7 +493,12 @@
       {
         "key": "escape",
         "command": "workbench.action.focusActiveEditorGroup",
-        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && (!inputFocus || editorTextFocus) && (sideBarFocus || panelFocus || auxiliaryBarFocus || activityBarFocus)"
+        "when": "vimperor.escapeReturnsToEditor && !terminalFocus && (!inputFocus || editorTextFocus) && (sideBarFocus || panelFocus || auxiliaryBarFocus)"
+      },
+      {
+        "key": "escape",
+        "command": "workbench.action.focusActiveEditorGroup",
+        "when": "vimperor.escapeReturnsToEditor && !editorTextFocus && !terminalFocus && !inputFocus && !textInputFocus && !sideBarFocus && !panelFocus && !auxiliaryBarFocus && !listFocus && !inQuickOpen && !notificationFocus && !notificationCenterVisible && !statusBarFocused && !bannerFocused && !referenceSearchVisible && !commentFocused && !suggestWidgetVisible && !findWidgetVisible && !notebookEditorFocused"
       }
     ],
     "configuration": {

@@ -42,9 +42,28 @@ class EscapeToEditorManifestTest {
     return (manifest.contributes.keybindings as Array<dynamic>).toList()
   }
 
-  private fun binding(): dynamic = bindings().single { it.command == VsCodeCommands.FOCUS_EDITOR }
+  private fun escapeBindings(): List<dynamic> =
+    bindings().filter { it.command == VsCodeCommands.FOCUS_EDITOR }
+
+  /** The one for the named areas of the chrome - the sidebar, the panel, the secondary sidebar. */
+  private fun binding(): dynamic = escapeBindings().first { (it.`when` as String).contains("sideBarFocus ||") }
 
   private fun clause(): String = binding().`when` as String
+
+  /** The one for focus that nothing has claimed, which is where the activity bar leaves it. */
+  private fun unclaimedClause(): String =
+    escapeBindings().first { !(it.`when` as String).contains("sideBarFocus ||") }.`when` as String
+
+  /**
+   * Every context key a clause names, all false, so a case has only to say what is true of it.
+   *
+   * Built from the clause rather than written out: the reader refuses a name a case does not
+   * define, which is what keeps a case from quietly testing a clause it no longer matches - and
+   * with nineteen names that would otherwise be nineteen lines per case.
+   */
+  private fun context(clause: String, vararg on: String): Map<String, Boolean> =
+    Regex("[A-Za-z][A-Za-z0-9_.]*").findAll(clause).map { it.value }.distinct()
+      .associateWith { it in on }
 
   @Test
   fun `test escape outside the editor returns to the document`() {
@@ -107,7 +126,6 @@ class EscapeToEditorManifestTest {
       "panelFocus" to true,
       "sideBarFocus" to false,
       "auxiliaryBarFocus" to false,
-      "activityBarFocus" to false,
     )
 
     assertTrue(matches(clause(), inTheOutputView), "Escape in the Output panel has to reach the editor")
@@ -124,7 +142,6 @@ class EscapeToEditorManifestTest {
       "panelFocus" to false,
       "sideBarFocus" to true,
       "auxiliaryBarFocus" to false,
-      "activityBarFocus" to false,
     )
 
     assertTrue(!matches(clause(), inTheSearchBox), "clearing the box is worth more than a focus change")
@@ -141,7 +158,6 @@ class EscapeToEditorManifestTest {
       "panelFocus" to true,
       "sideBarFocus" to false,
       "auxiliaryBarFocus" to false,
-      "activityBarFocus" to false,
     )
 
     assertTrue(!matches(clause(), inTheTerminal), "vim in a terminal has to keep its Escape")
@@ -155,19 +171,45 @@ class EscapeToEditorManifestTest {
    * which sets `activityBarFocus` and not `sideBarFocus`.
    */
   @Test
-  fun `test escape returns from the activity bar`() {
-    val onTheIconStrip = mapOf(
-      "vimperor.escapeReturnsToEditor" to true,
-      "terminalFocus" to false,
-      "inputFocus" to false,
-      "editorTextFocus" to false,
-      "panelFocus" to false,
-      "sideBarFocus" to false,
-      "auxiliaryBarFocus" to false,
-      "activityBarFocus" to true,
+  fun `test escape returns when nothing has claimed focus`() {
+    val clause = unclaimedClause()
+
+    assertTrue(matches(clause, context(clause, "vimperor.escapeReturnsToEditor")))
+  }
+
+  /**
+   * ...and every context that owns Escape keeps it, one case per name.
+   *
+   * Each of these was checked against `workbench.desktop.main.js` before it was written down. That
+   * check is the whole reason this clause is trustworthy: `activityBarFocus`, which the first
+   * attempt at this feature added, **does not exist** - VS Code sets no context key for the
+   * activity bar at all - so the binding was inert and the reported bug was unchanged.
+   */
+  @Test
+  fun `test the unclaimed clause yields to everything that owns escape`() {
+    val clause = unclaimedClause()
+    val owners = listOf(
+      "editorTextFocus", "terminalFocus", "inputFocus", "textInputFocus",
+      "sideBarFocus", "panelFocus", "auxiliaryBarFocus", "listFocus", "inQuickOpen",
+      "notificationFocus", "notificationCenterVisible", "statusBarFocused", "bannerFocused",
+      "referenceSearchVisible", "commentFocused", "suggestWidgetVisible", "findWidgetVisible",
+      "notebookEditorFocused",
     )
 
-    assertTrue(matches(clause(), onTheIconStrip))
+    owners.forEach { owner ->
+      assertTrue(
+        !matches(clause, context(clause, "vimperor.escapeReturnsToEditor", owner)),
+        "Escape would be taken from `$owner`",
+      )
+    }
+  }
+
+  /** And the setting turns both of them off. */
+  @Test
+  fun `test the unclaimed clause is gated too`() {
+    val clause = unclaimedClause()
+
+    assertTrue(!matches(clause, context(clause)))
   }
 
   /**
@@ -181,9 +223,9 @@ class EscapeToEditorManifestTest {
    * of the clause into `!editorTextFocus`.
    */
   @Test
-  fun `test every area of the workbench chrome is named`() {
+  fun `test the named areas are the ones VS Code has keys for`() {
     val clause = clause()
-    listOf("sideBarFocus", "panelFocus", "auxiliaryBarFocus", "activityBarFocus").forEach {
+    listOf("sideBarFocus", "panelFocus", "auxiliaryBarFocus").forEach {
       assertTrue(clause.contains(it), "$it is missing, so that part of the workbench is stranded")
     }
   }
