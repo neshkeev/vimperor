@@ -243,11 +243,17 @@ external object workspace {
   fun openTextDocument(uri: Uri): Thenable<TextDocument>
 
   /**
-   * [scope] is a document or a URI, and leaving it out is not the same thing.
+   * [scope] is a `TextDocument`, a `Uri`, a `WorkspaceFolder` or `{ uri, languageId }`, and **which
+   * of those is passed changes the answer**.
    *
-   * Without it VS Code resolves the *window's* value and ignores everything scoped narrower - a
-   * language override in a `[markdown]` block, or a folder's settings. Those are exactly how people
-   * turn word wrap on, so `'wrap'` reads the resource's value.
+   * A bare `Uri` resolves the folder's value and stops there. A **document** resolves the language
+   * override too - the `[markdown]` block that turns word wrap on, which is how people usually turn
+   * it on and which a `Uri` scope does not see. Reading `editor.wordWrap` by URI answered `off` for
+   * a file VS Code was wrapping, over and over, and every write went to the value nothing was
+   * reading.
+   *
+   * Leaving it out is different again: VS Code resolves the *window's* value and ignores everything
+   * scoped narrower.
    */
   fun getConfiguration(section: String, scope: Any? = definedExternally): WorkspaceConfiguration
 
@@ -275,10 +281,17 @@ external interface WorkspaceConfiguration {
   /**
    * Writes a setting, which is the only way to put word wrap in a *known* state.
    *
-   * [target] is a [ConfigurationTarget]. Resolves when the write has landed and rejects if the
-   * setting cannot be written there - a workspace target with no folder open, for one.
+   * [target] is a [ConfigurationTarget]. [overrideInLanguage] writes the value into the scope's
+   * language block - `[markdown]` and the like - which is the only way to change an effective value
+   * that a language block is what decides. Resolves when the write has landed and rejects if the
+   * setting cannot be written there.
    */
-  fun update(section: String, value: Any?, target: Int): Thenable<Unit>
+  fun update(
+    section: String,
+    value: Any?,
+    target: Int,
+    overrideInLanguage: Boolean = definedExternally,
+  ): Thenable<Unit>
 }
 
 /** Where a settings write goes. VS Code's `ConfigurationTarget`: Global 1, Workspace 2, Folder 3. */

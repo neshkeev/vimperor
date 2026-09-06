@@ -250,22 +250,43 @@ const workspace = {
    * here has per-resource settings, so it is accepted and ignored - but it has to be *accepted*,
    * because reading the wrap without it is what missed a language override in a real window.
    */
+  /**
+   * `scope` is a document, a URI or `{ uri, languageId }`, and which it is changes the answer: a
+   * document resolves the *language* override as well, a URI stops at the folder. VS Code makes
+   * that distinction and a stub that did not was how a read could agree with a write and neither
+   * describe the screen.
+   */
+  languageConfiguration: {},
   getConfiguration: (section, scope) => ({
     get: (key) => {
+      // A document has a `languageId`; a URI does not. Only the first sees the language block.
+      const language = scope && scope.languageId
+      const byLanguage = language && workspace.languageConfiguration[language]
+      const inLanguage = byLanguage && byLanguage[section] ? byLanguage[section][key] : undefined
+      if (inLanguage != null) return inLanguage
       // `== null` and not `!== undefined`: with no scope the narrow lookup is `null`, and a check
       // against `undefined` alone answers *null* for every unscoped read. That is a stub bug that
       // made an unscoped read look like an unset setting, so the tests agreed with each other and
       // not with a window.
-      const scoped = scope ? workspace.scopedConfiguration[scope.path] : null
+      const path = scope && (scope.path || (scope.uri && scope.uri.path))
+      const scoped = path ? workspace.scopedConfiguration[path] : null
       const narrow = scoped && scoped[section] ? scoped[section][key] : undefined
       return narrow == null ? (workspace.configuration[section] || {})[key] : narrow
     },
     /** Writes where `get` will read it back from, which is what makes `'wrap'` checkable. */
-    update: (key, value, target) => {
-      const scoped = scope ? workspace.scopedConfiguration[scope.path] : null
-      const into = scoped && scoped[section] ? scoped[section] : (workspace.configuration[section] ||= {})
+    update: (key, value, target, overrideInLanguage) => {
+      const language = scope && scope.languageId
+      let into
+      if (overrideInLanguage && language) {
+        const byLanguage = (workspace.languageConfiguration[language] ||= {})
+        into = (byLanguage[section] ||= {})
+      } else {
+        const path = scope && (scope.path || (scope.uri && scope.uri.path))
+        const scoped = path ? workspace.scopedConfiguration[path] : null
+        into = scoped && scoped[section] ? scoped[section] : (workspace.configuration[section] ||= {})
+      }
       into[key] = value
-      workspace.updates.push({ section, key, value, target })
+      workspace.updates.push({ section, key, value, target, overrideInLanguage: !!overrideInLanguage })
       return { then: (onFulfilled) => (onFulfilled && onFulfilled(undefined), { then: () => {} }) }
     },
   }),

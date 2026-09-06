@@ -618,12 +618,7 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
 }
 
 /** The setting as VS Code answers it, unmapped, so a trace line can show what was actually read. */
-private fun rawWordWrap(editor: VsCodeEditor): String? = try {
-  workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
-    .get(VsCodeSettings.WORD_WRAP) as? String
-} catch (e: Throwable) {
-  "unreadable (${e.message})"
-}
+private fun rawWordWrap(editor: VsCodeEditor): String? = wordWrapSetting(editor)
 
 private fun named(wrapping: Boolean) = if (wrapping) "wrap" else "nowrap"
 
@@ -675,11 +670,20 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
   val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
   val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
+  // Into the language block when a language block is what decides this file's wrap, because a plain
+  // write would be written, read back, and shadowed - which is what it was.
+  val inLanguage = wrapIsLanguageScoped(editor)
   try {
-    workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
-      .update(VsCodeSettings.WORD_WRAP, value, target)
+    workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
+      .update(VsCodeSettings.WORD_WRAP, value, target, inLanguage)
       .then(
-        { traceWrap(editor, "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target. $OVERRIDE") },
+        {
+          traceWrap(
+            editor,
+            "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target" +
+              (if (inLanguage) " for this language" else "") + ". $OVERRIDE",
+          )
+        },
         // Reported rather than swallowed. A settings write can be refused - a workspace target with
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
         // the failure this option has already had twice.
@@ -729,10 +733,38 @@ private fun seedWordWrap(editor: VsCodeEditor) {
  *
  * Read defensively: the one host that is not a VS Code window is the stub the tests run in.
  */
-internal fun configuredWordWrap(editor: VsCodeEditor? = null): Boolean = try {
-  val scope = editor?.nativeEditor?.document?.uri
-  val value = workspace.getConfiguration(VsCodeSettings.EDITOR, scope).get(VsCodeSettings.WORD_WRAP)
-  value != null && value != VsCodeSettings.WORD_WRAP_OFF
+internal fun configuredWordWrap(editor: VsCodeEditor? = null): Boolean =
+  wordWrapSetting(editor).let { it != null && it != VsCodeSettings.WORD_WRAP_OFF }
+
+/**
+ * The setting as VS Code answers it for this file, unmapped.
+ *
+ * The scope is the **document**, not its URI, and the difference is the whole of why this option
+ * appeared to work and did nothing for so long. A `Uri` scope resolves the folder's value and stops
+ * there; a document resolves the *language override* as well - the `[markdown]` block that turns
+ * word wrap on, which is how people usually turn it on. Reading by URI answered `off` for a file VS
+ * Code was wrapping, so every read agreed with every write and neither described the screen.
+ */
+private fun wordWrapSetting(editor: VsCodeEditor?): String? = try {
+  val scope = editor?.nativeEditor?.document
+  workspace.getConfiguration(VsCodeSettings.EDITOR, scope).get(VsCodeSettings.WORD_WRAP) as? String
+} catch (e: Throwable) {
+  null
+}
+
+/**
+ * Whether a language block is what decides this file's wrap.
+ *
+ * Compared rather than looked up, because VS Code offers no way to ask which layer an effective
+ * value came from. If the document's answer differs from the same file's answer by URI, a language
+ * override is the difference - and a plain write would be shadowed by it.
+ */
+private fun wrapIsLanguageScoped(editor: VsCodeEditor): Boolean = try {
+  val document = editor.nativeEditor.document
+  val withLanguage = workspace.getConfiguration(VsCodeSettings.EDITOR, document).get(VsCodeSettings.WORD_WRAP)
+  val withoutLanguage =
+    workspace.getConfiguration(VsCodeSettings.EDITOR, document.uri).get(VsCodeSettings.WORD_WRAP)
+  withLanguage != withoutLanguage
 } catch (e: Throwable) {
   false
 }

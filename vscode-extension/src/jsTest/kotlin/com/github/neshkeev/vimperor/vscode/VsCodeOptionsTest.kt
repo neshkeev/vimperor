@@ -561,6 +561,42 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * A `[language]` block is what usually turns word wrap on, and it is what the read must see.
+   *
+   * The scope decides: a `Uri` resolves the folder's value and stops, a *document* resolves the
+   * language override too. Reading by URI answered `off` for a file VS Code was wrapping, so every
+   * read agreed with every write and neither described the screen - three rebuilds' worth of a
+   * setting that was written, read back, and shadowed.
+   */
+  @Test
+  fun `test a language block is read and written, not shadowed`() {
+    val byLanguage = js("require('vscode').workspace.languageConfiguration")
+    byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      // The file wraps because of its language, so Vim's option starts there rather than at the
+      // folder's `off`.
+      session.run("set wrap?")
+      assertTrue(
+        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
+        "the language block should be what `'wrap'` is read from, printed: ${session.printed}",
+      )
+
+      // And turning it off has to go into the language block, or the block shadows the write.
+      session.run("set nowrap")
+      assertEquals(listOf("wordWrap=off"), writes())
+      assertEquals(true, js("require('vscode').workspace.updates[0].overrideInLanguage"))
+      assertEquals(false, configuredWordWrap(session.host.editorFor(session.fake)))
+    } finally {
+      byLanguage["plaintext"] = undefined
+      reset()
+    }
+  }
+
   /** And it is written where it can be read back, so the option and the editor cannot drift. */
   @Test
   fun `test the wrap that was written is the wrap that is read`() {

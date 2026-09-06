@@ -388,7 +388,7 @@ const vscode = {
     // without burying everything else this host prints.
     getConfiguration: (section, scope) => ({
       get: (key) => (section === 'vimperor' && key === 'trace' ? tracing : undefined),
-      update: (key, value, target) => Promise.resolve(),
+      update: (key, value, target, overrideInLanguage) => Promise.resolve(),
     }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a
     // temporary one, since these scenarios write real files.
