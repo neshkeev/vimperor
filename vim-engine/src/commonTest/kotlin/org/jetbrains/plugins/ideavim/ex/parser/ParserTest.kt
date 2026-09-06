@@ -38,11 +38,14 @@ abstract class ParserTest {
     var counter = 0
     while (counter < base.pow(exponent)) {
       val combination = mutableListOf<String>()
-      var binaryString = Integer.toBinaryString(counter)
+      // `Integer.toBinaryString` and `Integer.parseInt` are `java.lang`, which is the whole of what
+      // kept this file on the JVM - and neither appears in an import list, so nothing said so until
+      // it was compiled for JS. `toString(radix)` and `digitToInt` are Kotlin's own.
+      var binaryString = counter.toString(2)
       val leadingZeroesCount = exponent - binaryString.length
       binaryString = "0".repeat(leadingZeroesCount) + binaryString
       for (byte in binaryString) {
-        combination.add(" ".repeat(Integer.parseInt(byte.toString())))
+        combination.add(" ".repeat(byte.digitToInt()))
       }
       spacesCombinations.add(combination)
       counter += 1

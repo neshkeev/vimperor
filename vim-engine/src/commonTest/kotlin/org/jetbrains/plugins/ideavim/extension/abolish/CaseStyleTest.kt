@@ -9,7 +9,7 @@
 package org.jetbrains.plugins.ideavim.extension.abolish
 
 import com.maddyhome.idea.vim.extension.abolish.CaseStyle
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CaseStyleTest {

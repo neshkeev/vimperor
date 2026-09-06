@@ -10,15 +10,23 @@ package org.jetbrains.plugins.ideavim.ex.parser.expressions
 
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.TernaryExpression
-import com.maddyhome.idea.vim.vimscript.parser.VimscriptParser
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.host.HeadlessInjector
 import org.jetbrains.plugins.ideavim.productForArguments
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class TernaryExpressionTests {
+
+  @BeforeTest
+  fun installHeadlessInjector() {
+    injector = HeadlessInjector()
+    injector.functionService.registerHandlers()
+  }
 
   companion object {
     @JvmStatic
@@ -40,7 +48,7 @@ class TernaryExpressionTests {
     sp7: String,
     sp8: String,
   ) {
-    val expression = VimscriptParser.parseExpression("1$sp1?$sp2'2'$sp3:3")
+    val expression = injector.vimscriptParser.parseExpression("1$sp1?$sp2'2'$sp3:3")
     assertTrue(expression is TernaryExpression)
     assertEquals(SimpleExpression(1), expression.condition)
     assertEquals(SimpleExpression("2"), expression.then)

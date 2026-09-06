@@ -9,18 +9,26 @@
 package org.jetbrains.plugins.ideavim.ex.parser.expressions
 
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import com.maddyhome.idea.vim.vimscript.parser.VimscriptParser
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.host.HeadlessInjector
 import org.jetbrains.plugins.ideavim.ex.evaluate
-import org.junit.jupiter.api.Test
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class StringParsingTests {
+
+  @BeforeTest
+  fun installHeadlessInjector() {
+    injector = HeadlessInjector()
+    injector.functionService.registerHandlers()
+  }
 
   @Test
   fun `quoted string`() {
     assertEquals(
       VimString("oh, hi Mark"),
-      VimscriptParser.parseExpression("\"oh, hi Mark\"")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("\"oh, hi Mark\"")!!.evaluate(),
     )
   }
 
@@ -28,7 +36,7 @@ class StringParsingTests {
   fun `single quoted string`() {
     assertEquals(
       VimString("oh, hi Mark"),
-      VimscriptParser.parseExpression("'oh, hi Mark'")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("'oh, hi Mark'")!!.evaluate(),
     )
   }
 
@@ -36,7 +44,7 @@ class StringParsingTests {
   fun `escaped backslash in quoted string`() {
     assertEquals(
       VimString("oh, \\hi Mark"),
-      VimscriptParser.parseExpression("\"oh, \\\\hi Mark\"")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("\"oh, \\\\hi Mark\"")!!.evaluate(),
     )
   }
 
@@ -44,7 +52,7 @@ class StringParsingTests {
   fun `escaped quote quoted string`() {
     assertEquals(
       VimString("oh, hi \"Mark\""),
-      VimscriptParser.parseExpression("\"oh, hi \\\"Mark\\\"\"")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("\"oh, hi \\\"Mark\\\"\"")!!.evaluate(),
     )
   }
 
@@ -52,7 +60,7 @@ class StringParsingTests {
   fun `backslashes in single quoted string`() {
     assertEquals(
       VimString("oh, hi \\\\Mark\\"),
-      VimscriptParser.parseExpression("'oh, hi \\\\Mark\\'")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("'oh, hi \\\\Mark\\'")!!.evaluate(),
     )
   }
 
@@ -60,7 +68,7 @@ class StringParsingTests {
   fun `escaped single quote in single quoted string`() {
     assertEquals(
       VimString("oh, hi 'Mark'"),
-      VimscriptParser.parseExpression("'oh, hi ''Mark'''")!!.evaluate(),
+      injector.vimscriptParser.parseExpression("'oh, hi ''Mark'''")!!.evaluate(),
     )
   }
 
@@ -68,7 +76,7 @@ class StringParsingTests {
   fun `single quoted string inside a double quoted string`() {
     assertEquals(
       VimString(" :echo \"no mapping for 45\"<CR>"),
-      VimscriptParser.parseExpression(
+      injector.vimscriptParser.parseExpression(
         """
          ' :echo "no mapping for ' . 45 . '"<CR>'
         """.trimIndent(),

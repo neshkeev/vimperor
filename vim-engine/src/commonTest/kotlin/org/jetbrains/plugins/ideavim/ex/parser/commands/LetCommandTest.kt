@@ -9,15 +9,23 @@
 package org.jetbrains.plugins.ideavim.ex.parser.commands
 
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.host.HeadlessInjector
 import com.maddyhome.idea.vim.vimscript.model.commands.LetCommand
 import com.maddyhome.idea.vim.vimscript.model.expressions.RegisterExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.operators.AssignmentOperator
-import org.junit.jupiter.api.Test
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class LetCommandTest {
+
+  @BeforeTest
+  fun installHeadlessInjector() {
+    injector = HeadlessInjector()
+    injector.functionService.registerHandlers()
+  }
 
   @Test
   fun `let with register is parsed correctly`() {

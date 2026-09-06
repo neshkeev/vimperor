@@ -9,7 +9,7 @@
 package org.jetbrains.plugins.ideavim.ex.implementation.expressions.datatypes
 
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotSame

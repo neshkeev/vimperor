@@ -87,6 +87,7 @@ class JvmOnlyTestsTest {
      * move if somebody rewrote them, and they are marked so that nobody has to work it out again.
      */
     val REASONS: Map<String, String> = mapOf(
+      "Arguments" to "builds JUnit 5 Arguments for the two @MethodSource tests below",
       "CharacterHelperTest" to "differential against java.lang.Character",
       "CodePointsTest" to "differential against java.lang.Character's surrogate pair handling",
       "CodeWrapperTest" to "JUnit 5 @TestFactory and DynamicTest; could move if rewritten",
@@ -98,6 +99,7 @@ class JvmOnlyTestsTest {
       "ForbiddenApiTest" to "walks the source tree with java.nio.file",
       "GraphemesTest" to "reads Unicode's own break-test data files with java.nio.file",
       "JdkCollectionShimsTest" to "differential against java.util.StringTokenizer and Collections",
+      "LambdaTests" to "JUnit 5 @MethodSource; could move if the combinations were written out",
       "JdkKeyStrokeParityTest" to "differential against javax.swing.KeyStroke",
       "NumbersDifferentialTest" to "differential against java.math.BigInteger",
       "PlatformClassNameTest" to "pins platformClassName to Class.getName semantics",
@@ -105,6 +107,7 @@ class JvmOnlyTestsTest {
       "StringKTypeEquivalenceTest" to "kotlin.reflect KType equivalence",
       "VimPathExpansionTest" to "sets and reads real environment variables through System",
       "VimRegexTest" to "JUnit 5 @Nested; could move if the nesting were flattened",
+      "TernaryExpressionTests" to "JUnit 5 @MethodSource; could move if the combinations were written out",
     )
   }
 }

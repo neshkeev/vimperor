@@ -9,7 +9,7 @@
 package org.jetbrains.plugins.ideavim.autocmd
 
 import com.maddyhome.idea.vim.autocmd.AutoCmdPattern
-import org.junit.jupiter.api.Test
+import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 

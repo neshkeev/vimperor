@@ -14,15 +14,23 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.LambdaFunctionCallExpr
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.VariableExpression
 import com.maddyhome.idea.vim.vimscript.model.expressions.operators.BinaryOperator
-import com.maddyhome.idea.vim.vimscript.parser.VimscriptParser
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.host.HeadlessInjector
 import org.jetbrains.plugins.ideavim.productForArguments
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import kotlin.test.BeforeTest
 import kotlin.test.assertEquals
 
 class LambdaTests {
+
+  @BeforeTest
+  fun installHeadlessInjector() {
+    injector = HeadlessInjector()
+    injector.functionService.registerHandlers()
+  }
 
   companion object {
     val values = listOf("", " ")
@@ -40,7 +48,7 @@ class LambdaTests {
   @ParameterizedTest
   @MethodSource("arg3")
   fun `lambda with no args test`(sp1: String, sp2: String, sp3: String) {
-    val lambdaExpression = VimscriptParser.parseExpression("{$sp1->$sp2'error'$sp3}") as LambdaExpression
+    val lambdaExpression = injector.vimscriptParser.parseExpression("{$sp1->$sp2'error'$sp3}") as LambdaExpression
     assertEquals(0, lambdaExpression.args.size)
     assertEquals(SimpleExpression("error"), lambdaExpression.expr)
   }
@@ -49,7 +57,7 @@ class LambdaTests {
   @MethodSource("arg6")
   fun `lambda with multiple args test`(sp1: String, sp2: String, sp3: String, sp4: String, sp5: String, sp6: String) {
     val lambdaExpression =
-      VimscriptParser.parseExpression("{${sp1}a$sp2,${sp3}b$sp4->${sp5}a+b$sp6}") as LambdaExpression
+      injector.vimscriptParser.parseExpression("{${sp1}a$sp2,${sp3}b$sp4->${sp5}a+b$sp6}") as LambdaExpression
     assertEquals(listOf("a", "b"), lambdaExpression.args)
     assertEquals(
       BinExpression(VariableExpression(null, "a"), VariableExpression(null, "b"), BinaryOperator.ADDITION),
@@ -59,7 +67,7 @@ class LambdaTests {
 
   @Test
   fun `lambda function call with no args test`() {
-    val functionCall = VimscriptParser.parseExpression("{->'error'}()") as LambdaFunctionCallExpression
+    val functionCall = injector.vimscriptParser.parseExpression("{->'error'}()") as LambdaFunctionCallExpression
     assertEquals(0, functionCall.arguments.size)
     assertEquals(0, functionCall.lambda.args.size)
     assertEquals(SimpleExpression("error"), functionCall.lambda.expr)
@@ -69,7 +77,7 @@ class LambdaTests {
   @MethodSource("arg4")
   fun `lambda function call with multiple args test`(sp1: String, sp2: String, sp3: String, sp4: String) {
     val functionCall =
-      VimscriptParser.parseExpression("{->'error'}(${sp1}a$sp2,${sp3}b$sp4)") as LambdaFunctionCallExpression
+      injector.vimscriptParser.parseExpression("{->'error'}(${sp1}a$sp2,${sp3}b$sp4)") as LambdaFunctionCallExpression
     assertEquals(2, functionCall.arguments.size)
     assertEquals(listOf(VariableExpression(null, "a"), VariableExpression(null, "b")), functionCall.arguments)
     assertEquals(0, functionCall.lambda.args.size)
