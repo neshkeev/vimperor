@@ -4,38 +4,62 @@ Guidance for Claude Code when working in this repository.
 
 ## What this repository is
 
-A **hard fork of IdeaVim** being turned into **Vimperor**, a VS Code extension.
-Three parts:
+**Vimperor**, a Vim emulator for VS Code, grown out of a hard fork of IdeaVim.
+Two parts:
 
 | Path                | What it is                        | Compiles to       |
 |---------------------|-----------------------------------|-------------------|
 | `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
-| `src/main/java/`    | The IntelliJ plugin (IdeaVim)     | JVM               |
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 
 `vim-engine` is Kotlin Multiplatform: the engine is in `src/commonMain/kotlin`,
-**not** `src/main/kotlin`. **A change to `commonMain` changes both hosts.**
+**not** `src/main/kotlin`. It still has two *targets* - a change to `commonMain`
+has to compile for JS as well as the JVM, and its tests run on both - but it now
+has only one host.
 
-There is no upstream to contribute to. `vim-engine` may be changed freely, and
-should be when the bug is the engine's. The `upstream` remote is read-only.
+Five Gradle modules: those two, plus `api`, `vim-annotations` and
+`annotation-processors`. There is no upstream to contribute to. The `upstream`
+remote is read-only and is kept to read from, because IdeaVim's history is often
+the fastest answer to "why is this code like this".
 
-## Where this is going
+## `src/test` is data, not a source set
 
-**Port IdeaVim to VS Code completely, then delete the IntelliJ plugin.** The
-plugin is kept until then and only until then, so weigh every change against the
-day it goes: anything written into `src/main/java/` is work that will be thrown
-away, and anything that only the plugin can do is a gap in the port.
+The IntelliJ plugin is gone - 408 files, deleted once the port no longer needed
+it. `src/test` stayed. It holds IdeaVim's 11,727 tests, which cannot run without
+the plugin, and **the VS Code host mines 2,423 replayed fixtures out of them as
+text**: `VimFixtures.load` reads the `.kt` files and `VimFixtureReplayTest` plays
+the keys against this host. 2,417 pass.
 
-The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 2,423 fixtures the
-VS Code host mines out of `src/test` and replays (2,402 pass). That corpus is the
-largest outside check on the port and it has to survive the deletion, so
-`src/test` is not an ordinary casualty of removing `src/main`.
+Nothing compiles that directory. It is the largest outside check the port has,
+and it survives because it never needed to be code. `vscode-extension` declares
+it a task input. Do not tidy it, reformat it, or delete from it: every file in
+there is a potential fixture, and the corpus has grown four times over by the
+harness learning to read more of what is already written.
 
-What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
-that VS Code has no command for, 11 IntelliJ-only options,
-11 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
-`pluginActivator`, which nothing in the engine calls.
+The six that fail all name an IntelliJ action with no VS Code command behind it -
+`ideajoin`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorRight`,
+`EditorDown`. They are not portable and are not waiting on anything.
+
+## What is left
+
+Nothing structural. Every key the engine registers reaches something this host
+has built or a refusal that is itself an answer, and `VsCodeUnimplementedTest`
+asserts the empty list; ex commands are at parity in both directions. 22 of
+IdeaVim's 24 extensions are bundled. One injector seam is still `TODO` -
+`pluginActivator` - and nothing in the engine calls it.
+
+What remains is a backlog of small things and one piece of tidying: the engine
+still carries `com.maddyhome.idea.vim` packages, which can now be renamed in one
+pass - see **Packages**.
+
+## The record below
+
+Most of what follows was written while the plugin still existed, and is kept
+because it is the design record of the port: what was tried, what was measured,
+what turned out to be wrong. Where it compares this host with IdeaVim, that
+comparison is still the right one - IdeaVim is the reference implementation and
+its behaviour is what the fixtures assert. Where it says "both hosts", read "the
+engine and its one host".
 
 **Eleven of 2,081, at the time.** The corpus's largest single finding was `u`: it undid a *keystroke*
 where Vim undoes a command, so `ciwfoo<Esc>u` put back `fo`. 128 fixtures said so at once.
@@ -568,47 +592,45 @@ story four times over: `Character.isWhitespace`, `Character.isJavaIdentifierPart
 JVM-only - none of which appear in an import list. An import list overstates what
 is IntelliJ-shaped and understates what is JVM-shaped.
 
+**That held a third time, on the way out.** Moving the engine's own tests out of
+`src/test` before deleting the plugin, `ParserTest` looked portable and used
+`Integer.toBinaryString` and `Integer.parseInt` - `java.lang`, with no import to
+give it away, so it compiled for the JVM and not for JS. In the other direction
+`CommandParserTest` had four `com.intellij` references in thirty tests and is not
+portable at all: it uses `doTest` and `c` off `VimTestCase`, which carry no
+`com.intellij` import either. Both were found by compiling, not by reading.
+
 The engine already answers most of those: `isVimWhitespace`, `isIdentifierPart` and
 now `isIdentifierStart` in `helper/Characters.kt` are the JDK's own rules spelled
 out for both targets, and `StrictMode.assert` is IdeaVim's idiom for an internal
 invariant. Look there before writing an approximation.
 
-### How an extension is meant to reach VS Code
+### How an extension reaches VS Code
 
-There are two extension systems in this repository, and only one of them is worth
-porting to.
+This section used to say the host half was missing and that writing it was "the
+next piece of work, and the gate for all eight". It was written, and everything
+below it is now description rather than plan.
 
-The old one is the `VimExtension` interface registered through the IntelliJ
-extension point `IdeaVIM.vimExtension`. Eighteen of the twenty-six still use it.
+An extension is a function annotated `@VimPlugin`, written against
+`com.intellij.vim.api.VimInitApi`, found by the KSP `ExtensionsProcessor` and
+emitted as JSON. `VsCodeJsonExtensionProvider` reads it, `VsCodeExtensionLoader`
+loads it, `VsCodeExtensionRegistrator` is what `:Plug` calls, and
+`VsCodeExtensions.BUNDLED` lists the twenty-two that ship. The engine's own
+machinery - `ExtensionHandler.kt`, `ExtensionLoader.kt`, `ExtensionBean.kt`,
+`JsonExtensionProvider.kt` - is what both ends were built on.
 
-The new one is the **thin API**: a function annotated `@VimPlugin`, written
-against `com.intellij.vim.api.VimInitApi`, found by the KSP `ExtensionsProcessor`
-and emitted as JSON for a host to read. Eight extensions have already been
-migrated to it - `commentary`, `replacewithregister`, `yankring`,
-`camelcasemotion`, `paragraphmotion`, `textobjentire`, `textobjuser`, `miniai` -
-and **the `api` module is already Kotlin Multiplatform with a JS target**. So the
-thin API is the route: nothing about it is IntelliJ-shaped.
+Three ways in, and a config may use any of them: `:Plug 'tpope/vim-surround'`
+resolves through `VsCodeExtensionRegistrator.ALIASES`, `:packadd` reaches
+`enableExtension` directly, and `set surround` sets a toggle option registered
+per extension by `registerExtensionOptions`. All three have been broken at some
+point and each break was silent, because a config runs with `indicateErrors =
+false`. If an extension is not turning on, check that it can be reached all three
+ways before looking at the extension itself.
 
-What is missing is the host half. IntelliJ has `IjPluginExtensionsScanner` (68
-lines, reads the generated JSON) and `IjJsonExtensionProvider` (228 lines). The VS
-Code host has neither, and `VsCodeInjectorBase` says so:
-`TODO("the VS Code host does not provide extensionRegistrator yet")`. It already
-imports `ExtensionLoader` and `JsonExtensionProvider`, so the shape is anticipated.
-
-**That provider is the next piece of work, and it is the gate for all eight.**
-Until it exists no extension can register in VS Code however portable it is;
-once it does, the question for each extension becomes only whether its own
-imports are engine-only.
-
-Most of the machinery to fix this is already in `vim-engine`:
-`extension/ExtensionHandler.kt`, `ExtensionLoader.kt`, `ExtensionBean.kt` and
-`JsonExtensionProvider.kt` - registration driven by JSON rather than by an
-IntelliJ extension point - and `VimExtensionRegistrator`, which `:Plug` already
-calls. `VimExtensionHandler` in the plugin is a thin adapter over the engine's
-`ExtensionHandler`: it converts a `VimEditor` to an IntelliJ `Editor` and does
-nothing else. So porting one is moving it to `commonMain`, writing it against
-`ExtensionHandler` instead of the adapter, and registering it through the JSON
-provider - not rewriting it.
+`textobj-user` is the one that needs a real teardown: it registers Vimscript
+*function handlers*, and the loader removes mappings and listeners by owner but
+knows nothing about functions. `VsCodeExtensions.TEARDOWN` is where anything else
+that registers by name will need an entry.
 
 **The `.` mark was set past the change rather than at it**, and the shape of that bug is worth
 keeping. `replaceText` ended with
@@ -634,12 +656,18 @@ fork's - `highlight`, `sign`, `redirect`, `path`, `diff`, `directory`, `match`,
 `message`, `profile`, `script`, `tags`, `tutor`, and the buffer and path function
 handlers - have moved. Sub-paths were preserved: only the prefix changed.
 
-**Sixty-four files have not moved, on purpose.** They sit in packages that are
-mostly inherited - 20 ex commands among 116, one file in `api` among 110, the
-`host` test package, four function-handler packages - and moving them would split
-those packages in two for as long as the plugin lives. The engine is easier to
-rename in one pass once it belongs to this fork outright, which is after the
-plugin goes. Until then, leave them.
+**Sixty-four files have not moved, and the reason they had not is gone.** They sit
+in packages that are mostly inherited - 20 ex commands among 116, one file in
+`api` among 110, the `host` test package, four function-handler packages - and
+moving them while the plugin lived would have split those packages in two.
+
+The plugin is deleted, so the engine belongs to this fork outright and can be
+renamed in one pass. That is the tidying job the deletion unlocked; it is not
+urgent, and it is a single mechanical commit rather than sixty-four decisions.
+Two things it has to get right: the `@ExCommand` and `@VimscriptFunction`
+registries name every class by its full package, so `:vim-engine:kspKotlinJvm`
+has to be re-run and the generated JSON committed - and `src/test`, which is
+data, refers to engine classes by name in strings that no compiler will check.
 
 ## Quick Reference
 
@@ -650,50 +678,56 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 ```
 
 ```bash
-# One class or package - the usual thing to want
-./gradlew :test --tests "SearchGroupTest" --console=plain
+# Everything, both modules and both of the engine's targets. Takes about 25 seconds.
+./gradlew test --console=plain
 
-# The standard suite: both hosts, since `test` matches by task name across projects
-./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test --console=plain
+# The extension alone: its tests, the fixture replay, the stub-host smoke test,
+# and both API guards
+./gradlew :vscode-extension:check --console=plain
 
-# The extension alone: its tests, the stub-host smoke test, and both API guards
-./gradlew :vscode-extension:test --console=plain
+# The engine alone, one target at a time
+./gradlew :vim-engine:jvmTest --console=plain
+./gradlew :vim-engine:jsNodeTest --console=plain
 
-# The plugin, in a dev IDE
-./gradlew runIde
+# One class, on the JVM
+./gradlew :vim-engine:jvmTest --tests "VimPathExpansionTest" --console=plain
 
-# The extension, as a .vsix. See vscode-extension/PUBLISHING.md
+# The extension, built into dist/ - what `--extensionDevelopmentPath` loads
+./gradlew :vscode-extension:assembleExtension
+
+# ...and as a .vsix. See vscode-extension/PUBLISHING.md
 ./gradlew :vscode-extension:packageExtension
 ```
 
-Avoid running all tests - it takes too long. Prefer a specific test.
-
 Use `--console=plain` for gradle.
 
-**Two traps in those commands.** `--tests` needs the leading colon: bare
-`./gradlew test --tests "X"` fails with `Unknown command-line option '--tests'`,
-because `test` matches by name across projects and `:vim-engine:test` and
-`:vscode-extension:test` are plain aggregator tasks. `:test` is the root project's
-real test task. And `jsNodeTest` accepts no `--tests` at all - it runs every JS
-test - while a Kotlin/JS test's `println` never reaches the console, so read
-`vscode-extension/build/test-results/jsNodeTest/*.xml` instead.
+**Two traps.** `jsNodeTest` accepts no `--tests` - it runs every JS test - and a
+Kotlin/JS test's `println` never reaches the console, so read
+`vscode-extension/build/test-results/jsNodeTest/*.xml` instead. The fixture
+replay writes `vscode-extension/build/fixture-failures.txt` on every run, with
+the current list and a count of what was refused and why; regenerating the
+baseline is a copy from there rather than a transcription out of a failure.
 
-See CONTRIBUTING.md for the plugin's architecture and
-`vscode-extension/DEVELOPMENT.md` for the port's.
+**`./gradlew build` does not work**, and did not before the plugin was deleted
+either: `:api:compileCommonMainKotlinMetadata` fails for want of a stdlib, which
+`kotlin.stdlib.default.dependency=false` withholds - it is off because the engine
+supplies its own collection shims. Use `test` and `check`, which is what
+everything above does.
+
+See `vscode-extension/DEVELOPMENT.md` for the port's architecture.
 
 ## Notes
 
-- Property tests can be flaky - check whether a failure relates to your change
 - Use `<Action>` in mappings, not `:action`
 - Config file: Vimperor's own is `~/.vimperorrc`; it falls back to `~/.ideavimrc`, then Vim's
   `~/.vimrc`. Three families in that order, XDG and `_name` included, a whole family before the
-  next one starts. Host-local, in `NodeFileSystem.findVimRc`; the IntelliJ plugin reads
-  `~/.ideavimrc` only
+  next one starts. Host-local, in `NodeFileSystem.findVimRc`
 - A config runs with `indicateErrors = false`, so a line it cannot execute fails *silently*.
   That is IdeaVim's behaviour and why startup names the file it loaded
 - Goal: match Vim's functionality and architecture
-- `commonMain` cannot use JVM APIs (`String.format`, `Character`, `java.*`,
-  reflection). They compile for the JVM target and break the JS one.
+- `commonMain` cannot use JVM APIs (`String.format`, `Character`, `Integer`,
+  `java.*`, reflection). They compile for the JVM target and break the JS one, and
+  most of them need no import, so only compiling for JS will say so.
 - Moving or adding an `@ExCommand` or `@VimscriptFunction` class needs
   `:vim-engine:kspKotlinJvm` re-run and the generated JSON committed, or it is
   silently unregistered - the registries name every class by its full package.

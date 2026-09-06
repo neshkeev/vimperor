@@ -1,6 +1,6 @@
-This repository is a hard fork of IdeaVim, an open source project created by 130+ contributors, and
-it builds two things from one engine: the IntelliJ plugin it inherited, and Vimperor, a VS Code
-extension. Would you like to make it better? That's wonderful!
+This repository is a hard fork of IdeaVim, an open source project created by 130+ contributors. It
+builds Vimperor, a VS Code extension, out of the engine it inherited; the IntelliJ plugin that came
+with that engine has been deleted. Would you like to make it better? That's wonderful!
 
 This page is here to help you start contributing.
 
@@ -26,30 +26,32 @@ OK, ready to do some coding?
 * Open the project with IntelliJ IDEA.
 
 Yoo hoo! You’re all set to begin contributing.
-We've prepared some useful configurations for you:
 
-- `Start IJ with IdeaVim`
-- `IdeaVim tests`
-- `IdeaVim full verification`
-- `Platforms`
-    - `Start CLion with IdeaVim`
-    - `Start PyCharm with IdeaVim`
-    - `Start Rider with IdeaVim`
-    - `Start WebStorm with IdeaVim`
+The run configurations that came with IdeaVim - `Start IJ with IdeaVim`, `Start CLion`, `Start
+Rider` and the rest - started a dev IDE with the plugin installed. There is no plugin, so they are
+gone. Vimperor is run the way any VS Code extension is:
 
-![Prepared configurations light](assets/contributing/configs-light.png#gh-light-mode-only)![Prepared configurations dark](assets/contributing/configs-dark.png#gh-dark-mode-only)
+```bash
+./gradlew :vscode-extension:assembleExtension
+code --extensionDevelopmentPath=$PWD/vscode-extension --disable-extensions
+```
 
-And here are useful gradle commands:
+`--disable-extensions` matters more than it looks: if Vimperor is also installed from the
+marketplace, the installed copy shadows the one being developed and you debug the wrong build.
 
-* `./gradlew runIde` — start the dev version of IntelliJ IDEA with IdeaVim installed. This is called by the `Start IJ with IdeaVim` configuration.
-* `./gradlew runClion` — start the dev version of CLion with IdeaVim installed. This is called by the `Start CLion with IdeaVim` configuration.
-* `./gradlew runPycharm` — start the dev version of PyCharm with IdeaVim installed. This is called by the `Start PyCharm with IdeaVim` configuration.
-* `./gradlew runRider` — start the dev version of Rider with IdeaVim installed. This is called by the `Start Rider with IdeaVim` configuration.
-* `./gradlew runWebstorm` — start the dev version of WebStorm with IdeaVim installed. This is called by the `Start WebStorm with IdeaVim` configuration.
-* `./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test` — run tests. This is called by the `IdeaVim tests` configuration.
-* `./gradlew buildPlugin` — build the plugin. The result will be located in `build/distributions`. This file can be
-installed by using `Settings | Plugin | >Gear Icon< | Install Plugin from Disk...`. You can stay with your personal build
-for a few days or send it to a friend for testing.
+And here are the useful gradle commands:
+
+* `./gradlew test` — everything, both modules and both of the engine's targets. About 25 seconds.
+* `./gradlew :vscode-extension:check` — the extension alone: its tests, the fixture replay, the
+  stub-host smoke test, and the two guards that check command ids and API declarations against the
+  real VS Code.
+* `./gradlew :vim-engine:jvmTest --tests "SomeTest"` — one class. `jsNodeTest` takes no `--tests`.
+* `./gradlew :vscode-extension:assembleExtension` — build into `dist/`, which is what
+  `--extensionDevelopmentPath` loads.
+* `./gradlew :vscode-extension:packageExtension` — a `.vsix`. See `vscode-extension/PUBLISHING.md`.
+
+`./gradlew build` does not work and did not before the plugin was deleted either; use `test` and
+`check`.
 
 ## Warmup
 
@@ -68,15 +70,15 @@ If you are looking for:
 
 - Vim commands (`w`, `<C-O>`, `p`, etc.):
     - Any particular command:
-      - [In the engine, and so in both hosts](vim-engine/src/jvmMain/resources/ksp-generated/engine_commands.json)
-      - [In the IntelliJ plugin only](src/main/resources/ksp-generated/frontend_commands.json)
+      - [In the engine](vim-engine/src/jvmMain/resources/ksp-generated/engine_commands.json)
+      - Host commands, which the extension registers itself: `VsCodeCommandProvider`
     - How commands are executed in common: `EditorActionHandlerBase`.
     - Key mapping: `KeyHandler.handleKey()`.
 
 - Ex commands (`:set`, `:s`, `:nohlsearch`):
     - Any particular command:
-        - [In the engine, and so in both hosts](vim-engine/src/jvmMain/resources/ksp-generated/engine_ex_commands.json)
-        - [In the IntelliJ plugin only](src/main/resources/ksp-generated/frontend_ex_commands.json)
+        - [In the engine](vim-engine/src/jvmMain/resources/ksp-generated/engine_ex_commands.json)
+        - Host ex commands, such as `:actionlist`: `HostCommands.kt`
     - Vim script grammar: `Vimscript.g4`.
     - Vim script parsing: package `com.maddyhome.idea.vim.vimscript.parser`.
     - Vim script executor: `Executor`.
@@ -86,12 +88,11 @@ If you are looking for:
     - Available extensions: package `com/maddyhome/idea/vim/extension`.
 
 - Common features:
-    - State machine. How every particular keystroke is parsed in IdeaVim: `KeyHandler.handleKey()`.
-    - Options (`incsearch`, `iskeyword`, `relativenumber`): `VimOptionGroup`.
-    - Plugin startup: `PluginStartup`.
-    - Notifications: `NotificationService`.
-    - Status bar icon: `StatusBar.kt`.
-    - On/off switch: `VimPlugin.setEnabled()`.
+    - State machine. How every particular keystroke is parsed: `KeyHandler.handleKey()`.
+    - Options (`incsearch`, `iskeyword`, `relativenumber`): `VimOptionGroup`, and
+      `VsCodeOptions` for the ones this host adds or answers itself.
+    - Where a keystroke enters the host: `VimHost.handle`.
+    - Startup, and everything VS Code is told about: `Extension.kt`.
 
 
 ## Testing
@@ -119,16 +120,18 @@ Cras id tellus in ex imperdiet egestas.
    - **Buffer state**: empty file, single line file, very long lines, read-only files
    - **Boundaries**: word boundaries with punctuation, sentence/paragraph boundaries, matching brackets at extremes
    
-##### Neovim
-IdeaVim has an integration with neovim in tests. Tests that are performed with `doTest` also executed in
-neovim instance, and the state of IdeaVim is asserted to be the same as the state of neovim.
-- Only tests that use `doTest` are checked with neovim.
-- Tests with `@VimBehaviorDiffers` or `@TestWithoutNeovim` annotations don't use neovim.
+##### The replayed fixtures
+`src/test` holds IdeaVim's tests and is not compiled. The extension reads them as text and replays
+the keys against the VS Code host: 2,417 of 2,423 pass, and the rest are listed in
+`vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`. Every run writes the current
+list, and what it refused to harvest and why, to `vscode-extension/build/fixture-failures.txt`.
 
-#### Property-based tests
-Property-based tests are located under `propertybased` package. These tests a flaky by nature
-although in most cases they are stable. If the test fails on your TeamCity run, try to check the test output and understand 
-if the fail is caused by your changes. If it's not, just ignore the test.
+The corpus has grown four times over, every time by teaching the harness to read more of what was
+already written rather than by writing new tests. If you want more coverage cheaply, look there
+first.
+
+IdeaVim's Neovim integration and its property-based tests went with the plugin: both were built on
+the IntelliJ test fixtures.
 
 
 ## A common direction
@@ -146,26 +149,27 @@ We also support proper command mappings (functions are mapped to `<Plug>...`), t
 - Magic is supported as well. See `Magic`.
 
 
-## Two hosts, one engine
+## One host, one engine
 
 The engine is deliberately separate from the editor it runs in. `vim-engine` knows nothing about
-IntelliJ or about VS Code; each host supplies its own implementations of the seams the engine
-declares. Upstream split it this way so one engine could serve more than one editor, and that is
-exactly what makes this fork possible.
+VS Code; the host supplies its own implementations of the seams the engine declares. Upstream
+split it this way so one engine could serve more than one editor, and that is exactly what made
+this fork possible.
 
 | Path                | What it is                        | Compiles to       |
 |---------------------|-----------------------------------|-------------------|
 | `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
-| `src/main/java/`    | The IntelliJ plugin               | JVM               |
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
+| `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
 `vim-engine` is Kotlin Multiplatform, so the engine lives in `src/commonMain/kotlin` rather than
-`src/main/kotlin`. **A change there changes both hosts**, and the IntelliJ plugin's test suite is
-the regression net that catches it - which is why the plugin is kept for now.
+`src/main/kotlin`. It has one host and still two **targets**: a change to `commonMain` has to
+compile for JS as well as the JVM, and its tests run on both. That is what catches a `java.lang`
+call in shared code, and such calls usually need no import, so nothing else would.
 
-It will not be kept forever: the goal is to finish the port and then delete it. So a change to
-`src/main/java/` is work with a shelf life, and anything only the plugin can do is a gap in the
-port rather than a feature of the repository.
+The IntelliJ plugin was deleted once the port no longer needed it. Its tests were the regression
+net while the port was being built; the net now is the engine's own tests plus the fixtures the
+VS Code host replays out of `src/test`, which is kept as data and never compiled.
 
 
 -----
@@ -182,11 +186,9 @@ request if you already know what it should say.
 
 ### I have found a bug.
 
-[Open an issue](https://github.com/neshkeev/vimperor/issues), and say which host it happened in -
-the IntelliJ plugin or the VS Code extension - because the fix is in a different place depending on
-the answer. If it is the extension, turn on `vimperor.trace` in VS Code's settings and include what
-the Vimperor output channel printed: most of what is left to get wrong lives in the gap between the
-engine and the editor, and a trace shows that gap directly.
+[Open an issue](https://github.com/neshkeev/vimperor/issues). Turn on `vimperor.trace` in VS Code's
+settings and include what the Vimperor output channel printed: most of what is left to get wrong
+lives in the gap between the engine and the editor, and a trace shows that gap directly.
 
 If the same bug reproduces in IdeaVim as it ships, it is an upstream bug rather than this fork's,
 and reporting it there as well will get it fixed for more people.

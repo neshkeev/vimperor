@@ -5,7 +5,9 @@ Vimperor
 
 **Vim for VS Code, powered by IdeaVim's engine.**
 
-A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md), whose README describes the IntelliJ plugin this repository still builds.
+A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md). This
+repository built the IntelliJ plugin too, until the port no longer needed it; what is left is
+the engine and the VS Code extension.
 
 What this is
 ------------
@@ -69,15 +71,15 @@ ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwi
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 2 of IdeaVim's 24 bundled extensions — matchit and VimEverywhere are
-still in the plugin. The other twenty-two are ported:
+What does not: 2 of IdeaVim's 24 bundled extensions — matchit and VimEverywhere.
+The other twenty-two are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
 `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`.
 
-The two still in the plugin are not there for want of a seam. `matchit` needs to know
+The two that are missing are not waiting on a seam. `matchit` needs to know
 what a *token* is, and the most VS Code will say about a file's structure is where its
 functions and classes are. `VimEverywhere` labels every clickable thing in the IDE
 window and clicks the one you type, and an extension cannot draw over VS Code's
@@ -118,41 +120,41 @@ Layout
 |---------------------|-----------------------------------|-------------------|
 | `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
-| `src/main/java/`    | IdeaVim, the IntelliJ plugin      | JVM               |
+| `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
 `vim-engine` is Kotlin Multiplatform: the engine lives in `src/commonMain/kotlin`,
-with `jvmMain` and `jsMain` for what each platform needs. A change to `commonMain`
-changes both hosts.
+with `jvmMain` and `jsMain` for what each platform needs. It still compiles for
+both targets and its tests run on both, which is how a JVM-ism in shared code gets
+caught.
 
-The IntelliJ plugin is kept until the port is finished, and then it goes. It is not
-kept for its features - nobody runs IdeaVim out of this repository - but for its
-tests: 11,727 of them, plus the 1,049 fixtures the VS Code host mines out of
-`src/test` and replays. That corpus is the largest outside check on the port, and
-it has to outlive the plugin.
+The IntelliJ plugin was deleted once the port no longer needed it. `src/test`
+stayed and is not compiled: it holds IdeaVim's 11,727 tests, and the VS Code host
+mines 2,423 replayed fixtures out of them as *text*. That corpus is the largest
+outside check on the port, and it never needed to be code.
 
 Testing
 -------
 
 ```bash
-# The extension: its tests, the stub-host smoke test, and both API guards
-./gradlew :vscode-extension:test --console=plain
+# Everything, both modules and both of the engine's targets - about 25 seconds
+./gradlew test --console=plain
 
-# The engine and the IntelliJ plugin
-./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test --console=plain
+# The extension: its tests, the fixture replay, the stub-host smoke test and both guards
+./gradlew :vscode-extension:check --console=plain
 
-# One class — note the leading colon; bare `test --tests` is rejected
-./gradlew :test --tests "SearchGroupTest" --console=plain
+# One class, on the JVM
+./gradlew :vim-engine:jvmTest --tests "VimPathExpansionTest" --console=plain
 ```
 
 Two things are checked that a test suite cannot check on its own. The `external`
 declarations for the VS Code API are compiled against nothing — the extension host
-injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all 112
+injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all 127
 of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
-Beyond its own 631 tests, the extension replays IdeaVim's test fixtures against the
-VS Code host: **1,036 of 1,049 pass**. The thirteen that do not are listed, with an
-explanation of each, in
+Beyond its own tests, the extension replays IdeaVim's test fixtures against the
+VS Code host: **2,417 of 2,423 pass**. The six that do not each name an IntelliJ
+action with no VS Code command behind it, and are listed in
 [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt).
 
 Why Kotlin and not TypeScript
