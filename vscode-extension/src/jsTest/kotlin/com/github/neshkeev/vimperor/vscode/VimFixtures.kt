@@ -106,7 +106,7 @@ internal object VimFixtures {
           // something internal - and is passed over rather than counted as skipped. Counting them
           // would put 6,416 in the "cannot repeat" column and drown the reasons that mean something.
           if (!trimmed.contains("configureByText(") || !trimmed.contains("assertState(")) continue
-          if (fileSetup == null) { skip("the test sets something up this cannot repeat"); continue }
+          if (fileSetup == null) { skip("the class's setUp cannot be read (narrative)"); continue }
           if (fileExtensions.any { it in NOT_HERE }) {
             skip("the test needs an extension this host does not have"); continue
           }
@@ -135,12 +135,12 @@ internal object VimFixtures {
           if (turnedOn.any { it in NOT_HERE }) {
             skip("the test needs an extension this host does not have"); continue
           }
-          if (fileSetup == null) { skip("the test sets something up this cannot repeat"); continue }
+          if (fileSetup == null) { skip("the class's setUp cannot be read"); continue }
           // A statement this cannot read, standing before this call. `testInsertFromRegister` is
           // `setRegister('a', "World")` and then a `doTest` that pastes register `a`; reading the
           // call and not the line above it would record a failure that is entirely the harness's.
           if (parsed.firstUnread != null && parsed.firstUnread < call - "doTest".length) {
-            skip("the test sets something up this cannot repeat"); continue
+            skip("a statement before the call cannot be read"); continue
           }
           val spans = argumentSpans(trimmed, call) ?: skip("could not parse the arguments") ?: continue
 
@@ -152,7 +152,7 @@ internal object VimFixtures {
           val afterParen = spans.last().second + 1
           val lambda = trimmed.substring(afterParen, parsed.callEnds[index]).trim()
           val setup = if (lambda.startsWith("{")) enterCommands(lambda) else emptyList()
-          if (setup == null) { skip("the test sets something up this cannot repeat"); continue }
+          if (setup == null) { skip("the trailing lambda does more than set options"); continue }
           accumulated += setup
 
           if (spans.size < 3) { skip("fewer than three arguments"); continue }
@@ -704,7 +704,7 @@ internal object VimFixtures {
     fileSetup: List<String>,
   ): List<VimFixture> {
     val steps = narrativeIn(body, bindings)
-    if (steps == null) { skip("the test sets something up this cannot repeat"); return emptyList() }
+    if (steps == null) { skip("the narrative does more than configure, type and assert"); return emptyList() }
     if (steps.none { it is Step.Check }) return emptyList()
 
     val fixtures = mutableListOf<VimFixture>()

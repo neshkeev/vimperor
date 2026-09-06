@@ -122,7 +122,7 @@ class VimFixturesTest {
     )
 
     assertEquals(emptyList(), fixtures)
-    assertTrue(VimFixtures.skipped.containsKey("the test sets something up this cannot repeat"))
+    assertTrue(VimFixtures.skipped.containsKey("the trailing lambda does more than set options"))
   }
 
   /**
