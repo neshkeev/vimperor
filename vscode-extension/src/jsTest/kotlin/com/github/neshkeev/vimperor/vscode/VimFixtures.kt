@@ -247,12 +247,29 @@ internal object VimFixtures {
    */
   private fun caretsIn(value: String): String? {
     val substituted = value
+      // `${'$'}{'${'$'}'}` is how a *raw* string writes a literal dollar, since it has no backslash
+      // escapes. Same meaning as `\${'$'}` in an ordinary one, and the same sentinel.
+      .replace("\${'$'}{'\${'$'}'}", LITERAL_DOLLAR.toString())
       .replace(Regex("\\\$\\{c\\}"), CARET)
       .replace(Regex("\\\$c(?![A-Za-z0-9_])"), CARET)
       .replace(Regex("\\\$\\{se\\}"), SELECTION_END)
       .replace(Regex("\\\$\\{s\\}"), SELECTION_START)
-    return if (Regex("\\\$\\{|\\\$[A-Za-z_]").containsMatchIn(substituted)) null else substituted
+    if (Regex("\\\$\\{|\\\$[A-Za-z_]").containsMatchIn(substituted)) return null
+    return substituted.replace(LITERAL_DOLLAR, '$')
   }
+
+  /**
+   * Stands in for a dollar the source wrote as a literal, until the interpolation check has run.
+   *
+   * A private-use codepoint, and it started as NUL - which was wrong, and wrong in the way this
+   * repository keeps meeting. "A character no fixture can contain" was an assumption about Vim, and
+   * `:s/\./\n/g` inserts NUL: `SubstituteCommandTest` has a fixture named `test dot to nul` whose
+   * expected text is three of them. The sentinel turned that fixture's own NULs into dollars.
+   */
+  private const val LITERAL_DOLLAR = '\uE000'
+
+  /** The sentinel turned back, for the paths that do not go through [caretsIn]. */
+  private fun literalDollars(value: String) = value.replace(LITERAL_DOLLAR, '$')
 
   /**
    * One string-valued Kotlin expression, or null when it is anything this does not understand.
@@ -317,7 +334,12 @@ internal object VimFixtures {
           builder.append(
             when (escaped) {
               'n' -> '\n'; 't' -> '\t'; 'r' -> '\r'
-              '\\' -> '\\'; '"' -> '"'; '$' -> '$'; '\'' -> '\''
+              '\\' -> '\\'; '"' -> '"'; '\'' -> '\''
+              // Not a plain `$`. `"k\$d"` is the keys `k$d` - `$` is Vim's end-of-line - and by the
+              // time [caretsIn] looks at it an unescaped one is indistinguishable from the start of
+              // an interpolation, which is refused. The sentinel carries "this one was literal"
+              // through concatenation and `trimIndent` and is turned back at the end.
+              '$' -> LITERAL_DOLLAR
               // `\u3002` is a full stop in Japanese, and a word-motion fixture turns on it being
               // one character rather than six.
               'u' -> text.substring(at + 2, minOf(at + 6, text.length))
@@ -881,8 +903,10 @@ internal object VimFixtures {
           values.any { it == null } -> return null
           name == "configureByText" -> steps += index to Step.Configure(values.last()!!)
           name == "assertState" -> steps += index to Step.Check(values.single()!!)
-          name == "enterCommand" -> steps += index to Step.Command(values.single()!!)
-          else -> steps += index to Step.Type(values.joinToString("") { it!! })
+          // Typed and configured text never reaches [caretsIn] on this path, so the sentinel is
+          // turned back here. `:${'$'}s/5/x/` is an address and was being typed as the sentinel.
+          name == "enterCommand" -> steps += index to Step.Command(literalDollars(values.single()!!))
+          else -> steps += index to Step.Type(literalDollars(values.joinToString("") { it!! }))
         }
         index = arguments.last().second + 1
       }

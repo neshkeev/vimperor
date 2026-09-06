@@ -6,7 +6,7 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2378 of the 2401 harvested fixtures pass.
+# 2395 of the 2423 harvested fixtures pass.
 #
 # Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
 # assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
@@ -39,6 +39,10 @@
 # failures, and all three are one bug: `g;` and `g,` with a count land one column late. `999g;`
 # should reach the oldest change at offset 0 and reaches 1. IdeaVim passes them, so the change list
 # here is recording a position after the edit rather than at it.
+#
+# The seventh step - a dollar the source escaped - added 22 and found five more, four of them the
+# same `g;` bug: seven fixtures now say the change list is one column late. The other is `$hlj`,
+# where `$` should leave the intended column at end-of-line and this host keeps the real one.
 
 src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to alt esc
 src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to control esc
@@ -51,8 +55,13 @@ src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteIns
 src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode
 src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_comma with count walks forward N entries
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_semicolon returns to last change after moving away
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_semicolon then g_comma round trips
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_semicolon walks backwards through multiple changes
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_semicolon with count walks back N entries from past-end
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test g_semicolon with large count clamps to oldest change
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/changelist/MotionGotoChangeActionTest.kt:test new change after walking back does not truncate forward history
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionLastColumnActionTest.kt:test dollar motion resets intended location after motion
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to alt enter
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to control enter
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to shift enter
