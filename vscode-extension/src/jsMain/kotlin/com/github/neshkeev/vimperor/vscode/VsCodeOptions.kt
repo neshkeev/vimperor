@@ -606,8 +606,7 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
       traceWrap(
         editor,
         "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} is already ${raw ?: "unset"}, so nothing to write. " +
-          "If the lines still wrap, this editor has a per-editor wrap on top of the setting - press " +
-          "Alt+Z to clear it.",
+          OVERRIDE,
       )
     }
     return
@@ -627,6 +626,18 @@ private fun rawWordWrap(editor: VsCodeEditor): String? = try {
 }
 
 private fun named(wrapping: Boolean) = if (wrapping) "wrap" else "nowrap"
+
+/**
+ * What to say when the setting was written and the screen may not follow.
+ *
+ * Confirmed from a real window: the write lands, the read comes back changed, and the editor keeps
+ * wrapping - because VS Code applies a per-editor wrap on top of the setting and it survives the
+ * setting changing. A message that reports success and leaves the user looking at unchanged text is
+ * worse than no message.
+ */
+private const val OVERRIDE =
+  "If the lines did not change, this editor has a wrap of its own on top of the setting - " +
+    "press Alt+Z, or close and reopen the file."
 
 /**
  * What `'wrap'` decided, when `vimperor.trace` is on.
@@ -668,7 +679,7 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
       .update(VsCodeSettings.WORD_WRAP, value, target)
       .then(
-        { traceWrap(editor, "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target") },
+        { traceWrap(editor, "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target. $OVERRIDE") },
         // Reported rather than swallowed. A settings write can be refused - a workspace target with
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
         // the failure this option has already had twice.
