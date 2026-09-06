@@ -241,8 +241,19 @@ const workspace = {
   workspaceFolders: undefined,
   /** Settings a test can write, in VS Code's own shape. `wordWrap` defaults to VS Code's default. */
   configuration: { editor: { wordWrap: 'off' } },
-  getConfiguration: (section) => ({
-    get: (key) => (workspace.configuration[section] || {})[key],
+  /** The same, per resource path - VS Code's language and folder overrides, which are scoped. */
+  scopedConfiguration: {},
+  /**
+   * `scope` is a document or a URI in VS Code, and narrows the answer to that resource. Nothing
+   * here has per-resource settings, so it is accepted and ignored - but it has to be *accepted*,
+   * because reading the wrap without it is what missed a language override in a real window.
+   */
+  getConfiguration: (section, scope) => ({
+    get: (key) => {
+      const scoped = scope && workspace.scopedConfiguration[scope.path]
+      const narrow = scoped && scoped[section] && scoped[section][key]
+      return narrow !== undefined ? narrow : (workspace.configuration[section] || {})[key]
+    },
   }),
 }
 

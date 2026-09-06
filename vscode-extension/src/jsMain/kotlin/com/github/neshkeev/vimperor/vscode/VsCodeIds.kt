@@ -458,6 +458,22 @@ internal object IdeaActionAliases {
 }
 
 /**
+ * Settings this host reads, by the name VS Code knows them by.
+ *
+ * Here rather than where they are used for the same reason the command ids are: `checkVsCodeCommandIds`
+ * refuses a `workbench.`, `editor.` or `vscode.` literal anywhere else, so that nothing addresses VS
+ * Code from a corner no check can see. They are not commands, so they are not in
+ * [VsCodeCommands.all] - a settings name cannot be executed, and the activation check runs commands.
+ */
+internal object VsCodeSettings {
+  /** The section every one of these lives in. */
+  const val EDITOR = "editor"
+
+  /** `off`, `on`, `wordWrapColumn` or `bounded`. Vim's `'wrap'` is the first against the rest. */
+  const val WORD_WRAP = "wordWrap"
+}
+
+/**
  * Colours by the id the user's theme gives them, so highlights match what the editor's own find
  * does. A literal colour is unreadable in half of the themes people use.
  */

@@ -386,7 +386,7 @@ const vscode = {
     // The extension's own settings, as opposed to Vim's - `vimperor.trace` is the only one. Turned
     // on for a few keystrokes below rather than for the whole run, so that the wiring is exercised
     // without burying everything else this host prints.
-    getConfiguration: (section) => ({
+    getConfiguration: (section, scope) => ({
       get: (key) => (section === 'vimperor' && key === 'trace' ? tracing : undefined),
     }),
     // One folder, so that `:e` on a relative path has somewhere to resolve against - and a

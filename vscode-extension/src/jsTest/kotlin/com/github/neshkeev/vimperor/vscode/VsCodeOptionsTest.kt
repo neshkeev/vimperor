@@ -515,6 +515,37 @@ class VsCodeOptionsTest {
     assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
   }
 
+  /**
+   * An editor wrapping because of a *scoped* setting still answers `:set nowrap`.
+   *
+   * This is what the fix was reported against, and the read was the bug: without a scope VS Code
+   * answers for the window and ignores `"[markdown]": { "editor.wordWrap": "on" }` and a folder's
+   * settings, which is how people usually turn word wrap on. `'wrap'` came out `nowrap` while the
+   * lines wrapped, so `:set nowrap` agreed with itself and changed nothing.
+   */
+  @Test
+  fun `test a language override is what the wrap is read from`() {
+    val settings = js("require('vscode').workspace.scopedConfiguration")
+    settings["/test/buffer.txt"] = js("({ editor: { wordWrap: 'on' } })")
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      session.dispatched.clear()
+
+      session.run("set wrap?")
+      assertTrue(
+        session.printed.any { it.contains("  wrap") && !it.contains("nowrap") },
+        "the option should start where the editor is, printed: ${session.printed}",
+      )
+
+      session.run("set nowrap")
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+    } finally {
+      settings["/test/buffer.txt"] = undefined
+      VsCodeOptions.wrapWasAsked = false
+    }
+  }
+
   /** Setting it to what it already is asks VS Code for nothing: a toggle would turn it the wrong way. */
   @Test
   fun `test setting wrap to what it already is toggles nothing`() {

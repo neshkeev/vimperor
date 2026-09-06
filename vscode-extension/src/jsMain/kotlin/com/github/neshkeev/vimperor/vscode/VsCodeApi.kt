@@ -242,7 +242,14 @@ external object workspace {
    */
   fun openTextDocument(uri: Uri): Thenable<TextDocument>
 
-  fun getConfiguration(section: String): WorkspaceConfiguration
+  /**
+   * [scope] is a document or a URI, and leaving it out is not the same thing.
+   *
+   * Without it VS Code resolves the *window's* value and ignores everything scoped narrower - a
+   * language override in a `[markdown]` block, or a folder's settings. Those are exactly how people
+   * turn word wrap on, so `'wrap'` reads the resource's value.
+   */
+  fun getConfiguration(section: String, scope: Any? = definedExternally): WorkspaceConfiguration
 
   /**
    * The folders open in this window, which is what a relative path in `:e` is relative to.
