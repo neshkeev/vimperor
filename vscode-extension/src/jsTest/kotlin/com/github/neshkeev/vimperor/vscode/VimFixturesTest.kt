@@ -340,4 +340,58 @@ class VimFixturesTest {
     assertEquals(1, fixtures.size, "expected one fixture, got ${fixtures.map { it.source }}")
     assertEquals("<a>\n  <caret><b/>\n</a>\n", fixtures[0].before)
   }
+
+  /**
+   * `commandToKeys` types its command; it does not parse it.
+   *
+   * `VimTestCase` has this beside `exCommand` for one reason: it runs the body through
+   * `stringToKeys`, so `nmap <A-Esc> k` puts five characters on the command line where `parseKeys`
+   * would press Alt+Escape there and leave the mapping undefined. Reading it as `":$command<CR>"`
+   * was wrong in exactly that way, and six of IdeaVim's fixtures said so.
+   *
+   * `<lt>` is Vim's notation for a literal `<`, so the keys stay one parsed string.
+   */
+  @Test
+  fun `test commandToKeys types its angle brackets rather than pressing them`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test mapping a modified escape`() {
+          configureByText("${'$'}{c}one\ntwo")
+          typeText(commandToKeys("nmap <A-Esc> k"))
+          typeText("<A-Esc>")
+          assertState("${'$'}{c}one\ntwo")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertEquals(1, fixtures.size)
+    assertTrue(
+      fixtures.single().keys.contains("<lt>A-Esc>"),
+      "the command's `<` has to survive as a character: ${fixtures.single().keys}",
+    )
+    assertTrue(
+      fixtures.single().keys.endsWith("<CR><A-Esc>"),
+      "and the key pressed afterwards is still parsed: ${fixtures.single().keys}",
+    )
+  }
+
+  /** The `<C-U>` that clears the line is the one part `commandToKeys` does parse. */
+  @Test
+  fun `test commandToKeys keeps a leading control-U as a keystroke`() {
+    val fixtures = harvest(
+      """
+      class SampleTest {
+        fun `test clearing the line first`() {
+          configureByText("${'$'}{c}one")
+          typeText(commandToKeys("<C-U>set nu"))
+          assertState("${'$'}{c}one")
+        }
+      }
+      """.trimIndent(),
+    )
+
+    assertTrue(fixtures.single().keys.startsWith(":<C-U>set nu"), fixtures.single().keys)
+  }
 }

@@ -385,10 +385,7 @@ internal object VimFixtures {
 
   private val HELPERS: List<Pair<String, (String) -> String>> = listOf(
     "exCommand" to { command: String -> ":$command<CR>" },
-    // `VimTestCase.enterCommand` is defined as `typeText(commandToKeys(command))`, so a
-    // `typeText(commandToKeys("set nu"))` is an `enterCommand("set nu")` written the long way. Not
-    // a reading of what the helper does - the two are the same call.
-    "commandToKeys" to { command: String -> ":$command<CR>" },
+    "commandToKeys" to ::commandToKeys,
     "searchCommand" to { pattern: String -> "$pattern<CR>" },
     // `typeText(injector.parser.parseKeys("dw"))` is `typeText("dw")` with the parse spelled out.
     // The replay parses the string itself, so the call is the string.
@@ -402,6 +399,29 @@ internal object VimFixtures {
    * `"http://x"` is not a comment, and a comment is not always harmless: a fixture's arguments are
    * split on the commas between them, so a comment containing a comma splits an argument in half.
    */
+  /**
+   * `VimTestCase.commandToKeys`, in notation the replay can parse back to the same strokes.
+   *
+   * The two are not interchangeable with [exCommand] and the difference is the reason both exist:
+   * `commandToKeys` runs the command's body through `stringToKeys`, so `<A-Esc>` in
+   * `nmap <A-Esc> k` is five characters typed onto the command line, while `parseKeys` would press
+   * Alt+Escape there and leave the mapping undefined. Six of IdeaVim's fixtures turn on it, and
+   * they failed here for exactly that reason.
+   *
+   * Said as `<lt>`, which is Vim's own notation for a literal `<` - so the fixture's keys stay one
+   * parsed string and a command may still appear after some typing. Making it a command step
+   * instead was the other way to fix this, and cost 59 fixtures: the setup all runs first, so a
+   * command that follows a keystroke has to be refused.
+   *
+   * The leading `<C-U>` is the one part `commandToKeys` does parse, and it keeps that here.
+   */
+  private fun commandToKeys(command: String): String {
+    val body = command.removePrefix(":")
+    val clearsTheLine = body.startsWith("<C-U>", ignoreCase = true)
+    val rest = if (clearsTheLine) body.substring("<C-U>".length) else body
+    return ":" + (if (clearsTheLine) "<C-U>" else "") + rest.replace("<", "<lt>") + "<CR>"
+  }
+
   private fun stripLineComments(source: String): String {
     val builder = StringBuilder()
     var index = 0

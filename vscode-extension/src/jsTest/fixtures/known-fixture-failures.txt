@@ -6,7 +6,7 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2402 of the 2423 harvested fixtures pass.
+# 2408 of the 2423 harvested fixtures pass.
 #
 # Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
 # assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
@@ -44,10 +44,12 @@
 # `g;` bug, and all seven of those are fixed: the `.` mark was being set past the change rather
 # than at it. What is left of that step is `$hlj`, where `$` should leave the intended column at
 # end-of-line and this host keeps the real one.
+#
+# The six `<A-Esc>`/`<S-Enter>` mapping fixtures were never a host gap. They were this harness
+# reading `commandToKeys` as `exCommand`: the first types its body and the second parses it, so
+# `nmap <A-Esc> k` was pressing Alt+Escape on the command line instead of writing five characters
+# into it, and the mapping was never defined. Recorded here as a host bug for two steps.
 
-src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to alt esc
-src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to control esc
-src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to shift esc
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:should execute undo in macro
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:testMacroWithIdeAction
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
@@ -56,9 +58,6 @@ src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteIns
 src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode
 src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode
 src/test/java/org/jetbrains/plugins/ideavim/action/motion/leftright/MotionLastColumnActionTest.kt:test dollar motion resets intended location after motion
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to alt enter
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to control enter
-src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to shift enter
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/AbbrevCommandTest.kt:iabbrev does not expand after cursor moved with arrows in same insert session
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/ActionCommandTest.kt:testEditorRightAction
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test count is applied to action mapping
