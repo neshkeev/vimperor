@@ -198,6 +198,31 @@ Anything else moved out of the accepted group will need all four questions asked
 be set rather than toggled, what is its default here, is the read scoped, and does the write
 land in the layer the read comes from.
 
+**`'expandtab'`, `'tabstop'` and `'shiftwidth'` were the next three out, and they were easier
+than `'wrap'` - for a reason worth knowing before reaching for the fourth.** VS Code models
+indentation as *editor state* and the wrap as *configuration*: `TextEditorOptions.tabSize` and
+`insertSpaces` are per editor, writable with an absolute value, and read back from where they
+were written, so all four questions answer themselves. Which group an option falls into is a
+fact about VS Code's API, not about the option.
+
+The seed is what keeps both answers. A user who has set nothing must go on getting VS Code's -
+resolved per language, per file and by detection - because that is what makes `>>` agree with
+pressing Tab without Vim, and because Vim's own `ts=8 sw=8 noexpandtab` applied on open would
+re-indent every file anybody opened. So each editor's options start at the editor's answer and
+are written back only when they differ, which also makes `:set tabstop?` honest.
+
+Three numbers, not one: `'tabstop'` is what a tab *draws as*, `'shiftwidth'` is what `>>`
+*moves by*, and VS Code has had `indentSize` beside `tabSize` since 1.85. `'shiftwidth'`
+defaults to 0 here rather than Vim's 8, because 0 is Vim's own spelling of "however wide
+`'tabstop'` is" and so defers to the editor along with the rest.
+
+Two traps, neither of them predicted. **Seeding an option fires the engine's change listener**,
+which ran the apply re-entrantly: seeding `'tabstop'` wrote the still un-seeded `'expandtab'`
+onto the editor, and the next line read that back as the editor's own answer. Read every value
+before writing any of them. And the replayed fixtures caught the `'shiftwidth'` default -
+four `ShiftRightTest` fixtures went from four spaces to eight - which is the corpus doing the
+job it is kept for.
+
 **And it still cannot reach everything.** VS Code lets an editor carry a word wrap of its own
 *on top of* the setting - `Alt+Z` sets one, and so does `editor.action.toggleWordWrap`. It
 wins, and there is no API to read it or clear it. An editor in that state ignores `:set
