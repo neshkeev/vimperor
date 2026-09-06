@@ -120,10 +120,6 @@ dependencies {
     pluginModule(runtimeOnly(project(":ideavim-backend")))
     pluginModule(runtimeOnly(project(":ideavim-backend-bookmarks")))
     pluginModule(runtimeOnly(project(":ideavim-backend-bookmarks-core")))
-    pluginModule(runtimeOnly(project(":ideavim-acejump")))
-    pluginModule(runtimeOnly(project(":ideavim-rider")))
-    pluginModule(runtimeOnly(project(":ideavim-clion-nova")))
-    pluginModule(runtimeOnly(project(":ideavim-terminal")))
 
     bundledModule("intellij.spellchecker")
     bundledModule("intellij.platform.kernel.impl")
@@ -536,10 +532,6 @@ intellijPlatform {
     ides {
       recommended()
     }
-    // AceJump is a third-party Marketplace plugin; the verifier doesn't have it on its classpath
-    // (only bundled IDE plugins are resolved). Suppress "Package 'org.acejump' is not found" so
-    // the optional integration in :ideavim-acejump doesn't fail verification.
-    externalPrefixes.add("org.acejump")
   }
 
   instrumentCode.set(instrumentPluginCode.toBoolean())
