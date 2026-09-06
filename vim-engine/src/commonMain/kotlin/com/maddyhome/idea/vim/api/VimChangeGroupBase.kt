@@ -1249,7 +1249,18 @@ abstract class VimChangeGroupBase : VimChangeGroup {
 
     val newEnd = start + str.length
     injector.markService.setChangeMarks(caret, TextRange(start, newEnd))
-    injector.markService.setMark(caret, VimMarkService.LAST_CHANGE_MARK, newEnd)
+    // The `.` mark is *at* the change, which is its last character - not the offset after it.
+    // `[` and `]` above are a range and end exclusively; this is a position and does not.
+    //
+    // `rA` on the first character used to leave `.` at offset 1, and with it every changelist entry
+    // a host that has no recorder of its own derives from `.` - so `999g;` walked back to 1 rather
+    // than to 0. Seven of IdeaVim's own fixtures say so. IdeaVim did not notice because IntelliJ
+    // feeds its changelist from `RecentPlacesListener` instead; see `VimChangeList.fedByHost`.
+    //
+    // Clamped rather than `newEnd - 1` outright. No caller in the engine passes an empty `str`
+    // today - deletes go through `deleteText` - so this is defensive: if one ever does there is no
+    // character to sit on, and Vim leaves the mark where the removed text began.
+    injector.markService.setMark(caret, VimMarkService.LAST_CHANGE_MARK, maxOf(start, newEnd - 1))
   }
 
   /**

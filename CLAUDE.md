@@ -27,8 +27,8 @@ day it goes: anything written into `src/main/java/` is work that will be thrown
 away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 2,081 fixtures the
-VS Code host mines out of `src/test` and replays (2,070 pass). That corpus is the
+repository. It is kept for its tests. 11,727 of them, plus the 2,423 fixtures the
+VS Code host mines out of `src/test` and replays (2,402 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
@@ -37,7 +37,7 @@ that VS Code has no command for, 11 IntelliJ-only options,
 11 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Eleven of 2,081.** The corpus's largest single finding was `u`: it undid a *keystroke*
+**Eleven of 2,081, at the time.** The corpus's largest single finding was `u`: it undid a *keystroke*
 where Vim undoes a command, so `ciwfoo<Esc>u` put back `fo`. 128 fixtures said so at once.
 This host writes to VS Code once per keystroke and VS Code's default is an undo stop before
 and after every edit an extension makes; the engine says where an undoable unit begins,
@@ -68,6 +68,24 @@ right and was 60 lines of engine-shaped code in `src/main/java`; the body is
 `repeatLastChange` in `vim-engine` now and both hosts call it. What stayed behind is one
 lambda: IdeaVim's split-mode undo marker, which is an RPC to a backend this host has no
 equivalent of.
+
+**The corpus grew from 1,047 to 2,423 by fixing the harness, and that is still where the next
+fixtures are.** The three most recent steps were all the same kind of thing, and one of them
+came only after the report was made to say what it meant: "the test sets something up this
+cannot repeat" was 919 refusals emitted by five different checks, so the largest number in the
+report was the least actionable thing in it. Split apart, the answers fell out - `commandToKeys`
+is `enterCommand` written the long way (`VimTestCase` *defines* the second as the first);
+assertions that only look can be read past, since dropping one cannot change what the rest of a
+method means; `Lists.newArrayList` is `listOf`; and a `val` bound to a list was unreadable, which
+refused every `doTest` standing after it. The report prints example locations now as well as
+counts, because a number says how much is not seen and a file name says what to read.
+
+**The sentinel that read a dollar wrong is the cautionary half.** `"k\$d"` is the keys `k$d`, and
+by the time the interpolation check saw it the escape was gone and it looked like `${...}`. The
+fix carries "this one was literal" through as a sentinel character - and the first choice of
+character was NUL, "which no fixture can contain". That is an assumption about Vim, not about
+text: `:s/\./\n/g` inserts NUL and `SubstituteCommandTest` has a fixture named `test dot to nul`
+whose expected text is three of them. It is a private-use codepoint now.
 
 **The corpus grew from 1,047 to 1,236 by fixing the harness, and that is where the next
 fixtures are too.** Twice it turned out to be looking at less of `src/test` than it thought.
@@ -103,7 +121,9 @@ extension's toggle option, which is what `:set surround` does. So `set <name>` b
 here until the extension options were registered was the other half of it: these fixtures
 could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
 
-2,778 `doTest` calls exist under `src/test` and 2,081 are harvested. What is refused is
+2,778 `doTest` calls exist under `src/test` and 2,423 fixtures are harvested - more than that
+number, because the `configureByText`/`typeText`/`assertState` shape is not a `doTest` call at
+all. What is refused is
 counted and printed with every run, and the largest buckets now are tests that set something
 up in Kotlin, tests IdeaVim marks `@VimBehaviorDiffers`, and arguments that need a compiler.
 
@@ -589,6 +609,19 @@ calls. `VimExtensionHandler` in the plugin is a thin adapter over the engine's
 nothing else. So porting one is moving it to `commonMain`, writing it against
 `ExtensionHandler` instead of the adapter, and registering it through the JSON
 provider - not rewriting it.
+
+**The `.` mark was set past the change rather than at it**, and the shape of that bug is worth
+keeping. `replaceText` ended with
+`setMark(caret, LAST_CHANGE_MARK, newEnd)` where `newEnd` is `start + str.length` - correct for
+the `]` end of a range, which is exclusive, and wrong for a position. `rA` on the first character
+left `.` at offset 1.
+
+It survived because the two hosts reach the change list by different routes. IntelliJ feeds its
+own from the platform's `RecentPlacesListener`, so IdeaVim's `g;` never consulted this mark and
+none of IdeaVim's tests covered it; a host with no such listener gets Vim's own definition -
+the change list is where `.` has been - and inherits the error once per change. **A bug can sit
+in shared code for as long as only one host's path reaches it**, which is an argument for the
+replayed corpus rather than against the engine.
 
 ## Packages
 
