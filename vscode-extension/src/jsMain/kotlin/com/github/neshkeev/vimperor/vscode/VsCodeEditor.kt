@@ -68,6 +68,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * that differs from the last one seen is the editor saying where it actually is - because the
    * user scrolled, or because it caught up - and that is adopted. Anything else keeps Vim's answer.
    */
+  /**
+   * Whether this editor is wrapping, as far as this host knows.
+   *
+   * Belief rather than knowledge, and for the same reason [believedTopLine] is: VS Code will not
+   * say. `TextEditorOptions` carries the gutter, the tab size and the caret shape and not this, and
+   * the only per-editor control is a *toggle* - so the state has to be tracked to know which way it
+   * would go. It is seeded from `editor.wordWrap`, which is what a new editor starts at, and it
+   * goes stale if the user presses `Alt+Z`; `:set wrap` after that toggles the wrong way once and
+   * is right again afterwards. See [applyWordWrap].
+   */
+  internal var believedWrap: Boolean? = null
+
   internal var believedTopLine: Int? = null
   internal var lastReportedTopLine: Int? = null
 

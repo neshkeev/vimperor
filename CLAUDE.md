@@ -159,6 +159,24 @@ them - `wrap`, `list`, `cursorline`, `relativenumber`, `textwidth`, `breakindent
 `colorcolumn`, `bomb`, `fileencoding`, `fileformat` - are ordinary Vim options this host
 already has.
 
+**Declaring an option is not implementing it, and `'wrap'` is the warning.** `VsCodeOptions`
+has two groups on purpose: the ones that reach VS Code, and the ones declared only so that a
+`~/.vimrc` loads instead of reporting `E518` on every line. `:set nowrap` sat in the second
+group and did nothing at all, which is worse than an error - the user is told nothing. It is
+in the first group now, and the two things that made it look unportable are both worth
+knowing. VS Code has no per-editor *setting* for the wrap: `TextEditorOptions` carries the
+gutter, the tab size and the caret shape and not this, and `editor.wordWrap` is
+configuration, which would change every window where Vim's `'wrap'` is window-local. What
+there is, is `editor.action.toggleWordWrap` - and a toggle cannot be pointed at a state, only
+flipped, so the state has to be tracked. That is `VsCodeEditor.believedWrap`, the same shape
+as `believedTopLine` and with the same weakness: `Alt+Z` leaves it stale for one `:set`.
+
+The other half is the default. Vim wraps and VS Code does not, so an option that started at
+Vim's answer would turn wrapping *on* in every editor the moment Vimperor loaded. It is
+seeded from `editor.wordWrap`, so nothing happens until the user asks and `:set wrap?` is
+true in the meantime. Anything else moved out of the accepted group will need the same
+question asked of it.
+
 Three more of the `idea*` family are answered here now, and the interesting thing about
 them is how little they needed. `'ide'` is `env.appName` - the option exists because one
 `~/.ideavimrc` is read by every JetBrains IDE and branches on `if &ide =~? 'clion'`, and

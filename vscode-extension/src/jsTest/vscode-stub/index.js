@@ -239,6 +239,11 @@ const workspace = {
   // and the one that keeps `:e` tests honest: every path they use has to be absolute, so nothing
   // passes because a stub happened to root it somewhere convenient.
   workspaceFolders: undefined,
+  /** Settings a test can write, in VS Code's own shape. `wordWrap` defaults to VS Code's default. */
+  configuration: { editor: { wordWrap: 'off' } },
+  getConfiguration: (section) => ({
+    get: (key) => (workspace.configuration[section] || {})[key],
+  }),
 }
 
 /*

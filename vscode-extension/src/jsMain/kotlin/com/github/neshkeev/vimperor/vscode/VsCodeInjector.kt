@@ -228,6 +228,9 @@ open class VsCodeInjector(
   override val psiService: VimPsiService by lazy { VsCodePsiService(symbols) }
 
   /** `gc`: VS Code's own comment commands, over the range the extension asks about. */
+  /** How a VS Code command is run, for the few things outside the injector that need one. */
+  internal val commands: HostCommandRunner get() = hostCommands
+
   override val commentService: VimCommentService by lazy { VsCodeCommentService(hostCommands) }
 
   /** The Explorer, which `NERDTree`'s ex commands show and hide. See [VsCodeFileTree]. */

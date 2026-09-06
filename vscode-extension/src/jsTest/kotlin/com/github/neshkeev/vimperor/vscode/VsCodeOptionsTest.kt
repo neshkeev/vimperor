@@ -42,7 +42,10 @@ class VsCodeOptionsTest {
      * and its value to `injector.outputPanel`, so a test that only watched the sink saw nothing.
      */
     val printed: MutableList<String> = mutableListOf()
+    /** Every VS Code command the host asked for, which is how `'wrap'` is asserted. */
+    val dispatched: MutableList<String> = mutableListOf()
     val host = VimHost(
+      runCommand = { command, _, onDone -> dispatched += command; onDone(true) },
       sink = object : MessageSink {
         override fun message(text: String?) { messages += text.orEmpty() }
         override fun error(text: String?) { errors += text.orEmpty() }
@@ -485,6 +488,62 @@ class VsCodeOptionsTest {
 
     session.run("set ideastatusicon=enabled")
     assertEquals(StatusIcon.SHOWN, statusIcon())
+  }
+
+  // `'wrap'`, which is the third option here that does something rather than being accepted.
+
+  /**
+   * `:set nowrap` and `:set wrap` reach VS Code's own word wrap.
+   *
+   * They did nothing at all: `'wrap'` was in the accepted group, declared so that a vimrc would
+   * load and reaching nothing. VS Code has no per-editor *setting* for the wrap - only the toggle
+   * `Alt+Z` runs - so the state has to be tracked to know which way it would go. See
+   * [applyWordWrap].
+   */
+  @Test
+  fun `test set wrap toggles VS Code's word wrap`() {
+    val session = Session()
+    session.dispatched.clear()
+
+    // The stub's `editor.wordWrap` is `off`, VS Code's own default, so this is a change.
+    session.run("set wrap")
+    assertEquals(emptyList(), session.errors)
+    assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+
+    session.dispatched.clear()
+    session.run("set nowrap")
+    assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.dispatched)
+  }
+
+  /** Setting it to what it already is asks VS Code for nothing: a toggle would turn it the wrong way. */
+  @Test
+  fun `test setting wrap to what it already is toggles nothing`() {
+    val session = Session()
+    session.run("set wrap")
+    session.dispatched.clear()
+
+    session.run("set wrap")
+    session.run("set wrap")
+
+    assertEquals(emptyList(), session.dispatched)
+  }
+
+  /**
+   * And nothing is toggled just because the extension loaded.
+   *
+   * Vim wraps by default and VS Code does not, so an option that started at Vim's answer would turn
+   * wrapping on in every editor the moment Vimperor was installed. The default is read from
+   * `editor.wordWrap` instead, which is why typing keys changes nothing.
+   */
+  @Test
+  fun `test starting up leaves the wrap alone`() {
+    val session = Session()
+    session.dispatched.clear()
+
+    session.host.type(session.fake, "x")
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals(emptyList(), session.dispatched)
   }
 
   /**

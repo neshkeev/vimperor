@@ -120,6 +120,17 @@ internal object VsCodeOptions {
     boundedValues = setOf("all", "file"),
   )
 
+  /**
+   * `'wrap'`, against VS Code's own word wrap. See [applyWordWrap].
+   *
+   * The default is read from `editor.wordWrap` rather than being Vim's `true`, and that is what
+   * makes this safe to apply. Vim wraps by default and VS Code does not, so an option that started
+   * at Vim's answer would turn wrapping *on* in every editor the moment the extension loaded -
+   * which is not what anyone asked for. Starting where the editor already is means nothing happens
+   * until the user says `:set nowrap`, and `:set wrap?` tells the truth in the meantime.
+   */
+  val wrap: ToggleOption = ToggleOption("wrap", LOCAL_TO_WINDOW, "wrap", configuredWordWrap())
+
   /** `'relativenumber'`, with `'number'`, against `editor.lineNumbers`. See [applyLineNumbers]. */
   val relativenumber: ToggleOption = ToggleOption("relativenumber", LOCAL_TO_WINDOW, "rnu", false)
 
@@ -136,10 +147,9 @@ internal object VsCodeOptions {
 
   // ---- Accepted. VS Code decides these, and Vim's spelling of them exists so a config loads.
 
-  // How text is drawn. `editor.wordWrap`, `editor.renderWhitespace`, `editor.renderLineHighlight`
-  // and the rest are user settings rather than per-editor ones, so writing them from a vimrc would
-  // change every window rather than this one.
-  val wrap: ToggleOption = ToggleOption("wrap", LOCAL_TO_WINDOW, "wrap", true)
+  // How text is drawn. `editor.renderWhitespace`, `editor.renderLineHighlight` and the rest are
+  // user settings rather than per-editor ones, so writing them from a vimrc would change every
+  // window rather than this one.
   val linebreak: ToggleOption = ToggleOption("linebreak", LOCAL_TO_WINDOW, "lbr", false)
   val list: ToggleOption = ToggleOption("list", LOCAL_TO_WINDOW, "list", false)
   val cursorline: ToggleOption = ToggleOption("cursorline", LOCAL_TO_WINDOW, "cul", false)
@@ -529,12 +539,56 @@ internal fun watchLineNumbers() {
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.relativenumber) { applyLineNumbers(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.filetype) { applyLanguage(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.syntax) { applyLanguage(it) }
+  injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.wrap) { applyWordWrap(it) }
+}
+
+/**
+ * Whether the editor is wrapping, from `'wrap'`.
+ *
+ * VS Code has no per-editor *setting* for this. `TextEditorOptions` carries the gutter, the tab
+ * size and the caret shape and not the wrap; `editor.wordWrap` is a configuration value, and
+ * writing it would change every window where Vim's `'wrap'` is window-local. What there is, is a
+ * toggle - the one `Alt+Z` runs - and a toggle cannot be pointed at a state, only flipped.
+ *
+ * So the state is tracked: [VsCodeEditor.believedWrap], seeded from the same configuration the
+ * option's default comes from, and flipped whenever the two disagree. That is the same shape as
+ * the viewport's `believedTopLine`, and it has the same weakness - a user who presses `Alt+Z`
+ * leaves the belief stale, and the next `:set wrap` toggles the wrong way once before agreeing
+ * again. There is no API to ask; the alternative was to leave `:set nowrap` doing nothing at all,
+ * which is what it did.
+ */
+internal fun applyWordWrap(editor: VimEditor) {
+  val vsCode = editor as? VsCodeEditor ?: return
+  val wanted = injector.optionGroup
+    .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
+    .asBoolean()
+  val believed = vsCode.believedWrap ?: configuredWordWrap()
+  vsCode.believedWrap = wanted
+  if (believed == wanted) return
+  // The toggle is addressed to whatever has focus, which is the editor a keystroke was typed into -
+  // and `:set nowrap` is a keystroke. Nothing waits for it: a command cannot report what it did.
+  (injector as? VsCodeInjector)?.commands?.run(VsCodeCommands.TOGGLE_WORD_WRAP, waitForIt = false)
+}
+
+/**
+ * `editor.wordWrap`, as a boolean.
+ *
+ * VS Code's four values are `off`, `on`, `wordWrapColumn` and `bounded`, and Vim's option has two -
+ * so everything but `off` is wrapping. Read defensively because this runs while [VsCodeOptions] is
+ * initialising, which is early, and the one host that is not a VS Code window is the stub the tests
+ * run in.
+ */
+private fun configuredWordWrap(): Boolean = try {
+  workspace.getConfiguration("editor").get("wordWrap") != "off"
+} catch (e: Throwable) {
+  false
 }
 
 /** Everything Vim tells VS Code about an editor, applied together. */
 internal fun applyEditorOptions(editor: VimEditor) {
   applyLineNumbers(editor)
   applyLanguage(editor)
+  applyWordWrap(editor)
 }
 
 /**
