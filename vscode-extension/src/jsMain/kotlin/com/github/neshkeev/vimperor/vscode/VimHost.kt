@@ -176,9 +176,12 @@ class VimHost(
     }
 
     // Same document, different `TextEditor` object: the old wrapper points at an editor VS Code is
-    // no longer using, so it is replaced rather than repaired. Mode and caret state go with it,
-    // which is the same reset a user sees when moving between windows.
+    // no longer using, so it is replaced rather than repaired. The mode goes with it; the carets do
+    // not, because they describe the document rather than the wrapper - see [adoptCaretsFrom] for
+    // what reading them off the new editor instead did to a tab switch.
     val editor = VsCodeEditor(textEditor)
+    // The carets belong to the document, not to the wrapper. See [VsCodeEditor.adoptCaretsFrom].
+    existing?.let { editor.adoptCaretsFrom(it) }
     editors[identity] = editor
     // Registered before the old one is retired, not after. The new editor takes its window-local
     // options from whichever editor was active - and retiring the old one first made that the

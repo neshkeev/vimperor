@@ -662,6 +662,42 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * passes them straight through as well. Vim's own inclusive end is converted inside the engine,
    * not here.
    */
+  /**
+   * Takes over the carets of the wrapper this one replaces, for the same document.
+   *
+   * VS Code hands out a new `TextEditor` when a tab is shown again, and it restores that tab's view
+   * state - the scroll position and the selection - *after* it reports the editor as active. So the
+   * editor this is built from can still say 0,0, and reading it was how switching to another tab
+   * and back put the caret on the first line: the host snapshotted a position VS Code had not
+   * restored yet, and the next flush wrote it back and made it true.
+   *
+   * The wrapper is still replaced rather than repaired - it points at an editor VS Code is no
+   * longer using - but the carets are not the wrapper's, they are the *document's*, and the
+   * document is the same one. IntelliJ keeps them for the same reason without having to be asked:
+   * its editor survives the tab switch.
+   *
+   * A real move made while the tab was in the background arrives as a selection change VS Code
+   * attributes to the user, and [VimHost.selectionChanged] takes those. This only decides what to
+   * believe in the moment before anything has said otherwise.
+   */
+  internal fun adoptCaretsFrom(previous: VsCodeEditor) {
+    if (previous.vimCarets.isEmpty()) return
+    val limit = text().length
+    vimCarets.clear()
+    previous.vimCarets.forEach { old ->
+      val caret = VsCodeCaret(this, old.offset.coerceIn(0, limit), isPrimary = old.isPrimary)
+      if (old.hasSelection()) {
+        caret.setSelection(old.selectionStart.coerceIn(0, limit), old.selectionEnd.coerceIn(0, limit))
+        caret.vimSelectionStart = old.vimSelectionStart.coerceIn(0, limit)
+      }
+      // What `gv` restores, which a fresh caret has no way of knowing. See [syncCaretsFromEditor].
+      caret.lastSelectionInfo = old.lastSelectionInfo
+      vimCarets += caret
+    }
+    // Written out, because the editor on screen is the one that is wrong.
+    flushCarets()
+  }
+
   private fun flushCarets() {
     // A command is waiting to read the selection `selectForHostCommand` put there. Pushing the
     // carets now would replace it with a collapsed caret and the command would act on the wrong
