@@ -290,9 +290,20 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
   /** VS Code's undo, as a command would perform it: the document changes, nothing is reported. */
   fun undo() {
     val previous = history.removeLastOrNull() ?: return
+    undone += document.content
     document.content = previous
     document.version++
   }
+
+  /** And `<C-R>`, which puts back what the last [undo] took away. */
+  fun redo() {
+    val next = undone.removeLastOrNull() ?: return
+    history += document.content
+    document.content = next
+    document.version++
+  }
+
+  private val undone: MutableList<String> = mutableListOf()
 
   override fun edit(callback: (TextEditorEdit) -> Unit): Thenable<Boolean> {
     val builder = FakeEditBuilder(document)
@@ -302,7 +313,11 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
     // Applied back to front so that earlier offsets are still valid as later edits land - which is
     // what VS Code's "resolved against the pre-edit document" guarantee amounts to.
     val edits = builder.edits.sortedByDescending { it.start }
-    if (edits.isNotEmpty()) history += document.content
+    if (edits.isNotEmpty()) {
+      history += document.content
+      // A new edit ends the redo chain, which is what every editor does and what Vim does too.
+      undone.clear()
+    }
     for (edit in edits) {
       document.content = document.content.substring(0, edit.start) + edit.text +
         document.content.substring(edit.end)

@@ -96,9 +96,13 @@ class VimFixtureReplayTest {
   private fun knownFailures(root: String): List<String> {
     val path = "$root/vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt"
     if (!fileExists(path)) return emptyList()
+    // A comment is a *whole* line, not a trailing one: a fixture's name can contain `#`, because
+    // the second `doTest` in a method is `...#2`. Cutting at the first `#` anywhere silently
+    // truncated every one of those to a name that matches nothing, so they read as newly failing
+    // however carefully the file had been written.
     return readText(path).lines()
-      .map { it.substringBefore('#').trim() }
-      .filter { it.isNotEmpty() }
+      .map { it.trim() }
+      .filter { it.isNotEmpty() && !it.startsWith("#") }
       .sorted()
   }
 
@@ -128,7 +132,8 @@ class VimFixtureReplayTest {
       val actualCarets: List<Int>
       val actualSelections: List<Pair<Int, Int>>
       try {
-        val host = VimHost().also { it.start() }
+        val host = VimHost(runCommand = { command, _, onDone -> performCommand(fake, command, onDone) })
+          .also { it.start() }
         val editor = host.editorFor(fake)
         KeyHandler.getInstance().fullReset(editor)
         resetEngineState()
@@ -245,6 +250,30 @@ class VimFixtureReplayTest {
         carets = caretsAt
         selections = starts.zip(ends)
       }
+    }
+
+    /**
+     * The few VS Code commands a fixture can reach, performed rather than dispatched into nothing.
+     *
+     * `u` and `<C-R>` are not the engine's here: this host asks VS Code to undo and holds the next
+     * keystroke until it lands, which is the right answer in a window and no answer at all against
+     * a fake that has no undo stack. So the fixture typed `u`, the command went nowhere, and the
+     * text stayed as it was - 150-odd fixtures, and every one of them recorded as this host failing
+     * to undo when what had failed was the harness having nothing to undo *with*.
+     *
+     * [FakeEditor] has kept a history of its own edits all along, one entry per `edit` call, which
+     * is one per keystroke because that is how the host flushes. That is the same granularity VS
+     * Code's own undo has for an extension's edits, so popping it is what a real window does.
+     *
+     * Everything else resolves as it did: a command this host sends and the fake does not model is
+     * still "sent", which is what `true` means to the caller.
+     */
+    fun performCommand(fake: FakeEditor, command: String, onDone: (Boolean) -> Unit) {
+      when (command) {
+        VsCodeCommands.UNDO -> fake.undo()
+        VsCodeCommands.REDO -> fake.redo()
+      }
+      onDone(true)
     }
 
     /**

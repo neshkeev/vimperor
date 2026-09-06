@@ -27,20 +27,31 @@ day it goes: anything written into `src/main/java/` is work that will be thrown
 away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
-repository. It is kept for its tests. 11,727 of them, plus the 1,615 fixtures the
-VS Code host mines out of `src/test` and replays (1,613 pass). That corpus is the
+repository. It is kept for its tests. 11,727 of them, plus the 2,081 fixtures the
+VS Code host mines out of `src/test` and replays (1,940 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 11 IntelliJ-only options,
-2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+141 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Two of 1,615, and both name an IntelliJ action:** `ideajoin` is IntelliJ's
-language-aware join, and `partial Action mapping` runs `EditorToggleCase`, an action id
-with no VS Code command behind it. There is nothing left on that list this host could do
-and has not.
+**141 of 2,081, and 128 of them are one thing: `u` undoes a keystroke where Vim undoes a
+command.** `ciwfoo<Esc>u` puts back `fo`, not the word. This host's undo is VS Code's, a
+Vim command reaches the document as one `editor.edit` per *keystroke*, and VS Code's default
+is an undo stop before and after every edit an extension makes. IntelliJ is told where an
+undoable unit ends and this host is not - `setMergeUndoKey`, `updateNonMergeUndoKey` and
+`setInsertNonMergeUndoKey` are no-ops here, under a comment claiming the boundaries "are
+already where they belong" because the host "gives VS Code a whole command as a single
+edit". It does not; it gives it one per keystroke. `edit` takes
+`{ undoStopBefore, undoStopAfter }` and those three callbacks are the signal for it.
+
+Of the other thirteen, five name an IntelliJ action: `ideajoin` is IntelliJ's language-aware join, and the rest
+name an action id with no VS Code command behind it - `EditorToggleCase`,
+`EditorCloneCaretBelow`, `EditorSelectWord`, `EditorDown`. Four are `yankring`'s `<C-P>`
+after a paste that was not the plain one, which is probably the undo gap seen from another
+angle, and four are one each.
 
 Eleven of the thirteen the extension tests found were one thing, and it is the shape this
 port keeps meeting. **`.` repeats a *handler*, not only a command** - a mapping an extension

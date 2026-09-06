@@ -98,7 +98,21 @@ internal object VimFixtures {
         // `val before = ...; val after = ...; doTest(keys, before, after)`, and reading only
         // literals meant the call looked unevaluatable rather than unread.
         val parsed = analyse(trimmed)
-        if (parsed.calls.isEmpty()) continue
+        if (parsed.calls.isEmpty()) {
+          // No `doTest`, so the other shape: `configureByText` / `typeText` / `assertState`, which
+          // is what `doTest` is a helper over and how 922 of IdeaVim's tests are written.
+          //
+          // A method with neither is not a fixture at all - a helper, a `setUp`, a unit test of
+          // something internal - and is passed over rather than counted as skipped. Counting them
+          // would put 6,416 in the "cannot repeat" column and drown the reasons that mean something.
+          if (!trimmed.contains("configureByText(") || !trimmed.contains("assertState(")) continue
+          if (fileSetup == null) { skip("the test sets something up this cannot repeat"); continue }
+          if (fileExtensions.any { it in NOT_HERE }) {
+            skip("the test needs an extension this host does not have"); continue
+          }
+          fixtures += narrativeFixtures(path, repositoryRoot, method, trimmed, parsed.bindings, fileSetup)
+          continue
+        }
         val enables = enableCalls(trimmed)
 
         // Options an earlier `doTest` in the same method set are still set for a later one: each
@@ -323,6 +337,10 @@ internal object VimFixtures {
   private val HELPERS: List<Pair<String, (String) -> String>> = listOf(
     "exCommand" to { command: String -> ":$command<CR>" },
     "searchCommand" to { pattern: String -> "$pattern<CR>" },
+    // `typeText(injector.parser.parseKeys("dw"))` is `typeText("dw")` with the parse spelled out.
+    // The replay parses the string itself, so the call is the string.
+    "injector.parser.parseKeys" to { keys: String -> keys },
+    "parseKeys" to { keys: String -> keys },
   )
 
   /**
@@ -666,6 +684,169 @@ internal object VimFixtures {
       .sortedBy { it.substringAfter("at:").substringBefore(' ').toInt() }
       .map { it.substringAfter(' ') }
     return ordered to extensions
+  }
+
+  /**
+   * The fixtures a long-way-round test is worth: one per `assertState`, each replayed from the top.
+   *
+   * A method of this shape often checks more than once - `enterCommand("2,4j")`, check, `typeText
+   * ("u")`, check - and each check is a fixture in its own right whose keys are everything typed
+   * before it. Replaying from the start rather than continuing means a fixture that fails says what
+   * it means without depending on the one before it, which is the same reason the replay resets the
+   * engine between fixtures.
+   */
+  private fun narrativeFixtures(
+    path: String,
+    repositoryRoot: String,
+    method: String,
+    body: String,
+    bindings: Map<String, String>,
+    fileSetup: List<String>,
+  ): List<VimFixture> {
+    val steps = narrativeIn(body, bindings)
+    if (steps == null) { skip("the test sets something up this cannot repeat"); return emptyList() }
+    if (steps.none { it is Step.Check }) return emptyList()
+
+    val fixtures = mutableListOf<VimFixture>()
+    var before: String? = null
+    val keys = StringBuilder()
+    val commands = mutableListOf<String>()
+    var typedAlready = false
+    var ordinal = 0
+    for (step in steps) {
+      when (step) {
+        is Step.Configure -> {
+          before = step.text
+          keys.clear()
+          commands.clear()
+          typedAlready = false
+        }
+
+        is Step.Type -> {
+          keys.append(step.keys)
+          typedAlready = true
+        }
+
+        is Step.Command -> {
+          // A command run *after* some keys cannot be reproduced: the setup all runs first. Only
+          // `:` commands that come before any typing are safe to lift out, which is every one of
+          // them in practice - a test sets its options and its mappings and then types.
+          if (typedAlready) { skip("the test runs a command after typing"); return fixtures }
+          commands += step.text
+        }
+
+        is Step.Check -> {
+          ordinal++
+          val start = before
+          if (start == null) { skip("the test checks before it has any text"); continue }
+          val marked = listOf(start, step.text).map { caretsIn(it) }
+          if (marked.any { it == null }) {
+            skip("string interpolation other than the caret"); continue
+          }
+          val (from, to) = marked.map { it!! }
+          if (from.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
+          if (to.split(SELECTION_START).size != to.split(SELECTION_END).size) {
+            skip("an unbalanced selection in the result"); continue
+          }
+          val name = if (ordinal == 1) method else "$method#$ordinal"
+          fixtures += VimFixture(
+            "${path.substringAfter("$repositoryRoot/")}:$name",
+            keys.toString(),
+            from,
+            to,
+            fileSetup + commands,
+          )
+        }
+      }
+    }
+    return fixtures
+  }
+
+  /** One statement of a test written the long way: seed the text, type, check. */
+  private sealed interface Step {
+    /** `configureByText("...")` - the text the fixture starts from. */
+    class Configure(val text: String) : Step
+
+    /** `typeText(...)`, as keys. */
+    class Type(val keys: String) : Step
+
+    /**
+     * `enterCommand("nmap ,f iHello<Esc>")`, which is *not* the same as typing those keys.
+     *
+     * A mapping's body can contain `<Esc>`, and typing it at the command line presses Escape rather
+     * than writing five characters into it - which is why `doTest`'s own setup commands are typed
+     * literally through `stringToKeys` and not parsed. Folding these into the key stream produced
+     * sixteen fixtures that measured the harness: `:nmap ,f iHello<Esc><CR>,fdh` left an empty
+     * buffer, because the mapping was never defined.
+     */
+    class Command(val text: String) : Step
+
+    /** `assertState("...")` with text rather than a mode - a fixture ends at each of these. */
+    class Check(val text: String) : Step
+  }
+
+  /**
+   * A test written as `configureByText` / `typeText` / `assertState` rather than as `doTest`.
+   *
+   * 922 of IdeaVim's tests are this shape and it is the same fixture by a longer road: text in,
+   * keys, text out. `doTest` is a helper over exactly these three calls - see `VimTestCase` - so a
+   * harness that only read the helper was reading a third of what says the same thing.
+   *
+   * Null when the method does anything else. That is the whole of the care needed here: these tests
+   * are freer than a `doTest` and some of them set a register in Kotlin, or wrap the body in
+   * `try`/`finally` to put an option back. Reading the calls and not the rest would replay a fixture
+   * that was never set up.
+   */
+  private fun narrativeIn(body: String, bindings: Map<String, String>): List<Step>? {
+    val steps = mutableListOf<Pair<Int, Step>>()
+    val spans = mutableListOf<IntRange>()
+
+    for (match in BINDING.findAll(body)) {
+      if (isInsideString(body, match.range.first)) continue
+      val read = readStringExpression(body, match.range.last + 1) ?: return null
+      spans += match.range.first..read.second
+    }
+
+    for ((at, names) in enableCalls(body)) {
+      val open = body.indexOf('(', at)
+      val end = argumentSpans(body, open)?.last()?.second ?: return null
+      spans += at..end
+      names.forEach { steps += at to Step.Command("set $it") }
+    }
+
+    for (name in listOf("configureByText", "typeText", "enterCommand", "assertState")) {
+      var index = 0
+      while (true) {
+        index = body.indexOf("$name(", index)
+        if (index < 0) break
+        if (isInsideString(body, index) || isIdentifierChar(body.getOrNull(index - 1))) {
+          index += name.length
+          continue
+        }
+        val open = index + name.length
+        val arguments = argumentSpans(body, open) ?: return null
+        spans += index..arguments.last().second
+        val values = arguments.map { (from, to) -> evaluate(body.substring(from, to).trim(), bindings) }
+        when {
+          // `assertState(Mode.NORMAL())` checks the mode rather than the text, and the replay does
+          // not compare modes. Read so that it is not leftover; otherwise ignored.
+          name == "assertState" && values.singleOrNull() == null && arguments.size == 1 -> Unit
+
+          values.any { it == null } -> return null
+          name == "configureByText" -> steps += index to Step.Configure(values.last()!!)
+          name == "assertState" -> steps += index to Step.Check(values.single()!!)
+          name == "enterCommand" -> steps += index to Step.Command(values.single()!!)
+          else -> steps += index to Step.Type(values.joinToString("") { it!! })
+        }
+        index = arguments.last().second + 1
+      }
+    }
+
+    val consumed = BooleanArray(body.length)
+    for (span in spans) for (index in span) if (index in consumed.indices) consumed[index] = true
+    if (body.indices.any { !consumed[it] && !body[it].isWhitespace() }) return null
+
+    return steps.sortedBy { it.first }.map { it.second }
   }
 
   /**

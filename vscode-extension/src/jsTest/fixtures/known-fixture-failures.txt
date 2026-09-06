@@ -5,55 +5,216 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1613 of the 1615 harvested fixtures pass, and both of the two left name an IntelliJ action.
+# 1940 of the 2081 harvested fixtures pass.
 #
-# The corpus has grown from 1,047 to 1,615 in three steps, and every one of them was the harness
+# The corpus has grown from 1,047 to 2,081 in four steps, and every one of them was the harness
 # looking at less of `src/test` than it thought.
 #
 # It only found backtick-quoted test names, so IdeaVim's 578 plainly-named tests were *invisible*
-# rather than refused - they never reached the skip counts either, so the reported yield was
-# measuring what could be parsed out of what could be seen. It only read a method whose body
-# *started* with `doTest`, so a method that bound its text first, or called `doTest` more than once,
-# gave up everything but the first call. And it skipped the 1,039 `doTest` calls under `/extension/`
-# wholesale, on the grounds that "the extension tests need plugins this host has not ported" -
-# twenty-two of the twenty-four are ported now.
+# rather than refused. It only read a method whose body *started* with `doTest`, so a method that
+# bound its text first, or called `doTest` more than once, gave up everything but the first call.
+# It skipped the 1,039 `doTest` calls under `/extension/` wholesale, on a reason that stopped being
+# true when twenty-two of the twenty-four extensions were ported. And it only read `doTest` at all,
+# where 922 of IdeaVim's tests are written as `configureByText` / `typeText` / `assertState` - which
+# is what `doTest` is a helper over. Each of those is a fixture per `assertState`, replayed from the
+# top, so a method that checks, types `u`, and checks again is two.
 #
-# What kept the extension tests out after that was where their setup lives: `enableExtensions`, and
-# the `let` that has to precede it, are in `setUp` - a *different method*, and the harness only ever
-# looked at the one it was in. `enableExtensions` sets the extension's toggle option, which is what
-# `:set surround` does, and `set <name>` was `E518` here until the extension options were
-# registered; these fixtures could not have been replayed before that was fixed either. 461 of the
-# 1,039 are `matchit`, which is not ported and is not going to be.
+# 141 of the 2,081 fail and 128 of them are one thing, which is the largest single finding this
+# corpus has produced. See below.
 #
-# Twenty of the 568 failed. Seven were real gaps in this host and all seven are fixed. Two were
-# order dependence, which was the worst thing this found: `VimSearchGroupBase` keeps
-# `lastPatternTrailing` and three of its neighbours in a `protected companion object` - one per
-# process, however many search groups exist - so `n` after `:s` inherited the `3` from a `/and/3`
-# two fixtures earlier and answered three lines below the match it had correctly found. The replay
-# resets the engine between fixtures now, the way IdeaVim's own `VimTestCase.setUp` does. Every
-# fixture had been replayed into whatever its neighbour left behind, so a pass meant less than it
-# looked like it did.
+# Two things the harness had to get right for these numbers to mean anything, both learnt from a
+# fixture that was measuring the harness rather than the host:
 #
-# The other eleven were one gap and are fixed: `.` did not repeat what an extension did, because
-# repeating an extension mapping means running *the handler* again rather than a command, and this
-# host's copy of `RepeatChangeAction` had only the command branch. The body is `repeatLastChange` in
-# `vim-engine` now and both hosts share it.
+# `u` is not the engine's here. This host asks VS Code to undo and holds the next keystroke until it
+# lands - the right answer in a window, and no answer at all against a fake with no undo stack. The
+# replay performs `undo` and `redo` on the fake now, out of the edit history it has kept all along.
+#
+# And an ex command is not the same as typing its keys. A mapping's body can contain `<Esc>`, and
+# typing that at the command line presses Escape rather than writing five characters - which is why
+# `doTest`'s setup commands are typed literally rather than parsed. Folding `enterCommand` into the
+# key stream produced sixteen fixtures that measured the harness: `:nmap ,f iHello<Esc><CR>,fdh`
+# left an empty buffer because the mapping was never defined.
 #
 # Before believing an entry in this file, check that the fixture passes in the plugin. Two of them
-# did not: `search in one time from select mode` sat here as "expected [81], actual [82]" when
-# IdeaVim's own caret is at 82, and `repeat command with execution of ij action` had a reason
-# written against it that was not why it failed. Both are `@Disabled` over there, and the harness
-# now skips those.
+# did not - both were `@Disabled` over there, and the harness now skips those.
 
-# --- Two IntelliJ actions, which this host has no equivalent of.
+# --- `u` undoes a keystroke, where Vim undoes a command.
 #
-# `ideajoin` is IntelliJ's smart join, a language feature this host cannot have: `VjJ` with the
-# option set joins the way the language wants rather than the way Vim does.
+# 128 fixtures, one gap, and it is worth stating plainly because it is a bug a user meets in the
+# first minute: `ciwfoo<Esc>u` puts back `fo`, not the word.
 #
-# `partial Action mapping` types `X(EditorToggleCase)` into a half-declared `<Action>` mapping. The
-# mapping machinery works - nothing is inserted as literal text, which is what this entry used to
-# claim - and `EditorToggleCase` is an IntelliJ action id with no VS Code command behind it. There
-# is no toggle-case command; `editor.action.transformToUppercase` and its lowercase twin are the
-# whole of what VS Code offers.
+# This host's undo is VS Code's. A Vim command reaches the document as one `editor.edit` per
+# *keystroke* - the flush is per keystroke - and VS Code's default is an undo stop before and after
+# every edit an extension makes, so `u` walks back one keystroke at a time. IntelliJ is told where
+# an undoable unit ends and this host is not: `VimKeyBasedUndoService.setMergeUndoKey`,
+# `updateNonMergeUndoKey` and `setInsertNonMergeUndoKey` are all no-ops here, and the comment on
+# them says the boundaries "are already where they belong" because the host "gives VS Code a whole
+# command as a single edit". It does not; it gives it one edit per keystroke.
+#
+# `edit` takes `{ undoStopBefore, undoStopAfter }` and those three callbacks are the signal for it.
+# That is the shape of the fix and it is not a small one, which is why these are recorded rather
+# than papered over.
+
+src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:test undo after simple macro execution
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo change inside parentheses with cursor movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo change inside quotes with cursor movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo change paragraph with cursor movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo change to mark with cursor movement#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo change with register and motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo delete inside brackets with cursor movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo delete to search result#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo delete word with cursor at different position#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo inner word at end of word#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo join with indentation handling#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo multiple operations in sequence#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo multiple operations in sequence#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo multiple operations in sequence#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo replace mode changes#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo substitute with cursor movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/ComplexUndoTest.kt:test undo with text objects and counts#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/LineUndoActionTest.kt:test U differs from lowercase u#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/LineUndoActionTest.kt:test plain u undoes a U#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/UndoActionTest.kt:test change action is included in insert sequence#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test lowercase line caret position#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test lowercase line caret position#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test multiple undo after sequential toggle case#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test multiple undo after sequential toggle case#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test multiple undo after sequential toggle case#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test toggle case line caret position#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test toggle case line caret position#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test toggle case line caret position#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo after toggle case multiple characters#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo after toggle case single character#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo lowercase line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo lowercase motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo toggle case line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo toggle case motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo uppercase line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test undo uppercase motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test uppercase line caret position#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeCaseToggleCharacterActionTest.kt:test uppercase line caret position#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test multiple undo after sequential changes#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test multiple undo after sequential changes#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo after change line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo after change to end of line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo after change with motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo after change word#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo change character#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo change multiple characters#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/ChangeMotionActionTest.kt:test undo change with motion and caret movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test multiple undo after sequential decrements#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test multiple undo after sequential decrements#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test multiple undo after sequential decrements#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo after decrement negative number#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo after decrement number with caret move#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo after decrement number#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo after decrement with count#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo decrement with visual selection#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo increment and decrement combination#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo increment and decrement combination#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberDecActionTest.kt:test undo increment and decrement combination#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test multiple undo after sequential increments#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test multiple undo after sequential increments#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test multiple undo after sequential increments#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test undo after increment negative number#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test undo after increment with count#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test undo increment hex number#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test undo increment octal number#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/change/number/ChangeNumberIncActionTest.kt:test undo increment with visual selection#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterLeftActionTest.kt:test multiple undo after sequential deletes#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterLeftActionTest.kt:test multiple undo after sequential deletes#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterLeftActionTest.kt:test multiple undo after sequential deletes#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterLeftActionTest.kt:test undo after deleting character left#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterLeftActionTest.kt:test undo after deleting multiple characters left#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteCharacterRightActionTest.kt:undo after deleting character#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test multiple undo after sequential delete to end of line#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test multiple undo after sequential delete to end of line#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test undo after delete to end of line at different positions#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test undo after delete to end of line at different positions#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test undo after delete to end of line with count#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteEndOfLineActionTest.kt:test undo after delete to end of line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinLinesSpacesActionTest.kt:test undo after join lines#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinLinesSpacesActionTest.kt:test undo after join multiple lines#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinLinesSpacesActionTest.kt:test undo after multiple sequential joins#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinLinesSpacesActionTest.kt:test undo after multiple sequential joins#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinLinesSpacesActionTest.kt:test undo join with special whitespace handling#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete motion with word#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete multiple lines#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete to mark#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete with different motions#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete with different motions#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete with different motions#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo after delete with different motions#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteMotionActionTest.kt:test undo delete with motion that includes caret movement#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo after shift left single line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo after shift left visual mode#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo after shift left with motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test multiple undo after sequential shifts right#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test multiple undo after sequential shifts right#5
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test multiple undo after sequential shifts right#6
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo after shift right single line#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo after shift right visual mode#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo after shift right with motion#2
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right and left combination#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode#2
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test multiple undo after sequential puts after cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test undo after put after cursor#2
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test undo after put character after cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test undo after put word after cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test undo put and move cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTestAfterCursorActionTest.kt:test undo put visual block after cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTextBeforeCursorActionTest.kt:test multiple undo after sequential puts#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTextBeforeCursorActionTest.kt:test undo after put before cursor#2
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTextBeforeCursorActionTest.kt:test undo after put character before cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTextBeforeCursorActionTest.kt:test undo after put word before cursor#3
+src/test/java/org/jetbrains/plugins/ideavim/action/copy/PutTextBeforeCursorActionTest.kt:test undo put visual block#3
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/CopyCommandTest.kt:test copy line and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/CopyCommandTest.kt:test copy range and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/CopyCommandTest.kt:test t command synonym and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/DeleteLinesCommandTest.kt:test delete line and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/DeleteLinesCommandTest.kt:test delete multiple lines with range and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/DeleteLinesCommandTest.kt:test delete with count and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/JoinLinesCommandTest.kt:test join lines and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/JoinLinesCommandTest.kt:test join range and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/JoinLinesCommandTest.kt:test join with count and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/NormalCommandTest.kt:test normal command complex operation and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/NormalCommandTest.kt:test normal command delete and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/NormalCommandTest.kt:test normal command insert and undo#2
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/NormalCommandTest.kt:test normal command with range and undo#2
+
+# --- IntelliJ actions, which this host has no equivalent of.
+#
+# `ideajoin` is IntelliJ's language-aware join. The rest name an action id with no VS Code command
+# behind it - `EditorToggleCase`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorDown`.
+
+src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:testMacroWithIdeAction
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test count is applied to action mapping
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test map enter to action
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
+
+# --- `yankring`'s `<C-P>` after a paste that was not the plain one.
+#
+# Four fixtures, and the three shapes are a paste with a count, a `]p`, and a paste before. The
+# extension undoes the previous paste and re-pastes an older entry - see `undoAndRepaste`, which is
+# where `runAfterHostCatchesUp` came from - and what it puts back is the wrong length. It is
+# probably the same gap as the one above seen from a different angle: the undo takes back one
+# keystroke rather than the paste.
+
+src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingCycleTest.kt:test cycling between character-wise and line-wise entries with paste before#2
+src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingCycleTest.kt:test cycling line-wise pastes leaves the source lines alone#2
+src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingPasteVariantsTest.kt:test a counted paste is replaced as a unit#2
+src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingPasteVariantsTest.kt:test bracket p is cyclable#2
+
+# --- One each, and none of them looked at yet.
+#
+# `<C-D>` and `<C-T>` in insert mode shift the line and leave the caret four columns from where
+# IdeaVim leaves it. `:iabbrev` should stop expanding once the caret has moved within the same
+# insert, and here it still expands. `"ayiw"bgriw` replaces with the wrong register's contents.
+
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/AbbrevCommandTest.kt:iabbrev does not expand after cursor moved with arrows in same insert session
+src/test/java/org/jetbrains/plugins/ideavim/extension/replacewithregister/ReplaceWithRegisterTest.kt:test replace use wrong register
