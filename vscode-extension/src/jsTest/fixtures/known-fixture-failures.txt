@@ -5,7 +5,7 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1602 of the 1615 harvested fixtures pass.
+# 1613 of the 1615 harvested fixtures pass, and both of the two left name an IntelliJ action.
 #
 # The corpus has grown from 1,047 to 1,615 in three steps, and every one of them was the harness
 # looking at less of `src/test` than it thought.
@@ -34,35 +34,16 @@
 # fixture had been replayed into whatever its neighbour left behind, so a pass meant less than it
 # looked like it did.
 #
-# The other eleven are one gap and are below.
+# The other eleven were one gap and are fixed: `.` did not repeat what an extension did, because
+# repeating an extension mapping means running *the handler* again rather than a command, and this
+# host's copy of `RepeatChangeAction` had only the command branch. The body is `repeatLastChange` in
+# `vim-engine` now and both hosts share it.
 #
 # Before believing an entry in this file, check that the fixture passes in the plugin. Two of them
 # did not: `search in one time from select mode` sat here as "expected [81], actual [82]" when
 # IdeaVim's own caret is at 82, and `repeat command with execution of ij action` had a reason
 # written against it that was not why it failed. Both are `@Disabled` over there, and the harness
 # now skips those.
-
-# --- `.` does not repeat what an extension did.
-#
-# Eleven fixtures, one gap, and it arrived with the extension tests: `ysiw)l.` surrounds once and
-# the `.` does nothing, `dsb.` re-runs and deletes the wrong thing, `cxiww.` exchanges the pair back
-# instead of exchanging the next one. Both extensions are ported and both work; it is only the
-# repeat that does not.
-#
-# `Extension.consumeKeystroke` is where to start. A repeat of an extension mapping re-runs the
-# *handler* rather than the keys, so whatever the handler read has to have been recorded and handed
-# back - which is the same machinery `readKeys` uses, and CLAUDE.md describes it from the other end.
-src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeExtensionTest.kt:test exchange words dot repeat
-src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeExtensionTest.kt:test exchange words right to left with dot
-src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeWithClipboardTest.kt:test exchange words dot repeat
-src/test/java/org/jetbrains/plugins/ideavim/extension/exchange/VimExchangeWithClipboardTest.kt:test exchange words right to left with dot
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatChangeSurroundingParens
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatDeleteSurroundParens
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatDifferentChanges
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatSurround
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatSurroundDouble
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatWrapWithFunction
-src/test/java/org/jetbrains/plugins/ideavim/extension/surround/VimSurroundExtensionTest.kt:testRepeatWrapWithTag
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #

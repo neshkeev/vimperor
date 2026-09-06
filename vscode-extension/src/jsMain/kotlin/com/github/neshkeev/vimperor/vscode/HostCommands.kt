@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.CommandProvider
 import com.maddyhome.idea.vim.action.change.LazyVimCommand
 import com.maddyhome.idea.vim.action.change.VimRepeater
+import com.maddyhome.idea.vim.action.change.repeatLastChange
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimCaret
@@ -347,16 +348,15 @@ private fun joinSelections(
 /**
  * `.` - do the last change again.
  *
- * The repeat is not a replay of keystrokes: the engine kept the last change as a [Command], and
- * running it again means handing that same command back to the action executor. What surrounds
- * that is bookkeeping - the register the change used, the last `f`/`t` search, and the flag that
- * tells the rest of the engine a dot repeat is in progress, which several handlers read to avoid
- * asking the user for input a second time.
+ * The body is [repeatLastChange], in the engine, because there was nothing host-shaped in it and
+ * this host's copy had quietly lost a branch: a mapping installed by an extension is repeated by
+ * running *the handler* again rather than a command, and only the plugin's copy did that. Eleven of
+ * IdeaVim's fixtures said so as soon as the extension tests were harvested.
  *
  * IdeaVim also wraps the replay in a single IntelliJ undo group, because a `c`-style change is a
  * delete and an insert and the platform would otherwise record two undo steps. This host's undo is
  * VS Code's, driven through [HostCommandRunner], and the flush turns the whole replay into one
- * document edit already - so there is nothing here to group.
+ * document edit already - so there is nothing here to group and the default wrapper is used.
  */
 internal class RepeatChangeAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_WRITABLE
@@ -366,43 +366,7 @@ internal class RepeatChangeAction : VimActionHandler.SingleExecution() {
     context: ExecutionContext,
     cmd: Command,
     operatorArguments: OperatorArguments,
-  ): Boolean {
-    val state = injector.vimState
-    var lastCommand = VimRepeater.lastChangeCommand ?: return false
-
-    val save = state.executingCommand
-    val lastFTCmd = injector.motion.lastFTCmd
-    val lastFTChar = injector.motion.lastFTChar
-    val reg = injector.registerGroup.currentRegister
-
-    state.isDotRepeatInProgress = true
-    try {
-      // The redo-register feature: repeating a change that came from a numbered register walks to
-      // the next one, so `"1p....` pastes the last five deletes in turn. See `:h redo-register`.
-      if (VimRepeater.lastChangeRegister in '1'..'8') {
-        VimRepeater.lastChangeRegister = VimRepeater.lastChangeRegister.inc()
-      }
-      injector.registerGroup.selectRegister(VimRepeater.lastChangeRegister)
-
-      // A count on the `.` itself replaces the count the original change carried, rather than
-      // multiplying it: `3dw` then `2.` deletes two words, not six.
-      if (cmd.rawCount > 0) {
-        lastCommand = lastCommand.copy(rawCount = cmd.rawCount)
-      }
-      state.executingCommand = lastCommand
-
-      val arguments = operatorArguments.copy(count0 = lastCommand.rawCount)
-      injector.actionExecutor.executeVimAction(editor, lastCommand.action, context, arguments)
-
-      VimRepeater.saveLastChange(lastCommand)
-    } finally {
-      state.isDotRepeatInProgress = false
-      if (save != null) state.executingCommand = save
-      injector.motion.setLastFTCmd(lastFTCmd, lastFTChar)
-      injector.registerGroup.selectRegister(reg)
-    }
-    return true
-  }
+  ): Boolean = repeatLastChange(editor, context, cmd, operatorArguments)
 }
 
 /**

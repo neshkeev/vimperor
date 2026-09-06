@@ -28,21 +28,29 @@ away, and anything that only the plugin can do is a gap in the port.
 
 The plugin is not kept for its features - nobody runs IdeaVim out of this
 repository. It is kept for its tests. 11,727 of them, plus the 1,615 fixtures the
-VS Code host mines out of `src/test` and replays (1,602 pass). That corpus is the
+VS Code host mines out of `src/test` and replays (1,613 pass). That corpus is the
 largest outside check on the port and it has to survive the deletion, so
 `src/test` is not an ordinary casualty of removing `src/main`.
 
 What is still missing: 2 of the 24 bundled extensions, the in-tree keys NERDTree maps
 that VS Code has no command for, 11 IntelliJ-only options,
-13 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
+2 of the replayed fixtures, and one `TODO` seam in `VsCodeInjector` -
 `pluginActivator`, which nothing in the engine calls.
 
-**Thirteen of 1,615, and eleven of them are one thing.** `.` does not repeat what an
-extension did - `ysiw)l.` surrounds once and the `.` does nothing, `cxiww.` exchanges the
-pair back instead of the next one. Both extensions are ported and both work; only the
-repeat does not, and `Extension.consumeKeystroke` is where it lives. The other two name an
-IntelliJ action: `ideajoin` is IntelliJ's language-aware join, and `partial Action mapping`
-runs `EditorToggleCase`, an action id with no VS Code command behind it.
+**Two of 1,615, and both name an IntelliJ action:** `ideajoin` is IntelliJ's
+language-aware join, and `partial Action mapping` runs `EditorToggleCase`, an action id
+with no VS Code command behind it. There is nothing left on that list this host could do
+and has not.
+
+Eleven of the thirteen the extension tests found were one thing, and it is the shape this
+port keeps meeting. **`.` repeats a *handler*, not only a command** - a mapping an extension
+installed is repeated by running the handler again with the keys it read played back out of
+`Extension`, and this host's `RepeatChangeAction` was a reimplementation that had only the
+command branch. `ysiw)l.` surrounded once and the `.` did nothing. The plugin's copy was
+right and was 60 lines of engine-shaped code in `src/main/java`; the body is
+`repeatLastChange` in `vim-engine` now and both hosts call it. What stayed behind is one
+lambda: IdeaVim's split-mode undo marker, which is an RPC to a backend this host has no
+equivalent of.
 
 **The corpus grew from 1,047 to 1,236 by fixing the harness, and that is where the next
 fixtures are too.** Twice it turned out to be looking at less of `src/test` than it thought.
