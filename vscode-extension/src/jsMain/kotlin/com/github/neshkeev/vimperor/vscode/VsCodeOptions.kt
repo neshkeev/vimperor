@@ -580,10 +580,31 @@ internal fun applyWordWrap(editor: VimEditor) {
   val wanted = injector.optionGroup
     .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
     .asBoolean()
-  if (wanted == configuredWordWrap(vsCode)) return
+  val configured = configuredWordWrap(vsCode)
   // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
   // file on disk. Only when Vim's answer and the editor's have actually parted company.
+  if (wanted == configured) return
+  traceWrap(editor, "wrap: want ${named(wanted)}, editor says ${named(configured)} - writing")
   writeWordWrap(vsCode, wanted)
+}
+
+private fun named(wrapping: Boolean) = if (wrapping) "wrap" else "nowrap"
+
+/**
+ * What `'wrap'` decided, when `vimperor.trace` is on.
+ *
+ * This option is the one thing in the extension whose state lives entirely outside it - VS Code
+ * will not report whether an editor is wrapping, so every version of this has had to reason about a
+ * value it cannot see, and two of them reasoned wrongly in a way no test could catch. A line saying
+ * what was read and what was written is the difference between a bug report and a guess.
+ */
+private fun traceWrap(editor: VimEditor, message: String) {
+  val tracing = try {
+    workspace.getConfiguration("vimperor").get("trace") == true
+  } catch (e: Throwable) {
+    false
+  }
+  if (tracing) injector.messages.showMessage(editor, message)
 }
 
 /** `editor.wordWrap` on or off, wherever this window can write it. */
@@ -594,10 +615,23 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
   try {
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
       .update(VsCodeSettings.WORD_WRAP, value, target)
-      .then({ }, { })
+      .then(
+        { traceWrap(editor, "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value to target $target") },
+        // Reported rather than swallowed. A settings write can be refused - a workspace target with
+        // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
+        // the failure this option has already had twice.
+        { reason ->
+          injector.messages.showErrorMessage(
+            editor,
+            "Vimperor could not write ${VsCodeSettings.WORD_WRAP}=$value: $reason",
+          )
+        },
+      )
   } catch (e: Throwable) {
-    // A window that cannot be written to - no workspace and a read-only settings file - is not
-    // worth a thrown keystroke over. `:set wrap?` will keep answering what the editor says.
+    injector.messages.showErrorMessage(
+      editor,
+      "Vimperor could not write ${VsCodeSettings.WORD_WRAP}=$value: ${e.message}",
+    )
   }
 }
 
