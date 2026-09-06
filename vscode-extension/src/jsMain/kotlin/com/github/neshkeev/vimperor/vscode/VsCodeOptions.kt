@@ -580,12 +580,29 @@ internal fun applyWordWrap(editor: VimEditor) {
   val wanted = injector.optionGroup
     .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
     .asBoolean()
-  val configured = configuredWordWrap(vsCode)
+  val raw = rawWordWrap(vsCode)
+  val configured = raw != null && raw != VsCodeSettings.WORD_WRAP_OFF
   // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
   // file on disk. Only when Vim's answer and the editor's have actually parted company.
-  if (wanted == configured) return
-  traceWrap(editor, "wrap: want ${named(wanted)}, editor says ${named(configured)} - writing")
+  if (wanted == configured) {
+    // Said out loud, because "nothing happened" is the hardest thing to report and the easiest to
+    // misread. If the setting already says what Vim wants and the lines still wrap, the wrap is a
+    // per-editor override - `Alt+Z`, or `editor.action.toggleWordWrap` - which VS Code applies on
+    // top of the setting and offers no way to read or clear. Toggling once returns the editor to
+    // the setting.
+    traceWrap(editor, "wrap: want ${named(wanted)} and ${VsCodeSettings.WORD_WRAP_SETTING} is already ${raw ?: "unset"} - nothing to write")
+    return
+  }
+  traceWrap(editor, "wrap: want ${named(wanted)}, ${VsCodeSettings.WORD_WRAP_SETTING} says ${raw ?: "unset"} - writing")
   writeWordWrap(vsCode, wanted)
+}
+
+/** The setting as VS Code answers it, unmapped, so a trace line can show what was actually read. */
+private fun rawWordWrap(editor: VsCodeEditor): String? = try {
+  workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document.uri)
+    .get(VsCodeSettings.WORD_WRAP) as? String
+} catch (e: Throwable) {
+  "unreadable (${e.message})"
 }
 
 private fun named(wrapping: Boolean) = if (wrapping) "wrap" else "nowrap"

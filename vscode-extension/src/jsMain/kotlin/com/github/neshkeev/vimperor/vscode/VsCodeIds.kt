@@ -465,6 +465,9 @@ internal object VsCodeSettings {
   /** The two of those four Vim can ask for. */
   const val WORD_WRAP_ON = "on"
   const val WORD_WRAP_OFF = "off"
+
+  /** Section and key together, for a message that has to name the setting a user would search for. */
+  const val WORD_WRAP_SETTING = "$EDITOR.$WORD_WRAP"
 }
 
 /**
