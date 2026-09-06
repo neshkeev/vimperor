@@ -5,14 +5,17 @@
 # harvested and why the rest were not. To update this file, read that one and copy the names across
 # - never edit a name by hand to make the build pass.
 #
-# 1140 of the 1142 harvested fixtures pass, and the two left both name an IntelliJ action. There is
-# nothing on this list any more that this host could do and has not.
+# 1226 of the 1236 harvested fixtures pass.
 #
-# The corpus grew by 95 when the harness stopped looking only for backtick-quoted test names.
-# IdeaVim writes 578 of its tests as `fun testSurroundWordParens()`, and those methods were
-# *invisible* rather than refused - they never reached the skip counts either, so the yield looked
-# higher than it was. One of the 95 failed, and it was a real bug: `.` after an insert that
-# backspaced over itself replayed the typing without the deleting.
+# The corpus has grown by 189 in two steps, and both were the harness looking at less of `src/test`
+# than it thought. First it only found backtick-quoted test names, so IdeaVim's 578 plainly-named
+# tests were *invisible* rather than refused - they never reached the skip counts either, so the
+# reported yield was measuring what could be parsed out of what could be seen. Then it only read a
+# method whose body *started* with `doTest`, so a method that bound its text first, or called
+# `doTest` more than once, gave up everything but the first call.
+#
+# Nine of the 189 failed and every one was a real gap in this host. One is fixed - `.` after an
+# insert that backspaced over itself replayed the typing without the deleting - and eight are below.
 #
 # The ten that left it most recently are worth telling apart, because only eight were bugs here.
 #
@@ -32,6 +35,26 @@
 # `parseCommandLineForPreview` in `ExEntryPanel`, in `src/main/java` next to a Swing document
 # listener, with no IntelliJ in the body of it. It is `incsearchPreviewRequest` in the engine now
 # and both hosts read it.
+
+# --- `o` and `O` do not match the indent of the line they open from.
+#
+# Six fixtures, one gap. `VsCodeInjector`'s `InsertNewLineAction` says so out loud - "Vim's own `o`
+# would indent the new line to match; `'autoindent'` is not wired up yet, so this is the newline and
+# nothing else" - and these are IdeaVim saying what the indent should be. Nothing about it is
+# host-shaped: the indent of a line is a prefix of that line.
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above matches indent for first line of plain text
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above matches indent for plain text
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineAboveActionTest.kt:test insert new line above with multiple carets
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below matches indent for plain text 1
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertNewLineBelowActionTest.kt:test insert new line below with multiple carets
+
+# --- `:s` does not leave its pattern where `n` and `N` look for it.
+#
+# `:s/it/I` then `n` should find the next `it`, because a substitute sets the last search pattern
+# exactly as `/` does. Here `n` searched for whatever was there before.
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchAgainNextActionTest.kt:test search next after substitute command
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/search/SearchAgainPreviousActionTest.kt:test search previous after substitute command
 
 # --- Two IntelliJ actions, which this host has no equivalent of.
 #

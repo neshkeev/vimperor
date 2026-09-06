@@ -70,24 +70,8 @@ internal object VimFixtures {
       // produces nonsense that looks like a failure.
       if (source.contains("fun doTest(")) { skip("the file defines its own doTest"); continue }
       for ((method, body, at) in testMethods(source)) {
-        // Comments come out before the arguments are split, not after. A comment is not just noise
-        // in front of an argument: `// Move the line to below the current line, which ...` has a
-        // comma in it, and splitting on commas first tears the call into the wrong pieces.
-        val trimmed = stripLineComments(body).trim()
-        if (!trimmed.startsWith("doTest(")) continue
-        val spans = argumentSpans(trimmed, trimmed.indexOf('(')) ?: skip("could not parse the arguments")
-          ?: continue
-
-        // A trailing lambda is `afterEditorInitialized`, and it is nearly always one or more
-        // `enterCommand("set ...")` calls - a fixture about an option, which is worth more than a
-        // plain one because an option nothing reads is this port's quietest kind of failure. Those
-        // are reproduced by typing the command. A lambda that does anything else is refused, since
-        // replaying it without its setup would measure the harness rather than the host.
-        val tail = trimmed.substring(spans.last().second + 1).trimStart()
-        val setup = if (tail.startsWith("{")) enterCommands(tail) else emptyList()
-        if (setup == null) { skip("the test sets something up this cannot repeat"); continue }
-
-        // Annotations that mean the fixture is not the plain thing it looks like.
+        // Annotations that mean the fixture is not the plain thing it looks like. The method's, not
+        // the call's - a method that carries one carries it for every `doTest` in it.
         val head = source.substring(maxOf(0, at - 400), at)
         if (head.contains("@OptionTest")) { skip("the test sets options"); continue }
         if (head.contains("@VimBehaviorDiffers")) { skip("IdeaVim knowingly differs from Vim here"); continue }
@@ -96,31 +80,82 @@ internal object VimFixtures {
         // this host for a long time - `caret expected [81], actual [82]` - and IdeaVim's caret is at
         // 82 as well; the fixture's own `@Disabled` says "Ctrl-o doesn't work yet in select mode".
         if (head.contains("@Disabled")) { skip("IdeaVim has the test disabled"); continue }
-        if (spans.size < 3) { skip("fewer than three arguments"); continue }
 
-        // A file type or name means the test is about a language, and this host has no parser.
-        val extra = spans.drop(3).joinToString(" ") { trimmed.substring(it.first, it.second) }
-        if (extra.contains("fileType") || extra.contains("fileName") || extra.contains("afterEditorInitialized")) {
-          skip("the test needs a language"); continue
+        // Comments come out before the arguments are split, not after. A comment is not just noise
+        // in front of an argument: `// Move the line to below the current line, which ...` has a
+        // comma in it, and splitting on commas first tears the call into the wrong pieces.
+        val trimmed = stripLineComments(body)
+        // The method taken apart: what it bound, where it called `doTest`, and whether it did
+        // anything else. Most of IdeaVim's plainly-named tests are written
+        // `val before = ...; val after = ...; doTest(keys, before, after)`, and reading only
+        // literals meant the call looked unevaluatable rather than unread.
+        val parsed = analyse(trimmed)
+        if (parsed.calls.isEmpty()) continue
+
+        // Options an earlier `doTest` in the same method set are still set for a later one: each
+        // call re-seeds the text and none of them re-seeds the options. `test smartcase option`
+        // turns on this - its fourth call sets only `ignorecase` and expects `smartcase` from its
+        // second - so the setup accumulates rather than being read per call.
+        val accumulated = mutableListOf<String>()
+        var ordinal = 0
+        for ((index, call) in parsed.calls.withIndex()) {
+          ordinal++
+          // A method may call `doTest` more than once, with the same keys against different text or
+          // the same text with different keys, and only the first was ever taken. The name has to
+          // stay stable because it is the key in the baseline file, and it does: `upstream` is
+          // read-only, so the calls in a method do not move.
+          val name = if (ordinal == 1) method else "$method#$ordinal"
+          // A statement this cannot read, standing before this call. `testInsertFromRegister` is
+          // `setRegister('a', "World")` and then a `doTest` that pastes register `a`; reading the
+          // call and not the line above it would record a failure that is entirely the harness's.
+          if (parsed.firstUnread != null && parsed.firstUnread < call - "doTest".length) {
+            skip("the test sets something up this cannot repeat"); continue
+          }
+          val spans = argumentSpans(trimmed, call) ?: skip("could not parse the arguments") ?: continue
+
+          // A trailing lambda is `afterEditorInitialized`, and it is nearly always one or more
+          // `enterCommand("set ...")` calls - a fixture about an option, which is worth more than a
+          // plain one because an option nothing reads is this port's quietest kind of failure. Those
+          // are reproduced by typing the command. A lambda that does anything else is refused, since
+          // replaying it without its setup would measure the harness rather than the host.
+          val afterParen = spans.last().second + 1
+          val lambda = trimmed.substring(afterParen, parsed.callEnds[index]).trim()
+          val setup = if (lambda.startsWith("{")) enterCommands(lambda) else emptyList()
+          if (setup == null) { skip("the test sets something up this cannot repeat"); continue }
+          accumulated += setup
+
+          if (spans.size < 3) { skip("fewer than three arguments"); continue }
+
+          // A file type or name means the test is about a language, and this host has no parser.
+          val extra = spans.drop(3).joinToString(" ") { trimmed.substring(it.first, it.second) }
+          if (extra.contains("fileType") || extra.contains("fileName") || extra.contains("afterEditorInitialized")) {
+            skip("the test needs a language"); continue
+          }
+
+          val values = spans.take(3).map { (from, to) -> evaluate(trimmed.substring(from, to).trim(), parsed.bindings) }
+          if (values.any { it == null }) { skip("an argument this cannot evaluate"); continue }
+          val withCarets = values.map { caretsIn(it!!) }
+          if (withCarets.any { it == null }) { skip("string interpolation other than the caret"); continue }
+
+          val (keys, before, after) = withCarets.map { it!! }
+          // No caret at all is not a refusal: IdeaVim's `configureByText` puts one at the start when
+          // the text does not say otherwise, so the fixture means offset zero. More than one is not a
+          // refusal either any more, and it should never have been the interesting one to give up on:
+          // multiple cursors are the feature VS Code is best known for, and every one of these
+          // fixtures is IdeaVim saying what a multi-caret command should do. The replay sets them all
+          // through VS Code's own selections, which is how a real one would arrive.
+          if (before.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
+          if (after.split(SELECTION_START).size != after.split(SELECTION_END).size) {
+            skip("an unbalanced selection in the result"); continue
+          }
+          fixtures += VimFixture(
+            "${path.substringAfter("$repositoryRoot/")}:$name",
+            keys,
+            before,
+            after,
+            accumulated.toList(),
+          )
         }
-
-        val values = spans.take(3).map { (from, to) -> evaluate(trimmed.substring(from, to).trim()) }
-        if (values.any { it == null }) { skip("an argument this cannot evaluate"); continue }
-        val withCarets = values.map { caretsIn(it!!) }
-        if (withCarets.any { it == null }) { skip("string interpolation other than the caret"); continue }
-
-        val (keys, before, after) = withCarets.map { it!! }
-        // No caret at all is not a refusal: IdeaVim's `configureByText` puts one at the start when
-        // the text does not say otherwise, so the fixture means offset zero. More than one is not a
-        // refusal either any more, and it should never have been the interesting one to give up on:
-        // multiple cursors are the feature VS Code is best known for, and every one of these
-        // fixtures is IdeaVim saying what a multi-caret command should do. The replay sets them all
-        // through VS Code's own selections, which is how a real one would arrive.
-        if (before.contains(SELECTION_START)) { skip("the test starts with a selection"); continue }
-        if (after.split(SELECTION_START).size != after.split(SELECTION_END).size) {
-          skip("an unbalanced selection in the result"); continue
-        }
-        fixtures += VimFixture("${path.substringAfter("$repositoryRoot/")}:$method", keys, before, after, setup)
       }
     }
     return fixtures
@@ -166,11 +201,17 @@ internal object VimFixtures {
     return if (Regex("\\\$\\{|\\\$[A-Za-z_]").containsMatchIn(substituted)) null else substituted
   }
 
-  /** One string-valued Kotlin expression, or null when it is anything this does not understand. */
-  private fun evaluate(expression: String): String? {
+  /**
+   * One string-valued Kotlin expression, or null when it is anything this does not understand.
+   *
+   * [bindings] are the `val`s the method declared before it called `doTest`, so that
+   * `doTest("yseb", before, after)` reads as the strings those names were given.
+   */
+  private fun evaluate(expression: String, bindings: Map<String, String> = emptyMap()): String? {
+    bindings[expression]?.let { return it }
     if (expression.startsWith("listOf(")) {
       val parts = argumentSpans(expression, expression.indexOf('(')) ?: return null
-      val pieces = parts.map { (from, to) -> evaluate(expression.substring(from, to).trim()) }
+      val pieces = parts.map { (from, to) -> evaluate(expression.substring(from, to).trim(), bindings) }
       if (pieces.any { it == null }) return null
       return pieces.joinToString("") { it!! }
     }
@@ -181,7 +222,7 @@ internal object VimFixtures {
       val parts = argumentSpans(expression, expression.indexOf('(')) ?: return null
       if (parts.size != 1) return null
       if (parts.last().second + 1 != expression.length) return null
-      return wrap(evaluate(expression.substring(parts[0].first, parts[0].second).trim()) ?: return null)
+      return wrap(evaluate(expression.substring(parts[0].first, parts[0].second).trim(), bindings) ?: return null)
     }
     // `"<a>\\n" + "  ${'$'}{c}<b>\\n" + ...`, which is how the tag-object fixtures are written -
     // one literal per line of the document, because a raw string cannot carry the escapes they need.
@@ -391,6 +432,165 @@ internal object VimFixtures {
     }
     return found
   }
+
+  /**
+   * A test method taken apart: what it bound, where it called `doTest`, and whether it did anything
+   * else.
+   *
+   * The last field is the one that matters most. `testInsertFromRegister` is
+   * `setRegister('a', "World")` and then a `doTest` that pastes register `a`, and a harness that
+   * read the call and not the line above it would record a failure that is entirely its own. So a
+   * method is refused unless every statement in it is either a string binding this can read or a
+   * `doTest` call.
+   */
+  private class MethodBody(
+    val bindings: Map<String, String>,
+    /** The index of the `(` of each `doTest`, in the order they appear. */
+    val calls: List<Int>,
+    /** The end of each call, after its trailing lambda if it has one. */
+    val callEnds: List<Int>,
+    /**
+     * Where the first statement this cannot read is, or null.
+     *
+     * A position rather than a flag, because *where* it is decides what it costs. A statement
+     * before a `doTest` may have set the register that `doTest` pastes; one after it is an extra
+     * assertion, which this does not run and does not need to. Refusing on either would have cost
+     * 95 fixtures - measured - for the sake of the handful that matter.
+     */
+    val firstUnread: Int?,
+  )
+
+  private fun analyse(body: String): MethodBody {
+    val bindings = mutableMapOf<String, String>()
+    val spans = mutableListOf<IntRange>()
+    var unreadable: Int? = null
+
+    for (match in BINDING.findAll(body)) {
+      // A `val` inside a string is not a binding. Strings are the one thing a regex over source
+      // cannot see past, and IdeaVim's mapping tests put Vim script in them.
+      if (isInsideString(body, match.range.first)) continue
+      val read = readStringExpression(body, match.range.last + 1)
+      if (read == null) {
+        unreadable = minOf(unreadable ?: match.range.first, match.range.first)
+        continue
+      }
+      val name = match.groupValues[1]
+      if (name !in bindings) bindings[name] = read.first
+      spans += match.range.first..read.second
+    }
+
+    val calls = mutableListOf<Int>()
+    val ends = mutableListOf<Int>()
+    for (call in doTestCalls(body)) {
+      val arguments = argumentSpans(body, call)
+      if (arguments == null) {
+        unreadable = minOf(unreadable ?: call, call)
+        continue
+      }
+      val afterParen = arguments.last().second + 1
+      val end = endOfTrailingLambda(body, afterParen) ?: afterParen
+      calls += call
+      ends += end
+      spans += (call - "doTest".length)..(end - 1)
+    }
+
+    val consumed = BooleanArray(body.length)
+    for (span in spans) for (index in span) if (index in consumed.indices) consumed[index] = true
+    val leftover = body.indices.firstOrNull { !consumed[it] && !body[it].isWhitespace() }
+
+    val first = listOfNotNull(unreadable, leftover).minOrNull()
+    return MethodBody(bindings, calls, ends, first)
+  }
+
+  /** Where a `{ ... }` starting at the first non-space character after [from] ends, or null. */
+  private fun endOfTrailingLambda(text: String, from: Int): Int? {
+    var index = from
+    while (index < text.length && text[index].isWhitespace()) index++
+    if (text.getOrNull(index) != '{') return null
+    var depth = 0
+    while (index < text.length) {
+      if (text[index] == '"') {
+        index = skipString(text, index) ?: return null
+        continue
+      }
+      if (text[index] == '{') depth++
+      if (text[index] == '}') {
+        depth--
+        if (depth == 0) return index + 1
+      }
+      index++
+    }
+    return null
+  }
+
+  /** Whether [at] falls inside a string literal, walked from the start of [text]. */
+  private fun isInsideString(text: String, at: Int): Boolean {
+    var index = 0
+    while (index < at) {
+      if (text[index] == '"') {
+        val end = skipString(text, index) ?: return true
+        if (at < end) return true
+        index = end
+        continue
+      }
+      index++
+    }
+    return false
+  }
+
+  /**
+   * Where each `doTest(` begins in a method's body, as the index of its `(`.
+   *
+   * Every one of them, not only a body that *starts* with one. A method that binds its text first -
+   * `val before = ...; val after = ...; doTest(keys, before, after)` - was skipped without being
+   * counted, and a method that calls `doTest` three times against different text gave up two of the
+   * three.
+   */
+  private fun doTestCalls(body: String): List<Int> {
+    val found = mutableListOf<Int>()
+    var index = 0
+    while (index < body.length) {
+      if (body[index] == '"') {
+        index = skipString(body, index) ?: break
+        continue
+      }
+      if (body.startsWith("doTest(", index) && !isIdentifierChar(body.getOrNull(index - 1))) {
+        found += index + "doTest".length
+        index += "doTest(".length
+        continue
+      }
+      index++
+    }
+    return found
+  }
+
+  private val BINDING = Regex("""\bva[lr]\s+([A-Za-z_][A-Za-z0-9_]*)\s*(?::\s*String\s*)?=\s*""")
+
+  /**
+   * A `+` chain of string literals starting at [start], with where it ended.
+   *
+   * Null when what is there is not a string at all, which is how `val editor = fixture.editor` is
+   * told from `val before = "..."`.
+   */
+  private fun readStringExpression(text: String, start: Int): Pair<String, Int>? {
+    val builder = StringBuilder()
+    var index = start
+    var read = 0
+    while (true) {
+      val piece = readString(text, index) ?: return if (read == 0) null else builder.toString() to index
+      builder.append(piece.first)
+      read++
+      index = piece.second
+      val rest = text.substring(index)
+      val spaces = rest.takeWhile { it.isWhitespace() }.length
+      if (!rest.drop(spaces).startsWith("+")) return builder.toString() to index
+      index += spaces + 1
+      index += text.substring(index).takeWhile { it.isWhitespace() }.length
+    }
+  }
+
+  private fun isIdentifierChar(character: Char?): Boolean =
+    character != null && (character.isLetterOrDigit() || character == '_' || character == '.')
 
   /**
    * A test method's name, backticked or not.
