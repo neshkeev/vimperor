@@ -6,7 +6,13 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2070 of the 2081 harvested fixtures pass.
+# 2147 of the 2167 harvested fixtures pass.
+#
+# Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
+# assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
+# Escape or Enter never fires, so `:nmap <A-Esc> k` then `<A-Esc>` does nothing. Two are the
+# insert-mode undo caret, one column out, which is the family `<C-T>` and `<C-D>` were already in.
+# The last names an IntelliJ action, like the five below it.
 #
 # The corpus has grown from 1,047 to 2,081 in four steps, and every one of them was the harness
 # looking at less of `src/test` than it thought: it only found backtick-quoted test names, it only
@@ -29,25 +35,23 @@
 # `ideajoin` is IntelliJ's language-aware join. The rest name an action id with no VS Code command
 # behind it - `EditorDown`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorToggleCase`.
 
+src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to alt esc
+src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to control esc
+src/test/java/org/jetbrains/plugins/ideavim/action/EscapeTest.kt:mapping to shift esc
+src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:should execute undo in macro
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:testMacroWithIdeAction
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteInsertedTextActionTest.kt:test undo after delete inserted text in insert mode#3
+src/test/java/org/jetbrains/plugins/ideavim/action/change/insert/InsertDeleteInsertedTextActionTest.kt:test undo preserves text before insertion point#4
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode
+src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to alt enter
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to control enter
+src/test/java/org/jetbrains/plugins/ideavim/action/motion/updown/EnterNormalActionTest.kt:mapping to shift enter
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/AbbrevCommandTest.kt:iabbrev does not expand after cursor moved with arrows in same insert session
+src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/ActionCommandTest.kt:testEditorRightAction
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test count is applied to action mapping
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test map enter to action
 src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/MapCommandTest.kt:test partial Action mapping
-
-# --- Six left, and none of them looked at yet.
-#
-# A macro that records a `u` replays it against a document the macro itself has changed, and comes
-# out one word short. `<C-D>` and `<C-T>` in insert mode shift the line and leave the caret four
-# columns from where IdeaVim leaves it. `:iabbrev` should stop expanding once the caret has moved
-# within the same insert, and here it still expands. `"ayiw"bgriw` replaces with the wrong
-# register's contents. And `yankring`'s `<C-P>` after a paste made from Visual mode puts back the
-# wrong text - the last of the four `<C-P>` fixtures, the other three of which the undo fix took
-# with it, which is a hint about where this one lives too.
-
-src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:should execute undo in macro
-src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftLeftTest.kt:test undo shift left in insert mode
-src/test/java/org/jetbrains/plugins/ideavim/action/change/shift/ShiftRightTest.kt:test undo shift right in insert mode
-src/test/java/org/jetbrains/plugins/ideavim/ex/implementation/commands/AbbrevCommandTest.kt:iabbrev does not expand after cursor moved with arrows in same insert session
 src/test/java/org/jetbrains/plugins/ideavim/extension/replacewithregister/ReplaceWithRegisterTest.kt:test replace use wrong register
 src/test/java/org/jetbrains/plugins/ideavim/extension/yankring/YankRingPasteVariantsTest.kt:test a visual mode paste is cyclable#2

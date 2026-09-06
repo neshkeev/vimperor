@@ -63,7 +63,13 @@ class VimFixtureReplayTest {
       "# ${fixtures.size - failing.size} of ${fixtures.size} harvested fixtures pass.\n" +
         "#\n# What was not harvested, and why:\n" +
         VimFixtures.skipped.entries.sortedByDescending { it.value }
-          .joinToString("\n") { (reason, count) -> "#   ${count.toString().padStart(5)}  $reason" } +
+          .joinToString("\n") { (reason, count) ->
+            // The places as well as the count. A number says how much is not seen; a file and a
+            // method name say what to read, and the largest bucket has twice been one fixable shape.
+            val examples = VimFixtures.skippedWhere[reason].orEmpty()
+            "#   ${count.toString().padStart(5)}  $reason" +
+              examples.joinToString("") { "\n#            $it" }
+          } +
         "\n\n" +
         outcomes.entries.filter { it.value != null }.sortedBy { it.key.source }
           .joinToString("\n") { (fixture, difference) -> fixture.source + "\n" + difference!!.prependIndent("# ") } +

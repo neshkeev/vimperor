@@ -59,13 +59,18 @@ internal object VimFixtures {
 
   fun load(repositoryRoot: String): List<VimFixture> {
     skipped.clear()
+    skippedWhere.clear()
     val fixtures = mutableListOf<VimFixture>()
     for (path in kotlinFilesUnder("$repositoryRoot/src/test")) {
       val source = readText(path)
       // A file with its own `doTest` means something else entirely by the name - `GlobalCommandTest`
       // takes an ex command where `VimTestCase` takes keys - and reading those as keystrokes
       // produces nonsense that looks like a failure.
-      if (source.contains("fun doTest(")) { skip("the file defines its own doTest"); continue }
+      if (source.contains("fun doTest(")) {
+        where = path.removePrefix("$repositoryRoot/")
+        skip("the file defines its own doTest")
+        continue
+      }
       // What the class does for every test in it. Nearly always `enableExtensions("surround")` in
       // `setUp`, which is the only reason the extension tests could not be read: it is a statement
       // in a *different method*, and the harness only ever looked at the one it was in.
@@ -78,6 +83,7 @@ internal object VimFixtures {
 
       for ((method, body, at) in testMethods(source)) {
         if (method == "setUp" || method == "tearDown") continue
+        where = "${path.removePrefix("$repositoryRoot/")}:$method"
         // Annotations that mean the fixture is not the plain thing it looks like. The method's, not
         // the call's - a method that carries one carries it for every `doTest` in it.
         val head = source.substring(maxOf(0, at - 400), at)
@@ -214,10 +220,26 @@ internal object VimFixtures {
 
   private val ENTER_COMMAND = Regex("^enterCommand\\((\".*\")\\)$")
 
+  /**
+   * Where the refusal being counted happened, for [skipped].
+   *
+   * A count says how much is not being seen and a location says what to read next. The largest
+   * bucket in this report has twice turned out to be one fixable shape, and both times finding that
+   * out meant guessing at which file it was.
+   */
+  var where: String = ""
+
+  /** Up to [EXAMPLES] places each reason happened, so the report can name them. */
+  val skippedWhere: MutableMap<String, MutableList<String>> = mutableMapOf()
+
   private fun skip(reason: String): Nothing? {
     skipped[reason] = (skipped[reason] ?: 0) + 1
+    val examples = skippedWhere.getOrPut(reason) { mutableListOf() }
+    if (where.isNotEmpty() && examples.size < EXAMPLES && where !in examples) examples += where
     return null
   }
+
+  private const val EXAMPLES = 3
 
   /**
    * `${'$'}{c}` and `${'$'}c` are the caret; any other interpolation means the fixture depends on
@@ -336,6 +358,10 @@ internal object VimFixtures {
 
   private val HELPERS: List<Pair<String, (String) -> String>> = listOf(
     "exCommand" to { command: String -> ":$command<CR>" },
+    // `VimTestCase.enterCommand` is defined as `typeText(commandToKeys(command))`, so a
+    // `typeText(commandToKeys("set nu"))` is an `enterCommand("set nu")` written the long way. Not
+    // a reading of what the helper does - the two are the same call.
+    "commandToKeys" to { command: String -> ":$command<CR>" },
     "searchCommand" to { pattern: String -> "$pattern<CR>" },
     // `typeText(injector.parser.parseKeys("dw"))` is `typeText("dw")` with the parse spelled out.
     // The replay parses the string itself, so the call is the string.
@@ -814,7 +840,7 @@ internal object VimFixtures {
       names.forEach { steps += at to Step.Command("set $it") }
     }
 
-    for (name in listOf("configureByText", "typeText", "enterCommand", "assertState")) {
+    for (name in listOf("configureByText", "typeText", "enterCommand", "assertState") + IGNORED) {
       var index = 0
       while (true) {
         index = body.indexOf("$name(", index)
@@ -828,6 +854,9 @@ internal object VimFixtures {
         spans += index..arguments.last().second
         val values = arguments.map { (from, to) -> evaluate(body.substring(from, to).trim(), bindings) }
         when {
+          // Read so that it is not leftover, then dropped. See [IGNORED].
+          name in IGNORED -> Unit
+
           // `assertState(Mode.NORMAL())` checks the mode rather than the text, and the replay does
           // not compare modes. Read so that it is not leftover; otherwise ignored.
           name == "assertState" && values.singleOrNull() == null && arguments.size == 1 -> Unit
@@ -848,6 +877,35 @@ internal object VimFixtures {
 
     return steps.sortedBy { it.first }.map { it.second }
   }
+
+  /**
+   * Calls a narrative may contain that this reads past rather than replays.
+   *
+   * Every one of them only *looks*: `assertMode` compares the mode, `assertOffset` the caret,
+   * `assertPluginError` whether a command reported one. None of them changes the editor, so
+   * dropping one cannot make the rest of the fixture mean something different - which is the test
+   * an entry here has to pass, and the reason `storeText` and `performEditorAction` are not in it.
+   *
+   * What is lost is the check itself. A fixture that asserted the mode is replayed for its text and
+   * its carets alone, which is less than IdeaVim asks of it and much more than refusing the whole
+   * method, and the replay compares nothing else anyway.
+   */
+  private val IGNORED = listOf(
+    "assertMode",
+    "assertOffset",
+    "assertPluginError",
+    "assertPluginErrorMessage",
+    "assertPluginErrorMessageContains",
+    "assertPosition",
+    "assertVisualPosition",
+    "assertSelection",
+    "assertRegister",
+    "assertCaretsVisualAttributes",
+    "assertCaretsColour",
+    "assertNoExOutput",
+    "assertExOutput",
+    "assertStatusBarMessage",
+  )
 
   /**
    * The `enableExtensions("surround")` calls in a body, with where each one is.
