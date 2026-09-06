@@ -550,7 +550,7 @@ internal fun watchLineNumbers() {
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.syntax) { applyLanguage(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.wrap) {
     VsCodeOptions.wrapWasAsked = true
-    applyWordWrap(it)
+    applyWordWrap(it, asked = true)
   }
 }
 
@@ -574,8 +574,19 @@ internal fun watchLineNumbers() {
  * lands in the workspace when there is one and in the user's settings otherwise, and it persists.
  * That is a real difference from Vim and the better of the two trades - the alternative is a
  * `:set nowrap` that means nothing, or means the opposite half the time.
+ *
+ * ## What this cannot reach
+ *
+ * VS Code lets an editor carry a word wrap of its own, *on top of* the setting. `Alt+Z` sets one -
+ * so does `editor.action.toggleWordWrap` - it wins over `editor.wordWrap`, and there is no API to
+ * read it or to clear it. An editor in that state ignores `:set nowrap` however correctly the
+ * setting is written, and the only way out is to press `Alt+Z` again.
+ *
+ * That is not a gap waiting to be filled; it is the same missing API that made the toggle
+ * unworkable, seen from the other side. Reported on request rather than silently, because a user
+ * who meets it has no way of telling it apart from a bug.
  */
-internal fun applyWordWrap(editor: VimEditor) {
+internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   val vsCode = editor as? VsCodeEditor ?: return
   val wanted = injector.optionGroup
     .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
@@ -585,15 +596,25 @@ internal fun applyWordWrap(editor: VimEditor) {
   // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
   // file on disk. Only when Vim's answer and the editor's have actually parted company.
   if (wanted == configured) {
-    // Said out loud, because "nothing happened" is the hardest thing to report and the easiest to
-    // misread. If the setting already says what Vim wants and the lines still wrap, the wrap is a
-    // per-editor override - `Alt+Z`, or `editor.action.toggleWordWrap` - which VS Code applies on
-    // top of the setting and offers no way to read or clear. Toggling once returns the editor to
-    // the setting.
-    traceWrap(editor, "wrap: want ${named(wanted)} and ${VsCodeSettings.WORD_WRAP_SETTING} is already ${raw ?: "unset"} - nothing to write")
+    // Only when the user asked, which is the listener. This also runs after every keystroke, and a
+    // line per key is not a trace, it is a wall.
+    //
+    // Worth saying at all because "nothing happened" is the hardest outcome to report and the
+    // easiest to misread: if the setting already says what Vim wants and the lines still wrap, the
+    // wrap is a per-editor override, and no `:set` can reach it. See [applyWordWrap]'s note.
+    if (asked) {
+      traceWrap(
+        editor,
+        "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} is already ${raw ?: "unset"}, so nothing to write. " +
+          "If the lines still wrap, this editor has a per-editor wrap on top of the setting - press " +
+          "Alt+Z to clear it.",
+      )
+    }
     return
   }
-  traceWrap(editor, "wrap: want ${named(wanted)}, ${VsCodeSettings.WORD_WRAP_SETTING} says ${raw ?: "unset"} - writing")
+  if (asked) {
+    traceWrap(editor, "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} says ${raw ?: "unset"}, writing ${named(wanted)}")
+  }
   writeWordWrap(vsCode, wanted)
 }
 

@@ -186,6 +186,20 @@ the *window* and ignores a `[markdown]` block turning wrap on, which is how peop
 it. Anything else moved out of the accepted group will need all three questions asked of it:
 can it be set rather than toggled, what is its default here, and is the read scoped.
 
+**And it still cannot reach everything.** VS Code lets an editor carry a word wrap of its own
+*on top of* the setting - `Alt+Z` sets one, and so does `editor.action.toggleWordWrap`. It
+wins, and there is no API to read it or clear it. An editor in that state ignores `:set
+nowrap` however correctly the setting is written, and the only way out is `Alt+Z` again. That
+is the same missing API that made the toggle unworkable, seen from the other side, and it is
+worth knowing before reaching for a VS Code command to implement an option: **a command that
+sets hidden state is not an implementation, it is a bug with a delay on it.**
+
+The reason this took three attempts, and the lesson that generalises: every one of them passed
+its tests. The stub answered `null` for an unscoped configuration read, so the tests agreed
+with each other and with none of them agreed with a window. A host seam whose *state* lives in
+VS Code cannot be checked by a stub that only records what it was told - the stub has to
+answer the way the editor answers, or the test is a mirror.
+
 Three more of the `idea*` family are answered here now, and the interesting thing about
 them is how little they needed. `'ide'` is `env.appName` - the option exists because one
 `~/.ideavimrc` is read by every JetBrains IDE and branches on `if &ide =~? 'clion'`, and
