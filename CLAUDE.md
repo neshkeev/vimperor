@@ -103,7 +103,7 @@ extension's toggle option, which is what `:set surround` does. So `set <name>` b
 here until the extension options were registered was the other half of it: these fixtures
 could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
 
-2,746 `doTest` calls exist under `src/test` and 1,615 are harvested. What is refused is
+2,778 `doTest` calls exist under `src/test` and 2,081 are harvested. What is refused is
 counted and printed with every run, and the largest buckets now are tests that set something
 up in Kotlin, tests IdeaVim marks `@VimBehaviorDiffers`, and arguments that need a compiler.
 
@@ -293,7 +293,7 @@ never checked; `IdeaVIM.ideavim-frontend.xml` declares 24 `vimExtension` points,
 `windownavigation` - which looks like a 25th in `src/main/java` - is not one of them.
 It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 
-**Twenty are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+**Twenty-two are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
@@ -304,10 +304,19 @@ VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The two that are left - `matchit` and `VimEverywhere` - are not waiting on a seam.
+The two that are left - `matchit` and `VimEverywhere` - **are not being ported, and
+that is a decision rather than a backlog entry.** Neither is waiting on a seam and
+neither should be proposed again. Treat 22 of 24 as complete.
+
 `matchit` wants to know what a *token* is, so that `%` can jump between `if` and
 `endif` and between HTML tags, and the one thing VS Code tells an extension about a
 file's structure is where its symbols are - functions and classes, nothing smaller.
+
+**Its size is a trap.** `matchit` is ~465 of the `doTest` calls the fixture harness
+refuses - the largest single refusal bucket by a wide margin - so anyone listing what
+is left will find it at the top and mistake it for the biggest available win. It is
+not available. The number measures how thoroughly IdeaVim tested an extension this
+host cannot have, not how much is left to do.
 
 **`youcompleteme` was on that list twice over and should not have been**, and the
 mistake is instructive. The reason given was that it edits `'lookupkeys'`, an
