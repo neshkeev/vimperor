@@ -157,6 +157,11 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
         true
       }
 
+      is DeleteCharacterAction -> {
+        vsCode.deleteAtCarets()
+        true
+      }
+
       else -> false
     }
   }

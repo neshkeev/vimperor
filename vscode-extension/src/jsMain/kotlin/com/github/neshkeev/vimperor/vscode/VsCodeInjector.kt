@@ -1236,6 +1236,9 @@ open class VsCodeInjector(
    *
    * The others stay null. VS Code has commands for several - `editor.action.joinLines` among them -
    * but commands are asynchronous, and the engine's own `J` is synchronous and already correct.
+   *
+   * [DeleteCharacterAction] is the second, and it is not typed by anyone: it exists because a
+   * repeat replays one. See its own note.
    */
   override val nativeActionManager: NativeActionManager by lazy {
     object : NativeActionManager {
@@ -1245,7 +1248,7 @@ open class VsCodeInjector(
       override val indentLines: NativeAction? = null
       override val saveAll: NativeAction? = null
       override val saveCurrent: NativeAction? = null
-      override val deleteAction: NativeAction? = null
+      override val deleteAction: NativeAction = DeleteCharacterAction
     }
   }
 
@@ -1635,6 +1638,19 @@ internal object InsertNewLineAction : NativeAction {
  */
 internal object DeleteSelectionAction : NativeAction {
   override val action: Any = "ideavim.deleteSelection"
+}
+
+/**
+ * Pressing Delete, which only a repeat asks for.
+ *
+ * `VimChangeGroupBase` records an insert as the document changes it made, and a change that removed
+ * text is recorded as this action once per character - so `ce` then `foo<BS><BS><BS>foo` is "type
+ * foo, delete three, type foo". Answering null here recorded the typing and dropped the deleting,
+ * and `.` replayed `foofoo`. IdeaVim's is IntelliJ's `EditorDelete`, which deletes forwards, and it
+ * is run after the caret has been put back where the removal started.
+ */
+internal object DeleteCharacterAction : NativeAction {
+  override val action: Any = "ideavim.deleteCharacter"
 }
 
 private object SilentLogger : VimLogger {

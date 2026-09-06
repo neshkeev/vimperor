@@ -120,4 +120,34 @@ class VsCodeJoinAndRepeatTest {
   fun `test dot takes a new count when given one`() {
     assertEquals("d", type("abcd", "x2."))
   }
+
+  /**
+   * A repeat replays what an insert *did*, and an insert can undo itself as it goes.
+   *
+   * `VimChangeGroupBase` records an insert as the document changes it made: text typed becomes the
+   * characters, and text removed becomes `nativeActionManager.deleteAction` once per character, run
+   * after the caret has been moved back to where the removal started. This host answered null for
+   * that action, so it recorded the typing and dropped the deleting - and `.` replayed `foofoo`
+   * where the insert had left `foo`.
+   *
+   * IdeaVim's own `testRepeatWithBackspaces`, which is VIM-511, and it was invisible here for as
+   * long as it was: the fixture harness only ever looked for backtick-quoted test names.
+   */
+  @Test
+  fun `test dot repeats an insert that backspaced over itself`() {
+    assertEquals(
+      "foo baz\nfoo quux\n",
+      type("foo baz\nbaz quux\n", "cefoo<BS><BS><BS>foo<Esc>j0."),
+    )
+  }
+
+  /**
+   * The same thing at its simplest: what a repeat puts back is the *net* text of the insert.
+   *
+   * `iXY<BS>` leaves `X`, so the repeat inserts `X` and not `XY`.
+   */
+  @Test
+  fun `test dot repeats the net text of an insert`() {
+    assertEquals("XXab", type("ab", "iXY<BS><Esc>0."))
+  }
 }

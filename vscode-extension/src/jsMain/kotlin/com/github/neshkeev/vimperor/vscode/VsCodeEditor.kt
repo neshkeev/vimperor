@@ -395,6 +395,30 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     }
   }
 
+  /**
+   * Deletes the character *after* every caret, which is the Delete key.
+   *
+   * Nothing types it - Vim's own `x` and `<Del>` are the engine's - and it exists because a repeat
+   * replays one. `VimChangeGroupBase` records an insert as the document changes it made, and a
+   * change that removed text is recorded as `nativeActionManager.deleteAction` once per character
+   * removed, run after the caret has been moved to where the removal started. So `ce` then
+   * `foo<BS><BS><BS>foo` is recorded as "type foo, delete three, type foo", and a host that
+   * answered null for that action recorded only the typing: `.` replayed `foofoo`.
+   */
+  fun deleteAtCarets() {
+    val end = fileSize().toInt()
+    val sorted = vimCarets.sortedBy { it.offset }
+    for (index in sorted.indices.reversed()) {
+      val caret = sorted[index]
+      if (caret.offset < end) buffer.replace(caret.offset, caret.offset + 1, "")
+    }
+    sorted.forEachIndexed { index, caret ->
+      // One character goes for each deletion before this caret; its own leaves it where it is.
+      val deletionsBefore = sorted.take(index).count { it.offset < end }
+      caret.moveToOffsetNative((caret.offset - deletionsBefore).coerceAtLeast(0))
+    }
+  }
+
   /** `o` and `O`. Vim's `addLine` opens a line before [atPosition] and answers where it starts. */
   override fun addLine(atPosition: Int): Int {
     val insertAt = getLineStartOffset(atPosition)
