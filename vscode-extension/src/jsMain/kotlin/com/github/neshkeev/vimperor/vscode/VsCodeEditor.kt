@@ -562,6 +562,16 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // block selection's own echo a user edit and rebuild every caret from it.
     if (incoming.toSet() == pushedSelections.toSet()) return
 
+    // What the outgoing primary knew, to be handed to the incoming one.
+    //
+    // IdeaVim mirrors seven of these onto the *editor* - `userDataCaretToEditor` - so that a caret
+    // being replaced does not take them with it. This host had needed one of the seven until now.
+    // `lastSelectionInfo` is what `gv` restores, and rebuilding the carets after an undo threw it
+    // away: `yankring`'s `<C-P>` undoes its paste, reselects with `gv`, and pastes the older entry
+    // over the selection - so with no selection to restore it inserted into the middle of the word
+    // it should have replaced.
+    val outgoing = vimCarets.firstOrNull { it.isPrimary }
+
     vimCarets.clear()
     // Document order, whatever order VS Code reported them in. `selections[0]` is the primary and it
     // is under no obligation to be the first caret in the file - alt-clicking upwards puts it last -
@@ -581,6 +591,11 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       vimCarets += caret
     }
     if (vimCarets.isEmpty()) vimCarets += VsCodeCaret(this, 0, isPrimary = true)
+    // Only what a fresh caret has no way of knowing. The offset, the selection and the remembered
+    // column all come from what VS Code just reported and must not be carried over.
+    outgoing?.let { previous ->
+      vimCarets.firstOrNull { it.isPrimary }?.lastSelectionInfo = previous.lastSelectionInfo
+    }
     pushedSelections = incoming
   }
 

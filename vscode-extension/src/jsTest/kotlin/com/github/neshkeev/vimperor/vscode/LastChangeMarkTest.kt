@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -197,5 +198,68 @@ class UndoCaretTest {
 
     assertEquals("Hello world", session.content)
     assertEquals(6, session.caret)
+  }
+}
+
+/**
+ * Two things `u` needs from this host that IntelliJ gives the engine for free.
+ *
+ * The undo is a VS Code command over the *document*, and this host writes the document once per
+ * keystroke - so anything the engine edited earlier in the same keystroke is still only in the
+ * buffer when the undo is dispatched. And a caret rebuilt from what VS Code reports afterwards is
+ * a new object, which used to lose what `gv` needs.
+ */
+class UndoInsideOneKeystrokeTest {
+
+  private class Session(text: String) {
+    val fake = FakeEditor(text)
+    val host = VimHost(runCommand = { command, _, onDone ->
+      when (command) {
+        VsCodeCommands.UNDO -> fake.undo()
+        VsCodeCommands.REDO -> fake.redo()
+      }
+      onDone(true)
+    }).also { it.start() }
+
+    init {
+      KeyHandler.getInstance().fullReset(host.editorFor(fake))
+      UndoStops.reset()
+    }
+
+    fun press(keys: String) = injector.parser.parseKeys(keys).forEach { host.handle(fake, listOf(it)) }
+    val content: String get() = fake.document.content
+  }
+
+  /**
+   * `@a` replaying `dwu` is one keystroke to the host.
+   *
+   * The `dw` had not been written when the `u` was dispatched, so the undo popped the entry before
+   * it and the flush at the end of the keystroke wrote the deletion back over the top.
+   */
+  @Test
+  fun `test a macro that undoes its own change leaves the text alone`() {
+    val session = Session("Spongebob Squarepants")
+    session.press("qadwuq")
+    assertEquals("Spongebob Squarepants", session.content, "recording runs the keys as it records them")
+
+    session.press("@a")
+
+    assertEquals("Spongebob Squarepants", session.content)
+  }
+
+  /** `gv` after an undo needs the selection the outgoing caret remembered. */
+  @Test
+  fun `test cycling a visual paste replaces the selection rather than inserting`() {
+    val session = Session("one two three\nXXX")
+    session.press(":")
+    "set yankring".forEach { c -> session.host.type(session.fake, c.toString()) }
+    session.host.key(session.fake, "<CR>")
+
+    session.press("yiwwyiwjviwp")
+    assertEquals("one two three\ntwo", session.content)
+
+    session.press("<C-P>")
+
+    assertEquals("one two three\none", session.content, "the older entry, over the same selection")
   }
 }

@@ -1110,13 +1110,32 @@ open class VsCodeInjector(
        * is about the message, not about correctness of what follows.
        */
       override fun undo(editor: VimEditor, context: ExecutionContext): Boolean {
+        writeOutFirst(editor)
         hostCommands.run(VsCodeCommands.UNDO)
         return true
       }
 
       override fun redo(editor: VimEditor, context: ExecutionContext): Boolean {
+        writeOutFirst(editor)
         hostCommands.run(VsCodeCommands.REDO)
         return true
+      }
+
+      /**
+       * Puts the engine's edits into the document before asking VS Code to undo them.
+       *
+       * `u` is the one command that acts on what the *document* holds rather than on what the
+       * engine has computed, and this host writes the document once per keystroke - so anything
+       * edited earlier in the same keystroke is still only in the buffer. A macro is where that
+       * shows: `@a` replaying `dwu` is one keystroke to the host, so the `dw` had not been written
+       * when the `u` was dispatched, the undo popped the entry before it, and the flush at the end
+       * of the keystroke then wrote the deletion back over the top.
+       *
+       * Free when there is nothing to write: `DocumentBuffer.flush` returns at once when the text
+       * is already what it last wrote.
+       */
+      private fun writeOutFirst(editor: VimEditor) {
+        (editor as? VsCodeEditor)?.flush()
       }
 
       /**
