@@ -15,10 +15,10 @@ Two parts:
 `vim-engine` is Kotlin Multiplatform but its layout is Maven's, not KMP's: the
 engine is in `src/main/kotlin` and its tests in `src/test/kotlin`. Everything
 Kotlin is under those two: a target with code of its own gets a source root
-*nested* inside them, under the base package at `<base>/jvm` and `<base>/js`, so
-that the top of `src/main/kotlin` holds nothing but `com`. `build.gradle.kts`
-points each source set at its directory with `setSrcDirs`, and excludes the nested
-roots from the enclosing one. See **Layout**.
+in its own *tree* laid out the same way - `vim-engine/jvm` and `vim-engine/js` -
+so that no source root contains anything that is not a package.
+`build.gradle.kts` points each source set at its tree with `setSrcDirs`. See
+**Layout**.
 
 It still has two *targets* - a change to `src/main/kotlin` has to compile for JS
 as well as the JVM, and its tests run on both - but it now has only one host.
@@ -714,50 +714,63 @@ is a decision about a copyright statement, not a refactor.
 
 ## Layout
 
-**The source layout is Maven's, not Kotlin Multiplatform's.** `vim-engine` is
-`src/main/kotlin` and `src/test/kotlin`, every Kotlin file in the module is under
-one of those two, and the top of each holds nothing but `com` - no directory that
-is not a package. A target with code of its own gets a source root nested inside
-the base package, named for the target:
+**Maven's layout and nothing else.** Every source tree in this repository is
+exactly `src/main/kotlin`, `src/test/kotlin`, `src/main/resources`,
+`src/test/resources` - there is no directory inside one of them that is not a
+package, and no filename convention doing any work.
 
-| Source set   | Directory              |
-|--------------|------------------------|
-| `commonMain` | `src/main/kotlin` (excluding the two below) |
-| `jvmMain`    | `src/main/kotlin/com/github/neshkeev/vimperor/jvm`  |
-| `jsMain`     | `src/main/kotlin/com/github/neshkeev/vimperor/js`   |
-| `commonTest` | `src/test/kotlin` (excluding the two below) |
-| `jvmTest`    | `src/test/kotlin/com/github/neshkeev/vimperor/jvm`  |
-| `jsTest`     | `src/test/kotlin/com/github/neshkeev/vimperor/js`   |
+A target with code of its own gets a *whole tree*, laid out the same way:
 
-`api` does the same under its own base package, `com/intellij/vim/api`.
+| Source set   | Directory                    |
+|--------------|------------------------------|
+| `commonMain` | `vim-engine/src/main/kotlin` |
+| `commonTest` | `vim-engine/src/test/kotlin` |
+| `jvmMain`    | `vim-engine/jvm/src/main/kotlin` |
+| `jvmTest`    | `vim-engine/jvm/src/test/kotlin` |
+| `jsMain`     | `vim-engine/js/src/main/kotlin`  |
+| `jsTest`     | `vim-engine/js/src/test/kotlin`  |
 
-`vscode-extension` has one target, so it is just `src/main/kotlin` and
-`src/test/kotlin`; its `src/test/{fixtures,vscode-stub,host}` are data rather than
-Kotlin. `build.gradle.kts` points every source set at its directory with
-`setSrcDirs`, and the KMP defaults are gone.
+`api` does the same with `api/jvm` and `api/js`. `vscode-extension` has one
+target and so is just `src/main/kotlin` and `src/test/kotlin`. Resources stay with
+the parent rather than moving into `jvm/`, because they are not JVM-only:
+`ascii-art` and `messages` are read by generators that emit for both targets, and
+`ksp-generated` feeds the JVM registry and the JS one.
 
-**Nesting a source root inside another works; merging the two platform halves
-into one does not.** The nesting needs only that the enclosing set excludes the
-inner ones, which is one `kotlin.exclude("com/github/neshkeev/vimperor/jvm/**", "com/github/neshkeev/vimperor/js/**")` per enclosing
-set, and getting it wrong is loud rather than silent - an `actual` does not
-compile in `commonMain`.
+The pay-off is that an `actual` sits at the same path as its `expect`, one tree
+over - `src/main/kotlin/com/maddyhome/idea/vim/helper/Time.kt` and
+`jvm/src/main/kotlin/com/maddyhome/idea/vim/helper/Time.kt`. They are read
+together and were three directories apart for most of this port.
 
-**Those two are source roots, not packages**, and that has a visible cost: a file
-inside one declares whatever package it belongs to, which for most of them is
-still `com.maddyhome.idea.vim.*`, so its path below the root starts `com/` a
-second time -
-`src/main/kotlin/com/github/neshkeev/vimperor/jvm/com/maddyhome/idea/vim/extension/LazyVimExtension.kt`.
-The doubling is what it costs to have nothing at the top of `src/main/kotlin`
-that is not a package. It cannot be removed by renaming the packages, for the
-reason below.
+### `@file:JvmName`, and why the filenames are identical
 
-Merging `<base>/jvm` and `<base>/js` into a single directory is a different
-proposition and is not possible. A source set is a compilation unit, and those two
-hold an `actual` for the same seventeen `expect` declarations -
+Fifteen files exist under both a common tree and a `jvm/` tree with the same name,
+which is the point - but on the JVM a file's top-level declarations land in a
+facade class named after the file, so `Characters.kt` twice means `CharactersKt`
+twice and **the compilation fails**: `Duplicate JVM class name`.
+
+That is what a `.jvm.kt` / `.js.kt` filename convention is normally for, and this
+repository used one. It is gone. Each of those fifteen JVM files carries
+`@file:JvmName("<Name>Jvm")` instead, so the *facade* moves and the filename does
+not. JS has no facade classes and needs nothing.
+
+### What cannot be done
+
+**These trees cannot become Gradle modules.** It is the obvious next step and it
+does not work: `expect`/`actual` is matched inside a single Kotlin module, so an
+`actual` in a separate Gradle project is not seen at all. Verified rather than
+assumed - a two-module probe fails with `Expected currentTimeMillis has no actual
+declaration in module <commonMain> for JVM`. Making them real modules means giving
+up `expect`/`actual` for all seventeen pairs and routing each through an interface
+and a global assigned at startup, which is a worse trade than it looks: see
+`DeferredVimLogger` below for what a `lateinit` global read from an initialiser
+costs.
+
+**`jvm` and `js` cannot share one tree** either. A source set is a compilation
+unit, and the two hold an `actual` for the same seventeen `expect` declarations -
 `currentTimeMillis`, `formatVimFloat`, `engineCommandProvider` and the rest - so
-one directory would declare each of them twice in one compilation. Renaming their
-packages cannot route around it: Kotlin requires an `actual` to be in the *same*
-package as its `expect`.
+one compilation would declare each of them twice. Renaming their packages cannot
+route around it: Kotlin requires an `actual` to be in the *same* package as its
+`expect`.
 
 ### The rename broke seven tests, and what it exposed is worth keeping
 

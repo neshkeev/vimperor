@@ -163,8 +163,8 @@ this fork possible.
 | `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
 `vim-engine` is Kotlin Multiplatform, laid out the Maven way rather than KMP's: every Kotlin file
-is under `src/main/kotlin` or `src/test/kotlin`, with `jvm/` and `js/` source roots nested inside
-them under the base package for what only one platform needs. It has one host and still two
+is under a `src/main/kotlin` or `src/test/kotlin`, and what only one platform needs lives in a
+tree of its own with that same layout - `vim-engine/jvm` and `vim-engine/js`. It has one host and still two
 **targets**: a change to `src/main/kotlin` has to compile for JS as well as the JVM, and its tests
 run on both. That is what catches a `java.lang` call in shared code, and such calls usually need no
 import, so nothing else would.

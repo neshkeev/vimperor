@@ -124,7 +124,7 @@ Layout
 
 `vim-engine` is Kotlin Multiplatform laid out the Maven way: every Kotlin file is
 under `src/main/kotlin` or `src/test/kotlin`, and what only one platform needs sits
-in a `jvm/` or `js/` source root nested inside them under the base package. It
+in its own tree with the same layout, `vim-engine/jvm` and `vim-engine/js`. It
 still compiles for both targets and its tests run on both, which is how a JVM-ism
 in shared code gets caught.
 
