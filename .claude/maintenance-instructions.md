@@ -14,17 +14,17 @@ now something you do on purpose, when asked.
 find . -name "*.kt" -not -path "*/build/*" -not -path "*/.gradle/*" | shuf -n 1
 
 # Or pick a module deliberately:
-#   vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/   the engine, both hosts
-#   vim-engine/src/jsMain/  |  vim-engine/src/jvmMain/          per-platform engine code
-#   src/main/java/com/maddyhome/idea/vim/                       the IntelliJ plugin
-#   vscode-extension/src/jsMain/kotlin/                         the VS Code extension
+#   vim-engine/src/main/kotlin/com/maddyhome/idea/vim/   the engine, both hosts
+#   vim-engine/src/main/js/  |  vim-engine/src/main/jvm/          per-platform engine code
+#   vscode-extension/src/main/kotlin/                         the VS Code extension
 ```
 
 **You are not limited to the file you drew.** It is a starting point; follow the
 trail into callers, implementations and tests when it leads somewhere.
 
-Note the layout: `vim-engine` is Kotlin Multiplatform, so the engine lives in
-`src/commonMain/kotlin`, **not** `src/main/kotlin`.
+Note the layout: `vim-engine` is Kotlin Multiplatform but laid out the Maven way,
+so the engine lives in `src/main/kotlin` and each platform's own code sits beside
+it in `src/main/jvm` and `src/main/js`.
 
 ## 2. What to check
 
@@ -79,7 +79,7 @@ Worth a look whenever maintenance lands in `vscode-extension/`:
 
 - `VsCodeApi.kt` - `external` declarations compiled against nothing. Guarded by
   `checkVsCodeApiDeclarations`, which checks names and kind against `@types/vscode`.
-- `src/jsTest/vscode-stub/` - the fake VS Code the tests run against. Written from
+- `src/test/vscode-stub/` - the fake VS Code the tests run against. Written from
   the same reading of the docs as the declarations, so it agrees with them whether
   or not they are right. Every real-window bug so far has been a stub that was
   *more permissive* than VS Code.

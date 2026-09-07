@@ -12,10 +12,16 @@ Two parts:
 | `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 
-`vim-engine` is Kotlin Multiplatform: the engine is in `src/commonMain/kotlin`,
-**not** `src/main/kotlin`. It still has two *targets* - a change to `commonMain`
-has to compile for JS as well as the JVM, and its tests run on both - but it now
-has only one host.
+`vim-engine` is Kotlin Multiplatform but its layout is Maven's, not KMP's: the
+engine is in `src/main/kotlin` and its tests in `src/test/kotlin`. A target with
+code of its own gets a directory named for it *inside* those two - `src/main/jvm`,
+`src/main/js`, `src/test/jvm`, `src/test/js` - because a source set is a
+compilation unit and the two platforms hold an `actual` for the same seventeen
+`expect` declarations. They cannot share a directory whatever their packages say.
+`build.gradle.kts` points each source set at its directory with `setSrcDirs`.
+
+It still has two *targets* - a change to `src/main/kotlin` has to compile for JS
+as well as the JVM, and its tests run on both - but it now has only one host.
 
 Five Gradle modules: those two, plus `api`, `vim-annotations` and
 `annotation-processors`. There is no upstream to contribute to. The `upstream`
@@ -343,7 +349,7 @@ It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
 `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme` - which is every one
 whose substance this host can carry. Each lives in
-`vim-engine/src/commonMain/.../extension/<name>/` as a `@VimPlugin` function, the
+`vim-engine/src/main/kotlin/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
@@ -669,7 +675,7 @@ a `sed`.
 
 **`kspKotlinJvm --rerun-tasks` is the check that matters.** The `@ExCommand` and
 `@VimscriptFunction` registries name every class by its full package, they are
-committed under `vim-engine/src/jvmMain/resources/ksp-generated/`, and KSP writes
+committed under `vim-engine/src/main/resources/ksp-generated/`, and KSP writes
 them into the source tree rather than into `build/`. Regenerate and compare
 byte-for-byte rather than trusting the rewrite - and confirm the mixed state is
 what you meant: `engine_ex_commands.json` now names 60 classes under the new root
@@ -682,15 +688,22 @@ checks.
 ### The header is not the same thing as the authorship
 
 **146 files carry `Copyright 2003-2026 The IdeaVim authors` and IdeaVim never had
-them.** They were written here and inherited the header by copy-paste. The
-filename appears nowhere in `upstream/master` under any name, which is the only
-reliable test - comparing *paths* against upstream says nothing, because this fork
-moved the engine from `src/main` to `src/commonMain` and so every path differs.
+them.** They were written here and inherited the header by copy-paste. The test is
+whether the filename appears in `upstream/master` at all: 870 of the fork's
+IdeaVim-headered files sit at exactly their upstream path, 70 more have moved but
+keep their name, and the remaining 146 are nowhere in IdeaVim under any name.
+
+**The Maven rename is what makes the path half of that usable.** While the engine
+was in `src/commonMain` every path differed from upstream's `src/main` and a path
+comparison said nothing at all - the filename was the only handle. The layouts
+line up again now, which is worth knowing for more than this: `git log
+upstream/master -- <path>` is what the read-only `upstream` remote is *for*, and
+it works on a path taken straight from this tree.
 
 The clearest case is `com.maddyhome.idea.vim.host`: 43 files, the whole headless
 host and its tests, none of which exist upstream - `upstream/master` has no
-`vim-engine/src/commonTest` at all. Thirty-one of them carry this fork's header
-and have moved; the twelve that hold `HeadlessInjector`, `TestVimEditor` and
+`vim-engine/src/test/kotlin` at all, nor a `commonTest` under any name.
+Thirty-one of them carry this fork's header and have moved; the twelve that hold `HeadlessInjector`, `TestVimEditor` and
 `TestVimCaret` do not, and stayed. So a package IdeaVim never wrote is now split
 down the middle on the strength of which header got pasted into which file, and
 the other large buckets are `helper` (32) and 29 more ex commands.
@@ -698,6 +711,59 @@ the other large buckets are `helper` (32) and 29 more ex commands.
 Nothing is wrong with the code. But **the header is the criterion and on those
 files the header is wrong**, so before moving any of them, fix the notice - that
 is a decision about a copyright statement, not a refactor.
+
+## Layout
+
+**The source layout is Maven's, not Kotlin Multiplatform's.** `vim-engine` is
+`src/main/kotlin` and `src/test/kotlin`, and a target with code of its own gets a
+directory named for the target *inside* those two:
+
+| Source set   | Directory              |
+|--------------|------------------------|
+| `commonMain` | `src/main/kotlin`      |
+| `jvmMain`    | `src/main/jvm`         |
+| `jsMain`     | `src/main/js`          |
+| `commonTest` | `src/test/kotlin`      |
+| `jvmTest`    | `src/test/jvm`         |
+| `jsTest`     | `src/test/js`          |
+
+`vscode-extension` has one target, so it is just `src/main/kotlin` and
+`src/test/kotlin`; its `src/test/{fixtures,vscode-stub,host}` are data rather than
+Kotlin. `build.gradle.kts` points every source set at its directory with
+`setSrcDirs`, and the KMP defaults are gone.
+
+**The platform halves cannot be merged into one directory, whatever the packages
+say.** A source set is a compilation unit, and `src/main/jvm` and `src/main/js`
+hold an `actual` for the same seventeen `expect` declarations - `currentTimeMillis`,
+`formatVimFloat`, `engineCommandProvider` and the rest - so one directory would
+declare each of them twice in one compilation. Renaming the packages cannot help:
+Kotlin requires an `actual` to be in the *same* package as its `expect`.
+
+### The rename broke seven tests, and what it exposed is worth keeping
+
+Not one line of engine code changed, and `jsNodeTest` went from green to seven
+failures - all of them `Cannot read properties of undefined` on a *logger*,
+thousands of lines from anything to do with logging.
+
+The cause is that renaming directories changes the order the Kotlin/JS compiler
+emits files in, and Kotlin/JS initialises a top-level `val` at module load, in
+that order. `vimLogger()` was `injector.getLogger(T::class)` called eagerly, and
+the near-universal call site is `companion object { private val logger =
+vimLogger<X>() }`. On the JVM that is safe by accident - a companion initialises
+on first use, long after a host has installed its injector. On JS it depends
+entirely on emission order, and `EditorActionHandlerBase`'s companion moved from
+after a test's setup to module load, where `injector` is a `lateinit` that nobody
+has assigned yet. The failing initialiser left the companion half-built, and JS
+caches that: every later read of `logger` returned `undefined`.
+
+`vimLogger()` returns a `DeferredVimLogger` now, which resolves on first write.
+Three call sites had already been patched with `by lazy` - the fix belongs at the
+source, because patching a call site fixes whichever one is being debugged and
+leaves the other forty-eight armed.
+
+**The general rule: nothing in the engine may read `injector` from a top-level or
+companion initialiser.** It is a `lateinit` global, so whether it is set depends
+on emission order, which is not something anyone controls or can test for.
 
 ## Quick Reference
 
@@ -767,7 +833,7 @@ See `vscode-extension/DEVELOPMENT.md` for the port's architecture.
 There isn't one. `VIM-XXXX` tickets belong to IdeaVim's own issue tracker and are
 not this fork's to close; no GitHub issues have been filed on `neshkeev/vimperor`. Bugs are
 recorded in commit bodies, in comments at the code, and in
-`vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`.
+`vscode-extension/src/test/fixtures/known-fixture-failures.txt`.
 
 ## Commit messages
 

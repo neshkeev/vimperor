@@ -70,14 +70,14 @@ If you are looking for:
 
 - Vim commands (`w`, `<C-O>`, `p`, etc.):
     - Any particular command:
-      - [In the engine](vim-engine/src/jvmMain/resources/ksp-generated/engine_commands.json)
+      - [In the engine](vim-engine/src/main/resources/ksp-generated/engine_commands.json)
       - Host commands, which the extension registers itself: `VsCodeCommandProvider`
     - How commands are executed in common: `EditorActionHandlerBase`.
     - Key mapping: `KeyHandler.handleKey()`.
 
 - Ex commands (`:set`, `:s`, `:nohlsearch`):
     - Any particular command:
-        - [In the engine](vim-engine/src/jvmMain/resources/ksp-generated/engine_ex_commands.json)
+        - [In the engine](vim-engine/src/main/resources/ksp-generated/engine_ex_commands.json)
         - Host ex commands, such as `:actionlist`: `HostCommands.kt`
     - Vim script grammar: `Vimscript.g4`.
     - Vim script parsing: package `com.maddyhome.idea.vim.vimscript.parser`.
@@ -123,7 +123,7 @@ Cras id tellus in ex imperdiet egestas.
 ##### The replayed fixtures
 `src/test` holds IdeaVim's tests and is not compiled. The extension reads them as text and replays
 the keys against the VS Code host: 2,417 of 2,423 pass, and the rest are listed in
-`vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`. Every run writes the current
+`vscode-extension/src/test/fixtures/known-fixture-failures.txt`. Every run writes the current
 list, and what it refused to harvest and why, to `vscode-extension/build/fixture-failures.txt`.
 
 The corpus has grown four times over, every time by teaching the harness to read more of what was
@@ -162,9 +162,10 @@ this fork possible.
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 | `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
-`vim-engine` is Kotlin Multiplatform, so the engine lives in `src/commonMain/kotlin` rather than
-`src/main/kotlin`. It has one host and still two **targets**: a change to `commonMain` has to
-compile for JS as well as the JVM, and its tests run on both. That is what catches a `java.lang`
+`vim-engine` is Kotlin Multiplatform, laid out the Maven way rather than KMP's: the engine lives
+in `src/main/kotlin`, the platform halves in `src/main/jvm` and `src/main/js`, and the tests in
+`src/test/{kotlin,jvm,js}`. It has one host and still two **targets**: a change to
+`src/main/kotlin` has to compile for JS as well as the JVM, and its tests run on both. That is what catches a `java.lang`
 call in shared code, and such calls usually need no import, so nothing else would.
 
 The IntelliJ plugin was deleted once the port no longer needed it. Its tests were the regression
@@ -207,7 +208,7 @@ older than the fork.
 * [`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) - packaging and releasing the
   extension
 * [`CLAUDE.md`](CLAUDE.md) - the short version of everything on this page
-* [`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt) -
+* [`known-fixture-failures.txt`](vscode-extension/src/test/fixtures/known-fixture-failures.txt) -
   every replayed fixture the VS Code host does not pass, with the reason for each
 * [Changelog](CHANGES.md) and [contributors listing](AUTHORS.md), both inherited and both still
   the record of the work this fork is built on

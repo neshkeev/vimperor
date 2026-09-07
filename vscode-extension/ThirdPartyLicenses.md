@@ -6,7 +6,7 @@ following part of it:
 
 * The Vim tutor text, adapted from Vim's own `runtime/tutor/tutor`, is licensed
   under the **Vim License**. It is built into the extension bundle from
-  `vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt`
+  `vim-engine/src/main/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt`
   in this project's repository, and is what the "Vimperor: Open Vim Tutor"
   command puts on screen.
 

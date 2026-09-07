@@ -33,6 +33,7 @@ kotlin {
 
   sourceSets {
     val commonMain by getting {
+      kotlin.setSrcDirs(listOf("src/main/kotlin"))
       dependencies {
         // gradle.properties sets kotlin.stdlib.default.dependency=false, so every module declares
         // stdlib itself. compileOnly matches the rest of the project: the IDE provides it at

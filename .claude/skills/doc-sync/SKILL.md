@@ -22,7 +22,7 @@ ones that are real.
 Two more that are documentation in everything but name, and are worth the same
 scrutiny:
 
-- `vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt` - grouped
+- `vscode-extension/src/test/fixtures/known-fixture-failures.txt` - grouped
   explanations of every fixture that does not pass
 - KDoc on the extension's tests, which is where the port's reasoning lives
 
@@ -52,10 +52,10 @@ Read at least one working implementation before judging any doc. That is what
 
 ```bash
 # The extension's own entry point and host
-sed -n '1,80p' vscode-extension/src/jsMain/kotlin/Extension.kt
+sed -n '1,80p' vscode-extension/src/main/kotlin/Extension.kt
 
 # A recent test, for the conventions actually in use
-ls -t vscode-extension/src/jsTest/kotlin/com/maddyhome/idea/vim/vscode/*.kt | head -3
+ls -t vscode-extension/src/test/kotlin/com/maddyhome/idea/vim/vscode/*.kt | head -3
 ```
 
 ### 2. Check what recently changed - especially deletions
@@ -112,7 +112,7 @@ grep -rn "src/main/kotlin" *.md doc/*.md .claude/    # vim-engine is KMP now: co
 
 ✅ **Do:**
 - A signature changed - parameters added, removed, renamed
-- Something was renamed or moved (`src/main/kotlin` → `src/commonMain/kotlin`)
+- Something was renamed or moved (`src/commonMain/kotlin` → `src/main/kotlin`)
 - Behaviour fundamentally changed
 - A feature was added or removed
 - A path or command in the doc is wrong

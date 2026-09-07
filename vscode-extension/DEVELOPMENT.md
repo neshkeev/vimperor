@@ -729,7 +729,7 @@ window-local options have to be stored against some window when none is open.
 
 The other two corrections did not free anything and matter more. `extensionLoader` and
 `jsonExtensionProvider` are blocked by *class loading*, not by modal input: `LazyVimExtension` is in
-`vim-engine/src/jvmMain` and resolves a class by name through a `ClassLoader`, which JavaScript does
+`vim-engine/src/main/jvm` and resolves a class by name through a `ClassLoader`, which JavaScript does
 not have - the same problem this build already solves for commands, functions and ex commands by
 generating a registry at build time, so the answer has a known shape. And they were described as how
 IdeaVim's twenty-six bundled extensions are found and started. They start exactly one:
@@ -997,7 +997,7 @@ module's test sources, evaluates the `doTest` calls it can read without a compil
 `VimFixtureReplayTest` presses all of them against this host.
 
 **1,018 of the 1,025 it harvests pass.** The seven that do not are listed in
-`src/jsTest/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
+`src/test/fixtures/known-fixture-failures.txt`, grouped by what is actually wrong - which is six
 things, not seven.
 
 It started at 294 of 314, and every bug it has found was one no sweep could have: the service

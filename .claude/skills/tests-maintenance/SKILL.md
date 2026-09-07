@@ -23,7 +23,7 @@ with a different commit.
 | Suite                        | Where                                  | Run with                                |
 |------------------------------|----------------------------------------|-----------------------------------------|
 | IdeaVim, JVM                 | `src/test/`, `tests/`                  | `./gradlew :test --tests "..."`          |
-| The VS Code extension, JS    | `vscode-extension/src/jsTest/`         | `./gradlew :vscode-extension:jsNodeTest` |
+| The VS Code extension, JS    | `vscode-extension/src/test/`         | `./gradlew :vscode-extension:jsNodeTest` |
 
 They are not independent. `VimFixtureReplayTest` in the second suite *reads the
 first one*: it parses `doTest(keys, before, after)` calls out of
@@ -45,7 +45,7 @@ annotations together; several unrelated tests re-enabled at once.
 
 ## What to check
 
-### 1. The fixture baseline (`vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt`)
+### 1. The fixture baseline (`vscode-extension/src/test/fixtures/known-fixture-failures.txt`)
 
 This is the extension's equivalent of a wall of `@Disabled`, and the most
 valuable thing in this skill's scope. It currently holds **15 names under 6
@@ -139,7 +139,7 @@ newlines.
 ### 4. Test quality
 
 ```bash
-grep -rn "asdf\|qwerty\|xxxxx\|aaaaa\|dhjkw" --include="*.kt" src/test tests/ vscode-extension/src/jsTest
+grep -rn "asdf\|qwerty\|xxxxx\|aaaaa\|dhjkw" --include="*.kt" src/test tests/ vscode-extension/src/test
 ```
 
 Replace with realistic code snippets or the Lorem Ipsum template in

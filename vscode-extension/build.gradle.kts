@@ -45,7 +45,11 @@ kotlin {
   }
 
   sourceSets {
+    // Maven layout. This module has only a JS target, so src/main/kotlin and src/test/kotlin
+    // carry no ambiguity about which target they are for. Note that this module's src/test is
+    // not the repository root's - that one is IdeaVim's test corpus, read as data.
     val jsMain by getting {
+      kotlin.setSrcDirs(listOf("src/main/kotlin"))
       dependencies {
         implementation(project(":vim-engine"))
         // The thin API an extension is written against. `vim-engine` depends on it too, but as
@@ -56,13 +60,14 @@ kotlin {
     }
 
     val jsTest by getting {
+      kotlin.setSrcDirs(listOf("src/test/kotlin"))
       dependencies {
         implementation(kotlin("test"))
         // `vscode` is injected by the extension host and has no published package, so the external
         // declarations resolve to nothing under Node and every test that touches them fails at
         // load. Pointing the name at a local stub lets the VS Code-facing code be tested as
         // ordinary Kotlin instead of through a JavaScript harness.
-        implementation(npm("vscode", File(projectDir, "src/jsTest/vscode-stub")))
+        implementation(npm("vscode", File(projectDir, "src/test/vscode-stub")))
         // The real API, for `checkVsCodeApiDeclarations` to check the external declarations
         // against. A type definition rather than code - nothing imports it.
         implementation(npm("@types/vscode", "1.85.0"))
@@ -134,7 +139,7 @@ val runInStubHost by tasks.registering(Exec::class) {
   // `dist/` fails here instead of in somebody's editor.
   dependsOn(assembleExtension, nodeSetup)
 
-  val script = layout.projectDirectory.file("src/hostTest/activate-in-a-stub-host.js")
+  val script = layout.projectDirectory.file("src/test/host/activate-in-a-stub-host.js")
   val manifest = layout.projectDirectory.file("package.json")
   inputs.file(script)
   inputs.file(manifest)
@@ -174,7 +179,7 @@ val checkVsCodeApiDeclarations by tasks.registering {
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
   dependsOn(rootProject.tasks.named("kotlinNpmInstall"))
-  val declarations = layout.projectDirectory.file("src/jsMain/kotlin/com/github/neshkeev/vimperor/vscode/VsCodeApi.kt")
+  val declarations = layout.projectDirectory.file("src/main/kotlin/com/github/neshkeev/vimperor/vscode/VsCodeApi.kt")
   val typings = rootProject.layout.buildDirectory.file("js/node_modules/@types/vscode/index.d.ts")
   inputs.file(declarations)
   outputs.upToDateWhen { false }
@@ -269,7 +274,7 @@ val checkVsCodeCommandIds by tasks.registering {
   description = "Checks that every VS Code command id lives in VsCodeCommands, and is listed in `all`."
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
-  val sources = layout.projectDirectory.dir("src/jsMain/kotlin")
+  val sources = layout.projectDirectory.dir("src/main/kotlin")
   inputs.dir(sources)
   outputs.upToDateWhen { false }
 
@@ -318,7 +323,7 @@ tasks.named("check") {
  * a property that plainly exists in the source, which is a bad hour for whoever meets it.
  */
 val syncVsCodeStub by tasks.registering(Sync::class) {
-  from(layout.projectDirectory.dir("src/jsTest/vscode-stub"))
+  from(layout.projectDirectory.dir("src/test/vscode-stub"))
   into(rootProject.layout.buildDirectory.dir("js/node_modules/vscode"))
   mustRunAfter(rootProject.tasks.named("kotlinNpmInstall"))
 }
@@ -331,7 +336,7 @@ tasks.named("jsNodeTest") {
   // up to date when the only thing that changed is a fixture or the baseline - which it did, and
   // the check that the baseline gate works passed by not running.
   inputs.dir(rootProject.layout.projectDirectory.dir("src/test"))
-  inputs.dir(layout.projectDirectory.dir("src/jsTest/fixtures"))
+  inputs.dir(layout.projectDirectory.dir("src/test/fixtures"))
 
   // ...and `KeybindingManifestTest` reads the manifest the same way, for the same reason: what VS
   // Code will hand this extension is decided in `package.json`, not in any Kotlin. Without this,
@@ -479,8 +484,8 @@ val unpackExtension by tasks.registering(Sync::class) {
 
   // The script locates the extension from its own path, which is the right thing for it to do and
   // means it tests whatever tree it is standing in. So it is put into this one.
-  val script = layout.projectDirectory.file("src/hostTest/activate-in-a-stub-host.js")
-  val destination = layout.buildDirectory.file("packaged-extension/extension/src/hostTest/activate-in-a-stub-host.js")
+  val script = layout.projectDirectory.file("src/test/host/activate-in-a-stub-host.js")
+  val destination = layout.buildDirectory.file("packaged-extension/extension/src/test/host/activate-in-a-stub-host.js")
   doLast {
     val into = destination.get().asFile
     into.parentFile.mkdirs()
@@ -504,7 +509,7 @@ val checkPackagedExtension by tasks.registering(Exec::class) {
   outputs.upToDateWhen { false }
 
   val bin = nodeBinDirectory
-  val script = layout.buildDirectory.file("packaged-extension/extension/src/hostTest/activate-in-a-stub-host.js")
+  val script = layout.buildDirectory.file("packaged-extension/extension/src/test/host/activate-in-a-stub-host.js")
   executable = File(bin.get(), if (File(bin.get(), "node").isFile) "node" else "node.exe").absolutePath
   args(script.get().asFile.absolutePath)
 }

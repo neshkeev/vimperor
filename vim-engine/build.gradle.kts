@@ -71,7 +71,7 @@ val generateKotlinGrammarSource by tasks.registering(AntlrKotlinTask::class) {
 }
 
 ksp {
-  arg("generated_directory", "$projectDir/src/jvmMain/resources/ksp-generated")
+  arg("generated_directory", "$projectDir/src/main/resources/ksp-generated")
   arg("vimscript_functions_file", "engine_vimscript_functions.json")
   arg("ex_commands_file", "engine_ex_commands.json")
   arg("commands_file", "engine_commands.json")
@@ -81,7 +81,7 @@ ksp {
 // The engine's message bundle is a JVM `.properties` resource, which a JS target cannot read. This
 // emits the same key/value pairs as a Kotlin map for jsMain, so the two hosts serve identical text.
 // Generated rather than checked in: these strings are user-visible, and a copy would drift silently.
-val engineBundle = layout.projectDirectory.file("src/jvmMain/resources/messages/IdeaVimEngineBundle.properties")
+val engineBundle = layout.projectDirectory.file("src/main/resources/messages/IdeaVimEngineBundle.properties")
 val generatedBundleDir = layout.buildDirectory.dir("generated/messages/kotlin")
 
 val generateJsMessageBundle by tasks.registering {
@@ -121,7 +121,7 @@ val generateJsMessageBundle by tasks.registering {
 //
 // The upshot is that a missing or misspelled class name is a JS compile error, where on the JVM it
 // is a crash the first time that command is pressed.
-val kspGeneratedDir = layout.projectDirectory.dir("src/jvmMain/resources/ksp-generated")
+val kspGeneratedDir = layout.projectDirectory.dir("src/main/resources/ksp-generated")
 val generatedRegistryDir = layout.buildDirectory.dir("generated/registry/kotlin")
 
 val generateJsCommandRegistry by tasks.registering {
@@ -322,7 +322,7 @@ val generateVimscriptCorpus by tasks.registering {
 // `:smile` prints ASCII art chosen by the file's extension, read until now from four classpath
 // resources. Same problem as the message bundle: a JS host has no classpath. The .txt files stay
 // the source of truth and are emitted as a Kotlin map, so both targets print identical art.
-val asciiArtDir = layout.projectDirectory.dir("src/jvmMain/resources/ascii-art")
+val asciiArtDir = layout.projectDirectory.dir("src/main/resources/ascii-art")
 val generatedAsciiArtDir = layout.buildDirectory.dir("generated/ascii-art/kotlin")
 
 val generateAsciiArt by tasks.registering {
@@ -343,7 +343,7 @@ val generateAsciiArt by tasks.registering {
     out.parentFile.mkdirs()
     out.writeText(
       buildString {
-        appendLine("// Generated from src/jvmMain/resources/ascii-art by generateAsciiArt. Do not edit.")
+        appendLine("// Generated from src/main/resources/ascii-art by generateAsciiArt. Do not edit.")
         appendLine("package com.maddyhome.idea.vim.vimscript.model.commands")
         appendLine()
         appendLine("internal val GENERATED_ASCII_ART: Map<String, String> = mapOf(")
@@ -401,7 +401,12 @@ kotlin {
   }
 
   sourceSets {
+    // The layout is Maven's - src/main and src/test - rather than KMP's src/<sourceSet>/kotlin.
+    // A target that has code of its own gets a directory named for the target *inside* those two,
+    // because a source set is a compilation unit: jvm and js each hold an `actual` for the same
+    // seventeen `expect` declarations, so they cannot share a directory whatever the packages say.
     val commonMain by getting {
+      kotlin.setSrcDirs(listOf("src/main/kotlin"))
       // Phase 1 task 5. Only files with no JVM-API dependency live here; the
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
       // The task provider, not the directory - see the note on jsMain below for why.
@@ -420,7 +425,8 @@ kotlin {
       }
     }
     val jvmMain by getting {
-      // src/jvmMain/{kotlin,resources} are KMP defaults - no srcDir needed.
+      kotlin.setSrcDirs(listOf("src/main/jvm"))
+      resources.setSrcDirs(listOf("src/main/resources"))
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
         compileOnly(project(":annotation-processors"))
@@ -430,6 +436,7 @@ kotlin {
       }
     }
     val commonTest by getting {
+      kotlin.setSrcDirs(listOf("src/test/kotlin"))
       kotlin.srcDir(generateVimscriptCorpus)
       // Tests of platform-neutral behaviour, run on *every* target. The differential tests that
       // compare against java.lang.* stay in jvmTest - they need the JDK to compare against - so
@@ -439,6 +446,7 @@ kotlin {
       }
     }
     val jsMain by getting {
+      kotlin.setSrcDirs(listOf("src/main/js"))
       // The task provider, not the directory: that is what makes Gradle run the generator before
       // compiling. Wiring the bare directory compiles fine until someone runs `clean`, which is
       // exactly how this was found.
@@ -446,11 +454,14 @@ kotlin {
       kotlin.srcDir(generateJsCommandRegistry)
     }
     val jsTest by getting {
+      kotlin.setSrcDirs(listOf("src/test/js"))
       dependencies {
         implementation(kotlin("test"))
       }
     }
     val jvmTest by getting {
+      kotlin.setSrcDirs(listOf("src/test/jvm"))
+      resources.setSrcDirs(listOf("src/test/resources"))
       dependencies {
         implementation("org.junit.jupiter:junit-jupiter-api:6.0.0")
         // `@MethodSource`, for the two parser tests that check every combination of their inputs.
@@ -539,3 +550,4 @@ tasks.register("test") {
   // reachable for them and always stripped from the library. Only building the library finds it.
   dependsOn(checkJsLibraryIsNotEmpty)
 }
+

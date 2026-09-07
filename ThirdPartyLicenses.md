@@ -2,13 +2,13 @@ This project is licensed under MIT license except the following parts of it:
 
 * File [ScrollViewHelper.kt](src/main/java/com/maddyhome/idea/vim/helper/ScrollViewHelper.kt) is licensed under Vim
   License.
-* File [VimTutor.kt](vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt) is licensed under Vim
+* File [VimTutor.kt](vim-engine/src/main/kotlin/com/maddyhome/idea/vim/tutor/VimTutor.kt) is licensed under Vim
   License. It holds the tutor text, which used to be in `src/main/java/com/maddyhome/idea/vim/ui/Tutor.kt` and moved
   when a second host wanted it. Both hosts supply their own wording around it: see
   [Tutor.kt](src/main/java/com/maddyhome/idea/vim/ui/Tutor.kt) for IdeaVim and
-  [Tutor.kt](vscode-extension/src/jsMain/kotlin/com/maddyhome/idea/vim/vscode/Tutor.kt) for Vimperor. Those two carry
+  [Tutor.kt](vscode-extension/src/main/kotlin/com/maddyhome/idea/vim/vscode/Tutor.kt) for Vimperor. Those two carry
   no Vim-licensed text themselves.
-* File [CodeWrapper.kt](vim-engine/src/commonMain/kotlin/com/maddyhome/idea/vim/helper/CodeWrapper.kt) is licensed
+* File [CodeWrapper.kt](vim-engine/src/main/kotlin/com/maddyhome/idea/vim/helper/CodeWrapper.kt) is licensed
   under Vim License.
 
 The Vim License requires its text to travel with any distribution of those parts. The VS Code extension is packaged

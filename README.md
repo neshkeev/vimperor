@@ -122,10 +122,11 @@ Layout
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 | `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
-`vim-engine` is Kotlin Multiplatform: the engine lives in `src/commonMain/kotlin`,
-with `jvmMain` and `jsMain` for what each platform needs. It still compiles for
-both targets and its tests run on both, which is how a JVM-ism in shared code gets
-caught.
+`vim-engine` is Kotlin Multiplatform laid out the Maven way: the engine lives in
+`src/main/kotlin`, with `src/main/jvm` and `src/main/js` for what each platform
+needs, and tests in `src/test/kotlin`, `src/test/jvm` and `src/test/js`. It still
+compiles for both targets and its tests run on both, which is how a JVM-ism in
+shared code gets caught.
 
 The IntelliJ plugin was deleted once the port no longer needed it. `src/test`
 stayed and is not compiled: it holds IdeaVim's 11,727 tests, and the VS Code host
@@ -155,7 +156,7 @@ sends is compared against a real window by `checkVsCodeCommandIds`.
 Beyond its own tests, the extension replays IdeaVim's test fixtures against the
 VS Code host: **2,417 of 2,423 pass**. The six that do not each name an IntelliJ
 action with no VS Code command behind it, and are listed in
-[`known-fixture-failures.txt`](vscode-extension/src/jsTest/fixtures/known-fixture-failures.txt).
+[`known-fixture-failures.txt`](vscode-extension/src/test/fixtures/known-fixture-failures.txt).
 
 Why Kotlin and not TypeScript
 -----------------------------

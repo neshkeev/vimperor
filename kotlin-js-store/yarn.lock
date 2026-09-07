@@ -482,7 +482,7 @@ supports-color@^8.1.1:
   dependencies:
     has-flag "^4.0.0"
 
-"vscode@file:../../vscode-extension/src/jsTest/vscode-stub":
+"vscode@file:../../vscode-extension/src/test/vscode-stub":
   version "0.0.0"
 
 which@^2.0.1:
