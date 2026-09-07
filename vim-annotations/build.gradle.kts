@@ -32,13 +32,15 @@ kotlin {
   }
 
   sourceSets {
-    val commonMain by getting {
+    val commonMain = getByName("commonMain") {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
       dependencies {
         // gradle.properties sets kotlin.stdlib.default.dependency=false, so every module declares
-        // stdlib itself. compileOnly matches the rest of the project: the IDE provides it at
-        // runtime, and it must not be bundled into the plugin distribution.
-        compileOnly(kotlin("stdlib"))
+        // stdlib itself. `implementation` rather than `compileOnly`: the reason for compileOnly was
+        // that the IDE supplied it at runtime and it must not be bundled into the plugin
+        // distribution, and there is no plugin any more. compileOnly is also not publishable - the
+        // Kotlin plugin warns that a consumer of the JS artifact would have to supply it itself.
+        implementation(kotlin("stdlib"))
       }
     }
   }

@@ -26,17 +26,21 @@ kotlin {
     // Maven layout: src/main/kotlin is the common code, and a target with code of its own gets
     // a directory named for it inside src/main. Phase 3 / W6 left this module platform-neutral
     // except for `org.jetbrains.annotations`, which the jvm/ and js/ trees shim as expect/actual.
-    val commonMain by getting {
+    val commonMain = getByName("commonMain") {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
     }
-    val jvmMain by getting {
+    val jvmMain = getByName("jvmMain") {
       kotlin.setSrcDirs(listOf("jvm/src/main/kotlin"))
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
+        // gradle.properties sets kotlin.stdlib.default.dependency=false, so this has to be asked
+        // for. It used to arrive transitively through a kotlinx-coroutines dependency that no
+        // source in this repository imports; removing that dead entry is what exposed it. Only
+        // the JVM target needs it - the JS compilation resolves the stdlib on its own.
+        compileOnly(kotlin("stdlib"))
       }
     }
-    val jsMain by getting {
+    val jsMain = getByName("jsMain") {
       kotlin.setSrcDirs(listOf("js/src/main/kotlin"))
     }
   }

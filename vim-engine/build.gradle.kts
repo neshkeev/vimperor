@@ -31,14 +31,14 @@ plugins {
     `maven-publish`
 }
 
-val kotlinVersion: String by project
-val kotlinxSerializationVersion: String by project
+val kotlinVersion = providers.gradleProperty("kotlinVersion").get()
+val kotlinxSerializationVersion = providers.gradleProperty("kotlinxSerializationVersion").get()
 
 // The root project bundles the engine's sources into the plugin ZIP by
 // consuming this configuration (build.gradle.kts:132, `moduleSources`). It came
 // from the `java` plugin's withSourcesJar() before; KMP names its own task
 // `jvmSourcesJar`. Dropping this breaks `buildPlugin` but NOT `test`.
-val sourcesJarArtifacts by configurations.registering {
+val sourcesJarArtifacts = configurations.register("sourcesJarArtifacts") {
   isCanBeConsumed = true
   isCanBeResolved = false
   attributes {
@@ -62,7 +62,7 @@ repositories {
 // `setIgnoreCase` (which would collide with the generated setter for `var ignoreCase`), and
 // `RegexParser.g4`'s `start=` label is `rangeStart=`, because `start` is a final member of the
 // Kotlin runtime's ParserRuleContext. Java hid that collision silently.
-val generateKotlinGrammarSource by tasks.registering(AntlrKotlinTask::class) {
+val generateKotlinGrammarSource = tasks.register<AntlrKotlinTask>("generateKotlinGrammarSource") {
   source = fileTree(layout.projectDirectory.dir("antlr")) { include("**/*.g4") }
   packageName = "com.maddyhome.idea.vim.parser.generated"
   arguments = listOf("-visitor")
@@ -84,7 +84,7 @@ ksp {
 val engineBundle = layout.projectDirectory.file("src/main/resources/messages/IdeaVimEngineBundle.properties")
 val generatedBundleDir = layout.buildDirectory.dir("generated/messages/kotlin")
 
-val generateJsMessageBundle by tasks.registering {
+val generateJsMessageBundle = tasks.register("generateJsMessageBundle") {
   // Captured as locals so the action closes over plain values, not the build script: the
   // configuration cache cannot serialize script object references.
   val bundleFile = engineBundle.asFile
@@ -124,7 +124,7 @@ val generateJsMessageBundle by tasks.registering {
 val kspGeneratedDir = layout.projectDirectory.dir("src/main/resources/ksp-generated")
 val generatedRegistryDir = layout.buildDirectory.dir("generated/registry/kotlin")
 
-val generateJsCommandRegistry by tasks.registering {
+val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
   // Locals, not script references: the configuration cache cannot serialize the latter.
   val commandsJson = kspGeneratedDir.file("engine_commands.json").asFile
   val functionsJson = kspGeneratedDir.file("engine_vimscript_functions.json").asFile
@@ -283,7 +283,7 @@ val generateJsCommandRegistry by tasks.registering {
 val vimscriptGolden = layout.projectDirectory.file("corpus/vimscript-golden.txt")
 val generatedCorpusDir = layout.buildDirectory.dir("generated/corpus/kotlin")
 
-val generateVimscriptCorpus by tasks.registering {
+val generateVimscriptCorpus = tasks.register("generateVimscriptCorpus") {
   val goldenFile = vimscriptGolden.asFile
   val outputDir = generatedCorpusDir
   inputs.file(goldenFile)
@@ -325,7 +325,7 @@ val generateVimscriptCorpus by tasks.registering {
 val asciiArtDir = layout.projectDirectory.dir("src/main/resources/ascii-art")
 val generatedAsciiArtDir = layout.buildDirectory.dir("generated/ascii-art/kotlin")
 
-val generateAsciiArt by tasks.registering {
+val generateAsciiArt = tasks.register("generateAsciiArt") {
   val artDir = asciiArtDir.asFile
   val outputDir = generatedAsciiArtDir
   inputs.dir(artDir)
@@ -364,7 +364,7 @@ val generateAsciiArt by tasks.registering {
 // This asserts the artifact still carries the engine. The threshold is deliberately far below the
 // real size (~580 KB with a single export) and far above an empty shell (561 bytes): it is here to
 // catch the difference between "everything" and "nothing", not to police growth.
-val checkJsLibraryIsNotEmpty by tasks.registering {
+val checkJsLibraryIsNotEmpty = tasks.register("checkJsLibraryIsNotEmpty") {
   val library = layout.buildDirectory.file("dist/js/productionLibrary/IdeaVIM-vim-engine.js")
   dependsOn("jsNodeProductionLibraryDistribution")
   inputs.file(library)
@@ -424,7 +424,7 @@ kotlin {
     // an `actual` for the same seventeen declarations, so one compilation would declare each
     // twice; renaming their packages cannot help, because an `actual` must be in the same package
     // as its `expect`.
-    val commonMain by getting {
+    val commonMain = getByName("commonMain") {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
       // Phase 1 task 5. Only files with no JVM-API dependency live here; the
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
@@ -437,13 +437,15 @@ kotlin {
         // rather than `api`, matching the visibility this had when it sat in jvmMain.
         implementation(project(":api"))
         implementation(project(":vim-annotations"))
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-        // Multiplatform, unlike the -jvm artifact jvmMain uses. compileOnly to match the rest of
-        // the project: the IDE provides it at runtime and it must not be bundled.
-        compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationVersion")
+        // Multiplatform, unlike the -jvm artifact jvmMain uses. `implementation` rather than
+        // `compileOnly`: ExtensionBean is public and `@Serializable`, so a consumer compiling
+        // against it needs this on its classpath - which is what the Kotlin plugin warned about for
+        // the JS target. It cost 484 bytes on the packaged .vsix, because the JS side reads a
+        // generated registry rather than JSON and the linker drops the runtime it never calls.
+        implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:$kotlinxSerializationVersion")
       }
     }
-    val jvmMain by getting {
+    val jvmMain = getByName("jvmMain") {
       kotlin.setSrcDirs(listOf("jvm/src/main/kotlin"))
       resources.setSrcDirs(listOf("src/main/resources"))
       dependencies {
@@ -451,10 +453,9 @@ kotlin {
         compileOnly(project(":annotation-processors"))
         compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:$kotlinxSerializationVersion")
         compileOnly(kotlin("reflect"))
-        compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
       }
     }
-    val commonTest by getting {
+    val commonTest = getByName("commonTest") {
       kotlin.setSrcDirs(listOf("src/test/kotlin"))
       kotlin.srcDir(generateVimscriptCorpus)
       // Tests of platform-neutral behaviour, run on *every* target. The differential tests that
@@ -464,7 +465,7 @@ kotlin {
         implementation(kotlin("test"))
       }
     }
-    val jsMain by getting {
+    val jsMain = getByName("jsMain") {
       kotlin.setSrcDirs(listOf("js/src/main/kotlin"))
       // The task provider, not the directory: that is what makes Gradle run the generator before
       // compiling. Wiring the bare directory compiles fine until someone runs `clean`, which is
@@ -472,13 +473,13 @@ kotlin {
       kotlin.srcDir(generateJsMessageBundle)
       kotlin.srcDir(generateJsCommandRegistry)
     }
-    val jsTest by getting {
+    val jsTest = getByName("jsTest") {
       kotlin.setSrcDirs(listOf("js/src/test/kotlin"))
       dependencies {
         implementation(kotlin("test"))
       }
     }
-    val jvmTest by getting {
+    val jvmTest = getByName("jvmTest") {
       kotlin.setSrcDirs(listOf("jvm/src/test/kotlin"))
       resources.setSrcDirs(listOf("src/test/resources"))
       dependencies {
@@ -526,10 +527,13 @@ tasks.named<Test>("jvmTest") {
   useJUnitPlatform()
 }
 
-val spaceUsername: String by project
-val spacePassword: String by project
-val engineVersion: String by project
-val uploadUrl: String by project
+// `getOrElse("")` rather than `get()`: all four are declared empty in vim-engine/gradle.properties,
+// and `providers.gradleProperty` reports an empty value as *no* value - so `get()` throws where the
+// `by project` delegate this replaced returned "". An empty uploadUrl is what disables the block.
+val spaceUsername = providers.gradleProperty("spaceUsername").getOrElse("")
+val spacePassword = providers.gradleProperty("spacePassword").getOrElse("")
+val engineVersion = providers.gradleProperty("engineVersion").getOrElse("")
+val uploadUrl = providers.gradleProperty("uploadUrl").getOrElse("")
 
 publishing {
   publications {

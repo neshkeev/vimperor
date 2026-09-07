@@ -48,7 +48,7 @@ kotlin {
     // Maven layout. This module has only a JS target, so src/main/kotlin and src/test/kotlin
     // carry no ambiguity about which target they are for. Note that this module's src/test is
     // not the repository root's - that one is IdeaVim's test corpus, read as data.
-    val jsMain by getting {
+    val jsMain = getByName("jsMain") {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
       dependencies {
         implementation(project(":vim-engine"))
@@ -59,7 +59,7 @@ kotlin {
       }
     }
 
-    val jsTest by getting {
+    val jsTest = getByName("jsTest") {
       kotlin.setSrcDirs(listOf("src/test/kotlin"))
       dependencies {
         implementation(kotlin("test"))
@@ -103,7 +103,7 @@ val distDirectory = layout.projectDirectory.dir("dist")
  * than on the rare report. They stay in `build/`, where a developer reproducing the report has
  * them anyway.
  */
-val assembleExtension by tasks.registering(Sync::class) {
+val assembleExtension = tasks.register<Sync>("assembleExtension") {
   description = "Copies the production JavaScript into dist/, which is what the .vsix ships."
   group = LifecycleBasePlugin.BUILD_GROUP
 
@@ -128,7 +128,7 @@ val assembleExtension by tasks.registering(Sync::class) {
  *
  * Uses the Node that the Kotlin JS plugin already downloads, so this needs nothing on the PATH.
  */
-val runInStubHost by tasks.registering(Exec::class) {
+val runInStubHost = tasks.register<Exec>("runInStubHost") {
   description = "Loads the built extension in a stubbed VS Code host and checks the engine responds."
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
@@ -174,7 +174,7 @@ tasks.named("check") {
  * Names, not signatures: a full TypeScript parse is a different project. It catches the member that
  * does not exist, which is the mistake that actually gets made.
  */
-val checkVsCodeApiDeclarations by tasks.registering {
+val checkVsCodeApiDeclarations = tasks.register("checkVsCodeApiDeclarations") {
   description = "Checks every `external` VS Code declaration against @types/vscode."
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
@@ -270,7 +270,7 @@ tasks.named("check") {
  * a `workbench.` or `editor.` literal outside that file, and on a constant in it that never made it
  * into `all`.
  */
-val checkVsCodeCommandIds by tasks.registering {
+val checkVsCodeCommandIds = tasks.register("checkVsCodeCommandIds") {
   description = "Checks that every VS Code command id lives in VsCodeCommands, and is listed in `all`."
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
@@ -322,7 +322,7 @@ tasks.named("check") {
  * invisible until `node_modules` is deleted by hand. The failure that produces is a `TypeError` on
  * a property that plainly exists in the source, which is a bad hour for whoever meets it.
  */
-val syncVsCodeStub by tasks.registering(Sync::class) {
+val syncVsCodeStub = tasks.register<Sync>("syncVsCodeStub") {
   from(layout.projectDirectory.dir("src/test/vscode-stub"))
   into(rootProject.layout.buildDirectory.dir("js/node_modules/vscode"))
   mustRunAfter(rootProject.tasks.named("kotlinNpmInstall"))
@@ -457,7 +457,7 @@ fun Exec.authenticate() {
  * worth doing before publishing one: it is the only check that runs the extension the way a user
  * gets it rather than the way a developer does.
  */
-val packageExtension by tasks.registering(Exec::class) {
+val packageExtension = tasks.register<Exec>("packageExtension") {
   description = "Builds the .vsix that the Marketplace takes."
   group = "distribution"
   vsce("package", "--out", "build/vimperor-$extensionVersion.vsix")
@@ -475,7 +475,7 @@ val packageExtension by tasks.registering(Exec::class) {
  * The script is copied into the unpacked tree because it locates the extension from its own path -
  * which is the right thing for it to do, and means it tests whatever tree it is standing in.
  */
-val unpackExtension by tasks.registering(Sync::class) {
+val unpackExtension = tasks.register<Sync>("unpackExtension") {
   description = "Unpacks the .vsix, so that what was packaged can be run rather than trusted."
   dependsOn(packageExtension)
 
@@ -501,7 +501,7 @@ val unpackExtension by tasks.registering(Sync::class) {
  * instead, which is the last moment it is free: after that the archive is on the Marketplace and
  * the version cannot be reused.
  */
-val checkPackagedExtension by tasks.registering(Exec::class) {
+val checkPackagedExtension = tasks.register<Exec>("checkPackagedExtension") {
   description = "Unpacks the .vsix and activates it, to prove the package is complete."
   group = LifecycleBasePlugin.VERIFICATION_GROUP
 
@@ -525,7 +525,7 @@ val checkPackagedExtension by tasks.registering(Exec::class) {
  * It never prompts. Left to itself `vsce` asks for a token on the terminal when it cannot find
  * one, and a task that prompts is a task that hangs in CI, so every mode passes something explicit.
  */
-val publishExtension by tasks.registering(Exec::class) {
+val publishExtension = tasks.register<Exec>("publishExtension") {
   description = "Publishes the extension to the Visual Studio Marketplace."
   group = "distribution"
   vsce("publish", "--packagePath", "build/vimperor-$extensionVersion.vsix")

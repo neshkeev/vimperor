@@ -11,7 +11,7 @@ plugins {
   kotlin("plugin.serialization") version "2.3.20"
 }
 
-val kotlinxSerializationVersion: String by project
+val kotlinxSerializationVersion = providers.gradleProperty("kotlinxSerializationVersion").get()
 
 group = "com.intellij"
 version = "SNAPSHOT"
