@@ -164,9 +164,10 @@ this fork possible.
 
 `vim-engine` is Kotlin Multiplatform, laid out the Maven way rather than KMP's: every Kotlin file
 is under `src/main/kotlin` or `src/test/kotlin`, with `jvm/` and `js/` source roots nested inside
-them for what only one platform needs. It has one host and still two **targets**: a change to
-`src/main/kotlin` has to compile for JS as well as the JVM, and its tests run on both. That is what catches a `java.lang`
-call in shared code, and such calls usually need no import, so nothing else would.
+them under the base package for what only one platform needs. It has one host and still two
+**targets**: a change to `src/main/kotlin` has to compile for JS as well as the JVM, and its tests
+run on both. That is what catches a `java.lang` call in shared code, and such calls usually need no
+import, so nothing else would.
 
 The IntelliJ plugin was deleted once the port no longer needed it. Its tests were the regression
 net while the port was being built; the net now is the engine's own tests plus the fixtures the

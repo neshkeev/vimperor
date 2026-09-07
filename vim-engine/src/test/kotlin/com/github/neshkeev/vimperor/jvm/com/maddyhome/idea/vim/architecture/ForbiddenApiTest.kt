@@ -23,7 +23,7 @@ import kotlin.test.fail
 class ForbiddenApiTest {
 
   companion object {
-    private val SOURCE_ROOT: Path = Path.of("src/main/kotlin/jvm")
+    private val SOURCE_ROOT: Path = Path.of("src/main/kotlin/com/github/neshkeev/vimperor/jvm")
 
     private val ALLOWED_FILES: Set<String> = setOf()
   }

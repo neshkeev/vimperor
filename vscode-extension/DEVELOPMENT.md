@@ -729,7 +729,7 @@ window-local options have to be stored against some window when none is open.
 
 The other two corrections did not free anything and matter more. `extensionLoader` and
 `jsonExtensionProvider` are blocked by *class loading*, not by modal input: `LazyVimExtension` is in
-`vim-engine/src/main/kotlin/jvm` and resolves a class by name through a `ClassLoader`, which JavaScript does
+`vim-engine/src/main/kotlin/com/github/neshkeev/vimperor/jvm` and resolves a class by name through a `ClassLoader`, which JavaScript does
 not have - the same problem this build already solves for commands, functions and ex commands by
 generating a registry at build time, so the answer has a known shape. And they were described as how
 IdeaVim's twenty-six bundled extensions are found and started. They start exactly one:

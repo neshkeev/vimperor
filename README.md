@@ -124,9 +124,9 @@ Layout
 
 `vim-engine` is Kotlin Multiplatform laid out the Maven way: every Kotlin file is
 under `src/main/kotlin` or `src/test/kotlin`, and what only one platform needs sits
-in a `jvm/` or `js/` source root nested inside them. It still compiles for both
-targets and its tests run on both, which is how a JVM-ism in shared code gets
-caught.
+in a `jvm/` or `js/` source root nested inside them under the base package. It
+still compiles for both targets and its tests run on both, which is how a JVM-ism
+in shared code gets caught.
 
 The IntelliJ plugin was deleted once the port no longer needed it. `src/test`
 stayed and is not compiled: it holds IdeaVim's 11,727 tests, and the VS Code host
