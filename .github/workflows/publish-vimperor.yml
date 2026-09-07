@@ -62,10 +62,18 @@ jobs:
             exit 1
           fi
 
-      # Everything, both hosts. A release is the wrong moment to find out that the engine change
-      # that went in last week broke the IntelliJ plugin.
+      # Everything, both of the engine's targets, plus the extension's own checks - which `test`
+      # alone does not run: the stub-host activation, the two API guards and the command-id guard
+      # are `check` tasks. This is the command CLAUDE.md documents, and a release is the wrong
+      # moment to be running something narrower than a developer does.
+      #
+      # It used to exclude `:tests:property-tests` and `:tests:long-running-tests`. Those modules
+      # went with the IntelliJ plugin, and `-x` on a project that does not exist is a hard failure -
+      # "Cannot locate excluded tasks ... project 'tests' not found" - so this step could not have
+      # succeeded since the deletion. No tag has been pushed since, which is the only reason it went
+      # unnoticed.
       - name: Test
-        run: ./gradlew test -x :tests:property-tests:test -x :tests:long-running-tests:test --console=plain
+        run: ./gradlew test :vscode-extension:check --console=plain
 
       - name: Package
         run: ./gradlew :vscode-extension:packageExtension --console=plain
