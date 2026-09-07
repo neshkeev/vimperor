@@ -1890,6 +1890,11 @@
     "modes": "NXO"
   },
   {
+    "keys": "gf",
+    "class": "com.github.neshkeev.vimperor.file.GotoFileUnderCaretAction",
+    "modes": "NX"
+  },
+  {
     "keys": "gg",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineFirstAction",
     "modes": "NXO"

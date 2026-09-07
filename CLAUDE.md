@@ -54,9 +54,32 @@ asserts the empty list; ex commands are at parity in both directions. 22 of
 IdeaVim's 24 extensions are bundled. One injector seam is still `TODO` -
 `pluginActivator` - and nothing in the engine calls it.
 
-What remains is a backlog of small things and one piece of tidying: the engine
-still carries `com.maddyhome.idea.vim` packages, which can now be renamed in one
-pass - see **Packages**.
+What remains is a backlog of small things.
+
+### `gf` is the first key this fork adds that IdeaVim never had
+
+Parity with IdeaVim was the whole measure for most of this port, and `gf` is
+where that stops being the ceiling: IdeaVim has no `gf` in any form, so there is
+no reference implementation, no replayed fixture, and nothing to compare against
+except `:h gf`. `com.github.neshkeev.vimperor.file.GotoFile` is the whole of it.
+
+It needed no new seam, which is the point worth recording. `'isfname'` was
+already there and already scanning - `<C-R><C-F>` on the command line uses the
+same `findFilenameAtOrFollowingCursor` - and `VimFile.findFile` already answered
+"is this there, and where". Vim's `'path'` default of `.,,` is two lookups, the
+current file's directory then the working directory, and both were reachable.
+
+**One trap, and it is a name rather than a bug.** `VimEditor.getPath()` does not
+return a path: it returns the editor's *identity*, which this host spells
+`scheme://path` on purpose so that an untitled buffer has one and can carry
+marks. `getVirtualFile().path` is the same string. Anything treating it as a
+place on disk has to take the scheme off first and check that it is `file`.
+
+`gF`, `[count]gf` and `<C-W>f` are not registered, and each is a decision rather
+than an omission - see the comment on `GotoFile`. `gF` is the interesting one: it
+needs the caret moved in a file that VS Code has not finished opening, so it
+wants `runAfterHostCatchesUp`, and a `gF` that opened the file and ignored the
+line number would leave the caret somewhere plausible and wrong.
 
 ## The record below
 
