@@ -115,6 +115,40 @@ val assembleExtension = tasks.register<Sync>("assembleExtension") {
 }
 
 /**
+ * The Node that the Kotlin plugin already downloaded, and the `npx` beside it.
+ *
+ * Nothing here needs Node on the `PATH`, which is the same promise `runInStubHost` makes: a build
+ * that works on a machine with no system Node, and a build that cannot accidentally package with a
+ * different one than it tested with.
+ *
+ * ## Decided by platform, and it has to be
+ *
+ * Windows keeps `node.exe` at the root of the distribution and everything else keeps `bin/node`.
+ * This used to tell them apart by *asking the filesystem* - `if (File(home, "bin/node").isFile)` -
+ * and that is a question with no answer at the moment it was asked. All of this runs while the task
+ * graph is built, before `kotlinNodeJsSetup` has downloaded anything, so on a machine that has
+ * never built this project neither candidate exists and the check falls through to the Windows
+ * name.
+ *
+ * It passed everywhere it was ever run, because a developer's machine has downloaded Node once and
+ * every later build finds it. A cold CI runner has not, and the first release build said
+ *
+ *     A problem occurred starting process 'command
+ *     '/home/runner/.gradle/nodejs/node-v24.10.0-linux-x64/node.exe''
+ *
+ * on Linux. The platform is knowable without the filesystem; the layout is a fact about the
+ * platform, not about what happens to be on disk yet.
+ */
+val onWindows: Boolean = System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)
+
+val nodeBinDirectory = rootProject.tasks
+  .named<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsSetupTask>("kotlinNodeJsSetup")
+  .map { setup ->
+    val home = setup.destinationProvider.get().asFile
+    if (onWindows) home else File(home, "bin")
+  }
+
+/**
  * Runs the bundle the way VS Code would, in a stubbed extension host.
  *
  * The Kotlin/JS tests prove the engine works when compiled *with* a test, which says nothing about
@@ -146,12 +180,7 @@ val runInStubHost = tasks.register<Exec>("runInStubHost") {
   inputs.dir(distDirectory)
   outputs.upToDateWhen { false }
 
-  val node = nodeSetup.map { setup ->
-    val home = setup.destinationProvider.get().asFile
-    val unix = File(home, "bin/node")
-    (if (unix.isFile) unix else File(home, "node.exe")).absolutePath
-  }
-  executable = node.get()
+  executable = File(nodeBinDirectory.get(), if (onWindows) "node.exe" else "node").absolutePath
   args(script.asFile.absolutePath)
 }
 
@@ -359,20 +388,6 @@ tasks.register("test") {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * The Node that the Kotlin plugin already downloaded, and the `npx` beside it.
- *
- * Nothing here needs Node on the `PATH`, which is the same promise `runInStubHost` makes: a build
- * that works on a machine with no system Node, and a build that cannot accidentally package with a
- * different one than it tested with.
- */
-val nodeBinDirectory = rootProject.tasks
-  .named<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsSetupTask>("kotlinNodeJsSetup")
-  .map { setup ->
-    val home = setup.destinationProvider.get().asFile
-    if (File(home, "bin/node").isFile) File(home, "bin") else home
-  }
-
-/**
  * The extension's version, which is `package.json`'s and not Gradle's.
  *
  * Gradle's `version` here is `SNAPSHOT` - it belongs to the IntelliJ plugin, which this module only
@@ -399,7 +414,7 @@ fun Exec.vsce(vararg arguments: String) {
   dependsOn(assembleExtension)
   workingDir = layout.projectDirectory.asFile
   val bin = nodeBinDirectory.get()
-  executable = File(bin, if (File(bin, "npx").isFile) "npx" else "npx.cmd").absolutePath
+  executable = File(bin, if (onWindows) "npx.cmd" else "npx").absolutePath
   args(listOf("--yes", "@vscode/vsce@$vsceVersion") + arguments)
   environment("PATH", bin.absolutePath + File.pathSeparator + (System.getenv("PATH") ?: ""))
 }
@@ -510,7 +525,7 @@ val checkPackagedExtension = tasks.register<Exec>("checkPackagedExtension") {
 
   val bin = nodeBinDirectory
   val script = layout.buildDirectory.file("packaged-extension/extension/src/test/host/activate-in-a-stub-host.js")
-  executable = File(bin.get(), if (File(bin.get(), "node").isFile) "node" else "node.exe").absolutePath
+  executable = File(bin.get(), if (onWindows) "node.exe" else "node").absolutePath
   args(script.get().asFile.absolutePath)
 }
 
@@ -534,3 +549,4 @@ val publishExtension = tasks.register<Exec>("publishExtension") {
   // check is free; after it, the archive is on the Marketplace and the version cannot be reused.
   dependsOn(checkPackagedExtension)
 }
+
