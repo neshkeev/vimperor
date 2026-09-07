@@ -89,8 +89,13 @@ jobs:
       - name: Test
         run: ./gradlew test :vscode-extension:check --parallel --console=plain
 
+      # `checkPackagedExtension` and not just `packageExtension`: it unpacks the archive and
+      # activates it in the stub host, which is the only check that reads what `.vscodeignore`
+      # actually shipped rather than what is in the working tree. It hangs off `publishExtension`
+      # in the build, so a `workflow_dispatch` run - the one whose whole purpose is to exercise the
+      # release path before a tag is trusted to it - was uploading a .vsix nothing had opened.
       - name: Package
-        run: ./gradlew :vscode-extension:packageExtension --parallel --console=plain
+        run: ./gradlew :vscode-extension:checkPackagedExtension --parallel --console=plain
 
       # Kept whether or not the publish happens, so that `workflow_dispatch` is a way of getting a
       # `.vsix` to install by hand.

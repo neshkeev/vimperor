@@ -32,9 +32,6 @@
     }
   },
   "main": "./dist/vimperor.js",
-  "scripts": {
-    "vscode:prepublish": "cd .. && ./gradlew :vscode-extension:assembleExtension"
-  },
   "activationEvents": [
     "onStartupFinished"
   ],

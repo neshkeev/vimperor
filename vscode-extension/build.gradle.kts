@@ -409,7 +409,21 @@ val extensionVersion: String by lazy {
  */
 val vsceVersion: String = (findProperty("vsceVersion") as String?) ?: "3.9.2"
 
-/** `vsce`, run through `npx` so that nothing has to be installed into this repository. */
+/**
+ * `vsce`, run through `npx` so that nothing has to be installed into this repository.
+ *
+ * `dependsOn(assembleExtension)` is what builds `dist/` before `vsce` reads it, and it is the only
+ * thing that does. `package.json` used to carry a `vscode:prepublish` script - `cd .. && ./gradlew
+ * :vscode-extension:assembleExtension` - which `vsce` runs on its own account before packaging or
+ * publishing, so a Gradle build was starting a second Gradle build of the same project from inside
+ * an `Exec` task of the first. It showed up in the release log as two `BUILD SUCCESSFUL` lines in
+ * one step, the inner one nine seconds of the outer one's twenty-four, every task already
+ * `UP-TO-DATE` because the outer build had just done them.
+ *
+ * Redundant is the smaller half. Gradle inside Gradle shares a `GRADLE_USER_HOME`, a configuration
+ * cache and a set of file locks with the build that spawned it, which is a thing to have go wrong
+ * during a release rather than before one.
+ */
 fun Exec.vsce(vararg arguments: String) {
   dependsOn(assembleExtension)
   workingDir = layout.projectDirectory.asFile
