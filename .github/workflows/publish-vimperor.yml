@@ -99,7 +99,7 @@ jobs:
 
       # Kept whether or not the publish happens, so that `workflow_dispatch` is a way of getting a
       # `.vsix` to install by hand.
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: vimperor-vsix
           path: vscode-extension/build/*.vsix
