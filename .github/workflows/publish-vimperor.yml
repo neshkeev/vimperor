@@ -39,16 +39,16 @@ jobs:
       # A tag publishes. A manual run only packages, unless it was asked for both.
       publishing: ${{ startsWith(github.ref, 'refs/tags/') || inputs.publish }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Java 21 exactly. The build refuses anything else, and says so - this is the same
       # requirement CLAUDE.md states for a developer's machine.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "21"
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # `--parallel` on every Gradle call below. It is on here rather than in gradle.properties so
       # that a developer's machine is unchanged, and it is worth knowing what it does and does not
@@ -99,7 +99,7 @@ jobs:
 
       # Kept whether or not the publish happens, so that `workflow_dispatch` is a way of getting a
       # `.vsix` to install by hand.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: vimperor-vsix
           path: vscode-extension/build/*.vsix
@@ -115,7 +115,7 @@ jobs:
       # unnecessary altogether.
       - name: Sign in to Microsoft Entra ID
         if: env.publishing == 'true' && vars.AZURE_CLIENT_ID != ''
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -136,7 +136,7 @@ jobs:
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: vscode-extension/build/*.vsix
           body_path: vscode-extension/CHANGELOG.md
