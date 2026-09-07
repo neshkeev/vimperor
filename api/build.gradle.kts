@@ -25,19 +25,20 @@ kotlin {
   sourceSets {
     // Maven layout: src/main/kotlin is the common code, and a target with code of its own gets
     // a directory named for it inside src/main. Phase 3 / W6 left this module platform-neutral
-    // except for `org.jetbrains.annotations`, which src/main/{jvm,js} shim as expect/actual.
+    // except for `org.jetbrains.annotations`, which src/main/kotlin/{jvm,js} shim as expect/actual.
     val commonMain by getting {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
+      kotlin.exclude("jvm/**", "js/**")
     }
     val jvmMain by getting {
-      kotlin.setSrcDirs(listOf("src/main/jvm"))
+      kotlin.setSrcDirs(listOf("src/main/kotlin/jvm"))
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
         compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2")
       }
     }
     val jsMain by getting {
-      kotlin.setSrcDirs(listOf("src/main/js"))
+      kotlin.setSrcDirs(listOf("src/main/kotlin/js"))
     }
   }
 }

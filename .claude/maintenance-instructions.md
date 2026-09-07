@@ -15,7 +15,7 @@ find . -name "*.kt" -not -path "*/build/*" -not -path "*/.gradle/*" | shuf -n 1
 
 # Or pick a module deliberately:
 #   vim-engine/src/main/kotlin/com/maddyhome/idea/vim/   the engine, both hosts
-#   vim-engine/src/main/js/  |  vim-engine/src/main/jvm/          per-platform engine code
+#   vim-engine/src/main/kotlin/{js,jvm}/                per-platform engine code
 #   vscode-extension/src/main/kotlin/                         the VS Code extension
 ```
 
@@ -23,8 +23,8 @@ find . -name "*.kt" -not -path "*/build/*" -not -path "*/.gradle/*" | shuf -n 1
 trail into callers, implementations and tests when it leads somewhere.
 
 Note the layout: `vim-engine` is Kotlin Multiplatform but laid out the Maven way,
-so the engine lives in `src/main/kotlin` and each platform's own code sits beside
-it in `src/main/jvm` and `src/main/js`.
+so the engine lives in `src/main/kotlin`, and each platform's own code sits in a
+source root nested inside it - `src/main/kotlin/jvm` and `src/main/kotlin/js`.
 
 ## 2. What to check
 

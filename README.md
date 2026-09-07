@@ -122,11 +122,11 @@ Layout
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 | `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
-`vim-engine` is Kotlin Multiplatform laid out the Maven way: the engine lives in
-`src/main/kotlin`, with `src/main/jvm` and `src/main/js` for what each platform
-needs, and tests in `src/test/kotlin`, `src/test/jvm` and `src/test/js`. It still
-compiles for both targets and its tests run on both, which is how a JVM-ism in
-shared code gets caught.
+`vim-engine` is Kotlin Multiplatform laid out the Maven way: every Kotlin file is
+under `src/main/kotlin` or `src/test/kotlin`, and what only one platform needs sits
+in a `jvm/` or `js/` source root nested inside them. It still compiles for both
+targets and its tests run on both, which is how a JVM-ism in shared code gets
+caught.
 
 The IntelliJ plugin was deleted once the port no longer needed it. `src/test`
 stayed and is not compiled: it holds IdeaVim's 11,727 tests, and the VS Code host

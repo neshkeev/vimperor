@@ -41,7 +41,7 @@ class JvmOnlyTestsTest {
       .firstOrNull { Files.exists(it.resolve("settings.gradle.kts")) }
     assertTrue(root != null, "could not find the repository root")
 
-    val directory = root!!.resolve("vim-engine/src/test/jvm")
+    val directory = root!!.resolve("vim-engine/src/test/kotlin/jvm")
     val found = Files.walk(directory).use { paths ->
       paths.filter { it.extension == "kt" }
         .map { it.name.removeSuffix(".kt") }
@@ -57,19 +57,28 @@ class JvmOnlyTestsTest {
   /**
    * And the other side of it: src/test/kotlin - the common source set - is where a test belongs
    * unless one of those reasons applies, and it is the larger of the two. Without this the list
-   * above would be satisfied by moving everything into src/test/jvm and writing a reason for each.
+   * above would be satisfied by moving everything into src/test/kotlin/jvm and writing a reason
+   * for each.
    */
   @Test
   fun `test most of the engine's tests run on both targets`() {
     val root = generateSequence(Paths.get("").toAbsolutePath()) { it.parent }
       .firstOrNull { Files.exists(it.resolve("settings.gradle.kts")) }!!
 
-    fun count(source: String) = Files.walk(root.resolve("vim-engine/src/$source")).use { paths ->
+    // src/test/kotlin/{jvm,js} are source roots nested inside src/test/kotlin, so the common count
+    // has to step over them - a plain walk of the enclosing directory counts the whole suite.
+    val testRoot = root.resolve("vim-engine/src/test/kotlin")
+    fun count(vararg exclude: String) = Files.walk(testRoot).use { paths ->
+      paths.filter { it.extension == "kt" }
+        .filter { p -> exclude.none { testRoot.resolve(it).let { d -> p.startsWith(d) } } }
+        .count()
+    }
+    fun countIn(target: String) = Files.walk(testRoot.resolve(target)).use { paths ->
       paths.filter { it.extension == "kt" }.count()
     }
 
     assertTrue(
-      count("test/kotlin") > count("test/jvm"),
+      count("jvm", "js") > countIn("jvm"),
       "more of the engine's tests are JVM-only than run on both targets, which is backwards",
     )
   }

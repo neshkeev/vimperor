@@ -13,12 +13,11 @@ Two parts:
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 
 `vim-engine` is Kotlin Multiplatform but its layout is Maven's, not KMP's: the
-engine is in `src/main/kotlin` and its tests in `src/test/kotlin`. A target with
-code of its own gets a directory named for it *inside* those two - `src/main/jvm`,
-`src/main/js`, `src/test/jvm`, `src/test/js` - because a source set is a
-compilation unit and the two platforms hold an `actual` for the same seventeen
-`expect` declarations. They cannot share a directory whatever their packages say.
-`build.gradle.kts` points each source set at its directory with `setSrcDirs`.
+engine is in `src/main/kotlin` and its tests in `src/test/kotlin`. Everything
+Kotlin is under those two: a target with code of its own gets a source root
+*nested* inside them, at `kotlin/jvm` and `kotlin/js`. `build.gradle.kts` points
+each source set at its directory with `setSrcDirs`, and excludes the nested roots
+from the enclosing one. See **Layout**.
 
 It still has two *targets* - a change to `src/main/kotlin` has to compile for JS
 as well as the JVM, and its tests run on both - but it now has only one host.
@@ -715,29 +714,37 @@ is a decision about a copyright statement, not a refactor.
 ## Layout
 
 **The source layout is Maven's, not Kotlin Multiplatform's.** `vim-engine` is
-`src/main/kotlin` and `src/test/kotlin`, and a target with code of its own gets a
-directory named for the target *inside* those two:
+`src/main/kotlin` and `src/test/kotlin`, and every Kotlin file in the module is
+under one of those two. A target with code of its own gets a source root nested
+inside them, named for the target:
 
 | Source set   | Directory              |
 |--------------|------------------------|
-| `commonMain` | `src/main/kotlin`      |
-| `jvmMain`    | `src/main/jvm`         |
-| `jsMain`     | `src/main/js`          |
-| `commonTest` | `src/test/kotlin`      |
-| `jvmTest`    | `src/test/jvm`         |
-| `jsTest`     | `src/test/js`          |
+| `commonMain` | `src/main/kotlin` (excluding the two below) |
+| `jvmMain`    | `src/main/kotlin/jvm`  |
+| `jsMain`     | `src/main/kotlin/js`   |
+| `commonTest` | `src/test/kotlin` (excluding the two below) |
+| `jvmTest`    | `src/test/kotlin/jvm`  |
+| `jsTest`     | `src/test/kotlin/js`   |
 
 `vscode-extension` has one target, so it is just `src/main/kotlin` and
 `src/test/kotlin`; its `src/test/{fixtures,vscode-stub,host}` are data rather than
 Kotlin. `build.gradle.kts` points every source set at its directory with
 `setSrcDirs`, and the KMP defaults are gone.
 
-**The platform halves cannot be merged into one directory, whatever the packages
-say.** A source set is a compilation unit, and `src/main/jvm` and `src/main/js`
-hold an `actual` for the same seventeen `expect` declarations - `currentTimeMillis`,
-`formatVimFloat`, `engineCommandProvider` and the rest - so one directory would
-declare each of them twice in one compilation. Renaming the packages cannot help:
-Kotlin requires an `actual` to be in the *same* package as its `expect`.
+**Nesting a source root inside another works; merging the two platform halves
+into one does not.** The nesting needs only that the enclosing set excludes the
+inner ones, which is one `kotlin.exclude("jvm/**", "js/**")` per enclosing set,
+and getting it wrong is loud rather than silent - an `actual` does not compile in
+`commonMain`.
+
+Merging `kotlin/jvm` and `kotlin/js` into a single directory is a different
+proposition and is not possible. A source set is a compilation unit, and those two
+hold an `actual` for the same seventeen `expect` declarations -
+`currentTimeMillis`, `formatVimFloat`, `engineCommandProvider` and the rest - so
+one directory would declare each of them twice in one compilation. Renaming their
+packages cannot route around it: Kotlin requires an `actual` to be in the *same*
+package as its `expect`.
 
 ### The rename broke seven tests, and what it exposed is worth keeping
 

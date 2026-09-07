@@ -401,12 +401,20 @@ kotlin {
   }
 
   sourceSets {
-    // The layout is Maven's - src/main and src/test - rather than KMP's src/<sourceSet>/kotlin.
-    // A target that has code of its own gets a directory named for the target *inside* those two,
-    // because a source set is a compilation unit: jvm and js each hold an `actual` for the same
-    // seventeen `expect` declarations, so they cannot share a directory whatever the packages say.
+    // The layout is Maven's - src/main/kotlin and src/test/kotlin - rather than KMP's
+    // src/<sourceSet>/kotlin. A target that has code of its own gets a source root *nested* in
+    // those, at kotlin/jvm and kotlin/js, so that everything Kotlin sits under src/*/kotlin.
+    //
+    // Two rules keep that working. The nested roots have to be excluded from the enclosing one,
+    // or the common compilation would swallow them - that is what `exclude` below is for, and
+    // getting it wrong is loud rather than silent, because an `actual` in commonMain does not
+    // compile. And jvm and js have to stay *separate* from each other: a source set is a
+    // compilation unit, and the two hold an `actual` for the same seventeen `expect`
+    // declarations, so one directory would declare each of them twice. Renaming their packages
+    // cannot help - Kotlin requires an `actual` to be in the same package as its `expect`.
     val commonMain by getting {
       kotlin.setSrcDirs(listOf("src/main/kotlin"))
+      kotlin.exclude("jvm/**", "js/**")
       // Phase 1 task 5. Only files with no JVM-API dependency live here; the
       // move-list is docs/superpowers/plans/2026-08-16-phase-1-task-4-move-list.tsv.
       // The task provider, not the directory - see the note on jsMain below for why.
@@ -425,7 +433,7 @@ kotlin {
       }
     }
     val jvmMain by getting {
-      kotlin.setSrcDirs(listOf("src/main/jvm"))
+      kotlin.setSrcDirs(listOf("src/main/kotlin/jvm"))
       resources.setSrcDirs(listOf("src/main/resources"))
       dependencies {
         compileOnly("org.jetbrains:annotations:26.1.0")
@@ -437,6 +445,7 @@ kotlin {
     }
     val commonTest by getting {
       kotlin.setSrcDirs(listOf("src/test/kotlin"))
+      kotlin.exclude("jvm/**", "js/**")
       kotlin.srcDir(generateVimscriptCorpus)
       // Tests of platform-neutral behaviour, run on *every* target. The differential tests that
       // compare against java.lang.* stay in jvmTest - they need the JDK to compare against - so
@@ -446,7 +455,7 @@ kotlin {
       }
     }
     val jsMain by getting {
-      kotlin.setSrcDirs(listOf("src/main/js"))
+      kotlin.setSrcDirs(listOf("src/main/kotlin/js"))
       // The task provider, not the directory: that is what makes Gradle run the generator before
       // compiling. Wiring the bare directory compiles fine until someone runs `clean`, which is
       // exactly how this was found.
@@ -454,13 +463,13 @@ kotlin {
       kotlin.srcDir(generateJsCommandRegistry)
     }
     val jsTest by getting {
-      kotlin.setSrcDirs(listOf("src/test/js"))
+      kotlin.setSrcDirs(listOf("src/test/kotlin/js"))
       dependencies {
         implementation(kotlin("test"))
       }
     }
     val jvmTest by getting {
-      kotlin.setSrcDirs(listOf("src/test/jvm"))
+      kotlin.setSrcDirs(listOf("src/test/kotlin/jvm"))
       resources.setSrcDirs(listOf("src/test/resources"))
       dependencies {
         implementation("org.junit.jupiter:junit-jupiter-api:6.0.0")
@@ -550,4 +559,5 @@ tasks.register("test") {
   // reachable for them and always stripped from the library. Only building the library finds it.
   dependsOn(checkJsLibraryIsNotEmpty)
 }
+
 

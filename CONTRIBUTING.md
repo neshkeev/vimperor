@@ -162,9 +162,9 @@ this fork possible.
 | `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
 | `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
 
-`vim-engine` is Kotlin Multiplatform, laid out the Maven way rather than KMP's: the engine lives
-in `src/main/kotlin`, the platform halves in `src/main/jvm` and `src/main/js`, and the tests in
-`src/test/{kotlin,jvm,js}`. It has one host and still two **targets**: a change to
+`vim-engine` is Kotlin Multiplatform, laid out the Maven way rather than KMP's: every Kotlin file
+is under `src/main/kotlin` or `src/test/kotlin`, with `jvm/` and `js/` source roots nested inside
+them for what only one platform needs. It has one host and still two **targets**: a change to
 `src/main/kotlin` has to compile for JS as well as the JVM, and its tests run on both. That is what catches a `java.lang`
 call in shared code, and such calls usually need no import, so nothing else would.
 
