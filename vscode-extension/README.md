@@ -90,6 +90,13 @@ More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrollof
 
 Some things are genuinely absent rather than unfinished, and it is worth knowing which:
 
+- **`:set nowrap` in an editor you have pressed `Alt+Z` in.** VS Code lets a single editor carry a
+  word wrap of its own, on top of the `editor.wordWrap` setting — `Alt+Z` sets one, and so does
+  *View: Toggle Word Wrap*. It wins, and no extension can read it or clear it. `:set wrap` and
+  `:set nowrap` write the setting correctly and that editor goes on ignoring them; pressing `Alt+Z`
+  again, or closing and reopening the file, is the way out. It is the only option that can be set
+  correctly and still appear to do nothing.
+
 - **Vim plugins.** There is no `pack/` directory, and 2 of IdeaVim's 24 bundled extensions are not
   available — `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like. The
   other twenty-two work, and they are enabled the way you would in IdeaVim — with `set <name>`, or

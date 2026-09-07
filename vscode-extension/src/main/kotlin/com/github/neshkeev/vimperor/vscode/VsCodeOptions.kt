@@ -604,16 +604,18 @@ internal fun watchLineNumbers() {
  * setting is written, and the only way out is to press `Alt+Z` again.
  *
  * That is not a gap waiting to be filled; it is the same missing API that made the toggle
- * unworkable, seen from the other side. Reported on request rather than silently, because a user
- * who meets it has no way of telling it apart from a bug.
+ * unworkable, seen from the other side. This used to say so at runtime, on every explicit
+ * `:set wrap`, behind the `vimperor.trace` flag - which made the ordinary case, where the write
+ * simply works, noisy for anyone who had that flag on for the keystroke trace it is documented as.
+ * The caveat is in the extension's README instead, under "What does not".
  */
 internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   val vsCode = editor as? VsCodeEditor ?: return
   val wanted = injector.optionGroup
     .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
     .asBoolean()
-  val raw = rawWordWrap(vsCode)
-  val configured = raw != null && raw != VsCodeSettings.WORD_WRAP_OFF
+  val setting = wordWrapSetting(vsCode)
+  val configured = setting != null && setting != VsCodeSettings.WORD_WRAP_OFF
 
   // An explicit `:set wrap` is written whatever the read says and whatever was written before.
   //
@@ -623,7 +625,6 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   // through this option's history - and the remembered write can be of a value the setting no
   // longer holds. Neither is a reason to do nothing when someone typed the command.
   if (asked) {
-    traceWrap(editor, "wrap: ${VsCodeSettings.WORD_WRAP_SETTING} says ${raw ?: "unset"}, writing ${named(wanted)}")
     writeWordWrap(vsCode, wanted, force = true)
     return
   }
@@ -631,40 +632,6 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   // file on disk. Only when Vim's answer and the editor's have actually parted company.
   if (wanted == configured) return
   writeWordWrap(vsCode, wanted, force = false)
-}
-
-/** The setting as VS Code answers it, unmapped, so a trace line can show what was actually read. */
-private fun rawWordWrap(editor: VsCodeEditor): String? = wordWrapSetting(editor)
-
-private fun named(wrapping: Boolean) = if (wrapping) "wrap" else "nowrap"
-
-/**
- * What to say when the setting was written and the screen may not follow.
- *
- * Confirmed from a real window: the write lands, the read comes back changed, and the editor keeps
- * wrapping - because VS Code applies a per-editor wrap on top of the setting and it survives the
- * setting changing. A message that reports success and leaves the user looking at unchanged text is
- * worse than no message.
- */
-private const val OVERRIDE =
-  "If the lines did not change, this editor has a wrap of its own on top of the setting - " +
-    "press Alt+Z, or close and reopen the file."
-
-/**
- * What `'wrap'` decided, when `vimperor.trace` is on.
- *
- * This option is the one thing in the extension whose state lives entirely outside it - VS Code
- * will not report whether an editor is wrapping, so every version of this has had to reason about a
- * value it cannot see, and two of them reasoned wrongly in a way no test could catch. A line saying
- * what was read and what was written is the difference between a bug report and a guess.
- */
-private fun traceWrap(editor: VimEditor, message: String) {
-  val tracing = try {
-    workspace.getConfiguration("vimperor").get("trace") == true
-  } catch (e: Throwable) {
-    false
-  }
-  if (tracing) injector.messages.showMessage(editor, message)
 }
 
 /**
@@ -703,12 +670,10 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
       .update(VsCodeSettings.WORD_WRAP, value, target, /* overrideInLanguage = */ true)
       .then(
-        {
-          val wrote = "wrap: wrote ${VsCodeSettings.WORD_WRAP}=$value for this language to target $target"
-          // The hint only where it can be acted on: a write the user asked for is the one whose
-          // result they are looking at. The keystroke path writes when nothing was typed.
-          traceWrap(editor, if (force) "$wrote. $OVERRIDE" else wrote)
-        },
+        // Nothing to say when it works. This used to report what it wrote, and add a hint about the
+        // per-editor wrap below, on every explicit `:set wrap` - which is noise on the ordinary run
+        // where the write simply takes effect. The caveat is in the README instead.
+        { },
         // Reported rather than swallowed. A settings write can be refused - a workspace target with
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
         // the failure this option has already had twice.
