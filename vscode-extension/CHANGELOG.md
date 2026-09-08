@@ -4,6 +4,9 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+
+## [0.0.3] - 2026-09-09
+
 ### Added
 
 - `%` on the command line is the current file, and takes Vim's `:p`, `:h`, `:t`, `:r` and `:e`

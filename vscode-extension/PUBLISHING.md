@@ -136,7 +136,7 @@ be this whole section.
 
 ```bash
 ./gradlew :vscode-extension:packageExtension
-code --install-extension vscode-extension/build/vimperor-0.0.1.vsix
+code --install-extension vscode-extension/build/vimperor-0.0.3.vsix
 ```
 
 This is the only check that runs the extension the way a *user* gets it rather than the way a
@@ -162,8 +162,8 @@ switched off - and it is here because a release should not depend on which machi
 from.
 
 ```bash
-git tag vimperor-v0.0.1
-git push origin vimperor-v0.0.1
+git tag vimperor-v0.0.3
+git push origin vimperor-v0.0.3
 ```
 
 The tag's version and `package.json`'s must agree; the workflow checks and stops if they do not,
