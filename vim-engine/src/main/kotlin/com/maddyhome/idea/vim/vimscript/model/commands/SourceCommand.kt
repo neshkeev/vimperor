@@ -33,7 +33,7 @@ data class SourceCommand(val range: Range, val modifier: CommandModifier, val ar
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    val path = injector.pathExpansion.expandPath(argument.trim())
+    val path = injector.pathExpansion.expandPath(argument.trim(), editor)
     injector.vimscriptExecutor.executeFile(
       path,
       editor,

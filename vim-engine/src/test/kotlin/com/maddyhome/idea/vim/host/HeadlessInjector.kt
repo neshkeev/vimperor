@@ -482,8 +482,15 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * - `:diffsplit`, `:source`, `:e` - testable without inventing an environment for them.
    */
   override val pathExpansion: VimPathExpansion = object : VimPathExpansion {
-    override fun expandPath(path: String): String = path
+    override fun expandPath(path: String, editor: VimEditor?): String = path
     override fun expandForOption(value: String): String = value
+
+    /**
+     * `%` is left alone too, for the same reason and one more: a headless buffer has no name, so
+     * there is nothing for `%` to become. Returning the text rather than null keeps that distinct
+     * from Vim's E499, which is what a *named* buffer with an empty name would raise.
+     */
+    override fun expandCmdlineSpecials(text: String, editor: VimEditor): String? = text
   }
   override val fileSystem: VimFileSystem by lazy { HeadlessFileSystem() }
 

@@ -44,7 +44,7 @@ data class CmdFilterCommand(val range: Range, val modifier: CommandModifier, val
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     logger.debug("execute")
-    val command = buildString {
+    val withLastCommand = buildString {
       var inBackslash = false
       argument.forEach { c ->
         when {
@@ -57,25 +57,28 @@ data class CmdFilterCommand(val range: Range, val modifier: CommandModifier, val
             append(last)
           }
 
-          !inBackslash && c == '%' -> {
-            val path = editor.getVirtualFile()?.path
-            if (path == null) {
-              // A slightly different message from Vim's, because this does not support alternate
-              // files or filename modifiers:
-              // (Vim) E499: Empty file name for '%' or '#', only works with ":p:h"
-              // (here) E499: Empty file name for '%'
-              injector.messages.showErrorMessage(editor, injector.messages.message("E499"))
-              return ExecutionResult.Error
-            }
-            append(path)
-          }
-
           else -> append(c)
         }
 
         inBackslash = c == '\\'
       }
     }
+
+    // `!` first, then `%`, so a `%` recalled from the previous command is expanded too. Only `%`:
+    // Vim leaves `$VAR` and `~` in a shell command to the shell itself.
+    //
+    // This used to append `editor.getVirtualFile()?.path` inline, which is not a path - it is the
+    // editor's identity, spelled `scheme://path` by this host, so `:!wc %` handed the shell
+    // `file:///work/notes.md`. Going through the path expansion gets the buffer name instead, and
+    // the `:p`, `:h`, `:t`, `:r` and `:e` modifiers with it.
+    val command = injector.pathExpansion.expandCmdlineSpecials(withLastCommand, editor)
+      ?: run {
+        // A slightly different message from Vim's, which also names `#`:
+        // (Vim) E499: Empty file name for '%' or '#', only works with ":p:h"
+        // (here) E499: Empty file name for '%'
+        injector.messages.showErrorMessage(editor, injector.messages.message("E499"))
+        return ExecutionResult.Error
+      }
 
     if (command.isEmpty()) {
       return ExecutionResult.Error
