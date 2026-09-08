@@ -10,6 +10,8 @@ package com.maddyhome.idea.vim.api
 
 import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.helper.CharacterHelper
+import com.maddyhome.idea.vim.helper.codePointAt
+import com.maddyhome.idea.vim.helper.toChars
 import com.maddyhome.idea.vim.helper.CharacterHelper.charType
 import com.maddyhome.idea.vim.helper.endOffsetInclusive
 import com.maddyhome.idea.vim.state.mode.SelectionType.CHARACTER_WISE
@@ -17,10 +19,15 @@ import com.maddyhome.idea.vim.state.mode.inVisualMode
 import com.maddyhome.idea.vim.state.mode.selectionType
 abstract class VimFileBase : VimFile {
   override fun displayHexInfo(editor: VimEditor) {
+    val text = editor.text()
     val offset = editor.currentCaret().offset
-    val ch = editor.text()[offset]
 
-    injector.messages.showMessage(editor, ch.code.toString(16))
+    // Vim's cursor never sits on the line break: at the end of a line it sits on the line's terminating NUL, and
+    // there is nothing under it. Vim answers "NUL". That also covers an empty file and an empty last line, where
+    // the caret offset is the end of the text and indexing into it would throw.
+    val message = if (offset >= text.length || text[offset] == '\n') "NUL" else formatUtf8Bytes(text, offset)
+
+    injector.messages.showMessage(editor, message)
   }
 
   override fun displayLocationInfo(editor: VimEditor) {
@@ -91,6 +98,25 @@ abstract class VimFileBase : VimFile {
     injector.messages.showMessage(editor, msg)
   }
 }
+
+/**
+ * The UTF-8 encoding of the character at [offset], as space separated two-digit hex.
+ *
+ * This is what `g8` reports - the *bytes* of the character rather than its code point, which is why a plain
+ * `text[offset].code.toString(16)` was wrong for anything outside ASCII. A character outside the Basic Multilingual
+ * Plane is stored as a surrogate pair, so the whole code point is read rather than one UTF-16 unit.
+ *
+ * `codePointAt` and `toChars` are the engine's own, in `helper/Characters.kt`: `Character` is `java.lang` and
+ * compiles for the JVM while breaking the JS target, and needs no import to give itself away. `encodeToByteArray`
+ * is UTF-8 by definition and is the common-code spelling of `toByteArray(Charsets.UTF_8)`.
+ *
+ * Vim also appends the bytes of any trailing composing characters, separated by `+`. This does not.
+ */
+private fun formatUtf8Bytes(text: CharSequence, offset: Int): String =
+  toChars(codePointAt(text, offset))
+    .concatToString()
+    .encodeToByteArray()
+    .joinToString(" ") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }
 
 /**
  * Count the number of WORDs that intersect the given range, or exist in the whole file
