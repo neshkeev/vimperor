@@ -4,6 +4,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.1] - 2026-09-08
+
+Published by hand rather than by the release workflow, so there is no `vimperor-v0.0.1` tag and
+there must not be one: the workflow publishes on a `vimperor-v*` tag, and the Marketplace refuses
+a version it already has. Every release after this one goes through the tag.
+
 First release. Vim for VS Code over IdeaVim's `vim-engine`, compiled to JavaScript.
 
 - Normal, insert, visual, visual block, select, replace and operator-pending modes, with counts,

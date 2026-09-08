@@ -52,6 +52,35 @@ What has to be true is that the identity is a member of the `neshkeev` publisher
 Contributor role. That is the same members list as above, and it is the only step Microsoft's side
 of this needs.
 
+**Two things go wrong on the way in, and neither says what it is.** Both were met publishing
+0.0.1, and the second wasted the most time because it looks like an account problem and is not.
+
+*The picker crashes.* On an account with no subscriptions, `az login` can die in its interactive
+tenant picker:
+
+```
+AttributeError: 'NoneType' object has no attribute 'get'
+  .../azure/cli/command_modules/profile/_subscription_selector.py, line 98
+```
+
+That is [azure-cli#31992](https://github.com/Azure/azure-cli/issues/31992) - the picker has no
+active row to render - and `az config set core.login_experience_v2=off` turns the picker off.
+
+*The browser silently does not sign you in.* Past the crash, `az login` printed `[]` and
+`az account show` then said there was no account; `portal.azure.com` answered every click with
+`AADSTS50058: A silent sign-in request was sent but no user is signed in`; and `dev.azure.com`
+bounced to its marketing page.
+
+That reads exactly like an identity with no Entra tenant, and it was not. AADSTS50058 says the
+cause in its own text - *the cookies used to represent the user's session were not sent* - and the
+portal, `dev.azure.com` and `az login`'s browser round trip all depend on silent auth through
+hidden iframes, which needs third-party cookies. Safari blocks those by default under **Prevent
+cross-site tracking**, as do Firefox's Total Cookie Protection, Brave and most privacy extensions.
+Signing in from Chrome and going straight to <https://aex.dev.azure.com/me> worked at once.
+
+So before concluding anything about the account: try another browser, and use
+`az login --use-device-code`, which has no redirect and no iframe to block.
+
 A sign-in it cannot use fails like this, before anything is uploaded:
 
 ```
