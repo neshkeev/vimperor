@@ -7,7 +7,12 @@ Vimperor
 
 [![CI](https://github.com/neshkeev/vimperor/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/neshkeev/vimperor/actions/workflows/ci.yml)
 [![Dependency Check](https://github.com/neshkeev/vimperor/actions/workflows/dependency-check.yml/badge.svg?branch=master)](https://github.com/neshkeev/vimperor/actions/workflows/dependency-check.yml)
-[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/neshkeev.vimperor?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor)
+<!-- Not shields.io: it retired the whole visual-studio-marketplace badge family, because Microsoft
+     publishes no documented API for extension metadata and the undocumented endpoints rate-limited
+     at shields' scale. Its URLs now render the words "retired badge". The static
+     img.shields.io/badge/... form people moved to has to be hand-edited on every release, which is
+     a version number that goes stale silently - this one is read from the Marketplace. -->
+[![Marketplace](https://vsmarketplacebadges.dev/version-short/neshkeev.vimperor.svg)](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor)
 
 A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md). This
 repository built the IntelliJ plugin too, until the port no longer needed it; what is left is
@@ -60,10 +65,11 @@ that file is Vim's own.
 Status
 ------
 
-**Not released.** Version 0.0.1 and not on the marketplace yet, though it packages
-and publishes: `./gradlew :vscode-extension:packageExtension` builds the `.vsix`, and
-[`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) has the rest. It
-runs in a real VS Code window, and has since the port's first keystroke landed.
+**Released.** Install it from the marketplace —
+[Vimperor](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor), or
+`ext install neshkeev.vimperor` in the Quick Open box. To build one instead,
+`./gradlew :vscode-extension:packageExtension` writes the `.vsix`, and
+[`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) is how releases are cut.
 
 What works today: motions, operators and text objects; counts and registers; the
 `:` and `/` prompts with history, so `:s`, ranges and search are all reachable;
