@@ -14,16 +14,19 @@ import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Command
-import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
-import com.maddyhome.idea.vim.helper.enumSetOf
 
+/**
+ * `gx`: hand the URL under the caret to an external program.
+ *
+ * It does not move the caret, so it must not touch the jump list or the `'` mark. Vim does not list `gx` under
+ * `:help jump-motions`, and recording a jump at a position the caret never left would silently reset a `<C-O>` /
+ * `<C-I>` traversal in progress.
+ */
 @CommandOrMotion(keys = ["gx"], modes = [Mode.NORMAL])
 class GotoUrlAction : VimActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
-
-  override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 
   override fun execute(
     editor: VimEditor,
@@ -33,7 +36,6 @@ class GotoUrlAction : VimActionHandler.ForEachCaret() {
     operatorArguments: OperatorArguments,
   ): Boolean {
     val url = findUrl(editor, caret) ?: return false
-    injector.jumpService.saveJumpLocation(editor)
     injector.externalOpener.open(url, browsexViewer())
     return true
   }
