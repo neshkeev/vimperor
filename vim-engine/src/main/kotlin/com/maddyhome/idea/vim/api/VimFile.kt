@@ -42,6 +42,27 @@ interface VimFile {
   fun getBuffers(context: ExecutionContext): List<VimBuffer>
 
   /**
+   * The current buffer's name, as Vim's `%` register and `%` on the command line report it.
+   *
+   * Vim's is the name *as typed*, which is a path relative to the current directory rather than a bare file name.
+   * Neither host has a current directory, so each answers with the nearest thing it does have - IdeaVim the content
+   * root, this fork the workspace folder - which is also what `<C-G>` reports for the same file.
+   *
+   * Null when the buffer has no name at all. `%` then does not exist, rather than existing and being empty.
+   */
+  fun bufferName(editor: VimEditor): String? = null
+
+  /** The same buffer's full path on disk, for `%:p`. Null when it is not a file. */
+  fun fullPathBufferName(editor: VimEditor): String? = null
+
+  /**
+   * The alternate buffer's name, as Vim's `#` register reports it: the buffer that was current before this one.
+   *
+   * Null when nothing has been left yet, which is the whole of a session that has opened one file.
+   */
+  fun alternateBufferName(editor: VimEditor): String? = null
+
+  /**
    * Selects the previous (alternate) tab/buffer.
    * @return true on success, false if there is no previous tab (caller should indicate error)
    */

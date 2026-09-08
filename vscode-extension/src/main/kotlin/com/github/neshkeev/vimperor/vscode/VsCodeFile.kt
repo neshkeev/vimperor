@@ -44,7 +44,48 @@ internal class VsCodeFile(
   private val files: NodeFileSystem = NodeFileSystem(),
   /** The folder open in this window, if there is one. Injectable so tests are not run from one. */
   private val workspaceRoot: () -> String? = { workspace.workspaceFolders?.firstOrNull()?.uri?.fsPath },
+  /**
+   * The editor that was current before this one, for `#`.
+   *
+   * VS Code does not keep this. `selectPreviousTab` hands the job to `workbench.action.
+   * openPreviousRecentlyUsedEditorInGroup` and is never told which editor that was, so the host
+   * remembers it in [VimHost.activeEditorChanged] - the same place `BufLeave` gets its editor from.
+   */
+  private val alternateEditor: () -> TextEditor? = { null },
 ) : VimFileBase() {
+
+  /**
+   * `%`: the buffer's name as Vim reports it.
+   *
+   * Vim's is the name *as typed*, relative to the current directory. There is no current directory
+   * here, so the workspace folder stands in - the same choice IdeaVim makes with its content root,
+   * and the reason `:e %:h/other.kt` lands where a user expects. A file outside the workspace keeps
+   * its absolute path, which is what Vim shows for one too.
+   *
+   * An untitled buffer has no name. Vim's `%` is then empty and the register does not exist, so
+   * this answers null rather than "Untitled-1" - a name VS Code invents for the tab, not a file.
+   */
+  override fun bufferName(editor: VimEditor): String? = nameOf(editor) { path, root ->
+    if (root != null && path.startsWith("$root/")) path.removePrefix("$root/") else path
+  }
+
+  /** `%:p`: the same buffer's full path on disk. */
+  override fun fullPathBufferName(editor: VimEditor): String? = nameOf(editor) { path, _ -> path }
+
+  /** `#`: the buffer left to get here. Null for the whole of a session that has opened one file. */
+  override fun alternateBufferName(editor: VimEditor): String? {
+    val document = alternateEditor()?.document ?: return null
+    if (document.isUntitled) return null
+    val root = workspaceRoot()
+    val path = document.fileName
+    return if (root != null && path.startsWith("$root/")) path.removePrefix("$root/") else path
+  }
+
+  private inline fun nameOf(editor: VimEditor, shape: (String, String?) -> String): String? {
+    val document = (editor as? VsCodeEditor)?.nativeEditor?.document ?: return null
+    if (document.isUntitled) return null
+    return shape(document.fileName, workspaceRoot())
+  }
 
   /**
    * Vim's `<C-G>` line, built here because there is nobody to ask for it.

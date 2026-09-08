@@ -26,9 +26,11 @@ import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.helper.EngineStringHelper
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.options.OptionConstants
+import com.maddyhome.idea.vim.register.RegisterConstants.ALTERNATE_BUFFER_REGISTER
 import com.maddyhome.idea.vim.register.RegisterConstants.BLACK_HOLE_REGISTER
 import com.maddyhome.idea.vim.register.RegisterConstants.CLIPBOARD_REGISTER
 import com.maddyhome.idea.vim.register.RegisterConstants.CLIPBOARD_REGISTERS
+import com.maddyhome.idea.vim.register.RegisterConstants.CURRENT_FILENAME_REGISTER
 import com.maddyhome.idea.vim.register.RegisterConstants.LAST_SEARCH_REGISTER
 import com.maddyhome.idea.vim.register.RegisterConstants.PLAYBACK_REGISTERS
 import com.maddyhome.idea.vim.register.RegisterConstants.PRIMARY_REGISTER
@@ -548,6 +550,12 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
     if (myR.isUpperCase()) {
       myR = myR.lowercaseChar()
     }
+    // `%` and `#` are not stored, they are asked for. Nothing ever writes them - they are read-only in Vim - and
+    // their value is whatever the host says the buffer is called right now. Note this is before the clipboard
+    // branch and uses `r` rather than `myR`, because neither has a case to fold.
+    if (r == CURRENT_FILENAME_REGISTER) return currentFileNameRegister(editor)
+    if (r == ALTERNATE_BUFFER_REGISTER) return alternateBufferRegister(editor)
+
     return if (CLIPBOARD_REGISTERS.indexOf(myR) >= 0) refreshClipboardRegister(
       editor,
       context,
@@ -561,7 +569,12 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
       .filterNot { it == CLIPBOARD_REGISTER && !isPrimaryRegisterSupported() } // for some reason non-X systems use PRIMARY_REGISTER as a clipboard storage
       .mapNotNull { refreshClipboardRegister(editor, context, it) }
 
-    return (filteredRegisters + clipboardRegisters).sortedWith(Register.KeySorter)
+    // `:registers` lists `%` and `#` in Vim, so a register that is synthesised on read has to be synthesised here
+    // too or it exists for a put and not for the listing.
+    return (
+      filteredRegisters + clipboardRegisters +
+        listOfNotNull(currentFileNameRegister(editor), alternateBufferRegister(editor))
+      ).sortedWith(Register.KeySorter)
   }
 
   override fun saveRegister(editor: VimEditor, context: ExecutionContext, r: Char, register: Register) {
@@ -650,4 +663,19 @@ abstract class VimRegisterGroupBase : VimRegisterGroup {
   override fun isSystemClipboard(register: Char): Boolean {
     return register == '+' || register == '*'
   }
+}
+
+private fun currentFileNameRegister(editor: VimEditor): Register? = nameRegister(
+  CURRENT_FILENAME_REGISTER,
+  injector.file.bufferName(editor),
+)
+
+private fun alternateBufferRegister(editor: VimEditor): Register? = nameRegister(
+  ALTERNATE_BUFFER_REGISTER,
+  injector.file.alternateBufferName(editor),
+)
+
+private fun nameRegister(name: Char, fileName: String?): Register? {
+  if (fileName == null) return null
+  return Register(name, injector.clipboardManager.dumbCopiedText(fileName), SelectionType.CHARACTER_WISE)
 }

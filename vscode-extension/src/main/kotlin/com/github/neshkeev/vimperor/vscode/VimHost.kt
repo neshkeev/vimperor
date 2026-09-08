@@ -70,7 +70,7 @@ class VimHost(
   private val vimInjector =
     VsCodeInjector(
       sink, this, commandLineDisplay, highlighter, clipboard, outputPanel, processes, opener, matchHighlighter,
-      signDisplay, symbols, openVirtualBuffer,
+      signDisplay, symbols, openVirtualBuffer, { alternateTextEditor() },
     )
 
   /**
@@ -265,11 +265,28 @@ class VimHost(
   /** The editor `BufLeave` will name, remembered because VS Code has stopped calling it active. */
   private var lastActiveEditor: TextEditor? = null
 
+  /**
+   * Vim's alternate file, `#`: the buffer that was current before this one.
+   *
+   * The same fact `BufLeave` is fired from, kept one step longer. VS Code will not answer it -
+   * `workbench.action.openPreviousRecentlyUsedEditorInGroup` goes there without saying where - so a
+   * host that wants `"#p` or `:e #` has to keep the note itself.
+   */
+  private var alternateEditor: TextEditor? = null
+
+  internal fun alternateTextEditor(): TextEditor? = alternateEditor
+
   /** VS Code changed the active editor: `BufLeave` for the old one, `BufEnter` for the new. */
   fun activeEditorChanged(editor: TextEditor?) {
     val left = lastActiveEditor
     lastActiveEditor = editor
-    if (left != null && left !== editor) fire(AutoCmdEvent.BufLeave, editorFor(left))
+    if (left != null && left !== editor) {
+      // Only on a real switch. VS Code reports the active editor changing to null and back when
+      // focus goes to a panel and returns, and treating that as leaving a buffer would make `#`
+      // the file you are already in.
+      alternateEditor = left
+      fire(AutoCmdEvent.BufLeave, editorFor(left))
+    }
     if (editor != null) {
       // The file the user is now looking at is the one whose symbols will be asked for, and asking
       // now means the answer is there before the first key. A file opened and never edited is

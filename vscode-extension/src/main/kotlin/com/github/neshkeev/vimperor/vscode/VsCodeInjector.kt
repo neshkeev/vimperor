@@ -109,6 +109,11 @@ open class VsCodeInjector(
    * is about to press a key in.
    */
   private val openVirtualBuffer: (String, (TextDocument) -> Unit) -> Unit = ::openUntitledDocument,
+  /**
+   * The editor that was current before this one, for Vim's alternate file `#`. VS Code does not
+   * keep it, so [VimHost] does; null outside a window, where nothing has been left.
+   */
+  private val alternateEditor: () -> TextEditor? = { null },
 ) : VsCodeInjectorBase() {
 
   /** The editors this host knows about. VS Code's own list is of `TextEditor`, not of these. */
@@ -318,7 +323,7 @@ open class VsCodeInjector(
   override val tabService: TabService by lazy { VsCodeTabs(hostCommands) }
 
   /** `:w`, `:q`, `<C-G>` - see [VsCodeFile], and the two of these that need more API than exists. */
-  override val file: VimFile by lazy { VsCodeFile(hostCommands) }
+  override val file: VimFile by lazy { VsCodeFile(hostCommands, alternateEditor = alternateEditor) }
 
   /** `<C-W>` - see [VsCodeWindowGroup], and the ways a VS Code editor group is not a Vim window. */
   override val window: VimWindowGroup by lazy { VsCodeWindowGroup(hostCommands) }

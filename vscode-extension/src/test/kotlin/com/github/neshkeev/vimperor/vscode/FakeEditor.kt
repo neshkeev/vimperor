@@ -20,7 +20,12 @@ package com.github.neshkeev.vimperor.vscode
  * right but *how* it got there - a whole-document rewrite and a one-character replacement both
  * produce the same text.
  */
-class FakeDocument(text: String, path: String = "/test/buffer.txt") : TextDocument {
+class FakeDocument(
+  text: String,
+  path: String = "/test/buffer.txt",
+  /** An unnamed buffer, as `:enew` or `q:` opens. Vim's `%` is empty for one. */
+  override val isUntitled: Boolean = false,
+) : TextDocument {
   var content: String = text
     internal set
 
@@ -34,7 +39,6 @@ class FakeDocument(text: String, path: String = "/test/buffer.txt") : TextDocume
    */
   override val uri: Uri = FakeUri("file", path)
   override val fileName: String get() = uri.fsPath
-  override val isUntitled: Boolean = false
 
   /** VS Code's language mode, which `'filetype'` and `'syntax'` write through `languages`. */
   override var languageId: String = "plaintext"
@@ -95,8 +99,8 @@ data class RecordedReveal(val start: Int, val end: Int, val type: Int)
 /** A single replacement, in the offsets it was made against, so a test can see how wide it was. */
 data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
-class FakeEditor(text: String, path: String = "/test/buffer.txt") : TextEditor {
-  override val document: FakeDocument = FakeDocument(text, path)
+class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Boolean = false) : TextEditor {
+  override val document: FakeDocument = FakeDocument(text, path, untitled)
   override var selections: Array<Selection> = arrayOf(Selection(Position(0, 0), Position(0, 0)))
 
   /**
