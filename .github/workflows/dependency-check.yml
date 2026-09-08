@@ -45,6 +45,8 @@ on:
     paths:
       - "**/build.gradle.kts"
       - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/dependency-check.yml"
   workflow_dispatch:
 
 # Read-only. This job resolves dependencies and writes a report; it has no business with anything

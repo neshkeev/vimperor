@@ -11,10 +11,47 @@
 
 name: CI
 
+# A deny-list, not an allow-list, and that is the whole design decision here. An allow-list of
+# source paths fails *open*: a new module or directory nobody remembered to add silently stops
+# being tested, and the badge stays green. A deny-list fails safe - anything not named below still
+# runs the suite.
+#
+# Three Markdown files are deliberately absent from it, because they are not documentation as far
+# as this build is concerned:
+#
+#   vscode-extension/ThirdPartyLicenses.md   TutorTest reads it - the tutor is Vim's own text under
+#                                            Vim's licence, and the test checks the notice is there
+#   vscode-extension/README.md               packaged into the .vsix; the Marketplace renders it
+#   vscode-extension/CHANGELOG.md            packaged into the .vsix, and the release body
+#
+# `**/*.md` would have swallowed all three. So would "ignore the docs".
+#
+# The `&docs` anchor and `*docs` alias below are YAML, and GitHub Actions has only supported them
+# since September 2025 - which is worth saying because they read like a mistake if you last used
+# this file before then. The point of the alias is that the two lists cannot drift: adding a path
+# to the push trigger and forgetting the pull_request one is the obvious way to get this wrong.
 on:
   push:
     branches: [master]
+    paths-ignore: &docs
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "CLAUDE.md"
+      - "AUTHORS.md"
+      - "ThirdPartyLicenses.md"
+      - "LICENSE.txt"
+      - ".gitignore"
+      - "doc/**"
+      - "docs/**"
+      - "findings/**"
+      - "assets/**"
+      - ".claude/**"
+      # IdeaVim's "what's new" site generator. Nothing in the Gradle build references it.
+      - "scripts-ts/**"
+      - "vscode-extension/DEVELOPMENT.md"
+      - "vscode-extension/PUBLISHING.md"
   pull_request:
+    paths-ignore: *docs
   workflow_dispatch:
 
 permissions:
