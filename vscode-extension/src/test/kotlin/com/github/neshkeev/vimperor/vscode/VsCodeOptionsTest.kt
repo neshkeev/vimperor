@@ -978,7 +978,8 @@ class VsCodeOptionsTest {
     const val ENGINE_OPTIONS = """
       clipboard cb cmdheight ch comments com digraph dg foldlevel fdl gdefault gd guicursor gcr
       history hi hlsearch hls ideastrictmode ideatracetime ignorecase ic iminsert imi inccommand icm
-      incsearch is isfname isf iskeyword isk keymap kmp keymodel km langmap lmap langnoremap lnr
+      incsearch is isfname isf iskeyword isk keyboardlayout kbl keymap kmp keymodel km langmap lmap
+      langnoremap lnr
       langremap lrm matchpairs mps maxmapdepth mmd maxsearchcount msc messagesopt mopt more mouse
       nrformats nf number nu operatorfunc opfunc scroll scr scrolljump sj scrolloff so selection sel
       selectmode slm shell sh shellcmdflag shcf shellxescape sxe shellxquote sxq showcmd sc showmode

@@ -67,6 +67,48 @@ way IdeaVim's `=` does:
 xnoremap = <Action>(editor.action.formatSelection)
 ```
 
+### Cyrillic keyboard layouts
+
+Vim commands are Latin letters, so with a Cyrillic layout active `dw` is typed as `вц` and reaches
+nothing. Set a layout and it does:
+
+```vim
+set keyboardlayout=russian
+```
+
+`russian`, `ukrainian` and `belarusian` are built in, and each is ЙЦУКЕН with a few keys moved.
+Once one is set, `вфц` deletes a word, `су` changes to the end of one, `Эйнн` yanks into register
+`q`, and `ьф` sets mark `a` — counts, registers, marks, operators, text objects and `.` all follow,
+because this is a translation of the key rather than a set of mappings.
+
+**Insert mode is untouched**, which is the point: `ш` enters it and everything you type after that
+is the word you meant to write. Search patterns and `:` commands are text too, and are also left
+alone — as is `f`'s argument, so `fв` still finds a `в`.
+
+This is Vim's `'langmap'` with the table filled in. `'langmap'` still works and is consulted first,
+so a single key can be corrected without giving up the rest:
+
+```vim
+set keyboardlayout=russian
+set langmap=цq          " this one key goes somewhere else
+```
+
+**Seven keys are deliberately left out**: `$`, `^`, `@`, `&`, `/`, `?` and `|`. On a Cyrillic
+layout those sit on keys that emit ASCII — Shift+4 gives `;`, not `$` — and a character arrives
+here with no record of which layout produced it. Translating them would make `$` reachable and take
+`.`, `,`, `;`, `:`, `/` and `?` away from anyone typing in Latin. Since the whole point is that
+**both layouts keep working**, they are left alone; use the Latin layout for those seven, or, if
+you never issue commands from it, add them yourself:
+
+```vim
+" Takes `.`, `,`, `;`, `:`, `/` and `?` away from the Latin layout. Only if you never use it.
+set langmap=\"@\\;$:^?&./\\,?/\|
+```
+
+Mapping the keys instead — `nmap ш i` and sixty more — is the thing to avoid. It cannot reach a
+register name, a mark name or a count, it is recursive unless every line says `nnoremap`, and it
+leaves Visual mode out unless you remember `xmap` as well.
+
 ## Only one Vim at a time
 
 An extension can only see ordinary typing by taking over VS Code's `type` command, and `type` has

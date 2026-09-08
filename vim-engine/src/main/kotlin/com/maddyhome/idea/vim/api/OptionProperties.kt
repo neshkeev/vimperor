@@ -28,6 +28,7 @@ open class GlobalOptions(scope: OptionAccessScope) : OptionsPropertiesBase(scope
   var ignorecase: Boolean by optionProperty(Options.ignorecase)
   var incsearch: Boolean by optionProperty(Options.incsearch)
   var inccommand: String by optionProperty(Options.inccommand)
+  val keyboardlayout: StringListOptionValue by optionProperty(Options.keyboardlayout)
   val keymodel: StringListOptionValue by optionProperty(Options.keymodel)
   val langmap: StringListOptionValue by optionProperty(Options.langmap)
   var langnoremap: Boolean by optionProperty(Options.langnoremap)

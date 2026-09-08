@@ -88,6 +88,12 @@ has never had in any form. The tag stack is real: a `tags` file is read, `:tag`,
 `:tnext`, `:pop` and `:tags` work over it, and `<C-]>` and `<C-T>` walk it. `:sign` draws in the
 gutter, and with the `signature` extension your `a`-`z` marks draw there too.
 
+`set keyboardlayout=russian` - or `ukrainian`, or `belarusian` - makes Vim commands work with a
+Cyrillic layout active, so `вфц` is `daw` and `Эйнн` yanks into register `q`, while Insert mode and
+search patterns stay untouched. This is Vim's `'langmap'` with the table filled in, which is the
+half Vim has never shipped; the seven keys whose Cyrillic position emits ASCII are deliberately
+left out so the Latin layout keeps `.`, `:` and `;`. See `vscode-extension/README.md`.
+
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 

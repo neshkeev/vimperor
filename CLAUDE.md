@@ -86,6 +86,48 @@ needs the caret moved in a file that VS Code has not finished opening, so it
 wants `runAfterHostCatchesUp`, and a `gF` that opened the file and ignored the
 line number would leave the caret somewhere plausible and wrong.
 
+### `'keyboardlayout'` is the second thing this fork adds, and it is a table rather than a feature
+
+The mechanism was already here and correct. `'langmap'` is Vim's answer to "I type Vim commands on
+a non-English keyboard" - IdeaVim ported it in VIM-2283 - and it was verified against this host key
+by key before a line was written: forty-four commands driven twice, once in Latin with no layout
+and once in Cyrillic with one, agreeing every time. Counts, registers, marks, text objects, `.`,
+undo, Visual, the command line. **Nothing in the engine needed fixing, and the probe that
+established that is the reason to trust the rest.**
+
+What Vim does not have is the *table*. A Russian user writes out sixty-odd pairs in an option whose
+value needs a backslash before every literal `;` and `,` - and a second backslash to get that one
+past `:set`, and a `\"` so the rest of the line is not read as a comment. That is 150 characters of
+escaping, and **a config runs with `indicateErrors = false`, so one slip is silent**. The naive
+alternative is worse and is what people actually write: `nmap ш i` and sixty more cannot reach a
+register name, a mark name or a count, are recursive unless every line says `nnoremap`, and leave
+Visual mode out.
+
+So `com.github.neshkeev.vimperor.keyboard.KeyboardLayouts` is three tables - `russian`,
+`ukrainian`, `belarusian` - and `LangMapOptionHelper.mapChar` consults `'langmap'` first and the layouts
+second. Each layout is written as two strings aligned against the US rows, position for position,
+so it can be corrected by eye; a test asserts the lengths, because a row one character short
+silently shifts every pair after it.
+
+**The rule the whole file turns on is that no ASCII character may be a source**, and it is a
+decision rather than an omission. A layout maps the *whole* keyboard: the key marked `4` emits `$`
+on a US layout and `;` on a Russian one, and the key marked `/` emits `.` there. Translating those
+would make `$` and `/` reachable from Cyrillic and would take `.`, `,`, `;`, `:`, `/` and `?` away
+from anyone typing in Latin, because **a character arrives here with no record of which layout
+produced it** - VS Code's `type` carries text, not a key code. `:` is the command line and `.` is
+the repeat. The user asked for both layouts to keep working, so the seven that would cost that -
+`$`, `^`, `@`, `&`, `/`, `?`, `|` - are left out, and the README carries the `'langmap'` line for
+anyone who never issues a command from the Latin layout.
+
+That rule pays for itself twice, which is the part worth keeping: **the ASCII half is also the half
+that varies.** Windows and macOS disagree about the Russian digit row and agree about every letter,
+so a table restricted to the non-ASCII characters is the same table on both.
+
+**The opt-in line in the README is typed by a test rather than described by one.** A wrong line in
+a document is exactly the failure this option exists to remove, and it fails silently; the first
+version written here had `\;` where it needed `\\;` and set nothing at all. The test types the
+line and asserts the seven keys it claims.
+
 ## The record below
 
 Most of what follows was written while the plugin still existed, and is kept

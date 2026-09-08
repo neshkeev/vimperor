@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.api
 
+import com.github.neshkeev.vimperor.keyboard.KeyboardLayouts
 import com.maddyhome.idea.vim.ex.exExceptionMessage
 import com.maddyhome.idea.vim.helper.indexOfOrNull
 import com.maddyhome.idea.vim.options.KeyValuePairOption
@@ -362,6 +363,20 @@ object Options {
         }
       }
     })
+
+  /**
+   * `'keyboardlayout'`: built-in `'langmap'` tables, by name. This fork's own option.
+   *
+   * Vim has the mechanism and not the table - see [com.github.neshkeev.vimperor.keyboard.KeyboardLayouts],
+   * which is where the layouts and the reasoning live. `'langmap'` is consulted first, so a pair
+   * written by hand still wins over the layout it disagrees with.
+   *
+   * It is bounded, so an unknown name is `E474` rather than a layout that silently does nothing.
+   * That matters more here than it looks: a config runs with errors suppressed, and the failure
+   * this option exists to prevent is exactly the silent one.
+   */
+  val keyboardlayout: StringListOption =
+    addOption(StringListOption("keyboardlayout", GLOBAL, "kbl", "", KeyboardLayouts.names))
 
   val langmap: StringListOption = addOption(object : StringListOption("langmap", GLOBAL, "lmap", VimString.EMPTY) {
     override fun split(value: String): List<String> {

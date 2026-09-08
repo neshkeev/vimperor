@@ -16,6 +16,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
 - The tag stack reaches `<C-]>` and `<C-T>`. A `tags` file and its ex commands were already here;
   the two keys were not connected to them - `<C-T>` popped the *jump list*, which is a different
   stack and only looks the same immediately after a jump. `'tagstack'` turns the recording off.
+- `'keyboardlayout'` gives Vim's `'langmap'` the table it has always been missing: `set
+  keyboardlayout=russian` (or `ukrainian`, or `belarusian`) and Vim commands work with a Cyrillic
+  layout active - `вфц` is `daw`, `Эйнн` yanks into register `q`, `ьф` sets mark `a`. Insert mode,
+  search patterns and `:` commands stay untouched, so text you type is still the text you meant.
+  `'langmap'` still works and wins where the two disagree. The keys whose Cyrillic position emits
+  ASCII - `$`, `^`, `@`, `&`, `/`, `?`, `|` - are deliberately left out, so that `.`, `:` and `;`
+  keep working for anyone who also types in Latin; the README has the line to add them.
 - Three more of IdeaVim's bundled extensions, taking it to twenty-five of twenty-seven:
   `textobj-line` (`al` and `il` - the line with and without its indentation), `visual-star-search`
   (`*` and `#` in visual mode search for the selection) and `signature` (your `a`-`z` marks drawn

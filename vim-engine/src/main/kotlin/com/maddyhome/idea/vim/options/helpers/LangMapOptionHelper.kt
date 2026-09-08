@@ -8,6 +8,7 @@
 
 package com.maddyhome.idea.vim.options.helpers
 
+import com.github.neshkeev.vimperor.keyboard.KeyboardLayouts
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
@@ -17,8 +18,18 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 
 // `'langmap'` maps a typed char to an ASCII char
 object LangMapOptionHelper {
-  fun mapChar(from: Char) =
-    injector.optionGroup.getParsedEffectiveOptionValue(Options.langmap, null, ::parse)[from] ?: from
+  /**
+   * The command character [from] stands for, or [from] itself when nothing translates it.
+   *
+   * `'langmap'` first, then `'keyboardlayout'` - this fork's built-in tables, which are the same
+   * translation with the pairs written for you. Order is the contract: a pair written by hand wins
+   * over the layout that disagrees with it, so `set keyboardlayout=russian` can be corrected one
+   * key at a time without giving up the other sixty.
+   */
+  fun mapChar(from: Char): Char =
+    injector.optionGroup.getParsedEffectiveOptionValue(Options.langmap, null, ::parse)[from]
+      ?: KeyboardLayouts.mapChar(from)
+      ?: from
 
   fun split(langMap: String): List<String> {
     // Negative lookbehind regex to make sure we don't split on escaped commas
