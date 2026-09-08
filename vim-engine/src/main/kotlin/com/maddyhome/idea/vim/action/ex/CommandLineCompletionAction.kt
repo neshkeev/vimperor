@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.action.ex
 
 import com.intellij.vim.annotations.CommandOrMotion
 import com.intellij.vim.annotations.Mode
+import com.maddyhome.idea.vim.action.ex.PathCompletionArgumentParser.expandPercent
 import com.maddyhome.idea.vim.api.CommandCompletionTypes
 import com.maddyhome.idea.vim.api.CommandLineCompletion
 import com.maddyhome.idea.vim.api.CommandLineCompletionType
@@ -28,7 +29,7 @@ class CommandLineCompletionAction : CommandLineActionHandler() {
     context: ExecutionContext,
     argument: Argument?,
   ): Boolean {
-    return performCompletion(commandLine, context, forward = true)
+    return performCompletion(commandLine, editor, context, forward = true)
   }
 
   override fun execute(commandLine: VimCommandLine): Boolean {
@@ -44,7 +45,7 @@ class CommandLineCompletionBackwardAction : CommandLineActionHandler() {
     context: ExecutionContext,
     argument: Argument?,
   ): Boolean {
-    return performCompletion(commandLine, context, forward = false)
+    return performCompletion(commandLine, editor, context, forward = false)
   }
 
   override fun execute(commandLine: VimCommandLine): Boolean {
@@ -54,6 +55,7 @@ class CommandLineCompletionBackwardAction : CommandLineActionHandler() {
 
 private fun performCompletion(
   commandLine: VimCommandLine,
+  editor: VimEditor,
   context: ExecutionContext,
   forward: Boolean,
 ): Boolean {
@@ -65,7 +67,7 @@ private fun performCompletion(
     return true
   }
 
-  return startNewCompletion(commandLine, context, forward)
+  return startNewCompletion(commandLine, editor, context, forward)
 }
 
 internal fun cycleExistingCompletion(
@@ -84,6 +86,7 @@ internal fun cycleExistingCompletion(
 
 private fun startNewCompletion(
   commandLine: VimCommandLine,
+  editor: VimEditor,
   context: ExecutionContext,
   forward: Boolean,
 ): Boolean {
@@ -92,7 +95,7 @@ private fun startNewCompletion(
 
   val text = commandLine.text
   val parsed = parseCommandLineForCompletion(text)?.let { narrowToCompletedWord(it) } ?: return false
-  val matches = findMatches(parsed, context) ?: return false
+  val matches = findMatches(parsed, editor, context) ?: return false
 
   if (matches.isEmpty()) {
     injector.messages.indicateError()
@@ -139,10 +142,14 @@ private fun completionTypeOf(parsed: ArgumentCompletionContext): CommandLineComp
   return CommandCompletionTypes.getCompletionType(fullCommandName)
 }
 
-private fun findMatches(parsed: CommandLineCompletionContext, context: ExecutionContext): List<String>? {
+private fun findMatches(
+  parsed: CommandLineCompletionContext,
+  editor: VimEditor,
+  context: ExecutionContext,
+): List<String>? {
   return when (parsed) {
     is CommandNameCompletionContext -> findCommandNameMatches(parsed)
-    is ArgumentCompletionContext -> findArgumentMatches(parsed, context)
+    is ArgumentCompletionContext -> findArgumentMatches(parsed, editor, context)
   }
 }
 
@@ -150,9 +157,13 @@ private fun findCommandNameMatches(parsed: CommandNameCompletionContext): List<S
   return injector.vimscriptParser.exCommands.findFullCommandsByPrefix(parsed.prefix)
 }
 
-private fun findArgumentMatches(parsed: ArgumentCompletionContext, context: ExecutionContext): List<String>? {
+private fun findArgumentMatches(
+  parsed: ArgumentCompletionContext,
+  editor: VimEditor,
+  context: ExecutionContext,
+): List<String>? {
   return when (completionTypeOf(parsed) ?: return null) {
-    CommandLineCompletionType.FILE -> injector.file.listFilesForCompletion(parsed.argumentPrefix, context)
+    CommandLineCompletionType.FILE -> completeFileName(parsed, editor, context)
     // Sorted here rather than trusted from the host: IntelliJ's `ActionManager.getActionIdList`
     // answers in no order at all, and `CommandLineCompletion` is documented as taking sorted
     // candidates because Tab walks them in the order it is given.
@@ -195,6 +206,23 @@ private fun findOptionMatches(prefix: String): List<String> {
 private val SETTLED = charArrayOf('?', '!', '&', '=', ':')
 
 private val NEGATIONS = listOf("no", "inv")
+
+/**
+ * `<Tab>` on a file argument that starts with `%`.
+ *
+ * The name is expanded before the directory is listed, so `:e %:h/<Tab>` offers what is beside the
+ * current file rather than nothing. Only a leading `%` - a `%` further along is part of a name, and
+ * Vim does not expand one there either.
+ */
+private fun completeFileName(
+  parsed: ArgumentCompletionContext,
+  editor: VimEditor,
+  context: ExecutionContext,
+): List<String> {
+  val argument =
+    if (parsed.argumentPrefix.startsWith("%")) expandPercent(parsed.argumentPrefix, editor) else parsed.argumentPrefix
+  return injector.file.listFilesForCompletion(argument, context)
+}
 
 internal fun selectMatch(completion: CommandLineCompletion, forward: Boolean): String? {
   return if (forward) completion.nextMatch() else completion.previousMatch()

@@ -305,6 +305,47 @@ internal class VsCodeFile(
   override fun findFile(filename: String, context: ExecutionContext): String? =
     absolute(filename).takeIf { files.exists(it) }
 
+  /**
+   * `<Tab>` on a file argument: the names in the directory the user has typed so far.
+   *
+   * The prefix is split at its last `/` - everything before is a directory to list, everything
+   * after is what the name has to start with. What comes back is re-prefixed with the directory
+   * *as typed*, because the command line is going to be rewritten with it and a completion that
+   * replaced `%:h/no` with an absolute path would be a different command.
+   *
+   * Directories get a trailing `/`, which is both how Vim shows them and what lets a second `<Tab>`
+   * carry on into one.
+   *
+   * Matching is case-insensitive because the file systems this runs on usually are, and so is the
+   * sort - `sortedBy { it.lowercase() }` rather than `String.CASE_INSENSITIVE_ORDER`, which is
+   * `java.lang` and would compile here and break the JS build.
+   */
+  override fun listFilesForCompletion(pathPrefix: String, context: ExecutionContext): List<String> {
+    val lastSlash = pathPrefix.lastIndexOf('/')
+    val typedDirectory = if (lastSlash < 0) "" else pathPrefix.substring(0, lastSlash)
+    val namePrefix = if (lastSlash < 0) pathPrefix else pathPrefix.substring(lastSlash + 1)
+
+    val directory = when {
+      // `/foo` splits to an empty directory that means the filesystem root, not the workspace
+      lastSlash == 0 -> "/"
+      typedDirectory.isEmpty() -> workspaceRoot() ?: return emptyList()
+      else -> absolute(typedDirectory)
+    }
+    if (!files.isDirectory(directory)) return emptyList()
+
+    return files.listDirectory(directory)
+      .filter { it.startsWith(namePrefix, ignoreCase = true) }
+      .sortedBy { it.lowercase() }
+      .map { name ->
+        val shown = if (files.isDirectory("$directory/$name")) "$name/" else name
+        when {
+          typedDirectory.isEmpty() && lastSlash < 0 -> shown
+          lastSlash == 0 -> "/$shown"
+          else -> "$typedDirectory/$shown"
+        }
+      }
+  }
+
   private fun absolute(filename: String): String {
     val expanded = injector.pathExpansion.expandPath(filename.trim())
     if (expanded.startsWith("/") || expanded.startsWith("\\\\") || DRIVE_LETTER.matches(expanded.take(2))) {
