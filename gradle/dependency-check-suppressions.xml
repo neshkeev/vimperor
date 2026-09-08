@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2026 Nikita Eshkeev
+
+  Use of this source code is governed by an MIT-style
+  license that can be found in the LICENSE.txt file or at
+  https://opensource.org/licenses/MIT.
+
+  OWASP Dependency-Check suppressions. Read by the `dependencyCheck` block in the root
+  build.gradle.kts, which also explains the scan as a whole.
+
+  There is one entry, and it should stay that way. Everything else the scan has raised was fixed
+  rather than argued away: Kotlin went to 2.4.20, the ABI-validation compat classpath is not
+  scanned because no task resolves it, and kotlin-stdlib is aligned to the compiler's version.
+  Twelve findings became one that way, and this file is only for the one nobody can act on.
+
+  `failBuildOnUnusedSuppressionRule` is on in the build, which is what keeps this honest: the day a
+  rule below stops matching anything, the scan fails and says so, and the rule gets deleted rather
+  than sitting here being true of nothing. That is the reason there is no `until` date - an expiry
+  is a guess at when JetBrains will act, and this asks the scan instead.
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.4.xsd">
+
+  <suppress>
+    <notes><![CDATA[
+      kotlin-reflect 1.6.10 is declared by the Kotlin compiler itself. It sits on
+      kotlinCompilerClasspath beside kotlin-stdlib 2.4.20 and kotlin-script-runtime 2.4.20 - the
+      2.4.20 compiler pins a four-year-old kotlin-reflect on purpose, and it is not a resolution
+      accident that the stdlib alignment in build.gradle.kts could catch. Overriding a compiler's
+      own pinned dependency to quieten a scanner is the wrong trade. This project's own
+      kotlin-reflect - `compileOnly(kotlin("reflect"))` in vim-engine - resolves to 2.4.20 and is
+      scanned and clean.
+
+      CVE-2026-53914 is code execution through unsafe deserialization of *build cache metadata*,
+      which is compiler code. kotlin-reflect does not contain it. It is matched here because NVD
+      publishes one CPE for the whole Kotlin product line - `cpe:2.3:a:jetbrains:kotlin:*` with
+      versionEndExcluding 2.4.20 - and dependency-check maps every org.jetbrains.kotlin artifact
+      onto it, so the match is on the version alone. The same CPE is why the bump was worth making
+      for everything that resolves independently, and why this one artifact cannot be.
+
+      Only this CVE is suppressed. CVE-2020-29582 on the same jar is deliberately left visible: it
+      scores 5.3 and so does not fail the build, and the case against it is weaker than it looks -
+      the description says the fix shipped in Kotlin 1.4.21, but the range NVD actually publishes
+      is versionEndExcluding 2.1.0, which does cover 1.6.10. Suppressing a finding on the strength
+      of a disagreement between an advisory's prose and its own data is not a good enough reason.
+
+      Delete this when JetBrains moves the compiler's kotlin-reflect pin. The scan will ask.
+    ]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-reflect@1\.6\.10$</packageUrl>
+    <cve>CVE-2026-53914</cve>
+  </suppress>
+
+</suppressions>

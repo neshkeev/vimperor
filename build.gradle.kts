@@ -134,6 +134,18 @@ dependencyCheck {
   formats = listOf("HTML", "JSON")
   failBuildOnCVSS = 7.0f
 
+  // One entry, for the one finding nobody can act on - the compiler's own pinned kotlin-reflect.
+  // The file itself carries the reasoning, at length, because a suppression without one is
+  // indistinguishable from giving up.
+  //
+  // `failBuildOnUnusedSuppressionRule` is what keeps the file from rotting. A suppression that has
+  // stopped matching anything is a claim nobody is checking any more, and the usual way these
+  // files go wrong is by accumulating those. This makes the scan fail the day a rule goes stale,
+  // which is the same day it should be deleted. It is also why no rule carries an `until` date:
+  // an expiry guesses when upstream will act, and this asks instead.
+  suppressionFile = layout.projectDirectory.file("gradle/dependency-check-suppressions.xml").asFile.path
+  failBuildOnUnusedSuppressionRule = true
+
   // A classpath Kotlin's Gradle plugin declares for a feature this build does not use, and cannot
   // update if it wanted to.
   //

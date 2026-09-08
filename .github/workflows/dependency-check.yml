@@ -23,10 +23,16 @@
 #
 # ## The cache
 #
-# The NVD database is the expensive part, not the analysis. It is cached under
-# `.dependency-check-data/` and the key rotates weekly, so a stale-but-recent database is restored
-# and topped up rather than rebuilt. `restore-keys` makes a miss on this week's key fall back to
-# last week's copy instead of starting from nothing.
+# The NVD database is the expensive part, not the analysis. It is cached from
+# `~/.gradle/dependency-check-data` - where the plugin writes, which is not where it can be told to
+# write; see the cache step below - and the key rotates weekly, so a stale-but-recent database is
+# restored and topped up rather than rebuilt. `restore-keys` makes a miss on this week's key fall
+# back to last week's copy instead of starting from nothing.
+#
+# ## Suppressions
+#
+# One, in `gradle/dependency-check-suppressions.xml`, and the build fails on an unused rule so it
+# cannot quietly grow. A change to it re-runs this workflow, which is why it is in the paths below.
 
 name: Dependency Check
 
@@ -40,12 +46,14 @@ on:
       - "**/build.gradle.kts"
       - "settings.gradle.kts"
       - "gradle.properties"
+      - "gradle/dependency-check-suppressions.xml"
       - ".github/workflows/dependency-check.yml"
   pull_request:
     paths:
       - "**/build.gradle.kts"
       - "settings.gradle.kts"
       - "gradle.properties"
+      - "gradle/dependency-check-suppressions.xml"
       - ".github/workflows/dependency-check.yml"
   workflow_dispatch:
 
