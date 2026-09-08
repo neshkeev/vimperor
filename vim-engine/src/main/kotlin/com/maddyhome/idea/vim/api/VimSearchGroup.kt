@@ -158,6 +158,24 @@ interface VimSearchGroup {
   fun searchWord(editor: VimEditor, caret: ImmutableVimCaret, count: Int, whole: Boolean, dir: Direction): Int
 
   /**
+   * Search for [pattern], starting from the beginning of [range].
+   *
+   * The second half of the overload above, split out so a caller can supply a pattern it built
+   * itself rather than one taken from the word under the caret - searching for the Visual selection,
+   * say. The pattern is used as written: escaping it, and adding `\<` and `\>` if word boundaries
+   * are wanted, is the caller's job.
+   *
+   * Everything a `*` does happens here: the last search pattern, its trailing part and its direction
+   * are recorded, the pattern is saved to the search register and history, ignore-smart-case is
+   * forced on, and the highlights and the search count are refreshed. `'wrapscan'` and
+   * `'ignorecase'` come from the options.
+   *
+   * @param range Only its start offset is used, as the place to search from.
+   * @return The offset of the match, or the start of [range] when there is none.
+   */
+  fun searchWord(pattern: String, dir: Direction, editor: VimEditor, range: TextRange, count: Int): Int
+
+  /**
    * If [command] contains a pattern, this function finds the end of it that is marked with [delimiter].
    *
    * This is useful for commands like `:%s/123/321/s` to detect the end of `123` pattern. `/` will be a [delimiter].
