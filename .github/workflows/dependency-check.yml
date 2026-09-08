@@ -87,7 +87,11 @@ jobs:
       - uses: actions/cache/restore@v5
         id: nvd
         with:
-          path: .dependency-check-data
+          # Where the plugin actually writes. It has a `data.directory` setting and it does not
+          # work - see the note in the root build.gradle.kts. Caching the path it was told to use
+          # meant caching a directory that never existed, so every run downloaded the NVD from cold
+          # and the save step said "Path(s) specified in the action for caching do(es) not exist".
+          path: ~/.gradle/dependency-check-data
           key: nvd-${{ steps.week.outputs.key }}
           restore-keys: nvd-
 
@@ -115,7 +119,7 @@ jobs:
       - if: always() && steps.nvd.outputs.cache-hit != 'true'
         uses: actions/cache/save@v5
         with:
-          path: .dependency-check-data
+          path: ~/.gradle/dependency-check-data
           key: nvd-${{ steps.week.outputs.key }}
 
       # Whether or not it passed - a failing scan is exactly when the report is wanted, and the

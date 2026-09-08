@@ -108,9 +108,29 @@ dependencyCheck {
   formats = listOf("HTML", "JSON")
   failBuildOnCVSS = 7.0f
 
-  // The NVD database, kept out of `build/` so that `clean` does not throw away a download that
-  // takes an afternoon, and so CI can cache one directory.
-  data.directory = layout.projectDirectory.dir(".dependency-check-data").asFile.absolutePath
+  // No `data { directory = ... }`. It was here, pointing at `.dependency-check-data` in the
+  // repository, and the plugin ignored it: both the `data.directory = ...` and the `data { }` forms
+  // compile, neither takes effect, and the database goes to `~/.gradle/dependency-check-data`
+  // regardless. Verified by watching for the directory during a run - it never appears - and by
+  // finding 98 MB under `~/.gradle` afterwards.
+  //
+  // That was not a cosmetic problem. CI cached the path this asked for, which never existed, so
+  // `actions/cache` saved nothing ("Path Validation Error: Path(s) specified in the action for
+  // caching do(es) not exist") and every run paid for a full NVD download from cold. The workflow
+  // caches `~/.gradle/dependency-check-data` now, which is where the data actually is.
+  //
+  // `gradle/actions/setup-gradle` does not collide with it: that caches `caches` and
+  // `notifications` under `~/.gradle` and nothing else.
+
+  // Nothing here is an npm project. `vscode-extension/package.json` declares no dependencies and no
+  // devDependencies - it is a VS Code manifest, and what it ships is compiled Kotlin - so the Node
+  // analyzers have nothing to find and say so at length on every run: "the node_modules directory
+  // does not exist", "No lock file exists - this will result in false negatives". A check that can
+  // only report its own absence is noise.
+  analyzers {
+    nodeEnabled = false
+    nodeAuditEnabled = false
+  }
 
   nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull
 }
