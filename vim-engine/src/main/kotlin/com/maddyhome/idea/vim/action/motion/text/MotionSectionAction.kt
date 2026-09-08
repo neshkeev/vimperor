@@ -71,7 +71,9 @@ private fun getCaretToSectionMotion(
   } else {
     var res = injector.searchHelper.findSection(editor, caret, type, dir, count)
     if (res != -1) {
-      res = editor.normalizeOffset(res, false)
+      // `allowEnd`, because a forward section motion may legitimately land on the end of the file. Clamping it one
+      // short put the caret inside the last line, which as an operator range is one character too few.
+      res = editor.normalizeOffset(res, true)
     }
     res
   }

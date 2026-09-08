@@ -256,7 +256,11 @@ fun VimEditor.anyNonWhitespace(offset: Int, dir: Int): Boolean {
   val end: Int
   val fileSize = fileSize().toInt()
   if (dir > 0) {
-    start = (offset + 1).coerceAtMost(fileSize - 1)
+    // Not `offset + 1`. Both callers looking forwards pass an *exclusive* end offset, so the character at `offset` is
+    // the first one after the range and has to be inspected; skipping it promoted a delete to linewise when there was
+    // still text on the line. The backwards branch below is the mirror of this and is not symmetric for that reason:
+    // there `offset` is inclusive, so the character under it belongs to the range.
+    start = offset.coerceAtMost(fileSize - 1)
     end = getLineEndForOffset(offset).coerceAtMost(fileSize - 1)
   } else {
     start = getLineStartForOffset(offset)
