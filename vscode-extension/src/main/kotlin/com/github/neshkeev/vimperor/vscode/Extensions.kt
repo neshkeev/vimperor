@@ -35,6 +35,8 @@ import com.maddyhome.idea.vim.extension.sneak.init as sneakInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjline.init as textObjLineInit
+import com.maddyhome.idea.vim.extension.signature.disposeSignature
+import com.maddyhome.idea.vim.extension.signature.init as signatureInit
 import com.maddyhome.idea.vim.extension.visualstarsearch.init as visualStarSearchInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
@@ -118,6 +120,10 @@ internal object VsCodeExtensions {
     // `*` and `#` in Visual mode search for the selection rather than the word under the
     // caret, which is the one thing a selection is obviously for.
     "visual-star-search" to { api -> api.visualStarSearchInit() },
+
+    // The file's `a`-`z` marks, drawn in the gutter as Vim signs. `A`-`Z` are left alone -
+    // IntelliJ draws those as bookmarks itself, and two icons for one mark is worse than none.
+    "signature" to { api -> api.signatureInit() },
 
     // `a`/`i` text objects that search for their delimiter rather than needing the caret inside
     // it, so `ci(` works from anywhere on the line.
@@ -234,6 +240,10 @@ internal object VsCodeExtensions {
 
     // A region marked and never exchanged, and the highlight showing where it is.
     "exchange" to { disposeExchange() },
+
+    // Its mark listener, which goes straight onto `listenersNotifier` and so has no owner,
+    // plus every sign it placed.
+    "signature" to { disposeSignature() },
 
     // The highlight on the pair it last jumped to, which fades on a timer nobody else owns.
     "sneak" to { disposeSneak() },
@@ -520,6 +530,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "vim-textobj-entire" to "textobj-entire",
       "vim-textobj-line" to "textobj-line",
       "vim-visual-star-search" to "visual-star-search",
+      "vim-signature" to "signature",
       "vim-indent-object" to "textobj-indent",
       "vim-textobj-user" to "textobj-user",
       "Improved-paragraph-motion" to "vim-paragraph-motion",

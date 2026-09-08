@@ -372,8 +372,9 @@ this paragraph** - `git show upstream/master:ideavim-frontend/src/main/resources
 | grep -c '<vimExtension'` is the whole check, and the number has now been wrong here
 twice.
 
-**Twenty-four are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `textobj-line`, `visual-star-search`, `mini-ai`, `CamelCaseMotion`, `indentwise`,
+**Twenty-five are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `textobj-line`, `visual-star-search`, `signature`, `mini-ai`,
+`CamelCaseMotion`, `indentwise`,
 `textobj-user`, `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
 `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`. Each lives in
@@ -382,10 +383,17 @@ VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-Three are left, and they are not one list. `matchit` and `VimEverywhere` **are not
-being ported, and that is a decision rather than a backlog entry** - neither is
-waiting on a seam and neither should be proposed again. `vim-signature` is simply
-not done yet and has not been looked at.
+The two that are left - `matchit` and `VimEverywhere` - **are not being ported, and
+that is a decision rather than a backlog entry.** Neither is waiting on a seam and
+neither should be proposed again. Treat 25 of 27 as complete.
+
+`signature` is worth a note as the one port that did not follow upstream's
+implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on
+IntelliJ's markup model, which no other host can follow; this draws them as Vim
+*signs*, in a sign group of their own, which is what the real plugin does and what
+`:h sign-place` is for. Both hosts then reach the gutter with code they already had.
+When an upstream extension's body is IntelliJ-shaped, check what the Vim plugin it
+ports does before concluding the feature is unportable.
 
 `matchit` wants to know what a *token* is, so that `%` can jump between `if` and
 `endif` and between HTML tags, and the one thing VS Code tells an extension about a

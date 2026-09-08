@@ -65,6 +65,11 @@
     "className": "com.maddyhome.idea.vim.extension.multiplecursors.MultipleCursorsKt"
   },
   {
+    "extensionName": "signature",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.signature.SignatureKt"
+  },
+  {
     "extensionName": "sneak",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.sneak.SneakKt"

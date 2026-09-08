@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.github.neshkeev.vimperor.sign.Signs
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.api.injector
@@ -269,6 +270,89 @@ class PortedExtensionsTest {
     session.type("n")
 
     assertEquals(2, session.caretAt.line)
+  }
+
+  // ---- signature -------------------------------------------------------------------------------
+
+  /**
+   * Setting a local mark draws it in the gutter, as a Vim sign in a group of its own. The signs are
+   * the observable thing here: what the host is asked to paint is `Signs.placed`, and the decoration
+   * that reaches VS Code is a picture of the letter.
+   */
+  @Test
+  fun `test setting a mark places a sign for it`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+
+    session.type("jma")
+
+    val placed = Signs.placed(group = "signature")
+    assertEquals(1, placed.size)
+    assertEquals(1, placed.single().line, "the mark is on the second line")
+    assertEquals("a", Signs.definition(placed.single().name)?.text)
+  }
+
+  /** Two marks, two signs, each showing its own letter. */
+  @Test
+  fun `test each mark gets its own letter`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+
+    session.type("majmb")
+
+    val letters = Signs.placed(group = "signature").mapNotNull { Signs.definition(it.name)?.text }
+    assertEquals(listOf("a", "b"), letters.sorted())
+  }
+
+  /** Moving a mark moves its sign rather than leaving the old one behind. */
+  @Test
+  fun `test moving a mark moves its sign`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+
+    session.type("ma")
+    session.type("jjma")
+
+    val placed = Signs.placed(group = "signature")
+    assertEquals(1, placed.size, "still one sign, not two")
+    assertEquals(2, placed.single().line)
+  }
+
+  /** `delmarks` takes the sign with the mark. */
+  @Test
+  fun `test deleting a mark removes its sign`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+    session.type("jma")
+
+    session.ex("delmarks a")
+
+    assertEquals(emptyList(), Signs.placed(group = "signature"))
+  }
+
+  /**
+   * Global marks are left alone. On IntelliJ they are IDE bookmarks with a gutter icon of their
+   * own, and two icons for one mark is worse than none.
+   */
+  @Test
+  fun `test an uppercase mark draws nothing`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+
+    session.type("jmA")
+
+    assertEquals(emptyList(), Signs.placed(group = "signature"))
+  }
+
+  /**
+   * A user's `:sign unplace *` is group-scoped and cannot sweep these away, which is what Vim 8
+   * added sign groups for.
+   */
+  @Test
+  fun `test a user's signs and these do not collide`() {
+    val session = Session("one\ntwo\nthree\n", "signature")
+    session.type("jma")
+
+    session.ex("sign define mine text=>>")
+    session.ex("sign place 99 line=1 name=mine file=/test/buffer.txt")
+    session.ex("sign unplace *")
+
+    assertEquals(1, Signs.placed(group = "signature").size, "the mark sign survived the user's sweep")
   }
 
   // ---- CamelCaseMotion -------------------------------------------------------------------------

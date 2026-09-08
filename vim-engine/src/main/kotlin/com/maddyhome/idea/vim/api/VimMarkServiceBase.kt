@@ -224,7 +224,12 @@ abstract class VimMarkServiceBase : VimMarkService {
 
     when {
       !markChar.isOperationValidOnMark(VimMarkService.Operation.SET, caret) -> return false
-      markChar.isGlobalMark() -> setGlobalMark(mark)
+      // setGlobalMark notifies on its own, so this branch must not fall through to the notification below
+      markChar.isGlobalMark() -> {
+        setGlobalMark(mark)
+        return true
+      }
+
       markChar == SELECTION_START_MARK -> setSelectionStartMark(caret, mark.offset(editor))
       markChar == SELECTION_END_MARK -> setSelectionEndMark(caret, mark.offset(editor))
       markChar.isLocalMark() -> {
@@ -253,6 +258,7 @@ abstract class VimMarkServiceBase : VimMarkService {
 
       else -> return false
     }
+    injector.listenersNotifier.notifyMarksChanges(markChar)
     return true
   }
 
@@ -284,6 +290,7 @@ abstract class VimMarkServiceBase : VimMarkService {
   override fun setGlobalMark(mark: Mark): Boolean {
     if (!isValidMark(mark.key, VimMarkService.Operation.SET, true)) return false
     globalMarks[mark.key] = mark
+    injector.listenersNotifier.notifyMarksChanges(mark.key)
     return true
   }
 
@@ -349,6 +356,7 @@ abstract class VimMarkServiceBase : VimMarkService {
     } else {
       caret.markStorage.removeMark(markChar)
     }
+    injector.listenersNotifier.notifyMarksChanges(markChar)
   }
 
   private fun removeSelectionStartMark(caret: ImmutableVimCaret) {
@@ -369,6 +377,7 @@ abstract class VimMarkServiceBase : VimMarkService {
     val markChar = char.normalizeMarkChar()
     if (markChar.isGlobalMark()) {
       globalMarks.remove(markChar)
+      injector.listenersNotifier.notifyMarksChanges(markChar)
     }
   }
 
@@ -578,6 +587,7 @@ abstract class VimMarkServiceBase : VimMarkService {
       start = null
       end = null
     }
+    injector.listenersNotifier.notifyMarksChanges(null)
   }
 
   override fun resetAllMarks() {
@@ -588,6 +598,7 @@ abstract class VimMarkServiceBase : VimMarkService {
     }
     filepathToLocalMarks.clear()
     globalMarks.clear()
+    injector.listenersNotifier.notifyMarksChanges(null)
   }
 
   override fun isValidMark(char: Char, operation: VimMarkService.Operation, isCaretPrimary: Boolean): Boolean {
