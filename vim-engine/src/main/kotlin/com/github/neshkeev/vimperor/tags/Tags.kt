@@ -11,6 +11,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.annotations.TestOnly
 import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.maddyhome.idea.vim.options.OptionAccessScope
@@ -92,6 +93,11 @@ object Tags {
     stack(projectId).getOrNull(pointer(projectId) - 1)
 
   fun push(projectId: String, entry: StackEntry) {
+    // `:set notagstack` and a tag jump stops leaving a trail - Vim's own switch for people who
+    // navigate with the jump list instead. Checked here rather than at each caller so that `:tag`,
+    // `:tselect` and `<C-]>` all obey it without having to remember to.
+    if (!injector.globalOptions().tagstack) return
+
     val list = stacks.getOrPut(projectId) { mutableListOf() }
     // Everything above where we are is a road not taken any more.
     while (list.size > pointer(projectId)) list.removeAt(list.size - 1)

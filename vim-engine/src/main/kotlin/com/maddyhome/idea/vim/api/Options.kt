@@ -246,6 +246,14 @@ object Options {
   )
   val smartcase: ToggleOption = addOption(ToggleOption("smartcase", GLOBAL, "scs", false))
   val startofline: ToggleOption = addOption(ToggleOption("startofline", GLOBAL, "sol", true))
+
+  /**
+   * Whether a tag jump pushes onto the tag stack, so `<C-T>` and `:pop` can walk back over it.
+   *
+   * Abbreviated `tgst`, which is Vim's own. Upstream registers this as `ts` - that is `'tabstop'`,
+   * and this fork implements `'tabstop'`, so the two would have collided.
+   */
+  val tagstack: ToggleOption = addOption(ToggleOption("tagstack", GLOBAL, "tgst", true))
   val timeout: ToggleOption = addOption(ToggleOption("timeout", GLOBAL, "to", true))
   val timeoutlen: UnsignedNumberOption = addOption(UnsignedNumberOption("timeoutlen", GLOBAL, "tm", 1000))
   val inccommand: StringOption = addOption(

@@ -556,6 +556,11 @@
   },
   {
     "keys": "<C-T>",
+    "class": "com.github.neshkeev.vimperor.tags.TagPopStackAction",
+    "modes": "N"
+  },
+  {
+    "keys": "<C-T>",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftRightLinesAction",
     "modes": "I"
   },
@@ -563,11 +568,6 @@
     "keys": "<C-T>",
     "class": "com.maddyhome.idea.vim.action.ex.SearchAgainPreviousActionCommandLine",
     "modes": "C"
-  },
-  {
-    "keys": "<C-T>",
-    "class": "com.maddyhome.idea.vim.action.motion.mark.MotionJumpPreviousAction",
-    "modes": "N"
   },
   {
     "keys": "<C-U>",
@@ -816,7 +816,7 @@
   },
   {
     "keys": "<C-]>",
-    "class": "com.maddyhome.idea.vim.action.motion.search.GotoDeclarationAction",
+    "class": "com.github.neshkeev.vimperor.tags.TagJumpAction",
     "modes": "NX"
   },
   {

@@ -18,7 +18,9 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["gD", "gd", "<C-]>"], modes = [Mode.NORMAL, Mode.VISUAL])
+// `<C-]>` used to be here. It is a *tag* command - it pushes onto the tag stack so `<C-T>` can
+// walk back - which `gd` and `gD` are not. See TagJumpAction.
+@CommandOrMotion(keys = ["gD", "gd"], modes = [Mode.NORMAL, Mode.VISUAL])
 class GotoDeclarationAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

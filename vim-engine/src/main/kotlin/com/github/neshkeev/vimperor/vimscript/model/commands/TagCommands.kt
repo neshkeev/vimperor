@@ -8,6 +8,7 @@
 
 package com.github.neshkeev.vimperor.vimscript.model.commands
 import com.github.neshkeev.vimperor.tags.Tags
+import com.github.neshkeev.vimperor.tags.popTagStack
 import com.intellij.vim.annotations.ExCommand
 import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.ExecutionContext
@@ -160,6 +161,10 @@ data class TagCommand(val range: Range, val modifier: CommandModifier, val argum
     val target = (pointer + count).coerceAtMost(stack.size)
     Tags.setPointer(editor.projectId, target)
     val entry = stack[target - 1]
+    // An entry `<C-]>` pushed carries no matches - the jump came from the host's symbol search, not
+    // from a tags file - so there is no match to return to. E426 is the honest answer: nothing in
+    // any tags file is called that.
+    if (entry.matches.isEmpty()) throw exExceptionMessage("E426", entry.tagName)
     return jumpTo(editor, context, entry.matches[entry.index], "tag ${entry.index + 1} of ${entry.matches.size}")
   }
 }
@@ -181,25 +186,9 @@ data class TagPopCommand(val range: Range, val modifier: CommandModifier, val ar
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    val pointer = Tags.pointer(editor.projectId)
-    if (pointer <= 0) throw exExceptionMessage("E555")
-
-    val target = (pointer - operatorArguments.count1).coerceAtLeast(0)
-    val entry = Tags.stack(editor.projectId)[target]
-    Tags.setPointer(editor.projectId, target)
-
-    if (entry.fromPath.isNotEmpty() && entry.fromPath != editor.getPath()) {
-      val failure = injector.file.openFile(entry.fromPath, context)
-      if (failure != null) {
-        injector.messages.showErrorMessage(editor, failure)
-        return ExecutionResult.Error
-      }
-    }
-    val target2 = injector.editorGroup.getFocusedEditor() ?: editor
-    target2.currentCaret().moveToBufferPosition(
-      BufferPosition(entry.fromLine.coerceIn(0, (target2.lineCount() - 1).coerceAtLeast(0)), entry.fromColumn),
-    )
-    injector.scroll.scrollCaretIntoView(target2)
+    // Shared with `<C-T>`, which is the same command. See popTagStack.
+    val failure = popTagStack(editor, context, operatorArguments.count1)
+    if (failure != null) throw exExceptionMessage(failure)
     return ExecutionResult.Success
   }
 }
@@ -265,7 +254,8 @@ sealed class TagSelectCommandBase(
   ): ExecutionResult {
     val name = commandArgument.trim()
     val matches = if (name.isEmpty()) {
-      currentEntry(editor).matches
+      // Same reason as in `goUpTheStack`: an entry `<C-]>` pushed has no match list to select from.
+      currentEntry(editor).matches.ifEmpty { throw exExceptionMessage("E426", currentEntry(editor).tagName) }
     } else {
       Tags.find(name, editor, context).ifEmpty { throw exExceptionMessage("E426", name) }
     }
