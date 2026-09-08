@@ -26,8 +26,8 @@
  * has to be on the classpath for them to resolve.
  */
 plugins {
-  kotlin("jvm") version "2.3.20" apply false
-  kotlin("multiplatform") version "2.3.20" apply false
+  kotlin("jvm") version "2.4.20" apply false
+  kotlin("multiplatform") version "2.4.20" apply false
 
   // OWASP Dependency-Check, applied here and not `apply false`, because `dependencyCheckAggregate`
   // is a root task that walks the subprojects: this is the one plugin the root project runs rather

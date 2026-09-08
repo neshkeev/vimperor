@@ -15,7 +15,7 @@
 // (a') drops the `antlr` PLUGIN but keeps the ANTLR TOOL, invoked via JavaExec,
 // feeding generated Java into the KMP jvm target's own `compileJvmMainJava`
 // task. Verified separately in :api that a KMP jvm target compiles Java with no
-// `java` plugin and no withJava() - Kotlin 2.3.20 does this by default.
+// `java` plugin and no withJava() - Kotlin does this by default.
 //
 // This avoids option (c) (a structural JVM-only parser subproject).
 
@@ -26,8 +26,8 @@ plugins {
     kotlin("multiplatform")
 //    id("org.jlleitschuh.gradle.ktlint")
     id("com.strumenta.antlr-kotlin") version "1.0.13"
-    id("com.google.devtools.ksp") version "2.3.7"
-    kotlin("plugin.serialization") version "2.3.20"
+    id("com.google.devtools.ksp") version "2.3.11"
+    kotlin("plugin.serialization") version "2.4.20"
     `maven-publish`
 }
 
