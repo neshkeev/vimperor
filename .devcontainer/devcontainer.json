@@ -13,8 +13,30 @@
   // ~/.gradle on a named volume. Without it every rebuild of the container re-downloads Gradle
   // itself, the whole dependency set and the ~190 MB Node distribution - several minutes before
   // anything compiles. The volume is created root-owned, which is why postCreateCommand chowns it.
+  //
+  // Then the three Vim configs, so the copy of Vimperor running in here is the one you actually
+  // use rather than a default install. `findVimRc` reads $HOME, which inside the container is
+  // /home/vscode, and takes the *first* file it finds - nothing is merged. All three are mounted
+  // because ~/.vimperorrc is the one found and it opens with `source ~/.ideavimrc`, which opens
+  // with `source ~/.vimrc`; mount only the first and startup fails on line 1.
+  //
+  // Read-only on purpose, and it is the loud half of a trade rather than caution. Docker binds a
+  // single file by *inode*, and an editor saving a file usually writes a new one and renames it
+  // over the old - so a write from inside the container lands on an inode the host no longer has
+  // a name for, and the change is gone at the next rebuild with nothing said. Read-only turns
+  // that silence into an error on `:w`. Edit these on the host, where they are ordinary files.
+  //
+  // The same inode rule applies in the other direction and cannot be switched off: editing one of
+  // these on the *host* with something that renames - Vim's own default - leaves the container
+  // reading the old inode until it is rebuilt. In-place edits propagate; renames do not.
+  //
+  // A bind mount whose source does not exist makes Docker create it, as a *directory*, in the
+  // real home directory. These three exist. Do not add a fourth speculatively.
   "mounts": [
-    "source=vimperor-gradle,target=/home/vscode/.gradle,type=volume"
+    "source=vimperor-gradle,target=/home/vscode/.gradle,type=volume",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vimrc,target=/home/vscode/.vimrc,type=bind,readonly",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ideavimrc,target=/home/vscode/.ideavimrc,type=bind,readonly",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vimperorrc,target=/home/vscode/.vimperorrc,type=bind,readonly"
   ],
 
   "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --version",
