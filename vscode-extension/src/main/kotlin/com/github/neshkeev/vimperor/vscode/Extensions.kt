@@ -34,6 +34,7 @@ import com.maddyhome.idea.vim.extension.surround.init as surroundInit
 import com.maddyhome.idea.vim.extension.sneak.init as sneakInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
+import com.maddyhome.idea.vim.extension.textobjline.init as textObjLineInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
@@ -107,6 +108,11 @@ internal object VsCodeExtensions {
 
     // `ae` and `ie`: the whole buffer as a text object, so `gUie` composes where `ggVG` does not.
     "textobj-entire" to { api -> api.textObjEntireInit() },
+
+    // `al` and `il`: the current line as a text object, with and without its surrounding
+    // whitespace. Not `dd` - that is linewise and takes the newline, where `dal` empties the
+    // line and leaves it.
+    "textobj-line" to { api -> api.textObjLineInit() },
 
     // `a`/`i` text objects that search for their delimiter rather than needing the caret inside
     // it, so `ci(` works from anywhere on the line.
@@ -507,6 +513,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "targets.vim" to "targets",
       "script.php?script_id=2610" to "textobj-entire",
       "vim-textobj-entire" to "textobj-entire",
+      "vim-textobj-line" to "textobj-line",
       "vim-indent-object" to "textobj-indent",
       "vim-textobj-user" to "textobj-user",
       "Improved-paragraph-motion" to "vim-paragraph-motion",

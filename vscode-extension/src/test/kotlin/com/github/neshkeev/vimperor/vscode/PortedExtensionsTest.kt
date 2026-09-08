@@ -145,6 +145,63 @@ class PortedExtensionsTest {
     assertEquals("ONE TWO\n", session.content)
   }
 
+  // ---- textobj-line ----------------------------------------------------------------------------
+
+  /**
+   * `al` is the line's characters without the newline, which is what makes it different from `dd`:
+   * a linewise delete takes the line away, `dal` empties it and leaves it there.
+   */
+  @Test
+  fun `test al is the line without its newline`() {
+    val session = Session("one\n  two  \nthree\n", "textobj-line")
+
+    session.type("jdal")
+
+    assertEquals("one\n\nthree\n", session.content)
+  }
+
+  /** `il` is the same minus the surrounding whitespace, so the indentation survives. */
+  @Test
+  fun `test il leaves the indentation behind`() {
+    val session = Session("one\n  two  \nthree\n", "textobj-line")
+
+    session.type("jdil")
+
+    assertEquals("one\n    \nthree\n", session.content, "the leading and trailing blanks stay")
+  }
+
+  @Test
+  fun `test il composes with an operator other than delete`() {
+    val session = Session("one\n  two  \nthree\n", "textobj-line")
+
+    session.type("jgUil")
+
+    assertEquals("one\n  TWO  \nthree\n", session.content)
+  }
+
+  /**
+   * Nothing to select on a blank line, and null rather than an empty range is what makes that a
+   * no-op instead of a join with the line below.
+   */
+  @Test
+  fun `test al on an empty line does nothing`() {
+    val session = Session("one\n\nthree\n", "textobj-line")
+
+    session.type("jdal")
+
+    assertEquals("one\n\nthree\n", session.content)
+  }
+
+  /** And `il` says the same about a line that is only whitespace: there is no text on it. */
+  @Test
+  fun `test il on a whitespace-only line does nothing`() {
+    val session = Session("one\n    \nthree\n", "textobj-line")
+
+    session.type("jdil")
+
+    assertEquals("one\n    \nthree\n", session.content)
+  }
+
   // ---- CamelCaseMotion -------------------------------------------------------------------------
 
   /**

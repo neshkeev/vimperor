@@ -353,6 +353,14 @@ abstract class VimVariableServiceBase : VariableService {
         }
       }
 
+      // Vimscript has no boolean, so every type converts: `asBoolean` is Vim's own truthiness -
+      // zero and an empty string are false, everything else is true - and that is what
+      // `if g:some_flag` already means in a config. This is what an extension's opt-out variable
+      // is read through, and without it `getVariable<Boolean>` threw "Unsupported type: Boolean".
+      // `textobj-entire` has been reading `g:textobj_entire_no_default_mappings` that way since it
+      // was bundled, and a config runs with `indicateErrors = false`, so it failed in silence.
+      Boolean::class -> vimDataType.asBoolean()
+
       Double::class -> {
         if (vimDataType is VimFloat) {
           vimDataType.value

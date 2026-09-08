@@ -278,16 +278,38 @@ class ConvertToKotlinTypeTest {
     assertEquals("Expected Map, but got VimList", exception.message)
   }
 
+  // `Boolean` used to be the example of an unsupported type. It is supported now, and `Char` is not,
+  // so the test moved rather than went: something still has to say that an unknown type is refused
+  // instead of silently converting to the wrong thing.
   @Test
   fun `test getVariable with unsupported type throws exception`() {
     val vimInt = VimInt(42)
-    val type = typeOf<Boolean>()
+    val type = typeOf<Char>()
 
     val exception = assertFailsWith<IllegalArgumentException> {
       variableService.convertToKotlinType(vimInt, type)
     }
 
-    assertEquals("Unsupported type: Boolean", exception.message)
+    assertEquals("Unsupported type: Char", exception.message)
+  }
+
+  /**
+   * Vimscript has no boolean, so a flag is a number - and Vim's truthiness is what `if g:flag`
+   * already means: zero and an empty string are false, everything else is true.
+   *
+   * This is how an extension reads its opt-out variable. Until it was supported,
+   * `getVariable<Boolean>` threw, and a config runs with `indicateErrors = false`, so
+   * `let g:textobj_entire_no_default_mappings = 1` did nothing and said nothing.
+   */
+  @Test
+  fun `test getVariable with Boolean`() {
+    val type = typeOf<Boolean>()
+
+    assertEquals(true, variableService.convertToKotlinType(VimInt(1), type))
+    assertEquals(true, variableService.convertToKotlinType(VimInt(42), type))
+    assertEquals(false, variableService.convertToKotlinType(VimInt(0), type))
+    assertEquals(true, variableService.convertToKotlinType(VimString("1"), type))
+    assertEquals(false, variableService.convertToKotlinType(VimString(""), type))
   }
 
   @Test
