@@ -64,12 +64,19 @@ private fun changeCharacterRange(editor: VimEditor, caret: VimCaret, range: Text
   val chars = editor.text()
   val starts = range.startOffsets
   val ends = range.endOffsets
+  val selectionStart = starts.firstOrNull()
   for (j in ends.indices.reversed()) {
     for (i in starts[j] until ends[j]) {
       if (i < chars.length && '\n' != chars[i]) {
         injector.changeGroup.replaceText(editor, caret, i, i + 1, ch.toString())
       }
     }
+  }
+
+  // `r` in Visual leaves the caret on the first character it replaced. Each `replaceText` above moves the caret to
+  // the end of what it wrote, so after the last one it sits at the end of the selection instead.
+  if (selectionStart != null) {
+    caret.moveToOffset(selectionStart)
   }
   return true
 }
