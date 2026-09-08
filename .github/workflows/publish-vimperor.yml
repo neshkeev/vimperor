@@ -39,7 +39,15 @@ jobs:
       # A tag publishes. A manual run only packages, unless it was asked for both.
       publishing: ${{ startsWith(github.ref, 'refs/tags/') || inputs.publish }}
     steps:
+      # `persist-credentials: false` because nothing here needs a git credential and leaving one
+      # around is free risk. The default writes the `GITHUB_TOKEN` into `.git/config` as an
+      # `AUTHORIZATION: basic` header, where every later step - and anything the build resolves
+      # from a repository - can read it. This job never pushes: the tag check reads
+      # `GITHUB_REF_NAME` rather than asking git, and the release step uses the REST API with its
+      # own token input.
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       # Java 21 exactly. The build refuses anything else, and says so - this is the same
       # requirement CLAUDE.md states for a developer's machine.
