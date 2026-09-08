@@ -14,9 +14,12 @@ Vimperor
      a version number that goes stale silently - this one is read from the Marketplace. -->
 [![Marketplace](https://vsmarketplacebadges.dev/version-short/neshkeev.vimperor.svg)](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor)
 
-A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md). This
-repository built the IntelliJ plugin too, until the port no longer needed it; what is left is
-the engine and the VS Code extension.
+A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md).
+
+**This repository does not build an IntelliJ plugin.** It did, until the port no longer needed
+one, and then those 408 files were deleted. Nothing here produces or ships anything for
+IntelliJ; the only artifact is the VS Code extension. IdeaVim's own tests stayed behind, and
+are read as data rather than compiled - see [Layout](#layout).
 
 What this is
 ------------
@@ -78,16 +81,24 @@ Visual mode in all three kinds including blockwise; marks, macros and digraphs;
 and `'hlsearch'`. Insert mode steps aside for the suggest widget and for Copilot's
 ghost text, so Tab accepts a suggestion when one is showing and is Vim's otherwise.
 
+On the command line, `%` is the current file and takes Vim's `:p`, `:h`, `:t`, `:r` and `:e`
+modifiers, so `:e %:h/other.kt` and `:!wc %` mean what they do in Vim; `<Tab>` completes a file
+name, through a `%` and into a directory. `gf` opens the file under the caret - which IdeaVim
+has never had in any form. The tag stack is real: a `tags` file is read, `:tag`, `:tselect`,
+`:tnext`, `:pop` and `:tags` work over it, and `<C-]>` and `<C-T>` walk it. `:sign` draws in the
+gutter, and with the `signature` extension your `a`-`z` marks draw there too.
+
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 2 of IdeaVim's 24 bundled extensions — matchit and VimEverywhere.
-The other twenty-two are ported:
+What does not: 2 of IdeaVim's 27 bundled extensions — matchit and VimEverywhere.
+The other twenty-five are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
+`textobj-entire`, `textobj-line`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`.
+`functextobj`, `classtextobj`, `visual-star-search`, `signature`, `NERDTree` and
+`youcompleteme`.
 
 The two that are missing are not waiting on a seam. `matchit` needs to know
 what a *token* is, and the most VS Code will say about a file's structure is where its
@@ -123,14 +134,23 @@ The extension takes over VS Code's `type` command, which is the only way for an
 extension to see ordinary typing. That also means **no other Vim extension can be
 enabled at the same time** — `type` has one owner.
 
+There is a [dev container](.devcontainer/devcontainer.json) if you would rather not install a
+JDK: open the repository in it and everything above works unchanged. F5 builds the extension
+and opens a development window with the debugger attached; your own `~/.vimrc`, `~/.ideavimrc`
+and `~/.vimperorrc` are mounted read-only, so the copy running in there is configured the way
+yours is.
+
 Layout
 ------
 
-| Path                | What it is                        | Compiles to       |
-|---------------------|-----------------------------------|-------------------|
-| `vim-engine/`       | The Vim engine, host-independent  | JVM **and** JS    |
-| `vscode-extension/` | The Vimperor VS Code extension    | JS (Kotlin/JS IR) |
-| `src/test/`         | IdeaVim's tests, as replay data   | nothing           |
+| Path                    | What it is                             | Compiles to       |
+|-------------------------|----------------------------------------|-------------------|
+| `vim-engine/`           | The Vim engine, host-independent       | JVM **and** JS    |
+| `vscode-extension/`     | The Vimperor VS Code extension         | JS (Kotlin/JS IR) |
+| `api/`                  | The thin API an extension is written against | JVM and JS  |
+| `vim-annotations/`      | The annotations that API uses          | JVM and JS        |
+| `annotation-processors/`| KSP: builds the command registries     | JVM               |
+| `src/test/`             | IdeaVim's tests, as replay data        | nothing           |
 
 `vim-engine` is Kotlin Multiplatform laid out the Maven way: every Kotlin file is
 under `src/main/kotlin` or `src/test/kotlin`, and what only one platform needs sits
@@ -138,10 +158,14 @@ in its own tree with the same layout, `vim-engine/jvm` and `vim-engine/js`. It
 still compiles for both targets and its tests run on both, which is how a JVM-ism
 in shared code gets caught.
 
-The IntelliJ plugin was deleted once the port no longer needed it. `src/test`
-stayed and is not compiled: it holds IdeaVim's 11,727 tests, and the VS Code host
-mines 2,423 replayed fixtures out of them as *text*. That corpus is the largest
-outside check on the port, and it never needed to be code.
+`src/test` is the odd one, and the reason the IntelliJ plugin could go. It is not
+compiled by anything: it holds IdeaVim's tests as IdeaVim wrote them - 636 files and
+10,492 `@Test` methods - and the VS Code host mines **2,427 replayed fixtures** out of
+them as *text*, playing the keys against this host and comparing the result. That corpus
+is the largest outside check on the port, and it never needed to be code.
+
+It grows by the harness learning to read more of what is already there, which is why the
+number moves without anybody writing a test.
 
 Testing
 -------
@@ -164,7 +188,7 @@ of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
 Beyond its own tests, the extension replays IdeaVim's test fixtures against the
-VS Code host: **2,417 of 2,423 pass**. The six that do not each name an IntelliJ
+VS Code host: **2,421 of 2,427 pass**. The six that do not each name an IntelliJ
 action with no VS Code command behind it, and are listed in
 [`known-fixture-failures.txt`](vscode-extension/src/test/fixtures/known-fixture-failures.txt).
 
