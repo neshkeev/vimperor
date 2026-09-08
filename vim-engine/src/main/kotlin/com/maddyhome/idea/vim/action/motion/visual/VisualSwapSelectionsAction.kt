@@ -52,7 +52,10 @@ private fun swapVisualSelections(editor: VimEditor): Boolean {
   injector.markService.setVisualSelectionMarks(primaryCaret, TextRange(vimSelectionStart, primaryCaret.offset))
 
   editor.mode = mode.copy(selectionType = lastSelectionType)
-  primaryCaret.vimSetSelection(lastVisualRange.startOffset, lastVisualRange.endOffset, true)
+  // `endOffset - 1`, because the end is inclusive twice over: `getVisualSelectionMarks` has already added one to
+  // turn the `<` / `>` marks into an exclusive end, and `vimSetSelection` adds another of its own. Passing it
+  // through unadjusted made `gv` restore a selection one character wider than the one it was remembering.
+  primaryCaret.vimSetSelection(lastVisualRange.startOffset, lastVisualRange.endOffset - 1, true)
 
   injector.scroll.scrollCaretIntoView(editor)
 
