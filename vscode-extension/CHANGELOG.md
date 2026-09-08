@@ -4,6 +4,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-09-08
+
+**No change to the extension.** Everything that runs is byte-for-byte 0.0.1: the only files that
+moved between the two are this one and `PUBLISHING.md`, which is not shipped.
+
+It exists to prove the release workflow end to end. 0.0.1 was published by hand because the
+automated path had never been run - and when it was finally run it failed twice, on a test step
+excluding two Gradle projects that no longer exist and on a Node executable resolved by asking a
+cold runner for a file it had not downloaded yet. Both are fixed, and a `workflow_dispatch` has
+gone green, but a dispatch skips the one step that matters most and cannot be rehearsed: the
+publish itself. This release is that step.
+
 ## [0.0.1] - 2026-09-08
 
 Published by hand rather than by the release workflow, so there is no `vimperor-v0.0.1` tag and
