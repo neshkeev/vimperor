@@ -26,10 +26,9 @@ repositories {
 kotlin {
   js(IR) {
     // The name of the bundle VS Code loads, and of nothing else. Without it the file is named from
-    // the Gradle project - `IdeaVIM-vscode-extension.js` - which is the wrong product's name on the
-    // one file a user of this extension could ever look at. `vim-engine` sets its own for the same
-    // reason; this comment used to say the engine kept the IdeaVim name because it really is
-    // IdeaVim's code, which is true and is not what a filename in a shipped archive is for.
+    // the Gradle project - `vimperor-vscode-extension.js` - and `package.json` names this file as
+    // `main`. The other modules need no such setting: they are `<rootProject.name>-<module>.js`,
+    // and the root is `vimperor`. This one is the exception because its name is not that pattern.
     outputModuleName.set("vimperor")
 
     // VS Code loads extensions with `require`, so the output has to be CommonJS rather than ESM.

@@ -384,18 +384,11 @@ val checkJsLibraryIsNotEmpty = tasks.register("checkJsLibraryIsNotEmpty") {
 kotlin {
   jvm()
   js(IR) {
-    // The name of the file this module compiles to, and the reason it is set at all: without it the
-    // Kotlin plugin names the output from the Gradle project - `IdeaVIM-vim-engine.js`, because
-    // `rootProject.name` is still `IdeaVIM` - and that file ships inside every `.vsix`.
-    //
-    // `vscode-extension` set `outputModuleName` for its own bundle a while ago and left this one
-    // alone, with a comment saying the engine "keeps its own name; it is a dependency, and it really
-    // is IdeaVim's". That is true of the *code* and is not the question the filename answers: the
-    // name is what a user finds when they unpack the extension they installed, and there the
-    // product's name is the honest one. Attribution lives in AUTHORS.md, ThirdPartyLicenses.md and
-    // the copyright header on nearly every file in this module, none of which a rename touches.
-    outputModuleName.set("vimperor-vim-engine")
-
+    // This compiles to `vimperor-vim-engine.js`, and no `outputModuleName` says so: the Kotlin
+    // plugin names a module's output `<rootProject.name>-<module>.js`, and `settings.gradle.kts`
+    // sets the root to `vimperor` for exactly that reason. It briefly had an explicit name here
+    // instead, which was the same string arrived at twice - a thing to drift rather than a thing to
+    // rely on. `checkJsLibraryIsNotEmpty` below reads the file and would fail loudly if it moved.
     nodejs {
       testTask {
         useMocha {
