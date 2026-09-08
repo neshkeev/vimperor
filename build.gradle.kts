@@ -55,12 +55,38 @@ if (currentJavaVersion != javaVersion) {
 // Resolved once, out here: inside the `allprojects` closure `javaVersion` binds to something else.
 val toolchainJavaVersion = JavaLanguageVersion.of(javaVersion.toInt())
 
+/** The Kotlin the modules compile with; see the note on `kotlinVersion` in gradle.properties. */
+val kotlinStdlibVersion = providers.gradleProperty("kotlinVersion").get()
+
 allprojects {
   afterEvaluate {
     // Only where a toolchain exists to ask for - the JS-only modules have none.
     val toolchains = project.extensions.findByType<JavaToolchainService>() ?: return@afterEvaluate
     tasks.withType<Test>().configureEach {
       javaLauncher.set(toolchains.launcherFor { languageVersion.set(toolchainJavaVersion) })
+    }
+  }
+
+  // One Kotlin stdlib, at the compiler's version.
+  //
+  // Two dependencies drag an older one in - KSP 2.3.11 declares 2.3.20 and antlr-kotlin declares
+  // 2.3.21 - so `annotation-processors:compileClasspath` and vim-engine's metadata classpath
+  // compiled against a stdlib two releases behind the compiler that read them. Normally the Kotlin
+  // Gradle plugin prevents that by adding the stdlib itself and aligning everything to its own
+  // version; this build sets `kotlin.stdlib.default.dependency=false` (see gradle.properties, and
+  // the reason is the engine's own collection shims), which turns that alignment off along with
+  // the dependency. The stragglers are the cost of it, and this is the narrower way to pay: align
+  // the version without adding the dependency to anything.
+  //
+  // `eachDependency` rather than `resolutionStrategy.force`, deliberately. `force` is a `strictly`
+  // constraint, and KGP already declares `{strictly 2.4.0}` for its ABI-validation compat
+  // classpath - two strict constraints that disagree is a resolution failure, not a resolution.
+  // Substituting a requested version leaves that classpath alone.
+  configurations.configureEach {
+    resolutionStrategy.eachDependency {
+      if (requested.group == "org.jetbrains.kotlin" && requested.name == "kotlin-stdlib") {
+        useVersion(kotlinStdlibVersion)
+      }
     }
   }
 }
