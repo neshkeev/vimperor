@@ -1,0 +1,52 @@
+{
+  "name": "Vimperor",
+
+  // JDK 25 is not a preference here: the root build refuses anything else and says so, and the
+  // migration to 25 was what caught the engine's right-to-left table being a Unicode version
+  // behind. The tag pins the major; the image supplies the JDK, Git and a `vscode` user.
+  //
+  // Node is not installed and does not need to be. The Kotlin/JS plugin downloads its own into
+  // ~/.gradle/nodejs and every task that needs one - the stub host, `vsce` through `npx` - is
+  // pointed at that copy by the build. See `nodeBinDirectory` in vscode-extension/build.gradle.kts.
+  "image": "mcr.microsoft.com/devcontainers/java:25",
+
+  // ~/.gradle on a named volume. Without it every rebuild of the container re-downloads Gradle
+  // itself, the whole dependency set and the ~190 MB Node distribution - several minutes before
+  // anything compiles. The volume is created root-owned, which is why postCreateCommand chowns it.
+  "mounts": [
+    "source=vimperor-gradle,target=/home/vscode/.gradle,type=volume"
+  ],
+
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.gradle && ./gradlew --version",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Kotlin language support. Alpha, and its own page says Kotlin Multiplatform support "is
+        // coming in the future releases" - `vim-engine` is KMP, so expect gaps in the per-target
+        // source sets. It is language support only; nothing here debugs Kotlin.
+        "jetbrains.kotlin-server",
+
+        // The extension this repository builds, in the window you edit in. The one you are
+        // developing runs in the Extension Development Host window instead, so there are two
+        // copies and only ever one per window - VS Code's `type` command has a single owner.
+        "neshkeev.vimperor"
+      ],
+      "settings": {
+        // build/ is large and churns on every compile; .gradle/ and the NVD cache are worse.
+        // Watching them costs the file watcher and puts generated Kotlin in every search result.
+        "files.watcherExclude": {
+          "**/build/**": true,
+          "**/.gradle/**": true,
+          "**/.dependency-check-data/**": true
+        },
+        "search.exclude": {
+          "**/build/**": true,
+          "**/.gradle/**": true
+        }
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}

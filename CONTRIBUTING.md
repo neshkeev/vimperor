@@ -23,9 +23,39 @@ OK, ready to do some coding?
 ## Yes, I'm ready for some coding
 
 * Fork the repository and clone it to the local machine.
-* Open the project with IntelliJ IDEA.
+* Open it in VS Code and **Reopen in Container**, or open it with IntelliJ IDEA.
 
 Yoo hoo! You’re all set to begin contributing.
+
+In a dev container
+------------------
+
+`.devcontainer/devcontainer.json` describes a container that compiles, tests, runs and debugs the
+extension without a JDK on the host. It needs [Dev
+Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+and Docker; VS Code offers **Reopen in Container** on its own once the file is there.
+
+**F5 is the whole workflow.** It builds, opens a second VS Code window with this build of Vimperor
+loaded, and attaches the debugger — breakpoints in `.kt` files, not in generated JavaScript. That
+last part is why `assembleExtensionForDebug` exists: `assembleExtension` drops the source maps
+because the `.vsix` does not want them, and without maps a breakpoint lands in Kotlin/JS output that
+nobody can read. The packaged extension is unaffected either way, since `.vscodeignore` excludes
+maps regardless of what `dist/` holds.
+
+Two things worth knowing before the first run:
+
+* **`jetbrains.kotlin-server` is alpha, and its own page says Kotlin Multiplatform support "is
+  coming in the future releases".** `vim-engine` is multiplatform, so completion and navigation
+  will have gaps in the per-target trees. It is language support only — nothing in VS Code debugs
+  Kotlin on the JVM, which is why the container installs no Java tooling and JVM tests are run
+  through Gradle.
+* **Vimperor itself is installed in the container**, so you edit with the released build while
+  developing the next one. The development host is launched with `--disable-extensions` for that
+  reason: VS Code's `type` command has exactly one owner, and without it the installed copy would
+  shadow the one being debugged.
+
+`~/.gradle` is on a named volume. Without it every container rebuild re-downloads Gradle, the whole
+dependency set and the ~190 MB Node distribution the Kotlin/JS plugin fetches.
 
 The run configurations that came with IdeaVim - `Start IJ with IdeaVim`, `Start CLion`, `Start
 Rider` and the rest - started a dev IDE with the plugin installed. There is no plugin, so they are

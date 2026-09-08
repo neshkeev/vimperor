@@ -184,6 +184,37 @@ val runInStubHost = tasks.register<Exec>("runInStubHost") {
   args(script.asFile.absolutePath)
 }
 
+/**
+ * `dist/` with the source maps left in, for debugging the extension in a development host.
+ *
+ * `assembleExtension` drops the `.map` files because they are not wanted in the `.vsix` - and they
+ * still are not: `.vscodeignore` excludes them too, so packaging is unaffected by this task
+ * whatever `dist/` happens to hold when it runs.
+ *
+ * Without the maps a breakpoint in the Extension Development Host lands in generated Kotlin/JS,
+ * which is unreadable; with them it lands in the `.kt` file. That is the whole difference, and it is
+ * the difference between the debugger being worth opening and not.
+ *
+ * Additive rather than a second `Sync` into the same directory: two tasks declaring `dist/` as an
+ * output is an overlapping-output problem, and Gradle is right to dislike it. This depends on
+ * `assembleExtension`, then copies the maps in on top, and declares no outputs of its own.
+ */
+val assembleExtensionForDebug = tasks.register("assembleExtensionForDebug") {
+  description = "assembleExtension, plus the source maps, so breakpoints land in Kotlin."
+  group = LifecycleBasePlugin.BUILD_GROUP
+
+  dependsOn(assembleExtension)
+  val from = bundleDirectory
+  val into = distDirectory
+  outputs.upToDateWhen { false }
+  doLast {
+    val maps = from.get().asFile.listFiles().orEmpty().filter { it.name.endsWith(".map") }
+    check(maps.isNotEmpty()) { "No source maps in ${from.get().asFile} - did the bundle build?" }
+    maps.forEach { it.copyTo(into.file(it.name).asFile, overwrite = true) }
+    logger.lifecycle("Copied ${maps.size} source maps into dist/. `assembleExtension` removes them again.")
+  }
+}
+
 tasks.named("check") {
   dependsOn(runInStubHost)
 }

@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // F5. Opens a second VS Code window with this build of Vimperor loaded, and attaches the
+      // JavaScript debugger to its extension host.
+      //
+      // `--extensionDevelopmentPath` is the extension's own directory, not `dist/` - VS Code wants
+      // the folder holding `package.json`, and `main` there points into `dist/`. That is the same
+      // path a user's installed copy takes, so a file missing from `dist/` fails here too.
+      //
+      // `--disable-extensions` matters more here than in most projects. Vimperor takes over VS
+      // Code's `type` command and that command has exactly one owner, so the copy installed in the
+      // editor you are working in would fight the one you are debugging. This turns the other one
+      // off in the development host only.
+      "name": "Run Vimperor",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension",
+        "--disable-extensions"
+      ],
+      "outFiles": ["${workspaceFolder}/vscode-extension/dist/**/*.js"],
+      "preLaunchTask": "assembleExtensionForDebug"
+    },
+    {
+      // The same window without the debugger attached, for when you only want to try the thing.
+      // Faster to start and it will not pause on an exception the engine handles itself.
+      "name": "Run Vimperor (no debugger)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/vscode-extension",
+        "--disable-extensions"
+      ],
+      "noDebug": true,
+      "preLaunchTask": "assembleExtensionForDebug"
+    }
+  ]
+}

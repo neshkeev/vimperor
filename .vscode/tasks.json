@@ -1,0 +1,42 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // What F5 runs first. `assembleExtensionForDebug` is `assembleExtension` with the source maps
+      // left in dist/, which is the difference between a breakpoint landing in your .kt file and
+      // landing in generated Kotlin/JS. The .vsix is unaffected - .vscodeignore excludes maps.
+      "label": "assembleExtensionForDebug",
+      "type": "shell",
+      "command": "./gradlew :vscode-extension:assembleExtensionForDebug --console=plain",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "./gradlew test :vscode-extension:check --parallel --console=plain",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": [],
+      "presentation": { "panel": "shared" }
+    },
+    {
+      // The fixture replay writes vscode-extension/build/fixture-failures.txt on every run, with
+      // the current failures and a count of what the harness refused and why.
+      "label": "test: extension only",
+      "type": "shell",
+      "command": "./gradlew :vscode-extension:check --console=plain",
+      "group": "test",
+      "problemMatcher": [],
+      "presentation": { "panel": "shared" }
+    },
+    {
+      "label": "package (.vsix)",
+      "type": "shell",
+      "command": "./gradlew :vscode-extension:checkPackagedExtension --console=plain",
+      "group": "build",
+      "problemMatcher": [],
+      "presentation": { "panel": "shared" }
+    }
+  ]
+}
