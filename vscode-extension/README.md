@@ -105,6 +105,19 @@ you never issue commands from it, add them yourself:
 set langmap=\"@\\;$:^?&./\\,?/\|
 ```
 
+**A whole command line typed in the wrong layout is corrected.** `:ыуе тщцкфз` runs `:set nowrap`,
+and says so on the status line. This is not `'langmap'` reaching the command line — a command line
+carries text as well as commands, and `:s/привет/пока/` must mean what it says. It is a correction,
+allowed only where it cannot destroy anything: the line has to contain **no Latin letter at all**,
+the command as typed has to be no command, and the corrected one has to be a real command. Nothing
+that works today changes, and nothing has run when the decision is made.
+
+The rule about Latin letters is what separates an accident from a decision. Someone who forgot to
+switch layouts typed the whole line in Cyrillic, argument included; someone who typed
+`:w привет.txt` switched on purpose, and that Cyrillic is a filename. So a mixed line is left alone
+— including `:%ы/one/ONE/g`, where the `s` was a slip. Digits and punctuation are not letters, so
+`:ыуе еы=4` is still corrected.
+
 Mapping the keys instead — `nmap ш i` and sixty more — is the thing to avoid. It cannot reach a
 register name, a mark name or a count, it is recursive unless every line says `nnoremap`, and it
 leaves Visual mode out unless you remember `xmap` as well.

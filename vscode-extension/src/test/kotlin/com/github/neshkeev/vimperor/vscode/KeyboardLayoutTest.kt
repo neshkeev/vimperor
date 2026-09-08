@@ -8,6 +8,7 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.github.neshkeev.vimperor.keyboard.CommandLineLayout
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.injector
@@ -16,6 +17,7 @@ import com.maddyhome.idea.vim.options.helpers.LangMapOptionHelper
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * `'keyboardlayout'`, pressed rather than parsed.
@@ -35,11 +37,13 @@ class KeyboardLayoutTest {
 
   private class Session {
     val fake = FakeEditor("one two three\nfour five six\nseven (eight) nine")
+    val errors: MutableList<String> = mutableListOf()
+    val statuses: MutableList<String> = mutableListOf()
     val host = VimHost(
       sink = object : MessageSink {
         override fun message(text: String?) {}
-        override fun error(text: String?) {}
-        override fun status(text: String?) {}
+        override fun error(text: String?) { errors += text.orEmpty() }
+        override fun status(text: String?) { statuses += text.orEmpty() }
       },
       runCommand = { _, _, onDone -> onDone(true) },
     ).also { it.start() }
@@ -212,4 +216,94 @@ class KeyboardLayoutTest {
     assertEquals('d', LangMapOptionHelper.mapChar('в'))
   }
 
+
+  // ---- The command line, which is text as well as commands. See `CommandLineLayout`.
+
+  /** Types `:keys<CR>` with a layout set and returns the resulting document and mode. */
+  private fun ex(keys: String, layout: String = "russian", langmap: String = ""): String {
+    val session = Session()
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString(layout))
+    injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString(langmap))
+    session.host.key(session.fake, "<Esc>")
+    session.press(":" + keys)
+    session.host.key(session.fake, "<CR>")
+    return session.fake.document.content
+  }
+
+  @Test
+  fun `test a whole command line typed in the wrong layout is corrected`() {
+    // The ask: `set nowrap` typed without switching layouts. The command name and the argument are
+    // both Cyrillic, so both have to be corrected - correcting only the name would leave `E518`.
+    val session = Session()
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString("russian"))
+    injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString(""))
+    session.host.key(session.fake, "<Esc>")
+    session.press(":ыуе тщцкфз")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals(emptyList(), session.errors, "it should not have reported E492 or E518")
+    assertTrue(
+      session.statuses.any { "set nowrap" in it },
+      "the correction must say what it ran, got ${session.statuses}",
+    )
+  }
+
+  @Test
+  fun `test a corrected command line actually edits`() {
+    // Proves the correction reaches execution rather than only being reported, and that a range
+    // survives it - `1,2в` is `1,2d`.
+    assertEquals(ex("1,2d", layout = ""), ex("1,2в"))
+  }
+
+  @Test
+  fun `test a line whose argument is Latin is left alone even when the command is not`() {
+    // The cost of the no-ASCII-letter rule, written down rather than discovered. `%ы/one/ONE/g` is
+    // a slip in the command name and a deliberately Latin pattern, and this cannot tell that from
+    // `:w привет.txt` with the halves the other way round. It refuses both and reports E492, which
+    // is at least the truth about what was typed.
+    assertEquals(null, CommandLineLayout.correct("%ы/one/ONE/g"))
+  }
+
+  @Test
+  fun `test a command that already means something is never corrected`() {
+    // The line this must not touch: `s` is a command, so the Cyrillic is the pattern, not a slip.
+    val session = Session()
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString("russian"))
+    session.host.key(session.fake, "<Esc>")
+    session.press(":s/one/привет/")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals("привет two three\nfour five six\nseven (eight) nine", session.fake.document.content)
+    assertEquals(emptyList(), session.statuses.filter { "Executed as" in it })
+  }
+
+  @Test
+  fun `test a line holding an ASCII letter is left alone`() {
+    // The rule that separates an accident from a decision. `w` was typed in Latin, so the Cyrillic
+    // after it is the filename that was meant - correcting it would write to `ghbdtn.txt`.
+    assertEquals(null, CommandLineLayout.correct("w привет.txt"))
+    assertEquals(null, CommandLineLayout.correct("e привет.txt"))
+  }
+
+  @Test
+  fun `test a line that corrects to nothing keeps its own error`() {
+    // `привет` corrects to `ghbdtn`, which is not a command either, so the user should be told
+    // about what they typed rather than about a word they have never seen.
+    assertEquals(null, CommandLineLayout.correct("привет"))
+  }
+
+  @Test
+  fun `test nothing is corrected without a layout`() {
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString(""))
+    injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString(""))
+    assertEquals(null, CommandLineLayout.correct("ыуе тщцкфз"))
+  }
+
+  @Test
+  fun `test digits and punctuation are not letters`() {
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString("russian"))
+    injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString(""))
+    assertEquals("set ts=4", CommandLineLayout.correct("ыуе еы=4"))
+    assertEquals("1,2d", CommandLineLayout.correct("1,2в"))
+  }
 }

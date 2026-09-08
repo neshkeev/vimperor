@@ -10,6 +10,7 @@ package com.maddyhome.idea.vim.action.ex
 
 import com.intellij.vim.annotations.CommandOrMotion
 import com.intellij.vim.annotations.Mode
+import com.github.neshkeev.vimperor.keyboard.CommandLineLayout
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
@@ -142,7 +143,15 @@ class ProcessExCommandEntryAction : MotionActionHandler.SingleExecution() {
 
       logger.debug("processing command")
 
-      val text = argument.string
+      // A line typed in the wrong keyboard layout, where correcting it cannot destroy anything.
+      // `CommandLineLayout` carries the four conditions and why each one is needed; it returns null
+      // for everything else, including every line that already means something.
+      val typed = argument.string
+      val corrected = CommandLineLayout.correct(typed)
+      if (corrected != null) {
+        injector.messages.showStatusBarMessage(editor, injector.messages.message("keyboardlayout.corrected", corrected))
+      }
+      val text = corrected ?: typed
       val keyState = KeyHandler.getInstance().keyHandlerState
       val shouldSkipHistory = keyState.mappingState.isExecutingMap() || injector.macro.isExecutingMacro
       injector.vimscriptExecutor.execute(text, editor, context, shouldSkipHistory, true, CommandLineVimLContext)

@@ -23,6 +23,10 @@ The Marketplace renders this file on the extension's page, under Changelog.
   `'langmap'` still works and wins where the two disagree. The keys whose Cyrillic position emits
   ASCII - `$`, `^`, `@`, `&`, `/`, `?`, `|` - are deliberately left out, so that `.`, `:` and `;`
   keep working for anyone who also types in Latin; the README has the line to add them.
+- A whole `:` command line typed in the wrong keyboard layout is corrected and echoed: `:ыуе
+  тщцкфз` runs `:set nowrap`. Only when the line holds no Latin letter at all, the command as typed
+  is not a command, and the corrected one is - so `:s/привет/пока/` and `:w привет.txt` are
+  untouched.
 - Three more of IdeaVim's bundled extensions, taking it to twenty-five of twenty-seven:
   `textobj-line` (`al` and `il` - the line with and without its indentation), `visual-star-search`
   (`*` and `#` in visual mode search for the selection) and `signature` (your `a`-`z` marks drawn

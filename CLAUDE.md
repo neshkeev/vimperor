@@ -123,6 +123,26 @@ That rule pays for itself twice, which is the part worth keeping: **the ASCII ha
 that varies.** Windows and macOS disagree about the Russian digit row and agree about every letter,
 so a table restricted to the non-ASCII characters is the same table on both.
 
+**The command line takes a different rule, and it is a correction rather than a translation.**
+`'langmap'` stops at the command line in Vim, and that is right: a command line carries text as
+well as commands, so `:s/привет/пока/` and `:e привет.txt` mean what they say. But `:ыуе тщцкфз` is
+not text, it is `:set nowrap` typed without switching layouts, and it was `E492` and a retype.
+
+`CommandLineLayout.correct` allows it only where being wrong cannot cost anything, and the load is
+carried by one condition: **the line must contain no Latin letter at all.** That is what separates
+an accident from a decision - someone who forgot to switch typed the whole line in Cyrillic,
+argument included, while someone who typed `:w привет.txt` switched on purpose and that Cyrillic is
+a filename. The other three are that the line has a non-ASCII character, that the command as typed
+is not a command, and that the corrected one is. It hooks into `ProcessExCommandEntryAction`, which
+is the *typed* line only - a `.vimperorrc` goes through `executeFile` and is never corrected,
+because a config is written deliberately and correcting it would mask the error.
+
+The decision is made on a *parse*, never an execution, so a wrong correction cannot have
+half-happened. What it still cannot tell apart is a fully-Cyrillic line whose argument was meant
+literally - `:%ы/привет/пока/`, a slip in the name and a deliberate pattern - which is why the
+correction is echoed rather than silent. `:%ы/one/ONE/g` is refused outright by the Latin-letter
+rule, and a test records that as the cost rather than leaving it to be rediscovered.
+
 **The opt-in line in the README is typed by a test rather than described by one.** A wrong line in
 a document is exactly the failure this option exists to remove, and it fails silently; the first
 version written here had `\;` where it needed `\\;` and set nothing at all. The test types the
