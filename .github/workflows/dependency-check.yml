@@ -82,16 +82,39 @@ jobs:
         id: week
         run: echo "key=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v5
+        id: nvd
         with:
           path: .dependency-check-data
           key: nvd-${{ steps.week.outputs.key }}
           restore-keys: nvd-
 
+      # `--no-configuration-cache`, and no `--parallel`. Neither is a preference; the plugin fails
+      # without both, and it took two runs to separate them:
+      #
+      #   - The configuration cache is on for this build (gradle.properties) and the plugin does not
+      #     support it. `Aggregate` holds a `Project` and calls `Task.project` at execution time -
+      #     "cannot serialize object of type 'DefaultProject'".
+      #   - `--parallel` then fails it a second way: the task resolves other projects'
+      #     configurations while executing, which Gradle refuses in a parallel build -
+      #     "Resolution of the configuration ':annotation-processors:annotationProcessor' was
+      #     attempted without an exclusive lock".
+      #
+      # Turning off the configuration cache alone still fails on the lock, in 670ms; both together
+      # get through to the NVD download. Nothing else in the build gives either flag up.
       - name: Scan
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
-        run: ./gradlew dependencyCheckAggregate --parallel --console=plain
+        run: ./gradlew dependencyCheckAggregate --no-configuration-cache --console=plain
+
+      # Saved even when the scan fails, which `actions/cache` in its combined form will not do - its
+      # post step skips the save on a failed job. The download is the expensive part and a scan that
+      # fails on a CVE has already paid for it; discarding it would make the next run pay again.
+      - if: always() && steps.nvd.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .dependency-check-data
+          key: nvd-${{ steps.week.outputs.key }}
 
       # Whether or not it passed - a failing scan is exactly when the report is wanted, and the
       # console says only that something was found, not what.

@@ -1,0 +1,60 @@
+# Build and test, on every push to master and every pull request.
+#
+# The third workflow in this fork. `publish-vimperor.yml` runs the same suite, but only on a tag -
+# which is the wrong moment to first hear that master is broken, and may be months after it broke.
+# This is the one that says whether the trunk works.
+#
+# It runs exactly the command CLAUDE.md documents and the release runs, deliberately: a check that
+# is narrower than what a developer types is a check that lets through the thing they would have
+# caught. `test` alone is narrower than it looks - the stub-host activation, both API guards and the
+# command-id guard are `check` tasks.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A push that supersedes an in-flight run makes that run's answer irrelevant. Not on master, where
+# every commit's result is worth having on the record.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # Java 21 exactly. The build refuses anything else and says so.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Test
+        run: ./gradlew test :vscode-extension:check --parallel --console=plain
+
+      # The fixture replay writes its own report - which fixtures failed, and a count of what the
+      # harness refused and why. It is the most useful artefact this repository produces and it is
+      # wanted precisely when the run is red.
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: |
+            vscode-extension/build/fixture-failures.txt
+            */build/reports/tests/
+          if-no-files-found: warn

@@ -5,6 +5,10 @@ Vimperor
 
 **Vim for VS Code, powered by IdeaVim's engine.**
 
+[![CI](https://github.com/neshkeev/vimperor/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/neshkeev/vimperor/actions/workflows/ci.yml)
+[![Dependency Check](https://github.com/neshkeev/vimperor/actions/workflows/dependency-check.yml/badge.svg?branch=master)](https://github.com/neshkeev/vimperor/actions/workflows/dependency-check.yml)
+[![Marketplace](https://img.shields.io/visual-studio-marketplace/v/neshkeev.vimperor?label=marketplace)](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor)
+
 A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md). This
 repository built the IntelliJ plugin too, until the port no longer needed it; what is left is
 the engine and the VS Code extension.

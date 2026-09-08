@@ -89,6 +89,20 @@ allprojects {
  * `failBuildOnCVSS = 7` is High and above. It fails the *scan*, which is its own scheduled
  * workflow, not the release: a CVE published upstream overnight should turn a dashboard red, not
  * block a release that has nothing to do with it.
+ *
+ * ## It cannot run the way the rest of the build runs
+ *
+ * `./gradlew dependencyCheckAggregate --no-configuration-cache`, and without `--parallel`. Both are
+ * required and they fail differently, which is worth knowing before anyone "tidies" the workflow:
+ *
+ *  - This build turns the configuration cache on in gradle.properties and the plugin does not
+ *    support it. `Aggregate` holds a `Project` and calls `Task.project` while executing, so storing
+ *    the entry fails with "cannot serialize object of type 'DefaultProject'".
+ *  - With the configuration cache off it still fails under `--parallel`, because the task resolves
+ *    other projects' configurations at execution time: "Resolution of the configuration
+ *    ':annotation-processors:annotationProcessor' was attempted without an exclusive lock."
+ *
+ * Neither flag is given up anywhere else; the scan is the exception and its workflow says so.
  */
 dependencyCheck {
   formats = listOf("HTML", "JSON")
