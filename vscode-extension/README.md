@@ -81,10 +81,22 @@ macros, marks, jumps, the change list, text objects, `.`, undo and redo. Search 
 
 Vimscript: functions, conditionals, loops, dictionaries, lists, `:let`, `:execute`, and around 170
 builtin functions — `printf`, `substitute`, `matchstr`, `expand`, `glob`, `getreg`, `getpos` and the
-rest of the families a `~/.vimrc` is written with. Around 380 ex commands.
+rest of the families a `~/.vimrc` is written with. Just over 400 ex commands.
 
 More than a hundred options, including `'ignorecase'`, `'smartcase'`, `'scrolloff'`, `'clipboard'`,
 `'timeoutlen'`, `'iskeyword'`, `'virtualedit'`, `'whichwrap'` and `'wrapscan'`.
+
+Files and places: `gf` opens the file under the caret, `%` on the command line is the current file
+and takes Vim's `:p`, `:h`, `:t`, `:r` and `:e` modifiers — so `:e %:h/other.kt` and `:!wc %` mean
+what they mean in Vim — and `<Tab>` completes a file name, through a `%` and on into a directory.
+`"%` and `"#` hold the current and alternate file names.
+
+The tag stack is real rather than a wrapper around Go to Definition: a `tags` file is read, and
+`:tag`, `:tselect`, `:tjump`, `:tnext`, `:tprevious`, `:pop` and `:tags` work over it, with `<C-]>`
+and `<C-T>` walking it. `:sign` defines and places signs in the gutter.
+
+The command-line window is there — `q:`, `q/` and `q?` open the history as a buffer you can edit
+and run with `<CR>`.
 
 ## What does not
 
@@ -97,15 +109,16 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   again, or closing and reopening the file, is the way out. It is the only option that can be set
   correctly and still appear to do nothing.
 
-- **Vim plugins.** There is no `pack/` directory, and 2 of IdeaVim's 24 bundled extensions are not
+- **Vim plugins.** There is no `pack/` directory, and 2 of IdeaVim's 27 bundled extensions are not
   available — `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like. The
-  other twenty-two work, and they are enabled the way you would in IdeaVim — with `set <name>`, or
+  other twenty-five work, and they are enabled the way you would in IdeaVim — with `set <name>`, or
   with a `Plug` line for a config borrowed from Vim:
 
   ```vim
   Plug 'vim-scripts/ReplaceWithRegister'   " gr{motion}, grr — replace with a register, keeping it
   Plug 'dbakker/vim-paragraph-motion'      " { and } stop at a line of only whitespace
   Plug 'kana/vim-textobj-entire'           " ae and ie — the whole buffer as a text object
+  Plug 'kana/vim-textobj-line'             " al and il — the line, with and without its indentation
   Plug 'echasnovski/mini.ai'               " ci( and friends, from anywhere on the line
   Plug 'bkad/CamelCaseMotion'              " ,w ,b ,e move by the parts of an identifier
   Plug 'jeetsukumaran/vim-indentwise'      " [- ]- [+ ]+ [= ]= move by indentation level
@@ -123,6 +136,8 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'vim-scripts/YankRing.vim'          " every yank in a ring; <C-P>/<C-N> cycle the last paste
   Plug 'kana/vim-textobj-function'         " am aM im — a function without its doc comment, with it, its body
   Plug 'kana/vim-textobj-class'            " ac — the class, interface, struct or enum you are inside
+  Plug 'bronson/vim-visual-star-search'    " * and # in visual mode search for the selection
+  Plug 'kshenoy/vim-signature'             " your a-z marks drawn in the gutter
   Plug 'preservim/nerdtree'                " :NERDTree and friends, plus j k o s in the Explorer
   set youcompleteme                        " Tab walks the completion list instead of accepting
   ```
@@ -141,6 +156,11 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   of a keystroke and a language server answers over a promise. For the moment between an edit and
   the answer, those four keys do nothing rather than using a range that has moved. In a language
   with no symbol provider they do nothing at all, which is the same answer the Outline view gives.
+
+  `signature` draws your `a`-`z` marks in the gutter, as Vim signs — so `:sign place` lists them
+  and a `:sign unplace` of your own cannot sweep them away, because they sit in a sign group of
+  their own. Only the lowercase marks: `A`-`Z` are IntelliJ bookmarks over there, drawn by the IDE
+  itself, and two icons for one mark is worse than none.
 
   `NERDTree` is half an extension here, and it is worth knowing which half. Its ex commands work —
   `:NERDTree`, `:NERDTreeFocus`, `:NERDTreeToggle`, `:NERDTreeClose`, `:NERDTreeFind`,
@@ -167,7 +187,7 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   extension whose point is the hints would have been the wrong trade.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups; there is no Vim
   window layout underneath, so `<C-w>` movements go where VS Code's do.
-- **The command-line window** (`q:`, `q/`) and the preview window.
+- **The preview window.** `:pedit` and the `preview` window flag have nothing to open into.
 - **A terminal, channels and jobs.** No `:terminal`, no `job_start()`, no `timer_start()`.
 - **`:syntax`, `:colorscheme`, `:filetype`.** VS Code decides all three for itself. The commands are
   accepted so a borrowed `~/.vimrc` loads without a wall of errors, and they say so when you ask

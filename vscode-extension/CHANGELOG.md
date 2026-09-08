@@ -4,6 +4,43 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- `%` on the command line is the current file, and takes Vim's `:p`, `:h`, `:t`, `:r` and `:e`
+  filename modifiers - so `:e %:h/other.kt` opens a file beside this one and `:!wc %` counts this
+  one. `:!` expanded `%` before, to a string beginning `file://` that no shell could use.
+- `<Tab>` on a file argument completes a file name, through a `%` and on into a directory. It had
+  never done anything: the engine asked the host to list a directory and the host answered nothing.
+- `"%` and `"#` hold the current and alternate file names, and `:registers` lists them. Both
+  characters were accepted as register names before and neither ever had a value.
+- The tag stack reaches `<C-]>` and `<C-T>`. A `tags` file and its ex commands were already here;
+  the two keys were not connected to them - `<C-T>` popped the *jump list*, which is a different
+  stack and only looks the same immediately after a jump. `'tagstack'` turns the recording off.
+- Three more of IdeaVim's bundled extensions, taking it to twenty-five of twenty-seven:
+  `textobj-line` (`al` and `il` - the line with and without its indentation), `visual-star-search`
+  (`*` and `#` in visual mode search for the selection) and `signature` (your `a`-`z` marks drawn
+  in the gutter).
+
+### Fixed
+
+- `y<C-V>` threw instead of yanking a block, on any block taller than one line.
+- `gf` and `<C-R><C-F>` threw on the last character of a file.
+- `daw` on the first character of a file threw.
+- `g8` threw when there was no character under the caret, and reported the code point where Vim
+  reports the character's UTF-8 bytes.
+- `gx` recorded a jump. It does not move the caret, so it only reset a `<C-O>` traversal.
+- `r` in visual mode left the caret at the end of the selection rather than the start.
+- `gv` restored a selection one character too wide.
+- `:normal` run from insert mode - which is what an autocmd fired by an insert does - fed its keys
+  into insert mode as text, and did not return to it afterwards.
+- `<NL>`, `<NewLine>`, `<LineFeed>` and `<LF>` were inserted as literal text instead of being read
+  as keys, and `:execute "normal! ..."` ended early at a newline in its argument.
+- A delete or yank whose range ended immediately before real text was wrongly promoted to linewise.
+- `<C-R><C-W>` on the command line inserted at the caret rather than at the offset it was given.
+- A config line that will not parse now reports `E492: Not an editor command: ...` rather than the
+  parser's own diagnostic and its list of every token that would have been legal.
+
+
 ## [0.0.2] - 2026-09-08
 
 **No change to the extension.** Everything that runs is byte-for-byte 0.0.1: the only files that

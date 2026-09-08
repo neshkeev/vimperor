@@ -31,10 +31,15 @@ the fastest answer to "why is this code like this".
 ## `src/test` is data, not a source set
 
 The IntelliJ plugin is gone - 408 files, deleted once the port no longer needed
-it. `src/test` stayed. It holds IdeaVim's 11,727 tests, which cannot run without
-the plugin, and **the VS Code host mines 2,423 replayed fixtures out of them as
-text**: `VimFixtures.load` reads the `.kt` files and `VimFixtureReplayTest` plays
-the keys against this host. 2,417 pass.
+it. `src/test` stayed. It holds IdeaVim's tests, which cannot run without the
+plugin - 636 files and 10,492 `@Test` methods - and **the VS Code host mines
+2,427 replayed fixtures out of them as text**: `VimFixtures.load` reads the `.kt`
+files and `VimFixtureReplayTest` plays the keys against this host. 2,421 pass.
+
+This file said 11,727 tests for a long time and the number cannot be reproduced:
+counting `@Test` today gives 10,492, and `src/test` is frozen data here. Derive
+these from the tree rather than from this paragraph - the fixture counts are the
+first line of `vscode-extension/build/fixture-failures.txt` after any run.
 
 Nothing compiles that directory. It is the largest outside check the port has,
 and it survives because it never needed to be code. `vscode-extension` declares
@@ -174,7 +179,7 @@ extension's toggle option, which is what `:set surround` does. So `set <name>` b
 here until the extension options were registered was the other half of it: these fixtures
 could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
 
-2,778 `doTest` calls exist under `src/test` and 2,423 fixtures are harvested - more than that
+2,778 `doTest` calls exist under `src/test` and 2,427 fixtures are harvested - more than that
 number, because the `configureByText`/`typeText`/`assertState` shape is not a `doTest` call at
 all. What is refused is
 counted and printed with every run, and the largest buckets now are tests that set something

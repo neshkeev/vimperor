@@ -78,8 +78,14 @@ prompt is open and routes the key to its interceptor, so the host draws a label 
 prompt is up. `y`, `n`, `a`, `q` and `l` all work.
 
 What genuinely cannot be done is the other half of that interface. `activate` blocks on a modal
-event loop until a key arrives, which is what `getchar()` and IdeaVim's bundled extensions are built
-on, and JavaScript has one thread and no way to stop it.
+event loop until a key arrives, and JavaScript has one thread and no way to stop it.
+
+That used to be recorded here as the reason IdeaVim's extensions could not be ported, and it was
+wrong twice over. `getchar()` is a Vimscript function nothing here calls; what two extensions did
+call was `injector.keyGroup.getChar`, which blocks. The answer was not to block but to stop needing
+to: `readKeys` in the engine reads through *modal input*, the same non-blocking route `:s///c` asks
+its question by, and `surround` and `sneak` are both ported. The cost is that an extension returns
+before it knows what was typed and continues a keystroke or two later.
 
 `:!cmd` runs a shell command and `:%!sort` filters the buffer through one, which is the third time
 the *synchronous* Node API has been the answer where the VS Code one was the wrong shape - after
@@ -1159,10 +1165,11 @@ already does for `i"`, and gets `f("(", x)` right. It says nothing at all about 
 comment is `//` in one language and `#` in another and guessing from the file extension would be a
 table of lies; a bracket inside a comment is counted, which is what Vim does with syntax off.
 
-IdeaVim's bundled extensions (`surround`, `commentary`, `easymotion`) are not wired up. They are a
-separate port rather than a missing service: they live in the IntelliJ module, they are loaded
-through an extension point that has no Kotlin/JS equivalent, and `surround` needs `getchar()` -
-IntelliJ answers that by blocking on a modal input loop, which a JavaScript host cannot do at all.
+IdeaVim's bundled extensions were not wired up when this was written, and twenty-five of the
+twenty-seven are now. Each is a `@VimPlugin` function in the engine that `VsCodeExtensions.BUNDLED`
+names, rather than an IntelliJ extension point; `surround` and `sneak` read their keys through the
+engine's `readKeys`, which is modal input rather than a blocking loop. The two still absent are
+`matchit` and `VimEverywhere`, and neither is waiting on a seam.
 
 Indentation comes from `editor.options` rather than from a Vim option, and the reason is worth
 stating because it looks like a gap: the engine has no `'expandtab'` or `'shiftwidth'` at all.

@@ -152,7 +152,7 @@ Cras id tellus in ex imperdiet egestas.
    
 ##### The replayed fixtures
 `src/test` holds IdeaVim's tests and is not compiled. The extension reads them as text and replays
-the keys against the VS Code host: 2,417 of 2,423 pass, and the rest are listed in
+the keys against the VS Code host: 2,421 of 2,427 pass, and the rest are listed in
 `vscode-extension/src/test/fixtures/known-fixture-failures.txt`. Every run writes the current
 list, and what it refused to harvest and why, to `vscode-extension/build/fixture-failures.txt`.
 
