@@ -18,7 +18,7 @@ import com.maddyhome.idea.vim.regexp.parser.VimRegexParserResult
  *
  * **This file is the reason the library is not empty.** Kotlin/JS eliminates everything not
  * reachable from an exported root, and only `@JsExport` creates a root - so without a file like
- * this, `IdeaVIM-vim-engine.js` compiles to a 561-byte shell exporting nothing, no matter how much
+ * this, `vimperor-vim-engine.js` compiles to a 561-byte shell exporting nothing, no matter how much
  * of the engine builds. The Kotlin/JS *tests* pass regardless, because test code is compiled with
  * the engine and is itself a root; that is why this went unnoticed until something tried to consume
  * the library from JavaScript.

@@ -365,7 +365,7 @@ val generateAsciiArt = tasks.register("generateAsciiArt") {
 // real size (~580 KB with a single export) and far above an empty shell (561 bytes): it is here to
 // catch the difference between "everything" and "nothing", not to police growth.
 val checkJsLibraryIsNotEmpty = tasks.register("checkJsLibraryIsNotEmpty") {
-  val library = layout.buildDirectory.file("dist/js/productionLibrary/IdeaVIM-vim-engine.js")
+  val library = layout.buildDirectory.file("dist/js/productionLibrary/vimperor-vim-engine.js")
   dependsOn("jsNodeProductionLibraryDistribution")
   inputs.file(library)
   outputs.upToDateWhen { false }
@@ -384,6 +384,18 @@ val checkJsLibraryIsNotEmpty = tasks.register("checkJsLibraryIsNotEmpty") {
 kotlin {
   jvm()
   js(IR) {
+    // The name of the file this module compiles to, and the reason it is set at all: without it the
+    // Kotlin plugin names the output from the Gradle project - `IdeaVIM-vim-engine.js`, because
+    // `rootProject.name` is still `IdeaVIM` - and that file ships inside every `.vsix`.
+    //
+    // `vscode-extension` set `outputModuleName` for its own bundle a while ago and left this one
+    // alone, with a comment saying the engine "keeps its own name; it is a dependency, and it really
+    // is IdeaVim's". That is true of the *code* and is not the question the filename answers: the
+    // name is what a user finds when they unpack the extension they installed, and there the
+    // product's name is the honest one. Attribution lives in AUTHORS.md, ThirdPartyLicenses.md and
+    // the copyright header on nearly every file in this module, none of which a rename touches.
+    outputModuleName.set("vimperor-vim-engine")
+
     nodejs {
       testTask {
         useMocha {
