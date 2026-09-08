@@ -9,6 +9,8 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.BufferPosition
+import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.extension.ExtensionBean
 import kotlin.test.Test
@@ -58,6 +60,10 @@ class PortedExtensionsTest {
 
     val content: String get() = fake.document.content
     val caret: Int get() = host.editorFor(fake).primaryCaret().offset
+
+    /** Where the caret is as a line and a column, for assertions that span lines. */
+    val caretAt: BufferPosition get() = host.editorFor(fake).primaryCaret().getBufferPosition()
+    val mode: Mode get() = host.editorFor(fake).mode
   }
 
   // ---- vim-paragraph-motion --------------------------------------------------------------------
@@ -200,6 +206,69 @@ class PortedExtensionsTest {
     session.type("jdil")
 
     assertEquals("one\n    \nthree\n", session.content)
+  }
+
+  // ---- visual-star-search ----------------------------------------------------------------------
+
+  /**
+   * `*` on a selection searches for the selection, where Vim's own `*` searches for the word under
+   * the caret and ignores the selection entirely.
+   */
+  @Test
+  fun `test star in visual mode searches for the selection`() {
+    val session = Session("alpha beta\nsome beta here\n", "visual-star-search")
+
+    session.type("wve*")
+
+    assertEquals(1, session.caretAt.line, "should have landed on the second line")
+    assertEquals(5, session.caretAt.column)
+  }
+
+  /** `#` is the same search the other way. */
+  @Test
+  fun `test hash in visual mode searches backwards`() {
+    val session = Session("beta one\ntwo beta\n", "visual-star-search")
+
+    session.type("jwve#")
+
+    assertEquals(0, session.caretAt.line, "should have wrapped back to the first line")
+    assertEquals(0, session.caretAt.column)
+  }
+
+  /** The search leaves Visual mode, the way `*` does from Normal. */
+  @Test
+  fun `test the search leaves visual mode`() {
+    val session = Session("alpha beta\nsome beta here\n", "visual-star-search")
+
+    session.type("wve*")
+
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /**
+   * `\V` is very-nomagic, so a selection full of regex characters searches for itself. Without it
+   * `a.c` would match `abc` and this would land on the wrong line.
+   */
+  @Test
+  fun `test the selection is searched for literally`() {
+    val session = Session("abc\nxxx\na.c\n", "visual-star-search")
+
+    session.type("jjv\$*")
+
+    assertEquals(2, session.caretAt.line, "the only literal `a.c` is the line it started on")
+  }
+
+  /** It sets the search register, so `n` carries on from it. */
+  @Test
+  fun `test n continues the search afterwards`() {
+    val session = Session("beta one\nbeta two\nbeta three\n", "visual-star-search")
+
+    // `ve` selects `beta`, not `vee` - a second `e` would take `one` with it and there is only one
+    // line matching the pair.
+    session.type("ve*")
+    session.type("n")
+
+    assertEquals(2, session.caretAt.line)
   }
 
   // ---- CamelCaseMotion -------------------------------------------------------------------------

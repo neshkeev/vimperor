@@ -35,6 +35,7 @@ import com.maddyhome.idea.vim.extension.sneak.init as sneakInit
 import com.maddyhome.idea.vim.extension.targets.init as targetsInit
 import com.maddyhome.idea.vim.extension.textobjentire.init as textObjEntireInit
 import com.maddyhome.idea.vim.extension.textobjline.init as textObjLineInit
+import com.maddyhome.idea.vim.extension.visualstarsearch.init as visualStarSearchInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
@@ -113,6 +114,10 @@ internal object VsCodeExtensions {
     // whitespace. Not `dd` - that is linewise and takes the newline, where `dal` empties the
     // line and leaves it.
     "textobj-line" to { api -> api.textObjLineInit() },
+
+    // `*` and `#` in Visual mode search for the selection rather than the word under the
+    // caret, which is the one thing a selection is obviously for.
+    "visual-star-search" to { api -> api.visualStarSearchInit() },
 
     // `a`/`i` text objects that search for their delimiter rather than needing the caret inside
     // it, so `ci(` works from anywhere on the line.
@@ -514,6 +519,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "script.php?script_id=2610" to "textobj-entire",
       "vim-textobj-entire" to "textobj-entire",
       "vim-textobj-line" to "textobj-line",
+      "vim-visual-star-search" to "visual-star-search",
       "vim-indent-object" to "textobj-indent",
       "vim-textobj-user" to "textobj-user",
       "Improved-paragraph-motion" to "vim-paragraph-motion",

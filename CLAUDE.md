@@ -372,8 +372,8 @@ this paragraph** - `git show upstream/master:ideavim-frontend/src/main/resources
 | grep -c '<vimExtension'` is the whole check, and the number has now been wrong here
 twice.
 
-**Twenty-three are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
-`textobj-entire`, `textobj-line`, `mini-ai`, `CamelCaseMotion`, `indentwise`,
+**Twenty-four are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+`textobj-entire`, `textobj-line`, `visual-star-search`, `mini-ai`, `CamelCaseMotion`, `indentwise`,
 `textobj-user`, `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
 `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`. Each lives in
@@ -382,13 +382,10 @@ VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-Four are left, and they are not one list. `matchit` and `VimEverywhere` **are not
+Three are left, and they are not one list. `matchit` and `VimEverywhere` **are not
 being ported, and that is a decision rather than a backlog entry** - neither is
-waiting on a seam and neither should be proposed again. `visual-star-search` and
-`vim-signature` are simply not done yet: the first was checked and is portable, and
-wants two engine refactors first - a `searchWord` overload taking a pattern, and
-`collectSelections` moved onto `VimEditor` - plus one `com.jetbrains.rd.util.first`
-replaced with `.values.first()`.
+waiting on a seam and neither should be proposed again. `vim-signature` is simply
+not done yet and has not been looked at.
 
 `matchit` wants to know what a *token* is, so that `%` can jump between `if` and
 `endif` and between HTML tags, and the one thing VS Code tells an extension about a

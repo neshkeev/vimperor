@@ -105,6 +105,11 @@
     "className": "com.maddyhome.idea.vim.extension.paragraphmotion.ParagraphMotionNewApiKt"
   },
   {
+    "extensionName": "visual-star-search",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.visualstarsearch.VisualStarSearchKt"
+  },
+  {
     "extensionName": "yankring",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.yankring.YankRingPluginKt"
