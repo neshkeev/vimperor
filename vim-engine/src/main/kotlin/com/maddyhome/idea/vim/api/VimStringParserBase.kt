@@ -448,7 +448,7 @@ abstract class VimStringParserBase : VimStringParser {
           if (c == '>') {
             val specialKey = parseSpecialKey(specialKeyBuilder.toString(), 0)
             if (specialKey != null) {
-              var keyCode = specialKey.keyCode
+              var keyCode = virtualKeyCodeToCodepoint(specialKey.keyCode)
               var useKeyCode = true
               if (specialKey.keyCode == 0) {
                 keyCode = specialKey.keyChar.code
@@ -509,8 +509,24 @@ abstract class VimStringParserBase : VimStringParser {
   }
 
   // See https://vimdoc.sourceforge.net/htmldoc/intro.html#key-notation
+  /**
+   * `VK_ENTER` is a *key code*, and where a codepoint is wanted it is the carriage return.
+   *
+   * They are both 10 by number here, so passing the key code through produced a line feed where Vim produces `\r` -
+   * which matters because `:execute "normal ..."` separates its keys on the one and not the other.
+   */
+  private fun virtualKeyCodeToCodepoint(keyCode: Int) = if (keyCode == VimKeyCodes.VK_ENTER) '\r'.code else keyCode
+
   private fun parseSpecialKey(s: String, modifiers: Int): VimKeyStroke? {
     val lower = s.lowercase()
+
+    // `<NL>` and its aliases are the line feed, which as a keystroke is `<C-J>`. Vim documents them together under
+    // `:help key-notation`, and without this they fell through to the "not a key name" branch and were inserted
+    // as the literal characters `<`, `N`, `L`, `>`.
+    if (lower in nlKeyNames) {
+      return parseSpecialKey("j", modifiers or VimKeyCodes.CTRL_DOWN_MASK)
+    }
+
     val keyCode = getVimKeyName(lower)
     val typedChar = getVimTypedKeyName(lower)
     if (keyCode != null) {
@@ -629,6 +645,8 @@ abstract class VimStringParserBase : VimStringParser {
     private const val ALT_PREFIX = "a-"
     private const val CTRL_PREFIX = "c-"
     private const val SHIFT_PREFIX = "s-"
+    private val nlKeyNames = setOf("nl", "newline", "linefeed", "lf")
+
     private const val VK_PLUG = VimKeyCodes.CHAR_UNDEFINED.code - 1
     private const val VK_ACTION = VimKeyCodes.CHAR_UNDEFINED.code - 2
   }

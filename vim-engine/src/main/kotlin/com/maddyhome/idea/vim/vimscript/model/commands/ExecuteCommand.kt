@@ -34,12 +34,29 @@ data class ExecuteCommand(val range: Range, val expressions: List<Expression>) :
   ): ExecutionResult {
     val command = expressions.joinToString(separator = " ") { it.evaluate(editor, context, this).toVimString().value }
     return injector.vimscriptExecutor.execute(
-      command,
+      asSingleCommandLine(command),
       editor,
       context,
       skipHistory = true,
       indicateErrors = true,
       this.vimContext
     )
+  }
+
+  /**
+   * `:execute "normal! ..."` takes the rest of the command line, newlines included.
+   *
+   * The executor splits its input into lines, so a `\n` inside the argument ended the `:normal` early and ran the
+   * remainder as another ex command. Vim does not: `:normal` consumes to the end of the line, and a `<NL>` typed
+   * into it is a keystroke. Translating to `\r` keeps the whole thing on one line, since that is the character
+   * `<CR>` produces and the one the key parser reads back.
+   *
+   * Only when the first command is a `:normal`, because every other command genuinely does end at a newline.
+   */
+  private fun asSingleCommandLine(command: String): String {
+    if (!command.contains('\n')) return command
+    val firstCommand = injector.vimscriptParser.parseCommand(command.substringBefore('\n'))
+    if (firstCommand !is NormalCommand) return command
+    return command.replace("\r\n", "\r").replace('\n', '\r')
   }
 }
