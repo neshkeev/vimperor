@@ -75,6 +75,15 @@ open class YankGroupBase : VimYankGroup {
       val motionRange = injector.motion.getMotionRange(editor, caret, context, argument, operatorArguments)
         ?: continue
 
+      // A blockwise force - `o_CTRL-V`, as in `y<C-V>j` - turns the motion into a rectangle, which is one range per
+      // line of the block rather than the single range everything below assumes. Take it as it stands: the linewise
+      // promotion underneath is about characterwise motions, and the assert would throw on the second line.
+      if (motionType == SelectionType.BLOCK_WISE) {
+        startOffsets?.put(caret, motionRange.normalize().startOffset)
+        caretToRange[caret] = TextRange(motionRange.startOffset, motionRange.endOffset) to motionType
+        continue
+      }
+
       vimAssert(motionRange.size() == 1)
       startOffsets?.put(caret, motionRange.normalize().startOffset)
 
