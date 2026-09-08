@@ -823,10 +823,10 @@ on emission order, which is not something anyone controls or can test for.
 
 ## Quick Reference
 
-**Java 21 is required; the build refuses anything else:**
+**Java 25 is required; the build refuses anything else:**
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 ```
 
 ```bash

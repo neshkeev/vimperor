@@ -13,7 +13,16 @@ package com.maddyhome.idea.vim.helper
  *
  * Generated from `java.lang.Character.getDirectionality` - every codepoint whose directionality is
  * RIGHT_TO_LEFT, RIGHT_TO_LEFT_ARABIC, RIGHT_TO_LEFT_EMBEDDING or RIGHT_TO_LEFT_OVERRIDE.
- * `RightToLeftTest` walks all 1114112 codepoints and asserts this still agrees with the JDK.
+ * `RightToLeftTest` walks all 1114112 codepoints and asserts this still agrees with the JDK - which
+ * is what makes the table safe to embed rather than merely convenient. It has already earned that:
+ * moving the build from JDK 21 to JDK 25 moved the JDK from Unicode 15.1 to 16.0, and the test
+ * failed on U+10D4A. Unicode 16 added Garay, a right-to-left script, and three more Arabic
+ * codepoints. The table is regenerated here against JDK 25; the change was purely additive, so no
+ * text that rendered correctly before renders differently now.
+ *
+ * To regenerate: walk 0..0x10FFFF calling `Character.getDirectionality`, coalesce the runs, and
+ * emit them in this format. Do it on the JDK the build uses, and let the test say whether it was
+ * needed.
  *
  * Embedded rather than asked of the platform because only the JVM can answer it: Kotlin has no
  * common bidi API, and JS `RegExp` property escapes cover General_Category and Script but not
@@ -103,9 +112,13 @@ private val RTL_RANGES = intArrayOf(
     0x10C80, 0x10CB2,
     0x10CC0, 0x10CF2,
     0x10CFA, 0x10D23,
+    0x10D4A, 0x10D65,
+    0x10D6F, 0x10D85,
+    0x10D8E, 0x10D8F,
     0x10E80, 0x10EA9,
     0x10EAD, 0x10EAD,
     0x10EB0, 0x10EB1,
+    0x10EC2, 0x10EC4,
     0x10F00, 0x10F27,
     0x10F30, 0x10F45,
     0x10F51, 0x10F59,

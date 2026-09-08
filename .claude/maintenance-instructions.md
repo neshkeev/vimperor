@@ -125,10 +125,10 @@ clear benefit.
 
 ## Commands
 
-Java 21 is required and the build refuses anything else:
+Java 25 is required and the build refuses anything else:
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 ```
 
 ```bash

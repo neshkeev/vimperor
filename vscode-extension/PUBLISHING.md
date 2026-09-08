@@ -3,7 +3,7 @@
 Three commands, and no secret in this repository.
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 
 ./gradlew :vscode-extension:assembleExtension   # dist/, which is what ships
 ./gradlew :vscode-extension:packageExtension    # the .vsix, in vscode-extension/build/

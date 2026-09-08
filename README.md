@@ -106,10 +106,10 @@ works, how it is tested, and what only a real window found.
 Running it
 ----------
 
-Java 21 is required; the build refuses anything else.
+Java 25 is required; the build refuses anything else.
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 ./gradlew :vscode-extension:assembleExtension
 code --extensionDevelopmentPath="$PWD/vscode-extension"
 ```

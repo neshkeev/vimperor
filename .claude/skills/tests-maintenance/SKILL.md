@@ -30,7 +30,7 @@ first one*: it parses `doTest(keys, before, after)` calls out of
 `src/test/**/*.kt` and replays them against the VS Code host. Editing a JVM test
 can therefore change what the extension's suite does.
 
-Java 21 is required for either: `export JAVA_HOME=$(/usr/libexec/java_home -v 21)`.
+Java 25 is required for either: `export JAVA_HOME=$(/usr/libexec/java_home -v 25)`.
 
 ## One logical change per commit
 
@@ -179,7 +179,7 @@ projects, and `:vim-engine:test` and `:vscode-extension:test` are aggregator tas
 that take no such option. `:test` is the root project's real test task.
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 
 ./gradlew :test --tests "ClassName.testMethod" --console=plain
 ./gradlew :test -Dnvim --tests "ClassName" --console=plain  # look for NEOVIM TESTING ENABLED

@@ -74,7 +74,7 @@ This is the highest-yield check in this repository, because a wrong command in
 `CLAUDE.md` or a README is *executed*, not read:
 
 ```bash
-export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 ./gradlew tasks --all --console=plain | grep -i "<the task the doc names>"
 ```
 
