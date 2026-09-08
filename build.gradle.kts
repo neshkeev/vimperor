@@ -108,6 +108,29 @@ dependencyCheck {
   formats = listOf("HTML", "JSON")
   failBuildOnCVSS = 7.0f
 
+  // A classpath Kotlin's Gradle plugin declares for a feature this build does not use, and cannot
+  // update if it wanted to.
+  //
+  // KGP 2.4 added ABI validation - a dump of every public declaration, compared against a baseline
+  // so a binary-compatibility break is caught. Nothing here enables it, and nothing here has a
+  // reason to: every dependency in this repository is a project dependency, so `vim-engine`, `api`
+  // and `vscode-extension` are compiled together on every build and a shape change is a compile
+  // error in the same command. There is no separately compiled consumer to break. The publishing
+  // block in vim-engine is IdeaVim's and is inert - `uploadUrl` is unset, which is what disables
+  // it - and the shipped artifact is one JS bundle, linked at bundle time.
+  //
+  // KGP declares `kotlinAbiValidationCompatClasspath` in all five modules regardless, pinned
+  // `{strictly 2.4.0}` because the point of a compat classpath is to hold an older compiler. So it
+  // carried a whole Kotlin 2.4.0 toolchain - build-tools, compiler-embeddable, daemon, stdlib -
+  // and CVE-2026-53914 with it, which is nine of the twelve findings the 2.4.20 bump left behind.
+  // The `strictly` is not something a resolution strategy should be reaching around: it is KGP's
+  // pin, on KGP's own classpath, and it moves when KGP moves it.
+  //
+  // The narrow reading is the only one that would justify this: skip a configuration no task
+  // resolves. `kotlinCompilerClasspath` - the one that actually runs the compiler - is still
+  // scanned, and still resolves to 2.4.20.
+  skipConfigurations = listOf("kotlinAbiValidationCompatClasspath")
+
   // No `data { directory = ... }`. It was here, pointing at `.dependency-check-data` in the
   // repository, and the plugin ignored it: both the `data.directory = ...` and the `data { }` forms
   // compile, neither takes effect, and the database goes to `~/.gradle/dependency-check-data`
