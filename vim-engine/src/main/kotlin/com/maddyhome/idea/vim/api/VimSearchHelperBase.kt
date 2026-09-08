@@ -177,7 +177,11 @@ abstract class VimSearchHelperBase : VimSearchHelper {
 
   override fun findFilenameAtOrFollowingCursor(editor: VimEditor, offset: Int): TextRange? {
     val text = editor.text()
-    if (text.isEmpty()) return null
+
+    // Not `text.isEmpty()`: the offset itself can be past the last character. `gf` at the end of the file gets there,
+    // and so does the exclusive end offset of an `'incsearch'` match on the last line. There is no filename at a
+    // position that holds nothing; Vim says "E446: No file name under cursor".
+    if (offset !in text.indices) return null
 
     val start = if (!KeywordOptionHelper.isFilename(editor, text[offset])) {
       moveForwardsToStartOfFilename(editor, text, offset)
@@ -489,6 +493,10 @@ abstract class VimSearchHelperBase : VimSearchHelper {
 
     // Always move back one to make sure that we don't get stuck on the start of a word
     pos--
+
+    // Which can step off the front of the text - `daw` on the first character gets here. Return before the reads
+    // below, which would be out of bounds; there is nothing behind offset 0 left to skip.
+    if (pos < 0) return 0
 
     if (allowMoveFromWordStart
       || startingCharType == charType(editor, chars[pos], bigWord)
