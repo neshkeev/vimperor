@@ -43,3 +43,7 @@ settings.xml
 
 # Split-mode test artifacts
 **/allure-results/
+
+# The OWASP Dependency-Check NVD cache. Deliberately outside build/ - a `clean` should not throw
+# away a download that takes an afternoon on a machine with no NVD API key. CI caches this path.
+.dependency-check-data/

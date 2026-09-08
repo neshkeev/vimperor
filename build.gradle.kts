@@ -28,6 +28,11 @@
 plugins {
   kotlin("jvm") version "2.3.20" apply false
   kotlin("multiplatform") version "2.3.20" apply false
+
+  // OWASP Dependency-Check, applied here and not `apply false`, because `dependencyCheckAggregate`
+  // is a root task that walks the subprojects: this is the one plugin the root project runs rather
+  // than only supplying a version for. See the `dependencyCheck` block below.
+  id("org.owasp.dependencycheck") version "13.0.0"
 }
 
 val javaVersion = project.property("javaVersion") as String
@@ -58,4 +63,40 @@ allprojects {
       javaLauncher.set(toolchains.launcherFor { languageVersion.set(toolchainJavaVersion) })
     }
   }
+}
+
+/**
+ * OWASP Dependency-Check: known CVEs in what this build resolves.
+ *
+ * ## What it does and does not cover
+ *
+ * The configurations of all five modules, which is the *build's* supply chain - ANTLR, kotlinx,
+ * JUnit, mockito, the Kotlin stdlib. It is worth being clear that this is not the same as scanning
+ * what a user installs: the `.vsix` ships Kotlin/JS output and a handful of `.js` runtimes, and a
+ * CVE in mockito cannot reach it. Build-time compromise is a real thing to watch for and this
+ * watches for it; the published artifact needs a different tool.
+ *
+ * ## The NVD API key
+ *
+ * `nvd.apiKey` is documented as optional and is not, in practice. Without one Dependency-Check
+ * waits 8000ms between NVD calls instead of 3500, and the first run makes thousands of them - the
+ * difference between minutes and most of an afternoon. The workflow passes `NVD_API_KEY` when the
+ * secret exists and the build reads it from the environment, so a machine without one still works,
+ * slowly. Keys are free: https://nvd.nist.gov/developers/request-an-api-key
+ *
+ * ## Failing
+ *
+ * `failBuildOnCVSS = 7` is High and above. It fails the *scan*, which is its own scheduled
+ * workflow, not the release: a CVE published upstream overnight should turn a dashboard red, not
+ * block a release that has nothing to do with it.
+ */
+dependencyCheck {
+  formats = listOf("HTML", "JSON")
+  failBuildOnCVSS = 7.0f
+
+  // The NVD database, kept out of `build/` so that `clean` does not throw away a download that
+  // takes an afternoon, and so CI can cache one directory.
+  data.directory = layout.projectDirectory.dir(".dependency-check-data").asFile.absolutePath
+
+  nvd.apiKey = providers.environmentVariable("NVD_API_KEY").orNull
 }

@@ -1,0 +1,103 @@
+# OWASP Dependency-Check: known CVEs in what this build resolves.
+#
+# The second workflow in this fork, and the first addition since the twenty-eight inherited from
+# IdeaVim were deleted in 146db64f5. It is separate from `publish-vimperor.yml` on purpose, and the
+# purpose is worth stating because putting it in the release job is the obvious thing to do:
+#
+#   - A scan depends on nvd.nist.gov being up and answering. A release should not.
+#   - A CVE published upstream overnight would then block a release that has nothing to do with it,
+#     at whatever hour the tag was pushed.
+#   - A vulnerability scan wants to run on a schedule. A release workflow runs when you release,
+#     which for this project may be months apart - exactly when you least want to first hear about
+#     a nine-month-old advisory.
+#
+# So it runs weekly, on pushes that change what is resolved, and on demand. It gates nothing.
+#
+# ## The NVD API key
+#
+# `NVD_API_KEY` is optional and you want it. Without a key Dependency-Check waits 8000ms between
+# NVD calls instead of 3500, and the first run makes thousands of them. Keys are free and issued in
+# a minute: https://nvd.nist.gov/developers/request-an-api-key - add it as a repository secret and
+# nothing else changes. Without one this workflow still works; it is just slow, which is what the
+# 90-minute timeout is for.
+#
+# ## The cache
+#
+# The NVD database is the expensive part, not the analysis. It is cached under
+# `.dependency-check-data/` and the key rotates weekly, so a stale-but-recent database is restored
+# and topped up rather than rebuilt. `restore-keys` makes a miss on this week's key fall back to
+# last week's copy instead of starting from nothing.
+
+name: Dependency Check
+
+on:
+  schedule:
+    # Mondays, early. Late enough after the weekend's NVD updates to see them.
+    - cron: "17 5 * * 1"
+  push:
+    branches: [master]
+    paths:
+      - "**/build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/workflows/dependency-check.yml"
+  pull_request:
+    paths:
+      - "**/build.gradle.kts"
+      - "settings.gradle.kts"
+  workflow_dispatch:
+
+# Read-only. This job resolves dependencies and writes a report; it has no business with anything
+# else, and `persist-credentials: false` below keeps the checkout token off the runner too.
+permissions:
+  contents: read
+
+# A scan already running is a scan whose answer is about to be superseded.
+concurrency:
+  group: dependency-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    # Generous, because it is the floor when there is no API key rather than the expected time.
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      # Rotates weekly. A hit restores the database and Dependency-Check tops it up; a miss falls
+      # back through `restore-keys` to the most recent week that is cached, which is still far
+      # cheaper than a rebuild.
+      - name: Week number, for the cache key
+        id: week
+        run: echo "key=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: .dependency-check-data
+          key: nvd-${{ steps.week.outputs.key }}
+          restore-keys: nvd-
+
+      - name: Scan
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: ./gradlew dependencyCheckAggregate --parallel --console=plain
+
+      # Whether or not it passed - a failing scan is exactly when the report is wanted, and the
+      # console says only that something was found, not what.
+      - if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: dependency-check-report
+          path: build/reports/dependency-check/
+          if-no-files-found: warn
