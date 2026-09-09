@@ -432,6 +432,19 @@ val extensionVersion: String by lazy {
 }
 
 /**
+ * The Open VSX namespace, which is `publisher` in `package.json` and cannot be anything else.
+ *
+ * Read from the manifest rather than written down twice, for the reason [extensionVersion] is: the
+ * registry matches the namespace against the publisher in the package it is handed, so a second
+ * copy of this string is a copy that can disagree with the one that matters.
+ */
+val openVsxNamespace: String by lazy {
+  val manifest = layout.projectDirectory.file("package.json").asFile.readText()
+  Regex(""""publisher"\s*:\s*"([^"]+)"""").find(manifest)?.groupValues?.get(1)
+    ?: error("no publisher in vscode-extension/package.json")
+}
+
+/**
  * The `vsce` this fork publishes with.
  *
  * Pinned, because an unpinned `npx` fetches whatever is newest at the moment somebody runs a
@@ -585,6 +598,106 @@ val checkPackagedExtension = tasks.register<Exec>("checkPackagedExtension") {
  * It never prompts. Left to itself `vsce` asks for a token on the terminal when it cannot find
  * one, and a task that prompts is a task that hangs in CI, so every mode passes something explicit.
  */
+/**
+ * The `ovsx` this fork publishes to Open VSX with. Pinned, for the same reason [vsceVersion] is.
+ */
+val ovsxVersion: String = (findProperty("ovsxVersion") as String?) ?: "1.1.1"
+
+/**
+ * `ovsx`, run through `npx` the way [vsce] is.
+ *
+ * No `dependsOn(assembleExtension)` here, deliberately: everything below publishes a `.vsix` that
+ * already exists rather than packaging one, so what it needs is the *packaging* task and says so
+ * itself. `ovsx` can package too, and letting it would mean two tools building the archive from
+ * `package.json` and only one of them being the archive anybody checked.
+ *
+ * The token is read from `OVSX_PAT` rather than passed on the command line, so it never reaches a
+ * process table or a build log. It is checked here rather than left to `ovsx`, because a release
+ * step whose failure mode is an authentication error three minutes in is worse than one that
+ * refuses at once and names the file that explains it.
+ */
+fun Exec.ovsx(vararg arguments: String) {
+  workingDir = layout.projectDirectory.asFile
+  val bin = nodeBinDirectory.get()
+  executable = File(bin, if (onWindows) "npx.cmd" else "npx").absolutePath
+  args(listOf("--yes", "ovsx@$ovsxVersion") + arguments)
+  environment("PATH", bin.absolutePath + File.pathSeparator + (System.getenv("PATH") ?: ""))
+
+  // Forwarded explicitly, and it has to be. A build script's `System.getenv` reads the *client's*
+  // environment, while an `Exec` child inherits the *daemon's* - which is a different set, and on
+  // any machine whose daemon was already running it is the set from before the token was exported.
+  // `ovsx` then finds no token and asks for one on the terminal, which in CI is a release that
+  // hangs rather than one that fails. Found exactly that way: the check below passed and `ovsx`
+  // prompted anyway.
+  environment("OVSX_PAT", System.getenv("OVSX_PAT") ?: "")
+
+  doFirst {
+    check(!System.getenv("OVSX_PAT").isNullOrBlank()) {
+      "OVSX_PAT is not set. See vscode-extension/PUBLISHING.md - Open VSX is a separate registry " +
+        "with a separate account, and a Marketplace credential cannot publish to it."
+    }
+  }
+}
+
+/**
+ * Publishes to Open VSX, which is how Cursor, Windsurf, VSCodium and the rest of the forks install.
+ *
+ * This is not a mirror for tidiness. Microsoft's Marketplace [terms][1] restrict it to Microsoft's
+ * own products, and in 2025 that stopped being only a licence term: the forks were cut off from it.
+ * So an extension published to the Marketplace alone can be installed in VS Code and **nowhere
+ * else** - not by searching, anyway; a `.vsix` from the GitHub release always works by hand.
+ * [Open VSX][2] is the Eclipse Foundation's open registry and is what those editors search.
+ *
+ * The same `.vsix` goes to both, which is the point of publishing from `--packagePath` rather than
+ * letting either tool build its own: one archive, unpacked and activated once by
+ * `checkPackagedExtension`, and two registries serving that exact file.
+ *
+ * `--skip-duplicate` because this is the *second* registry, and adding one creates a failure this
+ * release did not have before - the Marketplace accepting a version and Open VSX not. Re-running
+ * then has to be able to finish the half that is missing without tripping over the half that is
+ * done. The Marketplace publish deliberately does *not* have this flag: it goes first, so it is
+ * the one that should still refuse a version that has already been used.
+ *
+ * [1]: https://marketplace.visualstudio.com/items/ms-vscode.vscode-marketplace/license
+ * [2]: https://open-vsx.org
+ */
+val publishToOpenVsx = tasks.register<Exec>("publishToOpenVsx") {
+  description = "Publishes the extension to Open VSX, which is what Cursor, Windsurf and VSCodium search."
+  group = "distribution"
+  ovsx("publish", "--packagePath", "build/vimperor-$extensionVersion.vsix", "--skip-duplicate")
+  dependsOn(checkPackagedExtension)
+}
+
+/**
+ * Claims the Open VSX namespace. Run once, before the first publish there, and never again.
+ *
+ * A namespace on Open VSX is not created by publishing into it, the way a Marketplace publisher is
+ * not created by `vsce`: it is claimed, by whoever asks first, and the token that claimed it is the
+ * one that may publish to it afterwards. So this is the step that fails a first release if it was
+ * skipped, and it fails with "namespace not found", which does not say what to do about it.
+ */
+tasks.register<Exec>("createOpenVsxNamespace") {
+  description = "Claims the Open VSX namespace. Once, before the first publish there."
+  group = "distribution"
+  ovsx("create-namespace", openVsxNamespace)
+  outputs.upToDateWhen { false }
+}
+
+/**
+ * That the Open VSX token exists and may publish to this namespace, without publishing anything.
+ *
+ * The one part of the setup that cannot be checked by reading it: a token is scoped to an account,
+ * a namespace is claimed by an account, and whether the two are the same account is a fact on
+ * Eclipse's side. `ovsx verify-pat` asks. Worth running once after the setup in PUBLISHING.md and
+ * never again.
+ */
+tasks.register<Exec>("verifyOpenVsxToken") {
+  description = "Checks that OVSX_PAT can publish to the Open VSX namespace, without publishing."
+  group = LifecycleBasePlugin.VERIFICATION_GROUP
+  ovsx("verify-pat", openVsxNamespace)
+  outputs.upToDateWhen { false }
+}
+
 val publishExtension = tasks.register<Exec>("publishExtension") {
   description = "Publishes the extension to the Visual Studio Marketplace."
   group = "distribution"

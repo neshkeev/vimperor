@@ -986,5 +986,19 @@ track, closed tickets in a tracker that is not ours, and published documentation
 to a site that is not ours. `git show 146db64f5` if one is ever wanted back.
 
 There is one live workflow, written for this fork:
-`.github/workflows/publish-vimperor.yml`, which packages and publishes the VS
-Code extension on a `vimperor-v*` tag. See `vscode-extension/PUBLISHING.md`.
+`.github/workflows/publish-vimperor.yml`, which packages the VS Code extension on
+a `vimperor-v*` tag and publishes it to **two** registries. See
+`vscode-extension/PUBLISHING.md`.
+
+Two, because a VS Code fork cannot install from Microsoft's Marketplace - the
+terms limit it to Microsoft's products and since 2025 that is enforced. Cursor,
+Windsurf and VSCodium search **Open VSX**, which is a separate service with a
+separate account, token and namespace: `OVSX_PAT`, and `publishToOpenVsx`. Both
+registries are handed the *same* `.vsix`, the one `checkPackagedExtension`
+unpacked and ran, rather than each building its own from the manifest.
+
+Nothing in the extension was ever fork-specific - `&ide` is `env.appName` and
+answers "Cursor" as readily as "Visual Studio Code" - so this was a distribution
+gap and not a portability one. Worth knowing before anyone goes looking for
+compatibility code to write: there is none, and `engines.vscode` is `^1.85.0`,
+below every current fork.

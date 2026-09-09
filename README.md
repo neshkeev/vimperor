@@ -70,7 +70,11 @@ Status
 
 **Released.** Install it from the marketplace —
 [Vimperor](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor), or
-`ext install neshkeev.vimperor` in the Quick Open box. To build one instead,
+`ext install neshkeev.vimperor` in the Quick Open box. **Cursor, Windsurf, VSCodium** and the other
+forks cannot use that marketplace, so every release goes to
+[Open VSX](https://open-vsx.org/extension/neshkeev/vimperor) as well, which is what they search —
+and attaches the `.vsix` to its [GitHub release](https://github.com/neshkeev/vimperor/releases) for
+anything that searches neither. To build one instead,
 `./gradlew :vscode-extension:packageExtension` writes the `.vsix`, and
 [`vscode-extension/PUBLISHING.md`](vscode-extension/PUBLISHING.md) is how releases are cut.
 

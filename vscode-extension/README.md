@@ -12,6 +12,24 @@ they behave in IdeaVim rather than the way somebody reimplemented them.
 
 Install it, restart the window, and start typing. The mode appears in the status bar.
 
+### Cursor, Windsurf, VSCodium and other forks
+
+Vimperor runs in all of them — nothing in it is specific to VS Code, and `&ide` answers with
+whichever editor it is in, so a config can branch on it. Only *installing* differs, because a fork
+cannot use Microsoft's Marketplace: search for **Vimperor** and you are searching
+[Open VSX](https://open-vsx.org/extension/neshkeev/vimperor), which is where every release is
+published alongside the Marketplace.
+
+If your editor searches neither, every release also attaches the `.vsix` to its
+[GitHub release](https://github.com/neshkeev/vimperor/releases), and any VS Code fork can install
+one by hand — "Install from VSIX…" in the Extensions view, or:
+
+```bash
+codium --install-extension vimperor-0.0.3.vsix   # cursor, windsurf, code-insiders, ...
+```
+
+The extension asks for VS Code 1.85 or newer, which every current fork is well past.
+
 ### The config file
 
 Vimperor's own config file is **`~/.vimperorrc`**. If you do not have one, it reads whichever of

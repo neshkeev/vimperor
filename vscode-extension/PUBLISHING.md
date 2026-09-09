@@ -8,7 +8,13 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 ./gradlew :vscode-extension:assembleExtension   # dist/, which is what ships
 ./gradlew :vscode-extension:packageExtension    # the .vsix, in vscode-extension/build/
 ./gradlew :vscode-extension:publishExtension    # to the Marketplace
+./gradlew :vscode-extension:publishToOpenVsx    # to Open VSX, for every VS Code fork
 ```
+
+**Two registries, one archive.** The Marketplace reaches VS Code and the forks cannot use it; Open
+VSX reaches Cursor, Windsurf, VSCodium and the rest. Both take the same `.vsix` - the one
+`checkPackagedExtension` unpacked and ran - rather than each building its own. See
+[Open VSX](#open-vsx-cursor-windsurf-vscodium) below.
 
 `vsce` is fetched by `npx` at a pinned version, using the Node the Kotlin plugin already downloads.
 Nothing has to be installed on the machine, and nothing is added to this repository.
@@ -131,6 +137,65 @@ be this whole section.
 
 [docs]: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
 [retirement]: https://devblogs.microsoft.com/devops/retirement-of-global-personal-access-tokens-in-azure-devops/
+
+## Open VSX (Cursor, Windsurf, VSCodium)
+
+**A VS Code fork cannot install from Microsoft's Marketplace.** The terms have always limited it to
+Microsoft's own products, and in 2025 that stopped being only a term - the forks were cut off. So
+an extension published to the Marketplace alone is installable in VS Code and nowhere else by
+search, however permissive its `engines.vscode` is.
+
+[Open VSX](https://open-vsx.org) is the Eclipse Foundation's open registry, and it is what those
+editors search instead. It is a separate service with a separate account, a separate token and a
+separate namespace; **a Marketplace credential cannot publish to it** and neither can an Entra
+identity. Nothing about the extension changes - the same `.vsix` goes to both.
+
+### Setting it up, once
+
+1. Sign in at <https://open-vsx.org> with GitHub. This creates the Eclipse account behind it.
+2. **Sign the Eclipse Foundation Open VSX Publisher Agreement**, from your user settings. Publishing
+   fails until this is done, and the error does not mention it.
+3. Create an access token at <https://open-vsx.org/user-settings/tokens>. It is shown once.
+4. Claim the namespace - it is `publisher` in `package.json`, and the build reads it from there
+   rather than keeping a second copy that can disagree:
+
+   ```bash
+   export OVSX_PAT=<the token>
+   ./gradlew :vscode-extension:createOpenVsxNamespace
+   ```
+
+   A namespace is claimed rather than created by publishing, the way a Marketplace publisher is.
+   Skip it and the first publish fails with "namespace not found", which does not say what to do.
+
+5. Check the token can actually publish to it, which is the one part of this that cannot be
+   verified by reading:
+
+   ```bash
+   ./gradlew :vscode-extension:verifyOpenVsxToken
+   ```
+
+### From GitHub
+
+Set `OVSX_PAT` as a repository **secret** and the release workflow publishes to both registries. It
+is a secret and not a variable - unlike `AZURE_CLIENT_ID`, this one authenticates as you.
+
+Leave it unset and the release still succeeds, reaching the Marketplace only, and the run carries a
+warning saying exactly that. A half-delivered release that says nothing is the thing worth avoiding;
+a half-delivered release that says so is a decision.
+
+Open VSX has no federated sign-in to move to, so unlike the Marketplace this token is the long-term
+arrangement rather than the one with a date on it. It expires when you tell it to.
+
+### Re-running a release
+
+`publishToOpenVsx` passes `--skip-duplicate`, so a version already there is not an error. That is
+deliberate and asymmetric: adding a second registry creates a failure this release did not have -
+one registry accepting a version and the other not - and finishing the missing half has to be
+possible without tripping over the done half. The Marketplace publish has no such flag, because it
+goes first and should still refuse a version that has been used.
+
+So if Open VSX is the half that failed, fix the token and run that one task; there is no need to
+re-run the whole workflow.
 
 ## Testing a release before making one
 

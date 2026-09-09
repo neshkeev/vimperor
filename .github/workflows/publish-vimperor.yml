@@ -38,6 +38,11 @@ jobs:
     env:
       # A tag publishes. A manual run only packages, unless it was asked for both.
       publishing: ${{ startsWith(github.ref, 'refs/tags/') || inputs.publish }}
+      # Whether this repository can reach Open VSX at all. Asked here rather than in the step that
+      # wants to know, because the `secrets` context is not available in a step's `if` - only
+      # `vars` is, which is why the Entra step below can test its variable in place and this
+      # cannot. Job-level `env` is the nearest place that can read a secret.
+      openVsx: ${{ secrets.OVSX_PAT != '' }}
     steps:
       # `persist-credentials: false` because nothing here needs a git credential and leaving one
       # around is free risk. The default writes the `GITHUB_TOKEN` into `.git/config` as an
@@ -141,6 +146,32 @@ jobs:
           ./gradlew :vscode-extension:publishExtension
           -PvsceAuth=${{ vars.AZURE_CLIENT_ID != '' && 'entra' || 'pat' }}
           --parallel --console=plain
+
+      # Open VSX, which is how every VS Code fork installs an extension.
+      #
+      # Microsoft's Marketplace is licensed for Microsoft's own products, and since 2025 that is
+      # enforced rather than merely written down - Cursor, Windsurf and VSCodium cannot install
+      # from it. They search Open VSX, the Eclipse Foundation's registry, which is a separate
+      # service with a separate account and a separate token. See `vscode-extension/PUBLISHING.md`.
+      #
+      # It publishes the same `.vsix` the Marketplace got - the one `checkPackagedExtension`
+      # unpacked and ran - rather than building a second archive from the same manifest.
+      - name: Publish to Open VSX
+        if: env.publishing == 'true' && env.openVsx == 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: ./gradlew :vscode-extension:publishToOpenVsx --parallel --console=plain
+
+      # A warning rather than nothing, because a release that reached half its users and said so
+      # nowhere is the failure this repository keeps meeting. The job still succeeds: publishing to
+      # the Marketplace alone is a valid release, and a fork user can install the `.vsix` the next
+      # step attaches.
+      - name: Note that Open VSX was skipped
+        if: env.publishing == 'true' && env.openVsx != 'true'
+        run: >
+          echo "::warning title=Open VSX not published::OVSX_PAT is not set, so this release
+          reached the Visual Studio Marketplace only. Cursor, Windsurf and VSCodium install from
+          Open VSX and will not see it. See vscode-extension/PUBLISHING.md."
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')

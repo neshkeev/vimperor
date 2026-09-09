@@ -4,6 +4,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- Vimperor is published to [Open VSX](https://open-vsx.org/extension/neshkeev/vimperor) as well as
+  the Visual Studio Marketplace, so **Cursor, Windsurf, VSCodium** and the other VS Code forks can
+  install it by searching for it. They cannot use Microsoft's Marketplace; nothing in the extension
+  was specific to VS Code, only its distribution was. Every release also attaches the `.vsix` to its
+  GitHub release, for anything that searches neither.
+
 
 ## [0.0.3] - 2026-09-09
 
