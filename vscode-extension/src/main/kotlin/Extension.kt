@@ -23,6 +23,7 @@ import com.github.neshkeev.vimperor.vscode.StatusBarItem
 import com.github.neshkeev.vimperor.vscode.StatusBarPrompt
 import com.github.neshkeev.vimperor.vscode.StatusIcon
 import com.github.neshkeev.vimperor.vscode.TextEditor
+import com.github.neshkeev.vimperor.vscode.TextEditorSelectionChangeKind
 import com.github.neshkeev.vimperor.vscode.ThemeColor
 import com.github.neshkeev.vimperor.vscode.VimHost
 import com.github.neshkeev.vimperor.vscode.VsCodeClipboard
@@ -242,10 +243,22 @@ fun activate(context: ExtensionContext) {
   val activeEditorChanged = window.onDidChangeActiveTextEditor { editor ->
     vim.activeEditorChanged(editor)
     refreshMode()
+    if (editor != null) trace(output, vim, editor, "<active editor>")
   }
 
+  // The one way the mode can change between keys: a click in Visual mode ends it. So the indicator
+  // is refreshed here too - without it the status bar went on saying VISUAL LINE after the selection
+  // had gone - and the event is traced, because a selection dropped between two keys is invisible in
+  // a trace of keys.
   val selectionChanged = window.onDidChangeTextEditorSelection { event ->
-    vim.selectionChanged(event.textEditor, event.kind)
+    val outcome = vim.selectionChanged(event.textEditor, event.kind)
+    refreshMode()
+    if (tracing()) {
+      val reported = event.selections.joinToString(", ") {
+        "(${it.anchor.line},${it.anchor.character})-(${it.active.line},${it.active.character})"
+      }
+      trace(output, vim, event.textEditor, "<selection by ${selectionKind(event.kind)} [$reported]: $outcome>")
+    }
   }
 
   // A buffer unloaded. Nothing was listening for this, so the host kept an editor - and its whole
@@ -431,6 +444,18 @@ fun deactivate() {
  * to, and is not where anybody looks. A key that fails silently is the hardest kind of bug to report
  * and the easiest to fix once it has a name, so it gets named here.
  */
+/** Whether `vimperor.trace` is on, read each time for the reason [trace] gives. */
+private fun tracing(): Boolean = workspace.getConfiguration("vimperor").get("trace") == true
+
+/** What VS Code said caused a selection change, in words a trace reader does not have to look up. */
+private fun selectionKind(kind: Int?): String = when (kind) {
+  null -> "an extension or an edit"
+  TextEditorSelectionChangeKind.Keyboard -> "the keyboard"
+  TextEditorSelectionChangeKind.Mouse -> "the mouse"
+  TextEditorSelectionChangeKind.Command -> "a command"
+  else -> "kind $kind"
+}
+
 /**
  * Writes what a keystroke did to the output channel, when `vimperor.trace` is on.
  *
@@ -439,7 +464,7 @@ fun deactivate() {
  * thinks to look.
  */
 private fun trace(output: OutputChannel, vim: VimHost, editor: TextEditor, key: String) {
-  if (workspace.getConfiguration("vimperor").get("trace") != true) return
+  if (!tracing()) return
   output.appendLine("  $key -> " + vim.describeState(editor))
 }
 

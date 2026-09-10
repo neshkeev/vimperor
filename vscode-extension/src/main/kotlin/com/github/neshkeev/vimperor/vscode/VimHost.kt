@@ -176,9 +176,11 @@ class VimHost(
     }
 
     // Same document, different `TextEditor` object: the old wrapper points at an editor VS Code is
-    // no longer using, so it is replaced rather than repaired. The mode goes with it; the carets do
-    // not, because they describe the document rather than the wrapper - see [adoptCaretsFrom] for
-    // what reading them off the new editor instead did to a tab switch.
+    // no longer using, so it is replaced rather than repaired. The carets are not replaced with it,
+    // because they describe the document rather than the wrapper - see [adoptCaretsFrom] for what
+    // reading them off the new editor instead did to a tab switch. Nor is the mode: it is not the
+    // wrapper's to lose, since `VimEditorBase.mode` is `injector.vimState.mode`. This said the mode
+    // went with the wrapper, and a probe replacing one mid-`Vjjj` showed Visual mode surviving.
     val editor = VsCodeEditor(textEditor)
     // The carets belong to the document, not to the wrapper. See [VsCodeEditor.adoptCaretsFrom].
     existing?.let { editor.adoptCaretsFrom(it) }
@@ -520,31 +522,37 @@ class VimHost(
    * Only when nothing is pending, and only when VS Code says the user did it - see the `kind` check
    * below, which is the part that matters and the part a stub host cannot have, because a stub
    * fires no events at all.
+    *
+   * Returns what it made of the event, for the trace. This is the one way the mode can change
+   * without a key - a click in Visual mode ends it - so when a selection is reported as dropped
+   * between two keys, this line is the only record of why.
    */
-  fun selectionChanged(textEditor: TextEditor, kind: Int?) {
-    val editor = editors[identityOf(textEditor)] ?: return
-    if (editor.nativeEditor !== textEditor) return
-    if (pending > 0) return
+  fun selectionChanged(textEditor: TextEditor, kind: Int?): String {
+    val editor = editors[identityOf(textEditor)] ?: return "ignored, no editor registered"
+    if (editor.nativeEditor !== textEditor) return "ignored, a stale editor"
+    if (pending > 0) return "ignored, a command is still landing"
     // Only a change VS Code attributes to the user. `kind` is null for one it did not attribute -
     // an edit moving its own caret, or an extension writing `TextEditor.selections` - and both of
     // those are this host's own writing coming back. Reading them was the reason `O` opened a line
     // above and left the caret below it, and the reason a blockwise Visual selection came apart one
     // column per line: the block's anchor was replaced by whatever VS Code last reported for the
     // line the caret happened to be on.
-    if (kind == null) return
+    if (kind == null) return "ignored, not attributed to the user"
     // And not the host's own push, whatever `kind` says. A real window attributed one to the user:
     // the incsearch preview's selection, pushed while `:` was open, came back as a change the user
     // made, and following it into Visual mode reset the key handler and closed the prompt under the
     // next key. `syncCaretsFromEditor` recognises its own echo; what it adopted is the only thing
     // that can say the user did something.
-    if (!editor.syncCaretsFromEditor()) return
+    if (!editor.syncCaretsFromEditor()) return "echo of what was pushed"
     if (editor.followSelectionIntoMode()) {
       // The mode changed without a key causing it, and `KeyHandler` is holding state that assumed
       // the old one - a partial command, a pending count. Entering visual mode behind its back and
       // then pressing `d` makes it try to go operator-pending *from* visual, which the engine
       // rejects outright.
       KeyHandler.getInstance().reset(editor)
+      return "adopted, and the mode followed it to ${modeName()}"
     }
+    return "adopted"
   }
 
   /**

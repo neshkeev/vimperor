@@ -188,6 +188,44 @@ class VsCodeVisualModeTest {
     assertEquals(afterMotion, session.selection, "the echo should change nothing")
   }
 
+  /**
+   * What `selectionChanged` says it did, which is the line the trace prints for a selection event.
+   *
+   * Reported from a real window: `V`, three `j`s, and the fourth `j` came out in Normal mode with the
+   * selection gone. Nothing reproduced it offline - not the engine's `j` over any shape of line, not
+   * an echo, not a replaced editor - which leaves the one way the mode changes between keys: VS Code
+   * reporting a selection the user made. A trace of keys cannot show that, so the event has to.
+   */
+  @Test
+  fun `test a click that collapses a Visual selection is reported as ending Visual mode`() {
+    val session = Session("one\ntwo\nthree")
+    session.type("Vj")
+    assertEquals("VISUAL LINE", session.host.modeName())
+
+    session.fake.selections = arrayOf(Selection(Position(1, 1), Position(1, 1)))
+    val outcome = session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
+
+    assertEquals("adopted, and the mode followed it to NORMAL", outcome)
+    assertEquals("NORMAL", session.host.modeName())
+  }
+
+  @Test
+  fun `test an echo of the host's own selection is reported as one`() {
+    val session = Session("one two three")
+    session.type("ve")
+    assertEquals(
+      "echo of what was pushed",
+      session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Keyboard),
+    )
+  }
+
+  @Test
+  fun `test a change VS Code did not attribute is reported as ignored`() {
+    val session = Session("one two three")
+    session.type("ve")
+    assertEquals("ignored, not attributed to the user", session.host.selectionChanged(session.fake, kind = null))
+  }
+
   @Test
   fun `test y on a selection yanks it for p`() {
     val session = Session("one two")

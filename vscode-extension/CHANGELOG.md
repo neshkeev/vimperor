@@ -23,6 +23,10 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- When a selection change from outside the keyboard - a click, or another extension - ended Visual
+  mode, the status bar went on saying VISUAL until the next key, so the selection seemed to vanish
+  for no reason. The indicator follows the mode now, and `vimperor.trace` records every selection
+  change VS Code reports, what caused it, and what Vimperor made of it.
 - `:'<,'>s/pattern/` over selected lines threw you out of the command line at the first character of
   the pattern, into Visual mode with a different selection. With `'incsearch'` on, the preview was
   meant to drop the selection and did not, so it dragged the selection to the first match, which
