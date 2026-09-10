@@ -8,6 +8,7 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
 import com.github.neshkeev.vimperor.label.JumpLabel
 import com.github.neshkeev.vimperor.label.VimJumpLabelDisplay
 import com.maddyhome.idea.vim.api.VimEditor
@@ -31,26 +32,32 @@ import com.maddyhome.idea.vim.common.TextRange
  * one beside it. If VS Code starts escaping the margin, labels still appear and the text shifts
  * sideways: wrong, but legible and obvious.
  *
- * Three decoration types, made once and reused. A type per label would leak one per keystroke,
- * since labels are redrawn as each key narrows them. Only the label type carries per-range options,
- * because only its text differs from one range to the next.
+ * ## Colours
+ *
+ * Each label arrives with its `:highlight` group resolved. A group the user defined is painted
+ * exactly as `:match` would paint it; one they never mentioned is a badge in a theme colour pair from
+ * [VsCodeThemeColors.JUMP_LABEL_GROUPS]. The first version drew vim-easymotion's red text and nothing
+ * else, and on VS Code's dark background it was hardly visible - a text colour is only as legible as
+ * whatever it lands on, and a badge brings its own background.
+ *
+ * Label decorations carry their colours per range, because a `before` attachment can. The shading
+ * cannot: a range's own options reach only its attachments, so a text colour has to be on the
+ * decoration *type*, and there is one shade type per appearance, as `:match` keeps.
  */
 internal class VsCodeJumpLabelDisplay : VimJumpLabelDisplay {
-
-  /** The searched text, dimmed so the labels stand out: vim-easymotion's `EasyMotionShade`. */
-  private val shadeType: TextEditorDecorationType by lazy {
-    decorationType { it.color = ThemeColor(SHADE_COLOUR) }
-  }
 
   /** The characters a label covers, painted out so the label reads in their place. */
   private val coveredType: TextEditorDecorationType by lazy {
     decorationType { it.color = "transparent" }
   }
 
-  /** The labels; empty, because each range brings its own text. */
+  /** The labels; empty, because each range brings its own text and colours. */
   private val labelType: TextEditorDecorationType by lazy { decorationType {} }
 
-  override fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>) {
+  /** Shading, one type per appearance of `EasyMotionShade`. See the class comment. */
+  private val shadeTypes = mutableMapOf<String, TextEditorDecorationType>()
+
+  override fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>, shade: HighlightGroup) {
     val vsCode = editor as? VsCodeEditor ?: return
     val text = editor.text()
 
@@ -65,18 +72,18 @@ internal class VsCodeJumpLabelDisplay : VimJumpLabelDisplay {
         at < text.length && text[at] != '\n'
       }.count()
       if (coverable > 0) covered += rangeOf(vsCode, label.offset, label.offset + coverable)
-      drawn += labelDecoration(rangeOf(vsCode, label.offset, label.offset), shown)
+      drawn += labelDecoration(rangeOf(vsCode, label.offset, label.offset), shown, label.highlight)
     }
 
     val native = vsCode.nativeEditor
-    native.setDecorations(shadeType, shaded.map { rangeOf(vsCode, it.startOffset, it.endOffset) }.toTypedArray())
+    paintShade(native, shade, shaded.map { rangeOf(vsCode, it.startOffset, it.endOffset) })
     native.setDecorations(coveredType, covered.toTypedArray())
     native.setDecorations(labelType, drawn.toTypedArray())
   }
 
   override fun clearLabels(editor: VimEditor) {
     val native = (editor as? VsCodeEditor)?.nativeEditor ?: return
-    native.setDecorations(shadeType, emptyArray<Range>())
+    for (type in shadeTypes.values) native.setDecorations(type, emptyArray<Range>())
     native.setDecorations(coveredType, emptyArray<Range>())
     native.setDecorations(labelType, emptyArray<Range>())
   }
@@ -90,11 +97,44 @@ internal class VsCodeJumpLabelDisplay : VimJumpLabelDisplay {
     return ranges.map { it.start.line.coerceIn(0, last)..it.end.line.coerceIn(0, last) }
   }
 
-  private fun labelDecoration(range: Range, keys: String): Any {
+  /**
+   * The searched text, dimmed, in whichever type paints [shade] - and every other shade type emptied,
+   * so a `:highlight EasyMotionShade` changed between two jumps does not leave the old dimming behind.
+   *
+   * `:highlight EasyMotionShade NONE` paints nothing, which is Vim's meaning for a disabled group.
+   */
+  private fun paintShade(native: TextEditor, shade: HighlightGroup, ranges: List<Range>) {
+    val attributes = shade.attributes
+    val key = attributes?.toString() ?: THEME
+    val type = if (attributes?.paintsNothing == true) {
+      null
+    } else {
+      shadeTypes.getOrPut(key) {
+        decorationType { options ->
+          if (attributes == null) options.color = ThemeColor(VsCodeThemeColors.LINE_NUMBER) else attributes.applyTo(options)
+        }
+      }
+    }
+    for ((each, shadeType) in shadeTypes) {
+      native.setDecorations(shadeType, if (shadeType === type && each == key) ranges.toTypedArray() else emptyArray())
+    }
+  }
+
+  private fun labelDecoration(range: Range, keys: String, highlight: HighlightGroup): Any {
     val before: dynamic = js("({})")
     before.contentText = keys
-    before.color = if (keys.length > 1) GROUP_COLOUR else TARGET_COLOUR
-    before.fontWeight = "bold"
+    val attributes = highlight.attributes
+    if (attributes == null) {
+      val (background, foreground) = VsCodeThemeColors.JUMP_LABEL_GROUPS[highlight.name]
+        ?: (VsCodeThemeColors.BADGE_BACKGROUND to VsCodeThemeColors.BADGE_FOREGROUND)
+      before.backgroundColor = ThemeColor(background)
+      before.color = ThemeColor(foreground)
+      before.fontWeight = "bold"
+    } else {
+      // Exactly as the user defined it, including `NONE` - which leaves the label in the editor's
+      // own text colour, still readable, since the character it covers is painted out.
+      attributes.applyTo(before)
+    }
     // The trick described in the class comment. A negative margin as well as `absolute`, as VSCodeVim
     // has it, so a renderer that honoured the margin and not the position would still leave the text
     // where it was.
@@ -123,13 +163,7 @@ internal class VsCodeJumpLabelDisplay : VimJumpLabelDisplay {
   }
 
   private companion object {
-    /** vim-easymotion's `EasyMotionTarget`: a label that jumps. */
-    const val TARGET_COLOUR = "#ff0000"
-
-    /** Its `EasyMotionTarget2First`: a label that opens a group of targets instead. */
-    const val GROUP_COLOUR = "#ffb400"
-
-    /** A theme colour rather than a hex, so the dimming follows the theme. Line numbers are dim in all of them. */
-    const val SHADE_COLOUR = "editorLineNumber.foreground"
+    /** The key for a shade nobody defined, which takes the theme's colour. */
+    const val THEME = "theme"
   }
 }

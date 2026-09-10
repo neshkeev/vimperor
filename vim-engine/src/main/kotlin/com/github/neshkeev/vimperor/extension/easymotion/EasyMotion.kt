@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.extension.easymotion
 
 import com.github.neshkeev.vimperor.extension.readKeys
+import com.github.neshkeev.vimperor.highlight.Highlights
 import com.github.neshkeev.vimperor.label.JumpLabel
 import com.intellij.vim.api.VimInitApi
 import com.intellij.vim.api.VimPlugin
@@ -88,6 +89,13 @@ private const val DEFAULT_KEYS = "asdghklqwertyuiopzxcvbnmfj;"
 private const val CANCELLED = "EasyMotion: Cancelled"
 private const val NO_TARGET = "EasyMotion: No target"
 private const val TOO_FEW_KEYS = "EasyMotion: g:EasyMotion_keys needs at least two different keys"
+
+// vim-easymotion's highlight groups, so `:highlight EasyMotionTarget ...` recolours labels here the way
+// it does in Vim. A label is drawn as one piece, so the second key of a two-key label takes the same
+// colours as the first and `EasyMotionTarget2Second` is not used.
+private const val TARGET_GROUP = "EasyMotionTarget"
+private const val GROUP_KEY_GROUP = "EasyMotionTarget2First"
+private const val SHADE_GROUP = "EasyMotionShade"
 
 public fun registerEasyMotion() {
   val owner = MappingOwner.Plugin.get(EASYMOTION)
@@ -277,8 +285,13 @@ private class EasyMotionHandler(private val motion: Motion) : ExtensionHandler.W
     /** The labels still reachable from what has been typed. Called while the prompt is open. */
     fun draw(typed: List<VimKeyStroke>) {
       val level = (resolve(tree, labelsIn(typed)) as? Resolution.Partial)?.children ?: return
-      val labels = pathsOf(level).map { (offset, path) -> JumpLabel(offset, path) }
-      injector.jumpLabelDisplay.showLabels(editor, labels, shaded)
+      // Resolved on every draw, so a `:highlight` changed between two jumps is seen by the second.
+      val target = Highlights.group(TARGET_GROUP)
+      val groupKey = Highlights.group(GROUP_KEY_GROUP)
+      val labels = pathsOf(level).map { (offset, path) ->
+        JumpLabel(offset, path, if (path.length > 1) groupKey else target)
+      }
+      injector.jumpLabelDisplay.showLabels(editor, labels, shaded, Highlights.group(SHADE_GROUP))
       labelled = editor
     }
 

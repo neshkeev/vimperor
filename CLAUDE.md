@@ -185,6 +185,15 @@ motion. What that path lacked was lines - an operator sees only where the caret 
 Labels are command keys, so `'keyboardlayout'` applies to them. The character `f` searches for is
 text, so it does not.
 
+**Labels are badges in theme colours, and the first version was red text.** vim-easymotion's
+`EasyMotionTarget` is `#ff0000`, and on VS Code's dark background it was hardly visible: a text
+colour is only as legible as whatever it lands on, and a badge brings its own. Labels take
+`EasyMotionTarget`, `EasyMotionTarget2First` and `EasyMotionShade` from `:highlight` when the user
+defined them - painted through the same `applyTo` as `:match` - and otherwise a theme pair from
+`VsCodeThemeColors.JUMP_LABEL_GROUPS`. **The pairs were read out of the installed VS Code's colour
+registry, not assumed**, and two obvious ones failed: `badge.background` is `#4D4D4D` in a dark
+theme, and `statusBarItem.warningBackground` is translucent there and null in high contrast.
+
 **The grouping promises that single-key labels go to the nearest targets, and nothing stronger.** A
 nearer target can have a longer label: with two keys and six targets the lengths run 2, 3, 3, 2, 3, 3.
 The first version of `LabelTreeTest` asserted the stronger claim, and the comment in `LabelTree.kt`

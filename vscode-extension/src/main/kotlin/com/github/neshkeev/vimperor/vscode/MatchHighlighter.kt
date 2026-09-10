@@ -81,42 +81,6 @@ internal class VsCodeMatchHighlighter : VimMatchHighlighter {
   }
 
   /**
-   * A `:highlight` definition as VS Code's decoration options, which are CSS underneath.
-   *
-   * That is what makes Vim's four extra underlines free here - `undercurl` is `underline wavy` and
-   * a browser has drawn that for twenty years - and it is also why `standout` is missing. Standout
-   * is a terminal's inverse-video-ish attribute with no CSS or editor counterpart; a config that
-   * asks for it gets whatever else it asked for, and nothing invented for that word.
-   */
-  private fun HighlightAttributes.applyTo(options: dynamic) {
-    // Vim's `reverse` swaps the two colours. Both hosts do it by swapping the fields rather than at
-    // draw time, so it works when the colours were named and does nothing when they were not.
-    val swap = reverse && (foreground != null || background != null)
-    val fore = if (swap) background else foreground
-    val back = if (swap) foreground else background
-
-    if (fore != null) options.color = fore
-    if (back != null) options.backgroundColor = back
-    if (bold) options.fontWeight = "bold"
-    if (italic) options.fontStyle = "italic"
-
-    val decorations = mutableListOf<String>()
-    when (underline) {
-      UnderlineStyle.NONE -> {}
-      UnderlineStyle.STRAIGHT -> decorations.add("underline")
-      UnderlineStyle.CURL -> decorations.add("underline wavy")
-      UnderlineStyle.DOUBLE -> decorations.add("underline double")
-      UnderlineStyle.DOTTED -> decorations.add("underline dotted")
-      UnderlineStyle.DASHED -> decorations.add("underline dashed")
-    }
-    // `guisp` colours the underline and not the text, which is exactly what CSS puts last.
-    val underlineColour = special
-    if (decorations.isNotEmpty() && underlineColour != null) decorations.add(underlineColour)
-    if (strikethrough) decorations.add("line-through")
-    if (decorations.isNotEmpty()) options.textDecoration = decorations.joinToString(" ")
-  }
-
-  /**
    * Offsets to a VS Code range, through the buffer rather than the document.
    *
    * The same reason the search highlighter does it: this runs while a command may still be in
@@ -127,4 +91,43 @@ internal class VsCodeMatchHighlighter : VimMatchHighlighter {
     val end = editor.offsetToBufferPosition(endOffset)
     return Range(Position(start.line, start.column), Position(end.line, end.column))
   }
+}
+
+/**
+ * A `:highlight` definition as VS Code's decoration options, which are CSS underneath.
+ *
+ * That is what makes Vim's four extra underlines free here - `undercurl` is `underline wavy` and
+ * a browser has drawn that for twenty years - and it is also why `standout` is missing. Standout
+ * is a terminal's inverse-video-ish attribute with no CSS or editor counterpart; a config that
+ * asks for it gets whatever else it asked for, and nothing invented for that word.
+ *
+ * At file level so that easymotion's labels paint a group exactly as `:match` does. Its property
+ * names are the same on a decoration type and on a `before` attachment, so one mapping serves both.
+ */
+internal fun HighlightAttributes.applyTo(options: dynamic) {
+  // Vim's `reverse` swaps the two colours. Both hosts do it by swapping the fields rather than at
+  // draw time, so it works when the colours were named and does nothing when they were not.
+  val swap = reverse && (foreground != null || background != null)
+  val fore = if (swap) background else foreground
+  val back = if (swap) foreground else background
+
+  if (fore != null) options.color = fore
+  if (back != null) options.backgroundColor = back
+  if (bold) options.fontWeight = "bold"
+  if (italic) options.fontStyle = "italic"
+
+  val decorations = mutableListOf<String>()
+  when (underline) {
+    UnderlineStyle.NONE -> {}
+    UnderlineStyle.STRAIGHT -> decorations.add("underline")
+    UnderlineStyle.CURL -> decorations.add("underline wavy")
+    UnderlineStyle.DOUBLE -> decorations.add("underline double")
+    UnderlineStyle.DOTTED -> decorations.add("underline dotted")
+    UnderlineStyle.DASHED -> decorations.add("underline dashed")
+  }
+  // `guisp` colours the underline and not the text, which is exactly what CSS puts last.
+  val underlineColour = special
+  if (decorations.isNotEmpty() && underlineColour != null) decorations.add(underlineColour)
+  if (strikethrough) decorations.add("line-through")
+  if (decorations.isNotEmpty()) options.textDecoration = decorations.joinToString(" ")
 }

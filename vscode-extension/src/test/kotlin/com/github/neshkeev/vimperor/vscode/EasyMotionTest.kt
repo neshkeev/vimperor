@@ -90,6 +90,17 @@ class EasyMotionTest {
           (decoration.renderOptions.before.contentText as String) to offset
         }
     }
+
+    /** The `before` attachment a label was drawn with, found by its text: that is where its colours are. */
+    fun labelStyle(label: String): dynamic =
+      fake.decorationOptions.values.flatten()
+        .filter { it.renderOptions != undefined }
+        .single { it.renderOptions.before.contentText == label }
+        .renderOptions.before
+
+    /** The options of every decoration type painting something, which is where the shading's colour is. */
+    fun paintingTypes(): List<dynamic> =
+      fake.decorations.entries.filter { it.value.isNotEmpty() }.map { it.key.asDynamic().options }
   }
 
   // ---- labels -------------------------------------------------------------------------------------
@@ -190,6 +201,45 @@ class EasyMotionTest {
 
     session.type("s")
     assertEquals(112, session.caret)
+  }
+
+  // ---- colours -----------------------------------------------------------------------------------
+
+  @Test
+  fun `test a label is a badge in the theme's own colours`() {
+    // The first version drew vim-easymotion's red text, which was hardly visible on VS Code's dark
+    // background. A badge brings its own background, and a theme colour pair is legible in whatever
+    // theme is on.
+    val session = Session("one two three four")
+    session.type("\\\\w")
+    val style = session.labelStyle("a")
+    assertEquals("activityBarBadge.background", style.backgroundColor.id)
+    assertEquals("activityBarBadge.foreground", style.color.id)
+  }
+
+  @Test
+  fun `test a label that opens a group is a badge in a second theme colour`() {
+    val session = Session((0 until 30).joinToString(" ") { "w" + (it + 10) })
+    session.type("\\\\w")
+    assertEquals("activityWarningBadge.background", session.labelStyle(";a").backgroundColor.id)
+    assertEquals("activityWarningBadge.foreground", session.labelStyle(";a").color.id)
+  }
+
+  @Test
+  fun `test highlight EasyMotionTarget recolours the labels, as it does in Vim`() {
+    val session = Session("one two three four", setup = listOf("highlight EasyMotionTarget guifg=#000000 guibg=#ffd700"))
+    session.type("\\\\w")
+    val style = session.labelStyle("a")
+    assertEquals("#000000", (style.color as String).lowercase())
+    assertEquals("#ffd700", (style.backgroundColor as String).lowercase())
+  }
+
+  @Test
+  fun `test highlight EasyMotionShade recolours the shading`() {
+    val session = Session("one two three four", setup = listOf("highlight EasyMotionShade guifg=#555555"))
+    session.type("\\\\w")
+    val colours = session.paintingTypes().map { (it.color as? String)?.lowercase() }
+    assertTrue("#555555" in colours, "got $colours")
   }
 
   // ---- as a motion -------------------------------------------------------------------------------

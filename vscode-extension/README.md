@@ -222,11 +222,12 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   `<Leader><Leader>` followed by `w`, `b`, `e`, `j`, `k`, `n`, or `f`, `t` or `s` and a character,
   labels every target on screen, and typing a label jumps there — under an operator too, so
   `d<Leader><Leader>w` deletes to the word you pick, and `j` and `k` take whole lines.
-  `g:EasyMotion_keys` chooses the label keys, and labels can be typed on a Cyrillic layout. Not
-  yet: the multi-character finds (`s2`, `sn`), `repeat`, `next`, `prev`, `jumptoanywhere` and the
-  `line*` motions, and `.` does not repeat a jump. The labels sit over the text by way of a styling
-  trick VS Code does not document; if an update breaks it, they will appear beside their targets
-  rather than on them.
+  `g:EasyMotion_keys` chooses the label keys, and labels can be typed on a Cyrillic layout. Labels
+  are badges in your theme's own colours; `:highlight EasyMotionTarget`, `EasyMotionTarget2First`
+  and `EasyMotionShade` recolour them, as they do in Vim. Not yet: the multi-character finds (`s2`,
+  `sn`), `repeat`, `next`, `prev`, `jumptoanywhere` and the `line*` motions, and `.` does not repeat
+  a jump. The labels sit over the text by way of a styling trick VS Code does not document; if an
+  update breaks it, they will appear beside their targets rather than on them.
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
   drives its own Toggle Line Comment. `dgc`, the text object over a run of comment lines, needs a

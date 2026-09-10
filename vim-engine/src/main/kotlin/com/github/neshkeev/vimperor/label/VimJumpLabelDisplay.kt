@@ -8,6 +8,7 @@
 
 package com.github.neshkeev.vimperor.label
 
+import com.github.neshkeev.vimperor.highlight.HighlightGroup
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.visualLineToBufferLine
@@ -16,8 +17,13 @@ import com.maddyhome.idea.vim.common.TextRange
 /**
  * A label to draw over the text: the keys that still reach [offset], of which a host shows as many
  * as fit. vim-easymotion shows two.
+ *
+ * [highlight] arrives resolved, the bargain `:sign` and `:match` already make: a group the user
+ * defined with `:highlight` is painted as they said, and one they never mentioned - null attributes -
+ * is left to the host, which answers with its theme. A literal colour chosen here would be unreadable
+ * in half the themes people use, and the first one chosen was: red, on VS Code's dark background.
  */
-data class JumpLabel(val offset: Int, val keys: String)
+data class JumpLabel(val offset: Int, val keys: String, val highlight: HighlightGroup)
 
 /**
  * Letters drawn *over* the text, which is what a jump motion asks of a host and nothing before it did.
@@ -36,8 +42,8 @@ data class JumpLabel(val offset: Int, val keys: String)
  */
 interface VimJumpLabelDisplay {
 
-  /** Replaces the labels [editor] shows with [labels], and dims [shaded]. */
-  fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>)
+  /** Replaces the labels [editor] shows with [labels], and dims [shaded] in the colours of [shade]. */
+  fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>, shade: HighlightGroup)
 
   /** Removes every label and every dimmed range from [editor]. */
   fun clearLabels(editor: VimEditor)
@@ -60,6 +66,6 @@ interface VimJumpLabelDisplay {
 
 /** A host that draws no labels. The motion still runs; see [VimJumpLabelDisplay]. */
 object NoJumpLabelDisplay : VimJumpLabelDisplay {
-  override fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>) {}
+  override fun showLabels(editor: VimEditor, labels: List<JumpLabel>, shaded: List<TextRange>, shade: HighlightGroup) {}
   override fun clearLabels(editor: VimEditor) {}
 }

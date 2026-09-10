@@ -634,4 +634,36 @@ internal object VsCodeThemeColors {
     "Visual" to SELECTION,
     "MatchParen" to MATCH_BRACKET,
   )
+
+  /** The activity bar's counters: a solid badge whose text colour the theme pairs with it. */
+  const val BADGE_BACKGROUND = "activityBarBadge.background"
+  const val BADGE_FOREGROUND = "activityBarBadge.foreground"
+
+  /** The same badge in the theme's warning colour, for a second kind of label beside the first. */
+  const val WARNING_BADGE_BACKGROUND = "activityWarningBadge.background"
+  const val WARNING_BADGE_FOREGROUND = "activityWarningBadge.foreground"
+
+  /** Dim in every theme, which is what easymotion's shading of the searched text wants. */
+  const val LINE_NUMBER = "editorLineNumber.foreground"
+
+  /**
+   * easymotion's highlight groups, as a background and foreground pair, when `:highlight` has not
+   * defined them.
+   *
+   * A badge rather than a text colour, and the reason is the first version of this: a label drawn in
+   * vim-easymotion's red, `#ff0000`, was hardly visible on VS Code's dark background. A text colour is
+   * only as legible as the background it happens to land on; a badge brings its own. These two pairs
+   * are ones every theme is obliged to make legible, because they are the theme's own counters.
+   *
+   * Measured in VS Code's colour registry rather than assumed: `activityBarBadge` is `#007ACC` with
+   * white text in dark and light themes, and `activityWarningBadge` is `#B27C00` with white.
+   * `badge.background` was the obvious choice and is `#4D4D4D` in a dark theme - a grey badge that
+   * barely stands out. `activityWarningBadge` is newer than this extension's lowest supported VS Code,
+   * and a theme colour an editor does not know paints nothing, so there a group label shows in the
+   * editor's own text colour - plain, and still legible.
+   */
+  val JUMP_LABEL_GROUPS: Map<String, Pair<String, String>> = mapOf(
+    "EasyMotionTarget" to (BADGE_BACKGROUND to BADGE_FOREGROUND),
+    "EasyMotionTarget2First" to (WARNING_BADGE_BACKGROUND to WARNING_BADGE_FOREGROUND),
+  )
 }
