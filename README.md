@@ -110,6 +110,11 @@ The other twenty-five are ported:
 `functextobj`, `classtextobj`, `visual-star-search`, `signature`, `NERDTree` and
 `youcompleteme`.
 
+`easymotion` is bundled as well, and written here rather than ported: IdeaVim's is a
+separate plugin, IdeaVim-EasyMotion over AceJump, and both are GPL. This one follows
+vim-easymotion, which is MIT, so `set easymotion` labels targets and jumps to the one you
+type, under an operator and in Visual mode too.
+
 The two that are missing are not waiting on a seam. `matchit` needs to know
 what a *token* is, and the most VS Code will say about a file's structure is where its
 functions and classes are. `VimEverywhere` labels every clickable thing in the IDE

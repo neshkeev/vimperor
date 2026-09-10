@@ -87,7 +87,7 @@ internal class DetachedTextEditor : TextEditor {
     override var lineNumbers: Int = TextEditorLineNumbersStyle.On
   }
 
-  override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {}
+  override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<out Any>) {}
 }
 
 /**

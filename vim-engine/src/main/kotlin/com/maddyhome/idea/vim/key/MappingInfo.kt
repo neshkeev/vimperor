@@ -31,6 +31,7 @@ import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType.CHARACTER_WISE
+import com.maddyhome.idea.vim.state.mode.SelectionType.LINE_WISE
 import com.maddyhome.idea.vim.state.mode.selectionType
 import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
 import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
@@ -191,7 +192,7 @@ class ToHandlerMappingInfo(
     val handler = extensionHandler
     if (handler is ExtensionHandler.WithCallback) {
       handler._backingFunction = {
-        myFun(shouldCalculateOffsets, editor, startOffsets, keyState)
+        myFun(shouldCalculateOffsets, editor, startOffsets, keyState, handler.isLinewiseMotion)
 
         if (shouldCalculateOffsets) {
           injector.application.invokeLater {
@@ -227,7 +228,7 @@ class ToHandlerMappingInfo(
     }
 
     if (handler !is ExtensionHandler.WithCallback) {
-      myFun(shouldCalculateOffsets, editor, startOffsets, keyState)
+      myFun(shouldCalculateOffsets, editor, startOffsets, keyState, linewise = false)
     }
   }
 
@@ -239,6 +240,7 @@ class ToHandlerMappingInfo(
       editor: VimEditor,
       startOffsets: Map<ImmutableVimCaret, Int>,
       keyState: KeyHandlerState,
+      linewise: Boolean,
     ) {
       if (shouldCalculateOffsets && !keyState.commandBuilder.hasCurrentCommandPartArgument()) {
         val offsets: MutableMap<ImmutableVimCaret, VimSelection> = HashMap()
@@ -249,6 +251,13 @@ class ToHandlerMappingInfo(
               create(caret.vimSelectionStart, caret.offset, editor.mode.selectionType ?: CHARACTER_WISE, editor)
             offsets[caret] = vimSelection
             editor.mode = Mode.NORMAL()
+          } else if (startOffset != null && startOffset != caret.offset && linewise) {
+            // Whole lines, so neither end takes the exclusive adjustment below: which column the
+            // motion started or ended in cannot change which lines it covers. An external motion
+            // that moves by lines - easymotion's `j` and `k` - says so through
+            // [ExtensionHandler.WithCallback.isLinewiseMotion], because the caret alone cannot.
+            offsets[caret] = create(minOf(startOffset, caret.offset), maxOf(startOffset, caret.offset), LINE_WISE, editor)
+            editor.currentCaret().moveToOffset(startOffset)
           } else if (startOffset != null && startOffset != caret.offset) {
             // Command line motions are always characterwise exclusive
             var endOffset = caret.offset
@@ -266,7 +275,7 @@ class ToHandlerMappingInfo(
           }
         }
         if (offsets.isNotEmpty()) {
-          keyState.commandBuilder.addAction(ExternalActionHandler(offsets))
+          keyState.commandBuilder.addAction(ExternalActionHandler(offsets, isLinewiseMotion = linewise))
         }
       }
     }

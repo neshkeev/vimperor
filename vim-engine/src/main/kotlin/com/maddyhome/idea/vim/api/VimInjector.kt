@@ -13,6 +13,8 @@ import com.github.neshkeev.vimperor.api.VimCommentService
 import com.github.neshkeev.vimperor.api.VimFileTreeService
 import com.github.neshkeev.vimperor.api.VimMatchHighlighter
 import com.github.neshkeev.vimperor.api.VimWindowResizeService
+import com.github.neshkeev.vimperor.label.NoJumpLabelDisplay
+import com.github.neshkeev.vimperor.label.VimJumpLabelDisplay
 import com.github.neshkeev.vimperor.sign.NoSignDisplay
 import com.github.neshkeev.vimperor.sign.VimSignDisplay
 import com.maddyhome.idea.vim.annotations.Internal
@@ -145,6 +147,14 @@ interface VimInjector {
    * `:sign place` still lists what is there. See [NoSignDisplay].
    */
   val signDisplay: VimSignDisplay get() = NoSignDisplay
+
+  /**
+   * Drawing jump labels over the text, for `easymotion`.
+   *
+   * Defaulted for the same reason [signDisplay] is: the motion is the engine's, so a host that draws
+   * nothing still finds targets and jumps, and shows no labels. See [NoJumpLabelDisplay].
+   */
+  val jumpLabelDisplay: VimJumpLabelDisplay get() = NoJumpLabelDisplay
 
   /**
    * The features `has()` answers 1 for, beyond the ones the engine provides for itself.

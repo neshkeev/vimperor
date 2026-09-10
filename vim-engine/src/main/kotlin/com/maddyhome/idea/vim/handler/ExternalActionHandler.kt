@@ -34,12 +34,16 @@ import com.maddyhome.idea.vim.group.visual.VimSelection
  * The start/end ranges are wrapped in this action handler and pushed to the [CommandBuilder], which completes and then
  * executes the command. Just like a text object handler, an operator will get the range for a caret, and act on it.
  */
-class ExternalActionHandler(private val ranges: Map<ImmutableVimCaret, VimSelection>) : EditorActionHandlerBase(true) {
+class ExternalActionHandler(
+  private val ranges: Map<ImmutableVimCaret, VimSelection>,
+  /**
+   * If all we have are ranges, then almost by definition this is a characterwise motion - but the
+   * ranges might be complete lines, and only the extension that moved the caret knows. See
+   * [com.maddyhome.idea.vim.extension.ExtensionHandler.WithCallback.isLinewiseMotion].
+   */
+  val isLinewiseMotion: Boolean = false,
+) : EditorActionHandlerBase(true) {
   override val type: Command.Type = Command.Type.MOTION
-
-  // If all we have are ranges, then almost by definition, this is character-wise motion. However, the ranges might be
-  // complete lines...
-  val isLinewiseMotion = false
 
   override fun baseExecute(
     editor: VimEditor,

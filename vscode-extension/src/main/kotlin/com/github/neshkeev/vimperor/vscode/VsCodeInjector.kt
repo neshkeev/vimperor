@@ -14,6 +14,7 @@ import com.github.neshkeev.vimperor.directory.WorkingDirectory
 import com.github.neshkeev.vimperor.highlight.Highlights
 import com.github.neshkeev.vimperor.message.MessageHistory
 import com.github.neshkeev.vimperor.redirect.Redirection
+import com.github.neshkeev.vimperor.label.VimJumpLabelDisplay
 import com.github.neshkeev.vimperor.sign.Signs
 import com.github.neshkeev.vimperor.sign.VimSignDisplay
 import com.maddyhome.idea.vim.KeyHandler
@@ -265,6 +266,7 @@ open class VsCodeInjector(
   /** `:match` and its two twins, over decorations. See [VsCodeMatchHighlighter]. */
   override val matchHighlighter: VimMatchHighlighter get() = matchPainter
   override val signDisplay: VimSignDisplay get() = signPainter
+  override val jumpLabelDisplay: VimJumpLabelDisplay by lazy { VsCodeJumpLabelDisplay() }
 
   /**
    * What `has()` answers 1 for beyond the engine's own list, which here is the platform and no more.

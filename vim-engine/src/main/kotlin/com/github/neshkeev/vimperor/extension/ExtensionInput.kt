@@ -60,6 +60,17 @@ import com.maddyhome.idea.vim.key.interceptors.VimInputInterceptorBase
  * [onInput] runs *later*, on a subsequent keystroke, and may never run at all: `<Esc>` cancels. An
  * operator function that used to compute its answer inside `apply` has to answer before it knows.
  *
+ * [onCancel] is that `<Esc>`, and a caller that set anything up before asking has to undo it there.
+ * The prompt used to close silently, which was enough while every caller had nothing to undo. A jump
+ * motion has two things: labels on the screen, and - under an operator - a `d` still waiting for its
+ * motion, which would take the next key typed as one.
+ *
+ * [onProgress] sees each key that did not finish the input, while the prompt is still open. It is for
+ * redrawing, never for running keys - a prompt still open would swallow them, which is the reason
+ * [isComplete] and [onInput] are kept apart. A jump motion's labels narrow as each key is typed, and
+ * redrawing them here is what lets that happen inside one prompt rather than by opening a second one
+ * and losing a keystroke in the handover.
+ *
  * [label] is what the prompt shows. Vim shows nothing while `s` waits for its two characters, so
  * the default is nothing.
  */
@@ -68,13 +79,15 @@ public fun readKeys(
   context: ExecutionContext,
   label: String = "",
   isComplete: (List<VimKeyStroke>) -> Boolean,
+  onProgress: (List<VimKeyStroke>) -> Unit = {},
+  onCancel: () -> Unit = {},
   onInput: (List<VimKeyStroke>) -> Unit,
 ) {
   if (editor.inRepeatMode) {
     replayKeys(isComplete, onInput)
     return
   }
-  injector.modalInput.create(editor, context, label, KeysInterceptor(isComplete, onInput))
+  injector.modalInput.create(editor, context, label, KeysInterceptor(isComplete, onProgress, onCancel, onInput))
 }
 
 /**
@@ -108,6 +121,7 @@ public fun readCharacters(
   editor: VimEditor,
   context: ExecutionContext,
   label: String = "",
+  onCancel: () -> Unit = {},
   onInput: (String) -> Unit,
 ) {
   require(count > 0) { "readCharacters needs a positive count, got $count" }
@@ -115,6 +129,7 @@ public fun readCharacters(
     editor,
     context,
     label,
+    onCancel = onCancel,
     isComplete = { keys -> keys.count { it.keyChar != VimKeyCodes.CHAR_UNDEFINED } >= count },
     onInput = { keys -> onInput(keys.mapNotNull { it.keyChar.takeIf { c -> c != VimKeyCodes.CHAR_UNDEFINED } }.joinToString("")) },
   )
@@ -125,9 +140,10 @@ public fun readCharacter(
   editor: VimEditor,
   context: ExecutionContext,
   label: String = "",
+  onCancel: () -> Unit = {},
   onInput: (Char) -> Unit,
 ) {
-  readCharacters(1, editor, context, label) { onInput(it.single()) }
+  readCharacters(1, editor, context, label, onCancel) { onInput(it.single()) }
 }
 
 /**
@@ -146,6 +162,8 @@ private fun asExtensionCommand(editor: VimEditor, action: () -> Unit) {
 
 private class KeysInterceptor(
   private val isComplete: (List<VimKeyStroke>) -> Boolean,
+  private val onProgress: (List<VimKeyStroke>) -> Unit,
+  private val onCancel: () -> Unit,
   private val onInput: (List<VimKeyStroke>) -> Unit,
 ) : VimInputInterceptorBase<List<VimKeyStroke>>() {
 
@@ -161,13 +179,19 @@ private class KeysInterceptor(
     // the sequence turns out to be incomplete, because the replay reads the same number of keys the
     // same way.
     Extension.addKeystroke(key)
-    return if (isComplete(typed)) typed.toList() else null
+    if (isComplete(typed)) return typed.toList()
+    // Still open, which is the one moment a redraw can happen without anything being swallowed.
+    onProgress(typed.toList())
+    return null
   }
 
   override fun executeInput(input: List<VimKeyStroke>, editor: VimEditor, context: ExecutionContext) {
     // Closed before the callback, never after: see `readKeys`.
     onFinish()
-    if (input.isEmpty()) return
+    if (input.isEmpty()) {
+      onCancel()
+      return
+    }
 
     // `ToHandlerMappingInfo.execute` marks the change as an extension's *after* running the handler,
     // so that any normal-mode commands the handler ran along the way - `ds"` runs `di"` - do not

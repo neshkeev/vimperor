@@ -8,6 +8,8 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.github.neshkeev.vimperor.extension.easymotion.disposeEasyMotion
+import com.github.neshkeev.vimperor.extension.easymotion.init as easyMotionInit
 import com.intellij.vim.api.VimInitApi
 import com.maddyhome.idea.vim.api.VimExtensionRegistrator
 import com.maddyhome.idea.vim.extension.abolish.init as abolishInit
@@ -213,6 +215,11 @@ internal object VsCodeExtensions {
     // nothing - VS Code will not tell an extension whether the popup is open, so the two keys are
     // in `package.json` behind `suggestWidgetVisible` and this is the switch. See the engine file.
     "youcompleteme" to { api -> api.youCompleteMeInit() },
+
+    // `vim-easymotion`: `<Leader><Leader>w` labels every word start on screen, and the next key
+    // jumps to the one it labels. Written for this fork rather than ported - IdeaVim's is a separate
+    // plugin, IdeaVim-EasyMotion over AceJump, and both are GPL. See the engine file.
+    "easymotion" to { api -> api.easyMotionInit() },
   )
 
   /**
@@ -247,6 +254,9 @@ internal object VsCodeExtensions {
 
     // The highlight on the pair it last jumped to, which fades on a timer nobody else owns.
     "sneak" to { disposeSneak() },
+
+    // The labels of a jump still waiting for its key, if the extension is switched off mid-jump.
+    "easymotion" to { disposeEasyMotion() },
 
     // What the last cursor was added from, per buffer.
     "multiple-cursors" to { disposeMultipleCursors() },
@@ -510,6 +520,9 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "script.php?script_id=3695" to "commentary",
       "tcomment_vim" to "commentary",
       "vim-commentary" to "commentary",
+      // Not in IdeaVim's XML: its easymotion is a separate plugin. Both names a config might use.
+      "vim-easymotion" to "easymotion",
+      "IdeaVim-EasyMotion" to "easymotion",
       "vim-exchange" to "exchange",
       "vim-textobj-function" to "functextobj",
       "vim-highlightedyank" to "highlightedyank",

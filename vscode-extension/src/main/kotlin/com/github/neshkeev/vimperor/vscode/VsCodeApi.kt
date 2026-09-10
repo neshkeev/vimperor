@@ -443,10 +443,15 @@ external interface TextEditor {
   /**
    * Paints [ranges] with [decorationType], replacing whatever that type painted before.
    *
+   * [ranges] holds either `Range`s or `DecorationOptions` - a range with render options of its own,
+   * which is how a jump label brings its own text. VS Code's parameter is `Range[] | DecorationOptions[]`,
+   * and it is one parameter wide enough for both here rather than two overloads because a Kotlin
+   * class can implement only one JavaScript method of a given name: the fake editor could not have both.
+   *
    * Replacing rather than adding is the whole model: there is no way to remove one decoration, so
    * clearing a highlight means setting its ranges to none.
    */
-  fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>)
+  fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<out Any>)
 }
 
 /**

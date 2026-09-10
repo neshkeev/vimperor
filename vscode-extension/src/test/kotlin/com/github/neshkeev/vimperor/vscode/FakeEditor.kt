@@ -313,8 +313,16 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   /** What each decoration type currently paints, which is what VS Code's replace-not-add model is. */
   val decorations: MutableMap<TextEditorDecorationType, List<Range>> = mutableMapOf()
 
-  override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<Range>) {
-    decorations[decorationType] = ranges.toList()
+  /**
+   * The same, as it was handed over: a `Range`, or a `DecorationOptions` carrying render options of
+   * its own. [decorations] reduces each to its range, so a test that only asks *where* is unchanged;
+   * a jump label's text is only here.
+   */
+  val decorationOptions: MutableMap<TextEditorDecorationType, List<dynamic>> = mutableMapOf()
+
+  override fun setDecorations(decorationType: TextEditorDecorationType, ranges: Array<out Any>) {
+    decorations[decorationType] = ranges.map { if (it is Range) it else it.asDynamic().range.unsafeCast<Range>() }
+    decorationOptions[decorationType] = ranges.toList()
   }
 
   /** Set to refuse the next edit, the way VS Code does when the document has moved on. */

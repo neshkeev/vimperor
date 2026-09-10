@@ -172,6 +172,7 @@ class ExtensionProviderTest {
     assertEquals("mini-ai", registrator.getExtensionNameByAlias("echasnovski/mini.ai"))
     assertEquals("CamelCaseMotion", registrator.getExtensionNameByAlias("bkad/CamelCaseMotion"))
     assertEquals("indentwise", registrator.getExtensionNameByAlias("jeetsukumaran/vim-indentwise"))
+    assertEquals("easymotion", registrator.getExtensionNameByAlias("easymotion/vim-easymotion"))
   }
 
   /** And the resolved name has to name something, which is the half an alias table cannot check. */
@@ -186,6 +187,7 @@ class ExtensionProviderTest {
       "echasnovski/mini.ai",
       "bkad/CamelCaseMotion",
       "jeetsukumaran/vim-indentwise",
+      "easymotion/vim-easymotion",
     )
     repositories.forEach {
       assertTrue(injector.extensionRegistrator.setOptionByPluginAlias(it), "`Plug '$it'` enabled nothing")

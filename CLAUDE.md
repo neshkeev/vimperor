@@ -148,6 +148,50 @@ a document is exactly the failure this option exists to remove, and it fails sil
 version written here had `\;` where it needed `\\;` and set nothing at all. The test types the
 line and asserts the seven keys it claims.
 
+### `easymotion` is written here, because both things it could have been ported from are GPL
+
+IdeaVim's easymotion is not one of its bundled extensions. It is IdeaVim-EasyMotion, a separate
+plugin over AceJump, and **both are GPL-3.0** - AceJump's `LICENSE` arrived in 2018 and its current
+core is a 2020 rewrite, so there is no older permissive version to take. Porting either would make
+this fork a derivative work. `com.github.neshkeev.vimperor.extension.easymotion` follows
+vim-easymotion instead, which is MIT: its documentation, its seventeen default mappings and its
+single-key-priority grouping. Labels are drawn the way VSCodeVim draws them, also MIT. AceJump's
+source was read in the review that decided this, so it is not a clean room in the strict sense; the
+grouping follows vim-easymotion's algorithm, which is a different method from AceJump's.
+
+It is not one of IdeaVim's twenty-seven, so that count stays at 25 of 27. Vimperor bundles
+twenty-six.
+
+**Three small things, and the biggest had been here all along.** IdeaVim built `ExternalActionHandler`
+for IdeaVim-EasyMotion, the one extension it never shipped, and nothing in this fork had used it:
+`ExtensionHandler.WithCallback` and `continueVimExecution()` are what turn a jump into an operator's
+motion. What that path lacked was lines - an operator sees only where the caret went, so
+`d<Leader><Leader>j` came out characterwise - and `WithCallback.isLinewiseMotion` is the fix.
+
+- **`readKeys` grew `onProgress` and `onCancel`.** Labels narrow as each key is typed, and the redraw
+  has to happen inside the same prompt: `ExtensionInput.kt` records that opening a second prompt
+  from the first one's callback loses a keystroke. So a find motion reads its character and its
+  labels in one session, and finds its targets when that first key arrives. `onCancel` exists
+  because `<Esc>` used to close the prompt silently - which under an operator left `d` waiting, so
+  the next `w` became `dw`.
+- **`VimJumpLabelDisplay`: a letter over a letter**, which neither the highlighting service nor
+  `:sign` can draw, and which VS Code has no API for either. `VsCodeJumpLabelDisplay` puts
+  `position: absolute` inside a decoration's `margin` string, which VS Code copies into CSS as it is,
+  and paints the covered character transparent - VSCodeVim's trick. **It relies on undocumented
+  behaviour and only a real window can confirm it**: the stub records decorations and draws nothing.
+  `setDecorations` widened to `Array<out Any>` for per-range options, because a Kotlin class can
+  implement only one JavaScript method of a given name.
+
+Labels are command keys, so `'keyboardlayout'` applies to them. The character `f` searches for is
+text, so it does not.
+
+**The grouping promises that single-key labels go to the nearest targets, and nothing stronger.** A
+nearer target can have a longer label: with two keys and six targets the lengths run 2, 3, 3, 2, 3, 3.
+The first version of `LabelTreeTest` asserted the stronger claim, and the comment in `LabelTree.kt`
+said the same; vim-easymotion's own counting disagreed with both. That is why the tests check
+properties across many sizes rather than a few hand-drawn trees - a hand-drawn tree would have been
+drawn to match the belief.
+
 ## The record below
 
 Most of what follows was written while the plugin still existed, and is kept

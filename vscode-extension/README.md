@@ -212,8 +212,21 @@ Some things are genuinely absent rather than unfinished, and it is worth knowing
   Plug 'bronson/vim-visual-star-search'    " * and # in visual mode search for the selection
   Plug 'kshenoy/vim-signature'             " your a-z marks drawn in the gutter
   Plug 'preservim/nerdtree'                " :NERDTree and friends, plus j k o s in the Explorer
+  Plug 'easymotion/vim-easymotion'         " <Leader><Leader>w labels every word start; the next key jumps
   set youcompleteme                        " Tab walks the completion list instead of accepting
   ```
+
+  `easymotion` is the one in that list IdeaVim does not bundle: there it is a separate plugin,
+  IdeaVim-EasyMotion over AceJump, and both are GPL. This one is written for Vimperor and follows
+  vim-easymotion itself, so `set easymotion` in an `.ideavimrc` does what it did there.
+  `<Leader><Leader>` followed by `w`, `b`, `e`, `j`, `k`, `n`, or `f`, `t` or `s` and a character,
+  labels every target on screen, and typing a label jumps there — under an operator too, so
+  `d<Leader><Leader>w` deletes to the word you pick, and `j` and `k` take whole lines.
+  `g:EasyMotion_keys` chooses the label keys, and labels can be typed on a Cyrillic layout. Not
+  yet: the multi-character finds (`s2`, `sn`), `repeat`, `next`, `prev`, `jumptoanywhere` and the
+  `line*` motions, and `.` does not repeat a jump. The labels sit over the text by way of a styling
+  trick VS Code does not document; if an update breaks it, they will appear beside their targets
+  rather than on them.
 
   `gc` comments with whatever syntax VS Code knows for the file, which is the same knowledge that
   drives its own Toggle Line Comment. `dgc`, the text object over a run of comment lines, needs a

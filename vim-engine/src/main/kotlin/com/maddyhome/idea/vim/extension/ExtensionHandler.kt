@@ -34,6 +34,17 @@ interface ExtensionHandler {
 
   abstract class WithCallback : ExtensionHandler {
     var _backingFunction: (() -> Unit)? = null
+
+    /**
+     * Whether the motion this handler performs covers whole lines.
+     *
+     * An operator waiting on an external motion sees only where the caret started and where it
+     * ended, and from that alone every motion looks characterwise - so `d` over a jump to another
+     * line would take a ragged slice of two lines instead of both of them. A handler that moves by
+     * lines says so here, and [continueVimExecution] hands it to the operator.
+     */
+    open val isLinewiseMotion: Boolean
+      get() = false
     fun continueVimExecution() {
       if (_backingFunction != null) {
         _backingFunction!!.invoke()

@@ -6,6 +6,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `easymotion`: `<Leader><Leader>w` labels every word start on screen, and the next key jumps to
+  the one it names. `f`, `t`, `s`, `b`, `e`, `j`, `k`, `n` and their variants work the same way, and
+  so they do under an operator - `d<Leader><Leader>w`, with `j` and `k` taking whole lines - and in
+  Visual mode. Turn it on with `set easymotion` or `Plug 'easymotion/vim-easymotion'`;
+  `g:EasyMotion_keys`, `g:EasyMotion_do_mapping`, `g:EasyMotion_startofline`, `g:EasyMotion_smartcase`,
+  `g:EasyMotion_do_shade` and `g:EasyMotion_use_upper` are honoured, and labels can be typed on a
+  Cyrillic layout. Written for this fork rather than ported: IdeaVim's is a separate GPL plugin built
+  on AceJump, and this follows vim-easymotion, which is MIT.
 - Vimperor is published to [Open VSX](https://open-vsx.org/extension/neshkeev/vimperor) as well as
   the Visual Studio Marketplace, so **Cursor, Windsurf, VSCodium** and the other VS Code forks can
   install it by searching for it. They cannot use Microsoft's Marketplace; nothing in the extension
