@@ -106,14 +106,35 @@ internal val VsCodeEditor.screenTopLine: Int
   }
 
 /**
- * How many lines the window shows.
+ * How many lines the window shows - or as many as can be known.
  *
- * From the reported ranges, and it is the one thing they can still be trusted for: a height changes
- * when the window is laid out, not when it scrolls, so a stale pair of ranges is the wrong place
- * and the right size. At least one, so that arithmetic dividing by it is safe.
+ * VS Code does not say how tall a window is. `visibleRanges` says which lines it painted, and that
+ * is the height only when the range ends before the last line of the file. A range that reaches the
+ * last line is clipped to the text: a five-line file in a ten-line window reports `0..4`, and after
+ * `zt` on its last line - VS Code lets the view scroll past the end - it reports `4..4`.
+ *
+ * This used to say the reported ranges could be trusted for the height because a height changes
+ * when the window is laid out and not when it scrolls. Of the window that is true. Of the report it
+ * is not, and `zb` then put line 4 at the bottom of a one-line window, which is where it already was,
+ * so it did nothing.
+ *
+ * So a clipped report is only a floor under the height: it can raise what is remembered, never lower
+ * it. So is a stale one, which describes the document from before an edit and so cannot say whether
+ * it was clipped. A fresh report that ends before the last line *is* the height, and replaces what
+ * was remembered - which is how a window made shorter by opening a panel is believed. The cost runs
+ * the other way: a window shortened while scrolled past the end keeps its old height until VS Code
+ * next reports a range that is not clipped.
+ *
+ * At least one, so that arithmetic dividing by it is safe.
  */
 internal val VsCodeEditor.screenHeight: Int
-  get() = max(1, reportedBottomLine - reportedTopLine + 1)
+  get() {
+    val reported = max(1, reportedBottomLine - reportedTopLine + 1)
+    val onlyAFloor = reportedBottomLine >= lineCount() - 1 || viewportIsStale
+    val height = if (onlyAFloor) max(reported, knownScreenHeight ?: 0) else reported
+    knownScreenHeight = height
+    return height
+  }
 
 /**
  * The last line on screen, derived from the top and the height.

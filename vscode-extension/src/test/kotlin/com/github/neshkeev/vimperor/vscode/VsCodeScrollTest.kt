@@ -199,6 +199,38 @@ class VsCodeScrollTest {
   }
 
   @Test
+  fun `test zb after zt on the last line brings the view back`() {
+    // Reported from a real window. `zt` on the last line scrolls past the end of the file, and
+    // `visibleRanges` is clipped to the text, so a ten-line window then reports `4..4`. Read as the
+    // window's height that is one line, and `zb` put line 4 at the bottom of a one-line window -
+    // which is where it already was, so nothing moved.
+    val session = Session(lines = 5, caretLine = 4)
+    session.type("zt")
+    assertEquals(4, session.top)
+
+    session.type("zb")
+    assertEquals(0, session.top, "a five-line file ends at the bottom of a ten-line window only from the top")
+    assertEquals(4, session.caretLine)
+  }
+
+  @Test
+  fun `test a report that stops short of the last line still says how tall the window is`() {
+    // The other half of the rule. A clipped report is only a floor under the height, but one that
+    // ends before the last line measures it - so a window that got shorter is believed, and a
+    // taller height remembered from before does not outvote it.
+    val session = Session(caretLine = 20)
+    session.scrollTo(18)
+    session.type("zb")
+    assertEquals(11, session.top)
+
+    session.fake.viewportHeight = 5
+    session.scrollTo(18)
+    session.type("zb")
+    assertEquals(16, session.top)
+    assertEquals(20, session.caretLine)
+  }
+
+  @Test
   fun `test zz centres the caret line`() {
     val session = Session(caretLine = 20)
     session.scrollTo(18)

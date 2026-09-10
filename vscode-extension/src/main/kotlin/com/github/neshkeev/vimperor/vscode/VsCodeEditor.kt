@@ -80,6 +80,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   internal var lastReportedTopLine: Int? = null
 
   /**
+   * How tall the window is, in lines, as far as that has been learnt. See [screenHeight] for why it
+   * has to be remembered: once the view is scrolled past the end of the file, what VS Code reports
+   * is clipped to the text and says nothing about the window's height.
+   */
+  internal var knownScreenHeight: Int? = null
+
+  /**
    * The viewport VS Code last described, remembered from the moment a command rewrote the document.
    *
    * `visibleRanges` is clipped to the text, so a one-line file reports one visible line however

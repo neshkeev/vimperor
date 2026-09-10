@@ -20,6 +20,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
   was specific to VS Code, only its distribution was. Every release also attaches the `.vsix` to its
   GitHub release, for anything that searches neither.
 
+### Fixed
+
+- `zb` did nothing after `zt` on a line near the end of a file. VS Code lets the view scroll past the
+  last line, and then reports only the lines it has text for, so a ten-line window looked one line
+  tall - and putting a line at the bottom of a one-line window left it where it was.
+
 
 ## [0.0.3] - 2026-09-09
 
