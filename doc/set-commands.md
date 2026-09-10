@@ -2,7 +2,7 @@ List of Supported Options
 =========================
 
 The following options can be set with the `:set`, `:setglobal` and `:setlocal` commands.
-They can be added to the `~/.ideavimrc` file, or set manually in Command-line mode.
+They can be added to the `~/.vimperorrc` file, or set manually in Command-line mode.
 For more details of each option, please see the Vim documentation.
 Every effort is made to make these options compatible with Vim behaviour.
 However, some differences are inevitable.
@@ -14,20 +14,19 @@ However, some differences are inevitable.
                         unnamed register
            unnamedplus  The clipboard register '+' is used instead of the
                         unnamed register
-           ideaput      Uses the IDEs own paste implementation for put
-                        operations rather than simply inserting the text
 
-'cmdheight'     'ch'    Number of screen lines to use for the output of the
-                        command-line. A larger value helps avoiding hit-enter
-                        prompts.
-        
+'cmdheight'     'ch'    Number of screen lines to use for the command-line.
+                        Accepted, and has no effect: Vimperor's command-line
+                        is one line in the status bar.
 'digraph'       'dg'    Enable using <BS> to enter digraphs in Insert mode
 'gdefault'      'gd'    The ":substitute" flag 'g' is by default
-'guicursor'     'gcr'   Controls the shape of the cursor for different modes
 'history'       'hi'    Number of command-lines that are remembered
 'hlsearch'      'hls'   Highlight matches with the last search pattern
 'ignorecase'    'ic'    Ignore case in search patterns
-'incsearch'     'is'    Show where search pattern typed so far matches
+'incsearch'     'is'    Show where search pattern typed so far matches. Also
+                        previews the pattern of :s, :g and :v
+'isfname'       'isf'   Characters included in file names, for gf and
+                        <C-R><C-F>
 'iskeyword'     'isk'   Defines keywords for commands like 'w', '*', etc.
 'keymodel'      'km'    Controls selection behaviour with special keys
         List of comma separated words, which enable special things that keys
@@ -38,18 +37,30 @@ However, some differences are inevitable.
            stopsel      Using a NOT-shifted special key stops selection.
                         Automatically enables `stopselect` and `stopvisual`
            stopselect   Using a NOT-shifted special key stops select mode
-                        and removes selection - IdeaVim ONLY
+                        and removes selection - not in Vim
            stopvisual   Using a NOT-shifted special key stops visual mode
-                        and removes selection - IdeaVim ONLY
+                        and removes selection - not in Vim
            continueselect   Using a shifted arrow key doesn't start selection,
                         but in select mode acts like startsel is enabled
-                        - IdeaVim ONLY
+                        - not in Vim
            continuevisual   Using a shifted arrow key doesn't start selection,
                         but in visual mode acts like startsel is enabled
-                        - IdeaVim ONLY
+                        - not in Vim
                                 
         Special keys in this context are the cursor keys, <End>, <Home>,
         <PageUp> and <PageDown>.
+
+'keyboardlayout' 'kbl' Keyboard layouts whose keys work as Vim commands
+        A comma-separated list of: russian, ukrainian, belarusian.
+        A key typed in one of these layouts in Normal or Visual mode, or as
+        the name of a register or mark, is read as the Latin key in the same
+        place, so both `ciw` and `сшц` change a word. Letters and the
+        punctuation on letter keys are mapped; characters that exist on a
+        US keyboard are never mapped, so `.`, `:` and `/` keep working in the
+        Latin layout. A whole command-line typed in the wrong layout, with no
+        Latin letter in it, is corrected when the corrected line is a command
+        and the typed one is not: `:ыуе тщцкфз` runs `:set nowrap`.
+        'langmap' is consulted first.
 
 'langmap'       'lmap'  Enter Vim commands from a different language keyboard.
         List of character pairs that map from a user's entered language to
@@ -67,35 +78,16 @@ However, some differences are inevitable.
 'matchpairs'    'mps'   Pairs of characters that "%" can match
 'maxmapdepth'   'mmd'   Maximum depth of mappings
 'messagesopt'   'mopt'  Option settings for outputting messages.
-        (default "hit-enter,history:500,wait:10000",
-                 "hit-enter,history:500" for Vim)
-        
-        It can consist of the following items. Items must be separated by 
-        a comma.
-           hit-enter    Use a |hit-enter| prompt when the message is longer
-                        than 'cmdheight' size. In IdeaVim, if a message is
-                        shorter than 'cmdheight' in lines, it is displayed in
-                        a semi-persistent popup without the hit-enter prompt.
-                        This popup can be dismissed by redrawing the screen,
-                        either explicitly with CTRL-L or implicitly by
-                        scrolling the screen. See also "wait:{n}".
-
-           wait:{n}     Instead of using a |hit-enter| prompt, simply wait for
-                        {n} milliseconds so that the user has a chance to read
-                        the message.  The maximum value of {n} is 10000.  Use
-                        0 to disable the wait (but then the user may miss an
-                        important message).
-                        Unlike Vim, this item is NOT ignored when "hit-enter"
-                        is present.  It is used to delay hiding the semi-
-                        persistent message area popup used when the message is
-                        less than 'cmdheight' lines.
-
-           history:{n}  This item is currently not supported and is ignored.
-
-'more'          'more'  When on, listings pause when the whole screen is filled
+                        Accepted, and has no effect: long messages and
+                        listings such as :registers are written to the
+                        Vimperor output channel, which never waits for a key,
+                        so there is no hit-enter prompt to configure.
+'more'          'more'  When on, listings pause when the whole screen is filled.
+                        Accepted, and has no effect, for the same reason
 'nrformats'     'nf'    Number formats recognized for CTRL-A command
 'operatorfunc'  'opfunc'    Name of a function to call with the g@ operator
 'scroll'        'scr'   Number of lines to scroll with CTRL-U and CTRL-D
+'scrolloff'     'so'    Minimal number of lines above and below the cursor
 'selection'     'sel'   What type of selection to use
 'selectmode'    'slm'   Controls when to start Select mode instead of Visual
         This is a comma-separated list of words:
@@ -103,15 +95,13 @@ However, some differences are inevitable.
            mouse        When using the mouse
            key          When using shifted special[1] keys
            cmd          When using "v", "V", or <C-V>
-           ideaselection    When IDE sets a selection - IdeaVim ONLY
-                        (e.g.: extend selection, wrap with while, etc.)
 
 'shell'         'sh'    The shell to use to execute commands with ! and :!
 'shellcmdflag'  'shcf'  The command flag passed to the shell
 'shellxescape'  'sxe'   The characters to be escaped when calling a shell
 'shellxquote'   'sxq'   The quote character to use in a shell command
-'showcmd'       'sc'    Show (partial) command in the status bar
-'showmode'      'smd'   Show the current mode in the status bar
+'showcmd'       'sc'    Show (partial) command
+'showmode'      'smd'   Show the current mode
 'smartcase'     'scs'   Use case sensitive search if any character in the
                         pattern is uppercase
 'startofline'   'sol'   When on, some commands move the cursor to the first
@@ -146,160 +136,104 @@ However, some differences are inevitable.
 'wrapscan'      'ws'    Search will wrap around the end of file
 ```
 
-## IdeaVim options mapped to IntelliJ-based IDE settings
+## Options applied to VS Code
 
-IdeaVim provides its own implementation for handling scroll jump and offset, even though IntelliJ-based IDEs have similar functionality (there are differences in behaviour).
-When IdeaVim is hosted in an IntelliJ-based IDE (but not JetBrains Fleet), the following options map to the equivalent IDE settings:
-
-```
-'scrolljump'    'sj'    Minimal number of lines to scroll
-'scrolloff'     'so'    Minimal number of lines above and below the cursor
-'sidescroll'    'ss'    Minimal number of columns to scroll horizontally
-'sidescrolloff' 'siso'  Minimal number of columns to left and right of cursor
-```
-
-## IdeaVim options for IntelliJ-based IDE features
-
-Some Vim features cannot be implemented by IdeaVim, and must be implemented by the host IDE, such as showing whitespace and line numbers, and enabling soft-wrap.
-The following options modify equivalent settings and features implemented by IntelliJ-based IDEs.
-
-There is some mismatch when trying to map Vim options, most of which are local options, to IDE settings, which are mostly global-local.
-The Vim option will always reflect the effective value of the IDE setting for the current editor, and modifying the Vim option will update the local value of the IDE setting.
-The default value of the Vim option set during startup is not passed to the IDE setting.
-
-If the IDE setting has a way to modify the local value, such as entries in the _View | Active Editor_ menu, then changing this will update the current editor and be reflected in the Vim option value.
-If the IDE setting can only modify its global setting in the main _Settings_ dialog, this change does not always update the current editor (because the local IDE setting has been modified and takes precedence).
-
-IdeaVim tries to make this work more naturally by updating the editor and local Vim option when a global value changes unless the Vim option has been explicitly set in Command-line mode.
-
-In other words, if the local Vim value is explicitly set for a window or buffer, interactively, then it should not be reset.
-If the Vim option was explicitly set in `~/.ideavimrc` however, then the value will be reset, because this can be viewed as a "global" value - set once and applied to subsequently opened windows.
-(This should not be confused with Vim's concept of global options, which are mainly used to initialise new windows.)
-
-The local Vim option can always be reset to the global IDE setting value by resetting the Vim option to default with the `:set {option}&` syntax.
+Some Vim features are drawn by VS Code rather than by Vimperor, such as line numbers, soft-wrap and indentation.
+The following options change the equivalent VS Code editor state or setting.
 
 ```
-'bomb'              'bomb'  Add or remove a byte order mark (BOM) to the
-                            current file. Unlike Vim, the file is modified
-                            immediately, and not when saved
-'breakindent'       'bri'   Indent soft wrapped lines to match the first
-                            line's indent
-'colorcolumn'       'cc'    Maps to IntelliJ's visual guide columns
-'cursorline'        'cul'   Highlight the line containing the cursor
-'fileencoding'      'fenc'  Change the encoding of the current file. The file
-                            is modified and written immediately, rather than
-                            waiting to be saved
-                            Note that the names of the encoding might not
-                            match Vim's known names
-'fileformat'        'ff'    Change the file format - dos, unix or mac
-                            The file is modified immediately, rather than
-                            when saved
-'list'              'list'  Show whitespace. Maps to the editor's local
-                            setting in the View | Active Editor menu
-'number'            'nu'    Show line numbers. Maps to the editor's local
-                            setting in the View | Active Editor menu
-'relativenumber'    'rnu'   Show line numbers relative to the current line
-'textwidth'         'tw'    Set the column at which text is automatically
-                            wrapped
-'wrap'              'wrap'  Enable soft-wraps. Maps to the editor's local
-                            setting in the View | Active Editor menu
+'number'            'nu'    Show line numbers
+'relativenumber'    'rnu'   Show line numbers relative to the line with the
+                            cursor. Together with 'number' this sets the
+                            editor's line numbers to on, relative or off
+'wrap'              'wrap'  Enable soft-wraps. Writes VS Code's
+                            "editor.wordWrap" setting for the file's language,
+                            in the workspace folder's settings, or in your user
+                            settings outside a folder, so the change persists.
+                            Starts at what VS Code is already doing rather than
+                            at Vim's default.
+                            View | Toggle Word Wrap (Alt+Z) gives an editor a
+                            wrap of its own, which no extension can read or
+                            clear. In that editor the option has no visible
+                            effect until Alt+Z is pressed again
+'expandtab'         'et'    Use spaces when indenting
+'tabstop'           'ts'    Number of columns a tab character is drawn as
+'shiftwidth'        'sw'    Number of columns >> and << shift by. 0 (the
+                            default) means the value of 'tabstop'
+                            These three start at the indentation VS Code chose
+                            for the file, and are written to the editor only
+                            when they are set
+'softtabstop'       'sts'   Number of columns a <Tab> typed in Insert mode
+                            covers. 0 (the default) means the value of
+                            'tabstop'. Read by Vimperor's own <Tab>, and not
+                            written to the editor
+'filetype'          'ft'    The language mode of the buffer
+'syntax'            'syn'   The same as 'filetype': both set VS Code's language
+                            mode
 ```
 
-## IdeaVim only options
+## Options accepted without effect
 
-These options are IdeaVim only, and not supported by Vim.
-They control integration with the host IDE.
+A Vim config often sets options for things VS Code decides for itself: how text is drawn, how files are written, how windows are laid out.
+Vimperor accepts these options so the config loads instead of stopping at `E518: Unknown option`.
+Setting one changes nothing, and `:set {option}?` answers with the value that was set rather than with what VS Code is doing.
+Among them:
+
+```
+'background'        'bg'
+'backup'            'bk'
+'bomb'              'bomb'
+'breakindent'       'bri'
+'colorcolumn'       'cc'
+'cursorcolumn'      'cuc'
+'cursorline'        'cul'
+'encoding'          'enc'
+'fileencoding'      'fenc'
+'fileformat'        'ff'
+'foldmethod'        'fdm'
+'guicursor'         'gcr'   The cursor's shape follows the mode instead: a
+                            block in Normal mode, a line in Insert mode and an
+                            underline in Replace mode
+'hidden'            'hid'
+'laststatus'        'ls'
+'linebreak'         'lbr'
+'list'              'list'
+'ruler'             'ru'
+'scrolljump'        'sj'
+'sidescroll'        'ss'
+'sidescrolloff'     'siso'
+'signcolumn'        'scl'
+'spell'             'spell'
+'swapfile'          'swf'
+'termguicolors'     'tgc'
+'undofile'          'udf'
+```
+
+## Vimperor only options
+
+These options are not supported by Vim.
+They control integration with the editor Vimperor runs in.
 Unless otherwise stated, these options do not have abbreviations.
 
 ```
-'ideacopypreprocess'    boolean (default off)
-                        global or local to buffer
-        When enabled, the IDE will run custom copy pre-processors over text
-        copied to registers. These pre-processors can perform transformations
-        on the text, such as converting escape characters in a string literal
-        into the actual control characters in a Java file.
-
-        This is not usually the expected behaviour, so this option's default
-        value is off. The equivalent processing for paste is controlled by the
-        "ideaput" value to the 'clipboard' option.
-
-'ideajoin'              boolean (default off)
-                        global or local to buffer
-        When enabled, join commands will be handled by the IDE's "smart join"
-        feature. The IDE can change syntax when joining lines, such as merging
-        string literals or if statements. See the wiki for more examples. Not
-        all languages support smart join functionality.
-
-'ideamarks'             boolean (default on)
+'ide'                   string  (default: the editor's name)
                         global
-        Maps Vim's global marks to IDE bookmarks.
-
-'idearefactormode'      string  (default "select")
-                        global or local to buffer
-        Specifies the mode to be used when a refactoring selects text to be
-        edited (e.g. renaming, live template fields, introduce variable, etc):
-           keep         Keep the current mode
-           select       Switch to Select mode
-           visual       Switch to Visual mode
-
-        This option is only used when the refactoring is started in Normal,
-        Insert or Replace mode. Visual or Select modes are not changed.
+        The name of the editor Vimperor is running in, such as "Visual Studio
+        Code" or "Cursor". A config shared between editors can branch on it:
+           if &ide =~? 'cursor'
 
 'ideastatusicon'        string  (default "enabled")
                         global
-        This option controls the behaviour and appearance of the IdeaVim icon
-        in the status bar:
-           enabled      Show the icon in the status bar
-           gray         Show the gray version of the icon
-           disabled     Hide the icon
+        This option controls the mode indicator in the status bar:
+           enabled      Show the indicator
+           gray         Show the indicator in the theme's muted colour
+           disabled     Hide the indicator
 
-'ideavimsupport'        string  (default "dialog")
-                        global
-        A comma-separated list of additional buffers or locations where
-        IdeaVim should be enabled:
-           dialog       Enable IdeaVim in editors hosted in dialogs
-           singleline   Enable IdeaVim in single line editors (not recommended)
-
-        The IDE's editor component can be used in many places, such as VCS
-        commit tool window, or inside dialogs, and even as single line fields.
-
-'ideawrite'             string  (default "all")
+'ideawrite'             string  (default "file")
                         global
         This option defines the behaviour of the :w command:
            file         Save the current file only
-           all          The :w command works like :wa and invokes the Save All
-                        IDE action. This allows options such as "Prettier on
-                        save" or "ESlint on save" to work with the :w command,
-                        but means all files are saved.
-
-'lookupkeys'            string  (default "<Tab>,<Down>,<Up>,<Enter>,
-                                          <Left>,<Right>,<C-Down>,<C-Up>,
-                                          <PageUp>,<PageDown>, <C-J>,<C-Q>")
-                        global
-        Comma-separated list of keys that should be processed by the IDE while
-        a code completion lookup popup is active. For example, <Tab> and
-        <Enter> are used by the IDE to complete the lookup and insert text,
-        but <C-W> should be passed IdeaVim to continue editing the text.
-
-'trackactionids'        boolean (default off)
-                        global
-        When on, IdeaVim will try to track the current IDE action and display
-        the action name in a notification. This action ID can then be used in
-        a mapping to the action in the form <Action>(...).
-
-'visualdelay'           number  (default 100)
-                        global
-        This option specifies the delay, in milliseconds before converting an
-        IDE selection into Visual mode.
-
-        Some IDE features make a selection to help modify text (e.g. backspace
-        in Python or Yaml selects an indent and invokes the "remove selection"
-        action). IdeaVim listens for changes in selection to switch to Visual
-        mode, and will return to Normal mode when the selection is removed,
-        even if originally in Insert mode.
-
-        By waiting before converting to Visual mode, temporary selections can
-        be ignored and the current Vim mode maintained.
-
-        It is not expected that this value will need to be changed.
+           all          The :w command works like :wa and saves every open
+                        file, which also runs whatever is set up to happen on
+                        save, such as formatting, for each of them
 ```

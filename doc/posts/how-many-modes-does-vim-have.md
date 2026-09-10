@@ -17,18 +17,18 @@ The `mode()` function returns a string. Each character in this string represents
 
 The documentation for the function states that, if you check the mode, you should only compare by prefix rather than the whole string. Moreover, the list of modes can be extended.
 
-During the development of IdeaVim, it turned out that even 35 modes were not enough to represent the full range of Vim states. For example, the `mode()` function does not cover the state when we enter Operator-pending mode after One-command mode. This information is important because we have to know that Vim should enter Insert mode after this particular Operator-pending command is finished.
+During the development of Vimperor's engine, it turned out that even 35 modes were not enough to represent the full range of Vim states. For example, the `mode()` function does not cover the state when we enter Operator-pending mode after One-command mode. This information is important because we have to know that Vim should enter Insert mode after this particular Operator-pending command is finished.
 
 All of the above shows that Vim itself doesn’t have a strictly bounded set of modes. Rather, the list can be extended with new ones, and the regular modes, like Visual or Normal, may have “submodes” that specify certain details of Vim’s state.
 
-Inside the code, the state of Vim is defined by the `State` variable in the `globals.h` file ([source](https://github.com/neovim/neovim/blob/master/src/nvim/globals.h#L637)). This is an integer variable with a [list of possible values](https://github.com/neovim/neovim/blob/master/src/nvim/vim.h#L47). However, this list does not define the full range of modes, and other variables from the `globals.h `file store information about specifics. For example, <code>[restart_edit](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/globals.h#L670)</code> is set when we enter One-command mode, and <code>[VIsual_active](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/globals.h#L535)</code> defines whether Visual mode is enabled (check out [this README](https://github.com/JetBrains/ideavim#some-facts-about-vim) to learn why this variable starts with two uppercase letters). Meanwhile, the <code>[get_real_mode](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/state.c#L154)</code> function helps determine whether Vim is in Select or Visual mode.
+Inside the code, the state of Vim is defined by the `State` variable in the `globals.h` file ([source](https://github.com/neovim/neovim/blob/master/src/nvim/globals.h#L637)). This is an integer variable with a [list of possible values](https://github.com/neovim/neovim/blob/master/src/nvim/vim.h#L47). However, this list does not define the full range of modes, and other variables from the `globals.h `file store information about specifics. For example, <code>[restart_edit](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/globals.h#L670)</code> is set when we enter One-command mode, and <code>[VIsual_active](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/globals.h#L535)</code> defines whether Visual mode is enabled (check out [Some facts about Vim](Some-Facts-About-Vim.md) to learn why this variable starts with two uppercase letters). Meanwhile, the <code>[get_real_mode](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/state.c#L154)</code> function helps determine whether Vim is in Select or Visual mode.
 
 The `mode()` function, which delegates to <code>[get_mode()](https://github.com/neovim/neovim/blob/389165cac1596bf602c50904a789722d65ceaac7/src/nvim/state.c#L173)</code>, is a big set of “if” commands that collect the information from different variables and combine them into a string representation.
 
 
-## Modes in IdeaVim
+## Modes in Vimperor
 
-For a long time, IdeaVim used a stack to store the information about the current mode:
+For a long time, Vimperor's engine used a stack to store the information about the current mode:
 
 
 
@@ -40,4 +40,4 @@ For a long time, IdeaVim used a stack to store the information about the current
 
 This solution worked well for a long time. However, it sometimes led to programming mistakes, as this structure allowed incorrect states when the stack contained a senseless mix of modes. For the most part, these downsides were manageable, and we were generally able to keep the state consistent. Nevertheless, we recently decided to perform a refactoring.
 
-Now IdeaVim has a single `Mode` interface ([source](https://github.com/JetBrains/ideavim/blob/98886cb269752a5f989c90b1da90fc624b3a381c/vim-engine/src/main/kotlin/com/maddyhome/idea/vim/state/mode/Mode.kt#L27)) that represents the mode and all possible states of it. This solution is type-safe and helps developers of IdeaVim avoid setting illegal states.
+Now the engine has a single `Mode` interface ([source](../../vim-engine/src/main/kotlin/com/maddyhome/idea/vim/state/mode/Mode.kt)) that represents the mode and all possible states of it. This solution is type-safe and helps its developers avoid setting illegal states.

@@ -12,7 +12,7 @@
 > We welcome feedback and bug reports to help improve the API, but please be aware that stability is not guaranteed at this time.
 
 This guide explains and gives examples on how to create plugins for IdeaVim, the Vim emulation plugin for IntelliJ-based IDEs.
-Existing plugins can be found [here](IdeaVim%20Plugins.md).
+Existing plugins can be found [here](../../doc/Vimperor_Plugins.md).
 
 ## Table of Contents
 

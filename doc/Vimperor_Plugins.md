@@ -1,17 +1,19 @@
-IdeaVim Plugins
+Vimperor Plugins
 --------------------
 
-IdeaVim plugins work like the original Vim plugins. If you want to turn any of them on, you have to enable it via this command in your `~/.ideavimrc`:
+Vimperor bundles its own ports of popular Vim plugins, so there is nothing to install. They work like the original Vim plugins: if you want to turn any of them on, enable it with this command in your `~/.vimperorrc`:
 
 ```
 Plug '<plugin-github-reference>'
 ```
 
-If you reuse your existing `.vimrc` file using `source ~/.vimrc`, IdeaVim can parse and enable plugins that are defined
+or with `set <plugin-name>`. `Plugin '<plugin-github-reference>'`, as Vundle spells it, works as well.
+
+If you reuse your existing `.vimrc` file using `source ~/.vimrc`, Vimperor turns on the bundled plugins that are defined
 using [vim-plug](https://github.com/junegunn/vim-plug) or [vundle](https://github.com/VundleVim/Vundle.vim).
-No additional set commands in `~/.ideavimrc` are required.  
-If you'd like to disable some plugin that's enabled in `.vimrc`, you can use `set no<extension-name>`
-in `~/.ideavimrc`. E.g. `set nosurround`.
+No additional set commands in `~/.vimperorrc` are required.
+If you'd like to disable some plugin that's enabled in `.vimrc`, you can use `set no<plugin-name>`
+in `~/.vimperorrc`. E.g. `set nosurround`.
 
 Available plugins:
 
@@ -28,7 +30,7 @@ handles all case variants and `{a,b,c}` brace alternatives in a single command. 
 (`:S/foo/` or `:S?foo?`) it does a case-aware forward or backward search instead.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'tpope/vim-abolish'`
+- Add the following command to `~/.vimperorrc`: `Plug 'tpope/vim-abolish'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'tpope/vim-abolish'</code>
@@ -75,32 +77,12 @@ After this, `crq` recases to kebab-case and `crx` to UPPER_SNAKE.
 </details>
 
 <details>
-<summary><h2>anyobject: Useful text objects like functions, arguments, classes, loops, list items, block comments, and more.</h2></summary>
-
-### Summary:
-An extension for IdeaVim plugin that adds useful text objects to improve your productivity on JetBrains IDEs.
-
-Text objects allow a more efficient way of communicating edition or selection actions in the editor. Instead of thinking in terms of characters, words, lines, or paragraphs, use more advance text constructs like quoted text, text between brackets, items in a collection, or programming language constructs like arguments, classes, functions, loops, or comments.
-
-By Ricardo Rodriguez
-
-### Setup
-
-- Install [Vim AnyObject](https://plugins.jetbrains.com/plugin/28333-vim-anyobject)
-- Add `set anyobject` to your `~/.ideavimrc` file, then run `:source ~/.ideavimrc`
-or restart the IDE.
-
-### Instructions
-
-[https://plugins.jetbrains.com/plugin/28333-vim-anyobject](https://plugins.jetbrains.com/plugin/28333-vim-anyobject)
-</details>
-<details>
 <summary><h2>argtextobj: Provides a text-object 'a' argument</h2></summary>
 
 Original plugin: [argtextobj.vim](https://www.vim.org/scripts/script.php?script_id=2699).
 
 ### Summary:
-This plugin provides a text-object 'a' (argument). 
+This plugin provides a text-object 'a' (argument).
 You can d(elete), c(hange), v(select)... an argument or inner argument in familiar ways.
 
 That is, such as 'daa'(delete-an-argument) 'cia'(change-inner-argument) 'via'(select-inner-argument).
@@ -111,7 +93,7 @@ F,dt,
 because it recognizes inclusion relationship of parentheses.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'vim-scripts/argtextobj.vim'`
+- Add the following command to `~/.vimperorrc`: `Plug 'vim-scripts/argtextobj.vim'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'vim-scripts/argtextobj.vim'</code>
@@ -152,7 +134,7 @@ an identifier. The motions honour `[count]`, work in normal, visual and operator
 respect the `'iskeyword'` option.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'bkad/CamelCaseMotion'`
+- Add the following command to `~/.vimperorrc`: `Plug 'bkad/CamelCaseMotion'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'bkad/CamelCaseMotion'</code>
@@ -164,7 +146,7 @@ respect the `'iskeyword'` option.
       <code>set CamelCaseMotion</code>
       </details>
 - No mappings are created until you choose a key. The most common setup is to add this to your
-  `~/.ideavimrc` (before the `Plug`/`set` line):
+  `~/.vimperorrc` (before the `Plug`/`set` line):
 
   ```
   let g:camelcasemotion_key = '<leader>'
@@ -206,10 +188,18 @@ map <silent> ge <Plug>CamelCaseMotion_ge
 <summary><h2>classtextobj: Provides a text object for class definitions</h2></summary>
 
 ### Summary:
-Adds the `ac` text object that selects "a class definition" — the entire class declaration and body. Works in any language whose PSI tree provides a class element (Java, Kotlin, Python, JavaScript/TypeScript, Go, Dart, PHP, Ruby, Rust).
+Adds the `ac` text object that selects "a class definition" — the entire class declaration and body, or the
+interface, struct or enum you are inside. It works in any language whose VS Code extension provides document
+symbols, which is what VS Code's Outline view shows.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `set classtextobj`
+- Add the following command to `~/.vimperorrc`: `set classtextobj`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plug 'kana/vim-textobj-class'</code>
+      <br/>
+      <code>Plug 'vim-textobj-class'</code>
+    </details>
 
 ### Instructions
 
@@ -219,25 +209,28 @@ Adds the `ac` text object that selects "a class definition" — the entire class
 
 When classes are nested, the innermost enclosing class is selected.
 
+The symbols are kept up to date in the background. For the moment between an edit and the language's answer,
+and in a language with no symbols at all, `ac` does nothing rather than select a range that has moved.
+
 </details>
 
 <details>
 <summary><h2>commentary: Adds mapping for quickly commenting stuff out</h2></summary>
 
-By [Daniel Leong](https://github.com/dhleong)  
+By [Daniel Leong](https://github.com/dhleong)
 Original plugin: [commentary.vim](https://github.com/tpope/vim-commentary).
 
 ### Summary:
-Comment stuff out. 
-Use gcc to comment out a line (takes a count), gc to comment out the target of a motion 
-(for example, gcap to comment out a paragraph), gc in visual mode to comment out the selection, 
-and gc in operator pending mode to target a comment. 
-You can also use it as a command, either with a range like :7,17Commentary, 
-or as part of a :global invocation like with :g/TODO/Commentary. 
+Comment stuff out.
+Use gcc to comment out a line (takes a count), gc to comment out the target of a motion
+(for example, gcap to comment out a paragraph), gc in visual mode to comment out the selection,
+and gcu to uncomment a set of adjacent commented lines.
+You can also use it as a command, either with a range like :7,17Commentary,
+or as part of a :global invocation like with :g/TODO/Commentary.
 That's it.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'tpope/vim-commentary'`
+- Add the following command to `~/.vimperorrc`: `Plug 'tpope/vim-commentary'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'tpope/vim-commentary'</code>
@@ -255,44 +248,26 @@ That's it.
 
 https://github.com/tpope/vim-commentary/blob/master/doc/commentary.txt
 
+Comments use the syntax VS Code knows for the file's language, the same as its own *Toggle Line Comment*.
+`gc` as a text object in operator-pending mode (`dgc`) needs a syntax tree and does nothing.
+
 </details>
-
-<details>
-<summary><h2>dial: Advanced text increment and decrement functionality.</h2></summary>
-
-### Summary:
-IdeaVim extension with advanced text increment and decrement functionality. It enhances the standard increment/decrement functionality found in Vim editors by adding support for complex text patterns beyond simple numbers.
-
-Cycle through related values from various text elements, including numbers, dates, boolean values, operators, and programming language-specific keywords.
-
-By Ricardo Rodriguez
-
-### Setup
-
-- Install [Vim Dial](https://plugins.jetbrains.com/plugin/28237-vim-dial)
-- Add `set dial` to your `~/.ideavimrc` file, then run `:source ~/.ideavimrc`
-or restart the IDE.
-
-### Instructions
-
-[https://plugins.jetbrains.com/plugin/28237-vim-dial](https://plugins.jetbrains.com/plugin/28237-vim-dial)
-</details>
-
 
 <details>
 <summary><h2>easymotion: Simplifies some motions</h2></summary>
-   
+
 Original plugin: [vim-easymotion](https://github.com/easymotion/vim-easymotion).
 
 ### Summary:
-EasyMotion provides a much simpler way to use some motions in vim. 
-It takes the \<number> out of \<number>w or \<number>f{char} by highlighting all possible choices 
+EasyMotion provides a much simpler way to use some motions in vim.
+It takes the \<number> out of \<number>w or \<number>f{char} by highlighting all possible choices
 and allowing you to press one key to jump directly to the target.
 
+Vimperor's easymotion is written for Vimperor. It follows vim-easymotion's documentation, default mappings and
+labelling, and needs nothing else installed.
+
 ### Setup:
-- Install [IdeaVim-EasyMotion](https://plugins.jetbrains.com/plugin/13360-ideavim-easymotion/)
-      and [AceJump](https://plugins.jetbrains.com/plugin/7086-acejump/) plugins.
-- Add the following command to `~/.ideavimrc`: `Plug 'easymotion/vim-easymotion'`
+- Add the following command to `~/.vimperorrc`: `Plug 'easymotion/vim-easymotion'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'easymotion/vim-easymotion'</code>
@@ -303,24 +278,80 @@ and allowing you to press one key to jump directly to the target.
       <br/>
       <code>set easymotion</code>
       </details>
-   
+
 ### Instructions
-   
-All commands with the mappings are supported. See the [full list of supported commands](https://github.com/AlexPl292/IdeaVim-EasyMotion#supported-commands).
+
+https://github.com/easymotion/vim-easymotion/blob/master/doc/easymotion.txt
+
+Press `<Leader><Leader>` and then a motion key. Every target of that motion on the screen gets a label, and
+typing the label jumps there. A label longer than one key narrows as you type it, and `<Esc>` cancels.
+The motions work in normal, visual and operator-pending modes, so `d<Leader><Leader>w` deletes up to the word
+you pick, and `j` and `k` take whole lines under an operator.
+
+The default mappings, each after `<Leader><Leader>` (the default leader is `\`):
+
+| Mapping | Jumps to |
+|---------|----------|
+| `w` / `W` | The start of a word / WORD, forward |
+| `b` / `B` | The start of a word / WORD, backward |
+| `e` / `E` | The end of a word / WORD, forward |
+| `ge` / `gE` | The end of a word / WORD, backward |
+| `j` / `k` | A line below / above |
+| `f{char}` / `F{char}` | `{char}`, forward / backward |
+| `t{char}` / `T{char}` | Next to `{char}`, forward / backward |
+| `s{char}` | `{char}`, in both directions |
+| `n` / `N` | A match of the last search, forward / backward |
+
+To hang the defaults off a different key, map `<Plug>(easymotion-prefix)`: `map <Leader> <Plug>(easymotion-prefix)`.
+
+These motions have no default mapping, and are there to map yourself:
+
+- `<Plug>(easymotion-bd-f)`, `bd-t`, `bd-w`, `bd-W`, `bd-e`, `bd-E`, `bd-jk` and `bd-n`, in both directions
+- `<Plug>(easymotion-sol-j)`, `sol-k` and `sol-bd-jk` to the first non-blank of a line, and `eol-j`, `eol-k`
+  and `eol-bd-jk` to the end of one
+- `<Plug>(easymotion-sl)`, `fl`, `Fl`, `bd-fl`, `tl`, `Tl`, `bd-tl`, `wl`, `bl`, `bd-wl`, `el`, `gel` and
+  `bd-el`, within the current line
+- `<Plug>(easymotion-iskeyword-w)`, `iskeyword-b`, `iskeyword-bd-w`, `iskeyword-e`, `iskeyword-ge` and
+  `iskeyword-bd-e`, by words as `'iskeyword'` defines them
+- `<Plug>(easymotion-vim-n)` and `vim-N`
+
+```
+map <Leader>j <Plug>(easymotion-bd-jk)
+nmap s <Plug>(easymotion-bd-f)
+```
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `g:EasyMotion_do_mapping` | `1` | Set to `0` to create no default mappings |
+| `g:EasyMotion_keys` | `asdghklqwertyuiopzxcvbnmfj;` | The keys labels are made of |
+| `g:EasyMotion_startofline` | `1` | `j` and `k` jump to the first non-blank; `0` keeps the column |
+| `g:EasyMotion_smartcase` | `0` | A lowercase `{char}` also finds its uppercase letter |
+| `g:EasyMotion_do_shade` | `1` | Dim the text around the labels |
+| `g:EasyMotion_use_upper` | `0` | Labels are matched in upper case, so upper-case `g:EasyMotion_keys` can be typed in either case |
+
+Labels are typed as commands, so with `'keyboardlayout'` set they can be typed on that layout too; the
+`{char}` a find looks for is text, and is taken as typed.
+
+Labels are badges in your theme's colours. `:highlight EasyMotionTarget`, `EasyMotionTarget2First` and
+`EasyMotionShade` recolour them, as they do in Vim. The labels sit over the text by way of a styling trick VS Code
+does not document; if an update breaks it, they will appear beside their targets rather than on them.
+
+Not supported yet: the multi-character finds (`s2`, `sn`), `repeat`, `next`, `prev`, `jumptoanywhere`, the `line*`
+motions, and repeating a jump with `.`.
 
 </details>
 
 <details>
 <summary><h2>exchange: Easy text exchange operator</h2></summary>
 
-By [fan-tom](https://github.com/fan-tom)  
+By [fan-tom](https://github.com/fan-tom)
 Original plugin: [vim-exchange](https://github.com/tommcdo/vim-exchange).
 
 ### Summary:
 Easy text exchange operator for Vim.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'tommcdo/vim-exchange'`
+- Add the following command to `~/.vimperorrc`: `Plug 'tommcdo/vim-exchange'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'tommcdo/vim-exchange'</code>
@@ -344,10 +375,12 @@ https://github.com/tommcdo/vim-exchange/blob/master/doc/exchange.txt
 Inspired by [vim-textobj-function](https://github.com/kana/vim-textobj-function).
 
 ### Summary:
-Adds text objects for selecting methods/functions. Three variants distinguish what is included: the signature and body, the same with JavaDoc and annotations, or just the inner body content. Works in any language whose PSI tree provides a function/method element (Java, Kotlin, Python, JavaScript/TypeScript, Go, Dart, PHP, Ruby, Rust).
+Adds text objects for selecting methods/functions. Three variants distinguish what is included: the signature and
+body, the same with the doc comment, or just the inner body content. It works in any language whose VS Code
+extension provides document symbols, which is what VS Code's Outline view shows.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `set functextobj`
+- Add the following command to `~/.vimperorrc`: `set functextobj`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plug 'kana/vim-textobj-function'</code>
@@ -359,45 +392,28 @@ Adds text objects for selecting methods/functions. Three variants distinguish wh
 
 | Mapping | Description |
 |---------|-------------|
-| `am`    | A method definition (signature + body, excluding JavaDoc and annotations) |
-| `aM`    | A Method definition (same as `am`, but including JavaDoc and annotations) |
+| `am`    | A method definition (signature + body, excluding the doc comment) |
+| `aM`    | A Method definition (same as `am`, but including the doc comment) |
 | `im`    | Inner method definition (only the contents between the body braces) |
 
 Use with operators (`d`, `c`, `y`) or in visual mode — e.g. `dam`, `cim`, `vaM`. When methods are nested, the innermost enclosing method is selected.
 
-</details>
+The symbols are kept up to date in the background. For the moment between an edit and the language's answer,
+and in a language with no symbols at all, these text objects do nothing rather than select a range that has moved.
 
-<details>
-<summary><h2>FunctionTextObj: Adds text objects for manipulating functions/methods</h2></summary>
-
-By Julien Phalip
-
-### Summary:
-An extension for IdeaVim that adds text objects for manipulating functions/methods in your code. 
-Similar to how iw operates on words or i" operates on quoted strings, 
-this plugin provides if and af to operate on functions
-
-### Setup
-
-Add `set functiontextobj` to your `~/.ideavimrc` file, then run `:source ~/.ideavimrc`
-or restart the IDE.
-
-### Instructions
-
-https://plugins.jetbrains.com/plugin/25897-vim-functiontextobj
 </details>
 
 <details>
 <summary><h2>highlightedyank: Highlights the yanked region</h2></summary>
 
-By [KostkaBrukowa](https://github.com/KostkaBrukowa)  
+By [KostkaBrukowa](https://github.com/KostkaBrukowa)
 Original plugin: [vim-highlightedyank](https://github.com/machakann/vim-highlightedyank).
 
 ### Summary:
 Make the yanked region apparent!
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'machakann/vim-highlightedyank'`
+- Add the following command to `~/.vimperorrc`: `Plug 'machakann/vim-highlightedyank'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'machakann/vim-highlightedyank'</code>
@@ -411,14 +427,14 @@ Make the yanked region apparent!
 
 ### Instructions
 
-If you want to optimize highlight duration, assign a time in milliseconds:  
-`let g:highlightedyank_highlight_duration = "1000"`  
+If you want to optimize highlight duration, assign a time in milliseconds:
+`let g:highlightedyank_highlight_duration = "1000"`
 A negative number makes the highlight persistent.
 
-If you want to change background color of highlight you can provide the rgba of the color you want e.g.  
+If you want to change background color of highlight you can provide the rgba of the color you want e.g.
 `let g:highlightedyank_highlight_color = "rgba(160, 160, 160, 155)"`
 
-If you want to change text color of highlight you can provide the rgba of the color you want e.g.  
+If you want to change text color of highlight you can provide the rgba of the color you want e.g.
 `let g:highlightedyank_highlight_foreground_color = "rgba(0, 0, 0, 255)"`
 
 https://github.com/machakann/vim-highlightedyank/blob/master/doc/highlightedyank.txt
@@ -428,16 +444,16 @@ https://github.com/machakann/vim-highlightedyank/blob/master/doc/highlightedyank
 <details>
 <summary><h2>indent-object: Adds text objects for manipulating sentences/paragraphs/etc...</h2></summary>
 
-By [Shrikant Sharat Kandula](https://github.com/sharat87)  
+By [Shrikant Sharat Kandula](https://github.com/sharat87)
 Original plugin: [vim-indent-object](https://github.com/michaeljsmith/vim-indent-object).
 
 ### Summary:
-Vim text objects provide a convenient way to select and operate on various types of objects. 
-These objects include regions surrounded by various types of brackets and various parts of language 
+Vim text objects provide a convenient way to select and operate on various types of objects.
+These objects include regions surrounded by various types of brackets and various parts of language
 (ie sentences, paragraphs, etc).
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'michaeljsmith/vim-indent-object'`
+- Add the following command to `~/.vimperorrc`: `Plug 'michaeljsmith/vim-indent-object'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'michaeljsmith/vim-indent-object'</code>
@@ -469,7 +485,7 @@ work in normal, visual and operator-pending modes (e.g. `d]-`, `v[%`). Operator-
 moves are line-wise.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'jeetsukumaran/vim-indentwise'`
+- Add the following command to `~/.vimperorrc`: `Plug 'jeetsukumaran/vim-indentwise'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'jeetsukumaran/vim-indentwise'</code>
@@ -502,34 +518,6 @@ absolute-indent motions (`[_`, `]_`) from the original plugin are not currently 
 </details>
 
 <details>
-<summary><h2>matchit.vim: Extends the % key functionality</h2></summary>
-
-By [Martin Yzeiri](https://github.com/myzeiri)
-Original plugin: [matchit.vim](https://github.com/chrisbra/matchit).
-
-### Summary:
-In Vim, as in plain vi, the percent key, |%|, jumps the cursor from a brace, bracket, or paren to its match. 
-This can be configured with the 'matchpairs' option. 
-The matchit plugin extends this in several ways...
-
-### Setup:
-- Add the following command to `~/.ideavimrc`: `packadd matchit`
-    <details>
-      <summary>Alternative syntax</summary>
-      <code>Plug 'vim-matchit'</code>
-      <br/>
-      <code>Plug 'chrisbra/matchit'</code>
-      <br/>
-      <code>set matchit</code>
-      </details>
-
-### Instructions
-
-https://github.com/adelarsq/vim-matchit/blob/master/doc/matchit.txt
-
-</details>
-
-<details>
 <summary><h2>Mini.ai: Extend and create a/i textobjects (IMPORTANT: The plugin is not related with artificial intelligence)</h2></summary>
 
 ### Summary:
@@ -546,7 +534,13 @@ Provides additional text object motions for handling quotes and brackets. The fo
 Original plugin: [mini.ai](https://github.com/echasnovski/mini.ai).
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `set mini-ai`
+- Add the following command to `~/.vimperorrc`: `set mini-ai`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plug 'echasnovski/mini.ai'</code>
+      <br/>
+      <code>Plug 'mini.ai'</code>
+    </details>
 
 </details>
 
@@ -556,7 +550,7 @@ Original plugin: [mini.ai](https://github.com/echasnovski/mini.ai).
 Original plugin: [vim-multiple-cursors](https://github.com/terryma/vim-multiple-cursors).
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'terryma/vim-multiple-cursors'`
+- Add the following command to `~/.vimperorrc`: `Plug 'terryma/vim-multiple-cursors'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'terryma/vim-multiple-cursors'</code>
@@ -599,7 +593,7 @@ xmap <C-p> <Plug>RemoveOccurrence
 ### Custom mappings
 
 To use your own mappings instead of the defaults, set `g:multi_cursor_use_default_mapping` to `0` and bind the
-`<Plug>` mappings yourself. This is also how you restore the old IdeaVim `<A-n>` based mappings:
+`<Plug>` mappings yourself. For example, to put everything on `<A-…>` keys:
 
 ```
 let g:multi_cursor_use_default_mapping = 0
@@ -617,15 +611,15 @@ xmap <A-p> <Plug>RemoveOccurrence
 </details>
 
 <details>
-<summary><h2>NERDTree: Adds NERDTree navigation to the project panel</h2></summary>
-   
+<summary><h2>NERDTree: Adds NERDTree navigation to VS Code's Explorer</h2></summary>
+
 Original plugin: [NERDTree](https://github.com/preservim/nerdtree).
 
 ### Summary:
-Adds NERDTree navigation to the project panel. 
-   
+Adds NERDTree commands and navigation keys to VS Code's Explorer.
+
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'preservim/nerdtree'`
+- Add the following command to `~/.vimperorrc`: `Plug 'preservim/nerdtree'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'preservim/nerdtree'</code>
@@ -636,9 +630,9 @@ Adds NERDTree navigation to the project panel.
       <br/>
       <code>set NERDTree</code>
       </details>
-   
+
 ### Instructions
-   
+
 [See here](NERDTree-support.md).
 
 </details>
@@ -649,11 +643,11 @@ Adds NERDTree navigation to the project panel.
 Original plugin: [vim-paragraph-motion](https://github.com/dbakker/vim-paragraph-motion).
 
 ### Summary:
-Normally the { and } motions only match completely empty lines. 
+Normally the { and } motions only match completely empty lines.
 With this plugin lines that only contain whitespace are also matched.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'dbakker/vim-paragraph-motion'`
+- Add the following command to `~/.vimperorrc`: `Plug 'dbakker/vim-paragraph-motion'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'dbakker/vim-paragraph-motion'</code>
@@ -678,49 +672,9 @@ https://github.com/dbakker/vim-paragraph-motion#vim-paragraph-motion
 </details>
 
 <details>
-<summary><h2>Peekaboo: Extends " @ CTRL-r to show a popup of the register contents</h2></summary>
-
-By Julien Phalip  
-Original plugin: [vim-peekaboo](https://github.com/junegunn/vim-peekaboo).
-
-### Summary:
-Peekaboo extends " and @ in normal mode and <CTRL-R> in insert mode so you can see the contents of the registers.
-
-### Setup
-
-Add `set peekaboo` to your `~/.ideavimrc` file, then run `:source ~/.ideavimrc`
-or restart the IDE.
-
-### Instructions
-
-https://plugins.jetbrains.com/plugin/25776-vim-peekaboo
-</details>
-
-<details>
-<summary><h2>quick-scope: Always-on highlight for a unique character in every word on a line to help use f, F, etc.</h2></summary>
-
-Original plugin: [quick-scope](https://github.com/unblevable/quick-scope).
-
-### Summary:
-An always-on highlight for a unique character in every word on a line to help you use f, F, and family.
-
-This plugin should help you get to any word on a line in two or three keystrokes with Vim's built-in f<char> 
-(which moves your cursor to <char>).
-
-### Setup:
-- Install [IdeaVim-Quickscope](https://plugins.jetbrains.com/plugin/19417-ideavim-quickscope) plugin.
-- Add the following command to `~/.ideavimrc`: `set quickscope`
-
-### Instructions
-
-https://plugins.jetbrains.com/plugin/19417-ideavim-quickscope
-
-</details>
-
-<details>
 <summary><h2>ReplaceWithRegister: Adds two-in-one command that replaces text with the contents of a register.</h2></summary>
 
-By [igrekster](https://github.com/igrekster)  
+By [igrekster](https://github.com/igrekster)
 Original plugin: [ReplaceWithRegister](https://github.com/vim-scripts/ReplaceWithRegister).
 
 ### Summary:
@@ -730,7 +684,7 @@ register; the old text is deleted into the black-hole register, i.e. it's
 gone. (But of course, the command can be easily undone.)
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'vim-scripts/ReplaceWithRegister'`
+- Add the following command to `~/.vimperorrc`: `Plug 'vim-scripts/ReplaceWithRegister'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'vim-scripts/ReplaceWithRegister'</code>
@@ -755,19 +709,55 @@ https://github.com/vim-scripts/ReplaceWithRegister/blob/master/doc/ReplaceWithRe
 </details>
 
 <details>
+<summary><h2>signature: Shows marks in the gutter</h2></summary>
+
+Original plugin: [vim-signature](https://github.com/kshenoy/vim-signature).
+
+### Summary:
+Draws your `a`-`z` marks in the gutter, next to the line each one is on, and keeps them there as marks are set,
+moved and deleted.
+
+### Setup:
+- Add the following command to `~/.vimperorrc`: `Plug 'kshenoy/vim-signature'`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plugin 'kshenoy/vim-signature'</code>
+      <br/>
+      <code>Plug 'https://github.com/kshenoy/vim-signature'</code>
+      <br/>
+      <code>Plug 'vim-signature'</code>
+      <br/>
+      <code>set signature</code>
+      </details>
+
+### Instructions
+
+The marks are drawn as Vim signs, in a sign group of their own named `signature`: `:sign place group=signature`
+lists them, and a `:sign unplace *` without `group=` leaves them alone. Only the lowercase marks are drawn. The plugin maps no keys.
+
+</details>
+
+<details>
 <summary><h2>sneak: Jump to any location specified by two characters</h2></summary>
 
-<img src="images/sneakIcon.svg" width="80" height="80" alt="icon"/>  
-
-By [Mikhail Levchenko](https://github.com/Mishkun)  
-Original repository with the plugin: https://github.com/Mishkun/ideavim-sneak  
+By [Mikhail Levchenko](https://github.com/Mishkun)
 Original plugin: [vim-sneak](https://github.com/justinmk/vim-sneak).
 
 ### Summary:
 Jump to any location specified by two characters.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'justinmk/vim-sneak'`
+- Add the following command to `~/.vimperorrc`: `Plug 'justinmk/vim-sneak'`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plugin 'justinmk/vim-sneak'</code>
+      <br/>
+      <code>Plug 'https://github.com/justinmk/vim-sneak'</code>
+      <br/>
+      <code>Plug 'vim-sneak'</code>
+      <br/>
+      <code>set sneak</code>
+      </details>
 
 ### Instructions
 
@@ -779,15 +769,15 @@ Jump to any location specified by two characters.
 
 <details>
 <summary><h2>surround: Adds provides mappings to easily delete, change, and add surroundings in pairs</h2></summary>
-   
+
 Original plugin: [vim-surround](https://github.com/tpope/vim-surround).
-   
+
 ### Summary:
-Surround.vim is all about "surroundings": parentheses, brackets, quotes, XML tags, and more. 
+Surround.vim is all about "surroundings": parentheses, brackets, quotes, XML tags, and more.
 The plugin provides mappings to easily delete, change, and add such surroundings in pairs.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'tpope/vim-surround'`
+- Add the following command to `~/.vimperorrc`: `Plug 'tpope/vim-surround'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'tpope/vim-surround'</code>
@@ -798,33 +788,10 @@ The plugin provides mappings to easily delete, change, and add such surroundings
       <br/>
       <code>set surround</code>
       </details>
-   
+
 ### Instructions
-   
+
 https://github.com/tpope/vim-surround/blob/master/doc/surround.txt
-
-</details>
-
-<details>
-<summary><h2>Switch: Switch some text under the cursor based on regex patterns</h2></summary>
-
-By Julien Phalip  
-Original plugin: [switch.vim](https://github.com/AndrewRadev/switch.vim).
-
-### Summary:
-The purpose of the plugin is to switch some text under the cursor based on regex patterns. 
-The main entry point is a single command, :Switch. 
-When the command is executed, 
-the plugin looks for one of a few specific patterns under the cursor and performs a substitution depending on it. 
-
-### Setup
-
-Add `set switch` to your `~/.ideavimrc` file, then run `:source ~/.ideavimrc`
-or restart the IDE.
-
-### Instructions
-
-https://plugins.jetbrains.com/plugin/25899-vim-switch
 
 </details>
 
@@ -852,7 +819,7 @@ paired by counting from the start of the line, so `ci"` skips the gap between tw
 the real one. Re-issuing a text object in visual mode grows the selection outward (`vi(i(`).
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'wellle/targets.vim'`
+- Add the following command to `~/.vimperorrc`: `Plug 'wellle/targets.vim'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'wellle/targets.vim'</code>
@@ -877,17 +844,17 @@ and forced motions (`dVi-`, `d<C-V>i-`) are not currently supported.
 <details>
 <summary><h2>textobj-entire: Adds mapping for selecting entire contents of file regardless of cursor position</h2></summary>
 
-By [Alexandre Grison](https://github.com/agrison)  
+By [Alexandre Grison](https://github.com/agrison)
 Original plugin: [vim-textobj-entire](https://github.com/kana/vim-textobj-entire).
-   
+
 ### Summary:
-vim-textobj-entire is a Vim plugin to provide text objects 
-(ae and ie by default) to select the entire content of a buffer. 
-Though these are trivial operations (e.g. ggVG), text object versions are more handy, 
+vim-textobj-entire is a Vim plugin to provide text objects
+(ae and ie by default) to select the entire content of a buffer.
+Though these are trivial operations (e.g. ggVG), text object versions are more handy,
 because you do not have to be conscious of the cursor position (e.g. vae).
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'kana/vim-textobj-entire'`
+- Add the following command to `~/.vimperorrc`: `Plug 'kana/vim-textobj-entire'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'kana/vim-textobj-entire'</code>
@@ -898,10 +865,48 @@ because you do not have to be conscious of the cursor position (e.g. vae).
       <br/>
       <code>set textobj-entire</code>
       </details>
-   
+
 ### Instructions
-   
+
 https://github.com/kana/vim-textobj-entire/blob/master/doc/textobj-entire.txt
+
+</details>
+
+<details>
+<summary><h2>textobj-line: Adds text objects for the current line</h2></summary>
+
+Original plugin: [vim-textobj-line](https://github.com/kana/vim-textobj-line).
+
+### Summary:
+Adds `al` and `il`, text objects for the current line: `al` is the whole line, and `il` is the line without its
+leading and trailing whitespace. Unlike `V`, they are characterwise and leave out the line break, so `yil` and
+`dal` never take the newline with them.
+
+### Setup:
+- Add the following command to `~/.vimperorrc`: `Plug 'kana/vim-textobj-line'`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plugin 'kana/vim-textobj-line'</code>
+      <br/>
+      <code>Plug 'https://github.com/kana/vim-textobj-line'</code>
+      <br/>
+      <code>Plug 'vim-textobj-line'</code>
+      <br/>
+      <code>set textobj-line</code>
+      </details>
+
+### Instructions
+
+https://github.com/kana/vim-textobj-line/blob/master/doc/textobj-line.txt
+
+| Mapping | Description |
+|---------|-------------|
+| `al`    | The current line, without the line break |
+| `il`    | The current line, without leading and trailing whitespace |
+
+Both select nothing on an empty line, and `il` selects nothing on a line of only whitespace, so `dil` there does
+nothing. `let g:textobj_line_no_default_key_mappings = 1` before enabling the plugin skips the `al` and `il`
+mappings.
 
 </details>
 
@@ -911,7 +916,7 @@ https://github.com/kana/vim-textobj-entire/blob/master/doc/textobj-entire.txt
 Original plugin: [vim-textobj-user](https://github.com/kana/vim-textobj-user).
 
 ### Summary:
-A framework that lets you declaratively define your own text objects from your `~/.ideavimrc`, without
+A framework that lets you declaratively define your own text objects from your `~/.vimperorrc`, without
 writing any plugin code. You describe each object with a Vim pattern and the keys that should select
 it, and `textobj-user` creates the mappings for you. For example, define `ad`/`id` to select an
 ISO date such as `2013-03-16`:
@@ -928,7 +933,7 @@ call textobj#user#plugin('datetime', {
 After this, `dad` deletes the date under (or ahead of) the cursor, `vad` selects it, and so on.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'kana/vim-textobj-user'`
+- Add the following command to `~/.vimperorrc`: `Plug 'kana/vim-textobj-user'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'kana/vim-textobj-user'</code>
@@ -1001,48 +1006,35 @@ The following features of the original plugin are **not** currently supported:
 </details>
 
 <details>
-<summary><h2>VimEverywhere: Keyboard-driven IDE navigation outside the editor</h2></summary>
+<summary><h2>visual-star-search: Search for the selected text with * and #</h2></summary>
+
+Original plugin: [vim-visual-star-search](https://github.com/bronson/vim-visual-star-search).
 
 ### Summary:
-Brings vim-style keyboard navigation to the rest of the IDE. Enabling `VimEverywhere` turns on three
-behaviors:
-
-- **Hints overlay.** Press `Ctrl+Shift+\` (`Ctrl+Cmd+\` on macOS) to display hint labels over
-  interactive UI components — buttons, tool window tabs, tree nodes, text fields, scroll panes, and
-  so on. Type the letters next to a target to focus or click it without touching the mouse.
-- **NERDTree-style mappings everywhere.** NERDTree file-opening mappings (`o`, `t`, `T`, `s`, `i`,
-  `go`, `gs`, `gi`) work in any focused tree, not just the Project tool window.
-- **Tool window navigation.** Vim-style window-motion keys work inside tool windows, so you can move
-  between split panes without leaving the keyboard.
+In visual mode, `*` searches forward and `#` searches backward for the selected text, rather than for the word
+under the cursor.
 
 ### Setup:
-- Install the [AceJump](https://plugins.jetbrains.com/plugin/7086-acejump/) plugin.
-- Add the following command to `~/.ideavimrc`: `set VimEverywhere`
+- Add the following command to `~/.vimperorrc`: `Plug 'bronson/vim-visual-star-search'`
+    <details>
+      <summary>Alternative syntax</summary>
+      <code>Plugin 'bronson/vim-visual-star-search'</code>
+      <br/>
+      <code>Plug 'https://github.com/bronson/vim-visual-star-search'</code>
+      <br/>
+      <code>Plug 'vim-visual-star-search'</code>
+      <br/>
+      <code>set visual-star-search</code>
+      </details>
 
 ### Instructions
 
-Press `Ctrl+Shift+\` (`Ctrl+Cmd+\` on macOS) to toggle the hints overlay. Type the letters shown
-next to a target to activate it, or press `Esc` to dismiss the overlay without activating anything.
-NERDTree-style and window-nav mappings are active automatically whenever the corresponding
-component has focus.
+| Mapping | Description |
+|---------|-------------|
+| `*`     | In visual mode, search forward for the selected text |
+| `#`     | In visual mode, search backward for the selected text |
 
-</details>
-
-<details>
-<summary><h2>Which-Key: Displays available keybindings in popup</h2></summary>
-
-Original plugin: [vim-which-key](https://github.com/liuchengxu/vim-which-key).
-
-### Summary:
-vim-which-key is vim port of emacs-which-key that displays available keybindings in popup.
-
-### Setup:
-- Install [Which-Key](https://plugins.jetbrains.com/plugin/15976-which-key) plugin.
-- Add the following command to `~/.ideavimrc`: `set which-key`
-
-### Instructions
-
-https://github.com/TheBlob42/idea-which-key?tab=readme-ov-file#installation
+To use other keys, map `<Plug>VisualStarSearch` and `<Plug>VisualHashSearch`.
 
 </details>
 
@@ -1058,7 +1050,7 @@ adds the missing history - the Emacs kill ring - over yanks, deletes and changes
 walk further back. `<C-N>` walks forward again, and a count like `2<C-P>` skips.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `Plug 'vim-scripts/YankRing.vim'`
+- Add the following command to `~/.vimperorrc`: `Plug 'vim-scripts/YankRing.vim'`
     <details>
       <summary>Alternative syntax</summary>
       <code>Plugin 'vim-scripts/YankRing.vim'</code>
@@ -1084,7 +1076,7 @@ the keys call - a negative offset steps to an older entry, a positive one to a n
 
 Note that `<C-P>` and `<C-N>` stop being `k` and `j` in normal mode, as with the original plugin.
 Visual, operator-pending, insert and command-line mode are untouched. To keep the keys, map your own
-in `~/.ideavimrc`, which suppresses the defaults:
+in `~/.vimperorrc`, which suppresses the defaults:
 
 ```
 nmap <A-p> <Plug>YankRingReplacePrevious
@@ -1105,24 +1097,32 @@ https://github.com/vim-scripts/YankRing.vim/blob/master/doc/yankring.txt
 Inspired by [YouCompleteMe](https://github.com/ycm-core/YouCompleteMe) / [SuperTab](https://github.com/ervandew/supertab).
 
 ### Summary:
-Makes `<Tab>` cycle through the IDE's code completion popup, SuperTab style. While the completion
-popup (lookup) is open, `<Tab>` selects the next item and `<S-Tab>` the previous one — the same as
-the native `<C-N>`/`<C-P>` insert-mode completion keys. When no popup is open, `<Tab>` falls back to
-its normal behaviour (indentation), so ordinary tabbing is unaffected.
+Makes `<Tab>` cycle through VS Code's suggestion list, SuperTab style. While the suggestion list is open, `<Tab>`
+selects the next item and `<S-Tab>` the previous one, instead of accepting the suggestion. When no list is open,
+`<Tab>` keeps its normal behaviour, so ordinary tabbing is unaffected.
 
 ### Setup:
-- Add the following command to `~/.ideavimrc`: `set youcompleteme`
+- Add the following command to `~/.vimperorrc`: `set youcompleteme`
 
 ### Instructions
 
-Enabling the plugin removes `<Tab>` and `<S-Tab>` from the [`lookupkeys`](https://github.com/JetBrains/ideavim/wiki/set-commands)
-option so that IdeaVim — rather than the IDE — handles them while the completion popup is open. If
-you want to keep Vim's default insert-mode completion keys as well, they continue to work alongside
-Tab:
-
 | Mapping | Description |
 |---------|-------------|
-| `<Tab>`   | Select the next item in the completion popup (or insert a tab when none is open) |
-| `<S-Tab>` | Select the previous item in the completion popup |
+| `<Tab>`   | Select the next item in the suggestion list (otherwise Vim's own `<Tab>`) |
+| `<S-Tab>` | Select the previous item in the suggestion list |
+
+Both keys are VS Code keybindings that apply only while the suggestion list is open and the plugin is enabled.
+`<Enter>` still accepts the selected suggestion.
 
 </details>
+
+## Not available
+
+Two plugins from the same family are not part of Vimperor:
+
+- **matchit.vim.** Jumping with `%` between `if` and `endif`, or between HTML tags, needs to know what a token is,
+  and all VS Code tells an extension about a file's structure is where its symbols are. `%` still jumps between the
+  pairs in `'matchpairs'`.
+- **VimEverywhere.** Its point is to label every clickable thing in the window and click it from the keyboard. An
+  extension can draw over editor text, but not over VS Code's workbench — the activity bar, the tabs, the sidebar —
+  and cannot enumerate what is on it.

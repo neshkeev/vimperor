@@ -1,6 +1,6 @@
 # NERDTree
 
-IdeaVim supports the NERDTree plugin. Update your `~/.ideavimrc` to turn it on:
+Vimperor supports the NERDTree plugin over VS Code's Explorer. Update your `~/.vimperorrc` to turn it on:
 ```vim
 Plug 'preservim/nerdtree'
 ```
@@ -15,6 +15,7 @@ Use `set noNERDTree` to disable this extension.
 
 ```vim
 set NERDTree
+set nerdtree
 Plug 'preservim/nerdtree'
 Plug 'https://github.com/preservim/nerdtree'
 Plug 'https://github.com/scrooloose/nerdtree'
@@ -23,15 +24,9 @@ Plug 'nerdtree'
 ```
 </details>
 
-
-### Preview
-
-<details>
-<summary>Click for the preview</summary>
-<img src="images/nerdtree.gif" alt="NERDTree example"/>
-</details>
-
 ### Supported commands
+
+These work from any editor, and act on VS Code's Explorer:
 
 - `:NERDTree`
 - `:NERDTreeFocus`
@@ -40,37 +35,43 @@ Plug 'nerdtree'
 - `:NERDTreeFind`
 - `:NERDTreeRefreshRoot`
 
-| Key     | Description                                            | Map Setting                    |
-|---------|--------------------------------------------------------|--------------------------------|
-| `o`     | Open files, directories and bookmarks                  | `g:NERDTreeMapActivateNode`    |
-| `go`    | Open selected file, but leave cursor in the NERDTree   | `g:NERDTreeMapPreview`         |
-| `t`     | Open selected node/bookmark in a new tab               | `g:NERDTreeMapOpenInTab`       |
-| `T`     | Same as 't' but keep the focus on the current tab      | `g:NERDTreeMapOpenInTabSilent` |
-| `i`     | Open selected file in a split window                   | `g:NERDTreeMapOpenSplit`       |
-| `gi`    | Same as i, but leave the cursor on the NERDTree        | `g:NERDTreeMapPreviewSplit`    |
-| `s`     | Open selected file in a new vsplit                     | `g:NERDTreeMapOpenVSplit`      |
-| `gs`    | Same as s, but leave the cursor on the NERDTree        | `g:NERDTreeMapPreviewVSplit`   |
-| `O`     | Recursively open the selected directory                | `g:NERDTreeMapOpenRecursively` |
-| `x`     | Close the current nodes parent                         | `g:NERDTreeMapCloseDir`        |
-| `X`     | Recursively close all children of the current node     | `g:NERDTreeMapCloseChildren`   |
-| `P`     | Jump to the root node                                  | `g:NERDTreeMapJumpRoot`        |
-| `p`     | Jump to current nodes parent                           | `g:NERDTreeMapJumpParent`      | 
-| `K`     | Jump up inside directories at the current tree depth   | `g:NERDTreeMapJumpFirstChild`  |
-| `J`     | Jump down inside directories at the current tree depth | `g:NERDTreeMapJumpLastChild`   |
-| `<C-J>` | Jump down to next sibling of the current directory     | `g:NERDTreeMapJumpNextSibling` |
-| `<C-K>` | Jump up to previous sibling of the current directory   | `g:NERDTreeMapJumpPrevSibling` |
-| `r`     | Recursively refresh the current directory              | `g:NERDTreeMapRefresh`         |
-| `R`     | Recursively refresh the current root                   | `g:NERDTreeMapRefreshRoot`     |
-| `m`     | Display the NERDTree menu                              | `g:NERDTreeMapMenu`            |
-| `q`     | Close the NERDTree window                              | `g:NERDTreeMapQuit`            |
-| `A`     | Zoom (maximize/minimize) the NERDTree window           | `g:NERDTreeMapToggleZoom`      |
-| `d`     | Delete file or directory                               | `g:NERDTreeMapDelete`          |
-| `n`     | Create File                                            | `g:NERDTreeMapNewFile`         |
-| `N`     | Create Directory                                       | `g:NERDTreeMapNewDir`          |
+### Keys in the Explorer
 
-### Troubleshooting
+A key pressed in VS Code's sidebar never reaches an extension, so these keys are keybindings in Vimperor's
+manifest, each running one of VS Code's own commands. They apply while the Explorer has focus and no input box
+is open, and only while NERDTree is enabled. The `g:NERDTreeMap*` variables cannot change them; to use other
+keys, change the bindings in VS Code's *Keyboard Shortcuts*.
 
-If you see the the file is opened automatically on every movement in the Project View (`j`, `k`, etc.)
-please make sure that you have "Open Files with Single click" disabled.
+| Key     | Description                                        | VS Code command                               |
+|---------|----------------------------------------------------|-----------------------------------------------|
+| `j`     | Move down                                          | `list.focusDown`                              |
+| `k`     | Move up                                            | `list.focusUp`                                |
+| `gg`    | Move to the first node                             | `list.focusFirst`                             |
+| `G`     | Move to the last node                              | `list.focusLast`                              |
+| `o`     | Open a file, or open or close a directory          | `list.select`                                 |
+| `s`     | Open the selected file beside the current editor   | `explorer.openToSide`                         |
+| `O`     | Recursively open every directory                   | `list.expandAll`                              |
+| `x`     | Close the current directory                        | `list.collapse`                               |
+| `r`     | Refresh the Explorer                               | `workbench.files.action.refreshFilesExplorer` |
+| `R`     | Refresh the Explorer                               | `workbench.files.action.refreshFilesExplorer` |
+| `q`     | Close the sidebar                                  | `workbench.action.closeSidebar`               |
+| `n`     | Create File                                        | `explorer.newFile`                            |
+| `N`     | Create Directory                                   | `explorer.newFolder`                          |
+| `d`     | Delete file or directory                           | `deleteFile`                                  |
+| `y`     | Copy file or directory                             | `filesExplorer.copy`                          |
+| `v`     | Paste what was copied                              | `filesExplorer.paste`                         |
+| `<C-R>` | Rename file or directory                           | `renameFile`                                  |
 
-<img src="images/disable-one-click.png" alt="Disable one click"/>
+Not every VS Code build has `list.expandAll`. When it is missing, Vimperor lists it among the commands it could
+not find in its output channel at startup, and `O` does nothing.
+
+### Not available
+
+- `t`, `T`, `i`, `gi`, `gs` and `go`: VS Code opens a file in place or beside the current editor, and has no
+  other way to open one.
+- `p`, `P`, `J`, `K`, `<C-J>` and `<C-K>`: VS Code's list commands move by row and know nothing about depth.
+- `X`, `I`, `f`, `F`, `B`, `m` and `A`.
+- Everything that changes the tree's root: the Explorer is rooted at the workspace folder, and an extension
+  cannot move it.
+
+These keys are left alone rather than bound to something approximate.

@@ -1,38 +1,32 @@
 # Support Guide
 
-This document is created to help our support team.
+This document is for whoever answers Vimperor's issues.
 It's not intended to be read by the users as it brings no value to them.
 
 ## Support channels
 
-- Main, YouTrack: https://youtrack.jetbrains.com/issues/VIM
-- [Chat on gitter](https://gitter.im/JetBrains/ideavim)
-- [IdeaVim Channel](https://jb.gg/bi6zp7) on [JetBrains Server](https://discord.gg/jetbrains)
-- Rare: GitHub discussions - https://github.com/JetBrains/ideavim/discussions
+- GitHub issues: https://github.com/neshkeev/vimperor/issues
 
 ## Expectations from the support
 
-- Process incoming requests from all the support channels
-- Request for an additional information
-- Help users to answer simple cases
+- Process incoming issues
+- Request additional information
+- Help users with simple cases, linking to the README where it already answers them
 - Try to reproduce the issue
-- Try to help user if this is misconfiguration / incorrect usage
-- Pass actual bugs to the dev team
-- Update "State" and "Area" fields
+- Try to help the user if this is a misconfiguration or incorrect usage
+- Turn a confirmed bug into a failing test before it is fixed
 
-## YouTrack statuses
+## What to ask for
 
-IdeaVim has multiple YouTrack statuses, main are:
+- **A trace.** With `vimperor.trace` turned on in VS Code's settings, Vimperor writes what every key did - the
+  mode, the carets, the selections handed to VS Code - and every selection change VS Code reports to the
+  *Vimperor* output channel. A trace from the window where the problem happened is worth more than a description.
+- **The editor and the versions.** Vimperor runs in VS Code and in its forks, and `:set ide?` answers with the
+  editor's name. The Extensions view shows Vimperor's version.
+- **Other Vim extensions.** Two Vim emulators installed at the same time compete for the same keys.
 
-- Submitted: issue is created by user, but not processed by our team. This is the default status for new tickets.
-- Open: issues is processed by our team, what means that the issues is reproduced and accepted
-- Waiting For Reply: Waiting for further information from the user. These issues are automatically closed if the
-     user doesn't reply in 30 days.
-- Ready To Release: Bug is fixed, but not yet released
-- Fixed: Bug is fixed
-- Closed: Issue is closed by some other reason
+# ~/.vimperorrc file
 
-# ~.ideavimrc file
-
-`~/.ideavimrc` is the file that is used for IdeaVim configuration. It may affect behaviour of the program,
-so it makes sense to additionally request this file in case the issues can't be reproduced.
+`~/.vimperorrc` is the file that is used for Vimperor configuration. It may affect behaviour of the program,
+so it makes sense to additionally request this file in case the issue can't be reproduced. The first line
+Vimperor writes to its output channel names the config file it loaded.
