@@ -1,6 +1,6 @@
 {
   "name": "vimperor",
-  "displayName": "Vimperor",
+  "displayName": "Vimperor - Vim for VS Code",
   "description": "Vim for VS Code, powered by IdeaVim's engine: modes, operators, text objects, registers, macros, marks and Vimscript.",
   "version": "0.0.3",
   "publisher": "neshkeev",
@@ -14,6 +14,10 @@
   "homepage": "https://github.com/neshkeev/vimperor#readme",
   "license": "MIT",
   "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#2E1065",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -518,10 +522,27 @@
     "vim",
     "vi",
     "ideavim",
+    "neovim",
+    "vscodevim",
+    "keymap",
+    "vim mode",
+    "vimscript",
+    "langmap",
+    "cyrillic",
+    "russian",
+    "ukrainian",
+    "belarusian",
+    "surround",
+    "sneak",
+    "easymotion",
+    "text objects",
     "vimrc",
+    "ideavimrc",
+    "modal",
     "modal editing",
     "normal mode",
     "keybindings",
-    "keymap"
+    "русская раскладка",
+    "кириллица"
   ]
 }
