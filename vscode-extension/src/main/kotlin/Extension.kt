@@ -240,10 +240,13 @@ fun activate(context: ExtensionContext) {
   // `BufLeave` before `BufEnter`, in that order, which is the order Vim fires them and the order
   // IdeaVim's own editor listener uses. The one being left has to be named before it stops being
   // the active editor, so the host remembers it rather than asking VS Code afterwards.
+  //
+  // A switch in Visual mode ends it in the editor left behind, which changes the mode between keys -
+  // so the indicator is refreshed, and the trace says why.
   val activeEditorChanged = window.onDidChangeActiveTextEditor { editor ->
-    vim.activeEditorChanged(editor)
+    val outcome = vim.activeEditorChanged(editor)
     refreshMode()
-    if (editor != null) trace(output, vim, editor, "<active editor>")
+    if (editor != null) trace(output, vim, editor, outcome?.let { "<active editor: $it>" } ?: "<active editor>")
   }
 
   // The one way the mode can change between keys: a click in Visual mode ends it. So the indicator

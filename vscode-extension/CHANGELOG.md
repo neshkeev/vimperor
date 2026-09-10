@@ -23,6 +23,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- Switching to another tab in Visual mode took Visual mode with it: `j` there went on selecting in
+  the new document, and back in the first tab its lines stayed selected, with `<Esc>` unable to clear
+  them - only a click could. Visual and Select mode now end in the editor you leave, the way `<Esc>`
+  ends them, so `gv` back there restores the selection; a `:` prompt opened from Visual mode is
+  closed too. The same document shown again, or in a split, keeps it.
 - When a selection change from outside the keyboard - a click, or another extension - ended Visual
   mode, the status bar went on saying VISUAL until the next key, so the selection seemed to vanish
   for no reason. The indicator follows the mode now, and `vimperor.trace` records every selection

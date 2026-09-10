@@ -21,6 +21,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.common.ModeChangeListener
+import com.maddyhome.idea.vim.helper.exitVisualMode
 import com.maddyhome.idea.vim.key.noteCaretMoveInInsertSession
 import com.maddyhome.idea.vim.key.resetAbbreviationSession
 
@@ -278,10 +279,17 @@ class VimHost(
 
   internal fun alternateTextEditor(): TextEditor? = alternateEditor
 
-  /** VS Code changed the active editor: `BufLeave` for the old one, `BufEnter` for the new. */
-  fun activeEditorChanged(editor: TextEditor?) {
+  /**
+   * VS Code changed the active editor: `BufLeave` for the old one, `BufEnter` for the new.
+   *
+   * Returns what it did to the mode, for the trace, or null when it did nothing.
+   */
+  fun activeEditorChanged(editor: TextEditor?): String? {
     val left = lastActiveEditor
     lastActiveEditor = editor
+    // Before `BufLeave`, so that an autocommand there runs in the mode the user is going to be in
+    // rather than in a Visual mode that is about to end.
+    val ended = editor != null && endVisualModeLeftBehind(identityOf(editor))
     if (left != null && left !== editor) {
       // Only on a real switch. VS Code reports the active editor changing to null and back when
       // focus goes to a panel and returns, and treating that as leaving a buffer would make `#`
@@ -296,6 +304,60 @@ class VimHost(
       symbols.refresh(editor.document)
       fire(AutoCmdEvent.BufEnter, editorFor(editor))
     }
+    return if (ended) "Visual mode ended in the editor left behind" else null
+  }
+
+  /**
+   * Ends Visual or Select mode in an editor the user has left, as `<Esc>` would have there.
+   *
+   * The mode is global and the selection is not: `VimEditorBase.mode` is `injector.vimState.mode`,
+   * while every editor has carets of its own. So switching tabs in Visual mode left the mode running
+   * with its selection in an editor no key was going to. `j` in the next tab went on selecting
+   * there, and back in the first one `<Esc>` found Normal mode and nothing to clear while its lines
+   * stayed selected - and every flush pushed them again, so only a click could remove them. Vim ends
+   * Visual mode when the cursor leaves the window, and IdeaVim does it for a switch of editor in
+   * `MotionGroup.fileEditorManagerSelectionChangedCallback`.
+   *
+   * Which editor was left is read off where the selection is, not off which editor was active before,
+   * because neither of VS Code's reports is reliable about that. It passes through no active editor
+   * when focus crosses a panel, and a click in another editor's text is reported as a selection change
+   * that can come before the switch. [arrivedAt] is a document rather than a `TextEditor`: the carets
+   * belong to the document, so a tab shown again, or the same file in a split, is where the selection
+   * still is - see [VsCodeEditor.adoptCaretsFrom].
+   *
+   * Every Visual mode has a selection to find, even `v` in an empty document: VS Code is shown an
+   * empty one there, and the engine's caret still counts as selecting.
+   *
+   * Through `exitVisualMode`, the same way `<Esc>` leaves, so `'<` and `'>` are set in the editor left
+   * behind and `gv` there brings the selection back.
+   *
+   * A command line opened from Visual mode - `V`, `jj`, `:` - is closed first, which is IdeaVim's rule
+   * too. Leaving it open ended nothing: the mode was Command-line rather than Visual, and closing the
+   * prompt later puts back the mode it was opened from, so `<Esc>` in the next tab brought Visual mode
+   * back with its selection still in the editor left behind.
+   */
+  private fun endVisualModeLeftBehind(arrivedAt: String): Boolean {
+    val before = injector.vimState.mode
+    val commandLineOverVisual = before is Mode.CMD_LINE && before.isVisualPending
+    if (before !is Mode.VISUAL && before !is Mode.SELECT && !commandLineOverVisual) return false
+    val leftBehind = editors.filter { (identity, editor) ->
+      identity != arrivedAt && editor.nativeCarets().any { it.hasSelection() }
+    }.values
+    if (leftBehind.isEmpty()) return false
+    if (commandLineOverVisual) {
+      injector.commandLine.getActiveCommandLine()?.close(refocusOwningEditor = false, resetCaret = false)
+    }
+    val mode = injector.vimState.mode
+    for (editor in leftBehind) {
+      if (mode is Mode.SELECT) editor.exitSelectModeNative(false) else editor.exitVisualMode()
+      // What `KeyHandler` was holding - a count, an operator's first key - was typed for Visual mode
+      // in that editor, and IdeaVim resets it for the same reason.
+      KeyHandler.getInstance().reset(editor)
+      // VS Code is not told about a selection the engine dropped until something flushes, and no key
+      // is going to that editor.
+      editor.flush()
+    }
+    return true
   }
 
   /**
@@ -544,6 +606,18 @@ class VimHost(
     // next key. `syncCaretsFromEditor` recognises its own echo; what it adopted is the only thing
     // that can say the user did something.
     if (!editor.syncCaretsFromEditor()) return "echo of what was pushed"
+    // A click in another editor's text, in Visual mode. VS Code may report it before it reports that
+    // editor as active, and following the collapsed selection into Normal mode below would then leave
+    // the other editor's selection on screen with nothing able to clear it.
+    val endedElsewhere = endVisualModeLeftBehind(identityOf(textEditor))
+    if (endedElsewhere) {
+      // Dragging there is selecting there, and the mode follows that into Visual as it would anyway.
+      if (editor.followSelectionIntoMode()) {
+        KeyHandler.getInstance().reset(editor)
+        return "adopted, Visual mode ended in the editor left behind, and the mode followed it to ${modeName()}"
+      }
+      return "adopted, and Visual mode ended in the editor left behind"
+    }
     if (editor.followSelectionIntoMode()) {
       // The mode changed without a key causing it, and `KeyHandler` is holding state that assumed
       // the old one - a partial command, a pending count. Entering visual mode behind its back and
