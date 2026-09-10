@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,6 +61,17 @@ class IncsearchTest {
     /** Where the view is, so that the match being previewed can be seen to have been scrolled to. */
     val topLine: Int get() = fake.topLine
     val caretOffset: Int get() = host.editorFor(fake).primaryCaret().offset
+
+    val editor: VsCodeEditor get() = host.editorFor(fake)
+
+    /**
+     * What a real window sends after the host pushes a selection: the change, reported back.
+     *
+     * The fake fires no selection events, so a test that needs one says so. `1` is VS Code's
+     * `TextEditorSelectionChangeKind.Keyboard` - which a window attached to the preview's own push,
+     * a change the host had made.
+     */
+    fun echoSelection() = host.selectionChanged(fake, 1)
 
     /** The selection VS Code was left holding, as offsets. */
     val selection: Pair<Int, Int>
@@ -297,6 +309,47 @@ class IncsearchTest {
     // Through the match's first character, not up to it: Vim's `'selection'` is inclusive, so the
     // selection covers the character the caret is on.
     assertEquals(0 to 13, session.selection, "the selection should reach the previewed match")
+  }
+
+  /**
+   * `:'<,'>s/ -/| -/g` over selected lines, reported from a real window.
+   *
+   * The preview is meant to drop the Visual selection, but it asked `inVisualMode` - which is false
+   * while the prompt is open, because the mode is Command-line with Visual pending. So it moved the
+   * caret with the selection still attached, the selection shrank to the first match's line, and
+   * `'<,'>` shrank with it: the substitute would have run on that one line.
+   */
+  @Test
+  fun `test a substitute over a Visual range previews without shrinking the range`() {
+    val session = Session("a - 1\nb - 2\nc - 3\nd - 4")
+    session.type("Vjj")
+    session.type(":")
+    session.type("s/ -")
+    assertEquals(session.selection.first, session.selection.second, "no selection while a command is previewed")
+
+    session.type("/| -/g")
+    session.key("<CR>")
+    assertEquals("a| - 1\nb| - 2\nc| - 3\nd - 4", session.fake.document.content)
+  }
+
+  /**
+   * VS Code reporting the preview's selection back must not close the prompt.
+   *
+   * The host read that report as the user dragging a selection: it forced characterwise Visual mode
+   * and reset the key handler, which closed the prompt under the next key typed. It is the host's own
+   * push coming back, and `syncCaretsFromEditor` already knew so - it just was not asked.
+   */
+  @Test
+  fun `test the preview's own selection coming back does not close the prompt`() {
+    val session = Session("one two one three")
+    session.type("ve")
+    session.type("/")
+    session.type("thr")
+    session.echoSelection()
+    assertTrue(session.editor.mode is Mode.CMD_LINE, "the prompt should still be open, not ${session.editor.mode}")
+
+    session.type("ee")
+    assertTrue(session.editor.mode is Mode.CMD_LINE, "and still taking the pattern, not ${session.editor.mode}")
   }
 
   /** Cancelling puts the caret back where the prompt opened, the way Vim does. */

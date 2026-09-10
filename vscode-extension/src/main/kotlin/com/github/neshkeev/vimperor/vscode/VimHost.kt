@@ -532,7 +532,12 @@ class VimHost(
     // column per line: the block's anchor was replaced by whatever VS Code last reported for the
     // line the caret happened to be on.
     if (kind == null) return
-    editor.syncCaretsFromEditor()
+    // And not the host's own push, whatever `kind` says. A real window attributed one to the user:
+    // the incsearch preview's selection, pushed while `:` was open, came back as a change the user
+    // made, and following it into Visual mode reset the key handler and closed the prompt under the
+    // next key. `syncCaretsFromEditor` recognises its own echo; what it adopted is the only thing
+    // that can say the user did something.
+    if (!editor.syncCaretsFromEditor()) return
     if (editor.followSelectionIntoMode()) {
       // The mode changed without a key causing it, and `KeyHandler` is holding state that assumed
       // the old one - a partial command, a pending count. Entering visual mode behind its back and

@@ -22,6 +22,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `:'<,'>s/pattern/` over selected lines threw you out of the command line at the first character of
+  the pattern, into Visual mode with a different selection. With `'incsearch'` on, the preview was
+  meant to drop the selection and did not, so it dragged the selection to the first match, which
+  would also have narrowed `'<,'>` to that one line; and VS Code's report of that change was taken
+  for a selection you had made yourself.
 - `zb` did nothing after `zt` on a line near the end of a file. VS Code lets the view scroll past the
   last line, and then reports only the lines it has text for, so a ten-line window looked one line
   tall - and putting a line at the bottom of a one-line window left it where it was.

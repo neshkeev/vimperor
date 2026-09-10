@@ -561,13 +561,20 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   // ---- Carets. VS Code calls them selections; a collapsed selection is a plain caret.
 
-  fun syncCaretsFromEditor() {
+  /**
+   * Adopts the carets VS Code reports, unless they are only what this host last pushed.
+   *
+   * Returns whether anything was adopted. An echo is not news, and a caller deciding what a change
+   * *means* - [VimHost.selectionChanged], choosing whether the user just made a selection - has to
+   * know it was one.
+   */
+  fun syncCaretsFromEditor(): Boolean {
     val selections = nativeEditor.selections
     val incoming = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
     // As a set, because the order is not this host's to rely on. Carets are pushed primary first,
     // and VS Code is free to report them back in document order - so comparing lists would call a
     // block selection's own echo a user edit and rebuild every caret from it.
-    if (incoming.toSet() == pushedSelections.toSet()) return
+    if (incoming.toSet() == pushedSelections.toSet()) return false
 
     // What the outgoing primary knew, to be handed to the incoming one.
     //
@@ -604,6 +611,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       vimCarets.firstOrNull { it.isPrimary }?.lastSelectionInfo = previous.lastSelectionInfo
     }
     pushedSelections = incoming
+    return true
   }
 
   /**

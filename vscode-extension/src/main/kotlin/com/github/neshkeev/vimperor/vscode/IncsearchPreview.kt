@@ -16,6 +16,7 @@ import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.pattern
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.helper.exitVisualMode
+import com.maddyhome.idea.vim.state.mode.inCommandLineModeWithVisual
 import com.maddyhome.idea.vim.state.mode.inVisualMode
 
 /**
@@ -119,7 +120,13 @@ internal class IncsearchPreview(private val highlighter: Highlighter) {
     // mode. `v` then `/foo` is the opposite - there the caret move *is* the selection move - which
     // is why this is only done for a command. Exiting Visual leaves the command line open, because
     // the engine's mode is Command-line with Visual pending.
-    if (request.isExCommand && vsCode.inVisualMode) vsCode.exitVisualMode()
+    //
+    // Which is also why asking `inVisualMode` alone was wrong: with the prompt open the mode is
+    // Command-line, so that was false every time this line ran and the selection was never dropped.
+    // The caret move below then dragged it to the first match, and `'<,'>` shrank to that line - so
+    // `:'<,'>s/ -/| -/g` over five selected lines would have changed one. Exiting first sets
+    // `'<` and `'>` from the selection as it was, which is the range the command was typed for.
+    if (request.isExCommand && (vsCode.inVisualMode || vsCode.inCommandLineModeWithVisual)) vsCode.exitVisualMode()
     // The engine's move rather than the native one, because in Visual mode moving the caret is what
     // moves the end of the selection - which is the whole of what this preview shows there.
     vsCode.primaryCaret().moveToOffset(current.startOffset)
