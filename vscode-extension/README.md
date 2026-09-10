@@ -25,7 +25,7 @@ If your editor searches neither, every release also attaches the `.vsix` to its
 one by hand — "Install from VSIX…" in the Extensions view, or:
 
 ```bash
-codium --install-extension vimperor-0.0.3.vsix   # cursor, windsurf, code-insiders, ...
+codium --install-extension vimperor-0.0.4.vsix   # cursor, windsurf, code-insiders, ...
 ```
 
 The extension asks for VS Code 1.85 or newer, which every current fork is well past.

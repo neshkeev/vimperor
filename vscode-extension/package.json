@@ -2,7 +2,7 @@
   "name": "vimperor",
   "displayName": "Vimperor - Vim for VS Code",
   "description": "Vim for VS Code, powered by IdeaVim's engine: modes, operators, text objects, registers, macros, marks and Vimscript.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "neshkeev",
   "repository": {
     "type": "git",

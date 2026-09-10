@@ -4,6 +4,9 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+
+## [0.0.4] - 2026-09-11
+
 ### Added
 
 - `easymotion`: `<Leader><Leader>w` labels every word start on screen, and the next key jumps to
