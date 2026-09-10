@@ -253,10 +253,14 @@ fun activate(context: ExtensionContext) {
   // is refreshed here too - without it the status bar went on saying VISUAL LINE after the selection
   // had gone - and the event is traced, because a selection dropped between two keys is invisible in
   // a trace of keys.
+  //
+  // Never the Output panel's own, which is where the trace is written. A line appended there moves
+  // that panel's caret, VS Code reports it as a selection change, and tracing the change appended
+  // another line - one at a time, for as long as the window was open with `vimperor.trace` on.
   val selectionChanged = window.onDidChangeTextEditorSelection { event ->
     val outcome = vim.selectionChanged(event.textEditor, event.kind)
     refreshMode()
-    if (tracing()) {
+    if (tracing() && event.textEditor.document.uri.scheme != "output") {
       val reported = event.selections.joinToString(", ") {
         "(${it.anchor.line},${it.anchor.character})-(${it.active.line},${it.active.character})"
       }

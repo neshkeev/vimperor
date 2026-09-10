@@ -239,6 +239,29 @@ const bufferTab = {
   input: new TabInputText({ scheme: 'file', path: bufferPath, fsPath: bufferPath }),
 }
 
+/** Everything subscribed to selection changes, so that the Output panel's own can be reported. */
+const selectionListeners = []
+
+/**
+ * The Output panel's own editor, which VS Code reports selection changes for like any other: a line
+ * appended to the channel moves its caret to the next line. Reported only where it is checked.
+ */
+let outputEditorReportsSelections = false
+let outputSelectionEvents = 0
+const outputEditor = {
+  document: { uri: { scheme: 'output', path: 'extension-output-neshkeev.vimperor-#1-Vimperor' } },
+  selections: [],
+}
+function outputCaretMoved() {
+  if (!outputEditorReportsSelections) return
+  // Bounded, so that a loop fails the assertion that checks for one rather than overflowing the stack.
+  if (++outputSelectionEvents > 20) return
+  const position = new Position(output.length, 0)
+  const selection = new Selection(position, position)
+  outputEditor.selections = [selection]
+  for (const listener of selectionListeners) listener({ textEditor: outputEditor, selections: [selection], kind: undefined })
+}
+
 const vscode = {
   Position,
   Range,
@@ -281,7 +304,14 @@ const vscode = {
     },
     createOutputChannel(name) {
       assert.strictEqual(name, 'Vimperor')
-      return { ...disposable(), appendLine: (line) => output.push(line), show() {} }
+      return {
+        ...disposable(),
+        appendLine: (line) => {
+          output.push(line)
+          outputCaretMoved()
+        },
+        show() {},
+      }
     },
     // Recorded, because the command line and the `:s///c` prompt are drawn here and there is
     // nowhere else to read them from.
@@ -298,7 +328,10 @@ const vscode = {
       activeEditorListeners.push(callback)
       return disposable()
     },
-    onDidChangeTextEditorSelection: () => disposable(),
+    onDidChangeTextEditorSelection: (callback) => {
+      selectionListeners.push(callback)
+      return disposable()
+    },
     onDidChangeWindowState: () => disposable(),
   },
   commands: {
@@ -1035,6 +1068,21 @@ tracing = false
 assert.ok(
   output.some((line) => line.includes('-> NORMAL carets=[')),
   `tracing was on and nothing was traced. Output:\n${output.join('\n')}`,
+)
+
+// And the trace does not trace itself. Writing a line moves the Output panel's caret, VS Code reports
+// that as a selection change, and tracing *that* wrote another line - one line at a time, for as long
+// as the window was open, from nothing more than `vimperor.trace` being on.
+const tracedBefore = output.length
+tracing = true
+outputEditorReportsSelections = true
+press('<Esc>')
+outputEditorReportsSelections = false
+tracing = false
+assert.strictEqual(
+  outputSelectionEvents,
+  1,
+  `one traced key should move the Output panel's caret once. Output:\n${output.slice(tracedBefore).join('\n')}`,
 )
 
 // The caret's shape, which is the mode indicator a user reads without looking at the status bar.
