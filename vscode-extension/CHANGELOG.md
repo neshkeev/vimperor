@@ -4,6 +4,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- `o` on the last line scrolled the file up, even with half the window empty below it. VS Code
+  reports only the lines it has text for, so a tall window over a file that ends above its bottom row
+  looks exactly like a window with no room left, and the new line looked off screen in both. Where
+  the two cannot be told apart, Vimperor now asks VS Code to bring the caret into view, which scrolls
+  by the minimum, or not at all.
+
 
 ## [0.0.4] - 2026-09-11
 

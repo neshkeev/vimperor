@@ -87,6 +87,25 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   internal var knownScreenHeight: Int? = null
 
   /**
+   * Whether [knownScreenHeight] can be trusted as the window's height, or is only a floor under it.
+   *
+   * True whenever the report it came from was clipped to the text, which covers both a window with
+   * blank space below the last line and a height remembered from before the window was made shorter.
+   * See `screenHeight`.
+   */
+  internal var screenHeightIsFloor: Boolean = false
+
+  /**
+   * Whether the caret should be revealed once the editor has been written to.
+   *
+   * Set when a scroll cannot be decided from what VS Code reports - see
+   * `VsCodeScrollGroup.scrollCaretIntoView`. It waits for the flush because until then the editor
+   * does not have the text the caret is in: a reveal now would name a line that does not exist yet
+   * and be clamped to the end of the document that does.
+   */
+  internal var revealCaretAfterFlush: Boolean = false
+
+  /**
    * The viewport VS Code last described, remembered from the moment a command rewrote the document.
    *
    * `visibleRanges` is clipped to the text, so a one-line file reports one visible line however
@@ -495,7 +514,14 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   fun flush(onResult: (Boolean) -> Unit = {}) {
     mergeIndistinguishableCarets()
     buffer.flush { applied ->
-      if (applied) flushCarets() else syncCaretsFromEditor()
+      if (applied) {
+        flushCarets()
+      } else {
+        // The document moved under the command, so where its caret was going is not a question about
+        // this document any more.
+        revealCaretAfterFlush = false
+        syncCaretsFromEditor()
+      }
       onResult(applied)
     }
   }
@@ -717,7 +743,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // A command is waiting to read the selection `selectForHostCommand` put there. Pushing the
     // carets now would replace it with a collapsed caret and the command would act on the wrong
     // range - see `selectForHostCommand`. The host flushes again once the command has landed.
-    if (selectionHandedToHostCommand) return
+    if (selectionHandedToHostCommand) {
+      // Dropped rather than carried over, because a request to reveal has no way to wait: every
+      // keystroke flushes every editor, so a reveal left armed here would fire from a key typed in
+      // another tab and scroll this one, whose caret has not moved since.
+      revealCaretAfterFlush = false
+      return
+    }
 
     // Primary first, because that is where VS Code takes its own primary from - `selections[0]`.
     // With a block drawn downwards the primary is the *last* caret in the document, and pushing
@@ -741,6 +773,10 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // VS Code takes it from.
     nativeEditor.selections = selections.toTypedArray()
     pushedSelections = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
+    if (revealCaretAfterFlush) {
+      revealCaretAfterFlush = false
+      revealPrimaryCaret()
+    }
     revealCaretColumn()
   }
 

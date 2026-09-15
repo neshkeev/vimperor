@@ -130,11 +130,34 @@ internal val VsCodeEditor.screenTopLine: Int
 internal val VsCodeEditor.screenHeight: Int
   get() {
     val reported = max(1, reportedBottomLine - reportedTopLine + 1)
-    val onlyAFloor = reportedBottomLine >= lineCount() - 1 || viewportIsStale
+    val onlyAFloor = reportedBottomLine >= paintedLastLine || viewportIsStale
     val height = if (onlyAFloor) max(reported, knownScreenHeight ?: 0) else reported
     knownScreenHeight = height
+    // Whether that number is the window's height or merely a floor under it, which is what
+    // [VsCodeScrollGroup.scrollCaretIntoView] cannot decide a downward scroll without.
+    //
+    // A clipped report makes it a floor even when [knownScreenHeight] is larger, and that is the
+    // case worth keeping: what is remembered can be too large as well as too small - a window
+    // shortened by opening a panel while the view sat at the end of the file goes on reporting
+    // clipped ranges, so nothing ever lowers it. Where the remembered height *is* right, the caret
+    // is inside the window and `scrollCaretIntoView` has returned before asking this.
+    screenHeightIsFloor = onlyAFloor
     return height
   }
+
+/**
+ * The last line of the document `visibleRanges` was describing, which is not always this one.
+ *
+ * The engine edits its buffer and asks to be scrolled in the same keystroke, and the editor is
+ * written to afterwards - so in between, `lineCount()` counts a line VS Code has not been told
+ * about. Asking the *native* document instead is what keeps "the report stops at the end of the
+ * text" a question about the text the report was made against: `o` on the last line of a
+ * hundred-line file grew the buffer to 104 lines, and a report of `89..102` that had been clipped
+ * to the end a moment ago stopped looking clipped, so a floor of fourteen lines was taken for the
+ * window's height and the view scrolled away from a screen half full of blank space.
+ */
+private val VsCodeEditor.paintedLastLine: Int
+  get() = max(0, nativeEditor.document.lineCount - 1)
 
 /**
  * The last line on screen, derived from the top and the height.
@@ -326,6 +349,22 @@ internal object VsCodeScrollGroup : VimScrollGroup {
     val top = vsCode.screenTopLine
     val height = vsCode.screenHeight
     if (position.line >= top && position.line <= top + height - 1) return
+
+    // Below the window, as far as a floor can tell - and when the height is only a floor that is not
+    // far enough. VS Code clips `visibleRanges` to the text, so a window with blank space under the
+    // last line reports only the lines it has: forty rows over a file ending at line 102 report
+    // `89..102`, and so do fourteen. `o` on that last line puts the caret one line further down, and
+    // on the floor's arithmetic it is off screen in both - while in the first it has half a window
+    // of room. This was reported as the file scrolling up for no reason.
+    //
+    // Nothing an extension can read separates those two windows, so the answer is not a better
+    // number: it is to let the editor decide. A reveal after the flush scrolls the minimum, or not at
+    // all, against the document and caret VS Code has by then - which is also why it waits for the
+    // flush, since right now the line the caret is on does not exist in the editor yet.
+    if (position.line > top + height - 1 && vsCode.screenHeightIsFloor) {
+      vsCode.revealCaretAfterFlush = true
+      return
+    }
 
     val minimal = if (position.line < top) position.line else position.line - height + 1
     if (abs(minimal - top) >= height) {

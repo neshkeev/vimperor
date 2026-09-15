@@ -230,6 +230,41 @@ class VsCodeScrollTest {
     assertEquals(20, session.caretLine)
   }
 
+  /**
+   * `o` on the last line, with blank space below it - reported as scrolling the file up for no reason.
+   *
+   * VS Code clips `visibleRanges` to the text, so a forty-line window over a file that ends at line
+   * 102 reports 89..102 and a fourteen-line window reports exactly the same thing. The height read
+   * off that report is a floor and not the truth, and `o` adds a line *below* it: on the floor's
+   * arithmetic the new line is off screen and the view has to move, while in the window there is
+   * half a screen of room under it.
+   *
+   * The two tests below are the same keystroke over the same file, and they differ only in a height
+   * this host cannot read. Nothing but VS Code can tell them apart, which is why the answer is a
+   * reveal rather than a number.
+   */
+  @Test
+  fun `test o on the last line does not scroll when the window has room below it`() {
+    val session = Session(lines = 103, caretLine = 102, height = 40)
+    session.scrollTo(89)
+
+    session.type("o")
+
+    assertEquals(89, session.top, "the new line is drawn in the space below; nothing needed scrolling")
+    assertEquals(103, session.caretLine)
+  }
+
+  @Test
+  fun `test o on the last line of a full window scrolls by one`() {
+    val session = Session(lines = 103, caretLine = 102, height = 14)
+    session.scrollTo(89)
+
+    session.type("o")
+
+    assertEquals(90, session.top, "the window was full, so the new line needs the view moved")
+    assertEquals(103, session.caretLine)
+  }
+
   @Test
   fun `test zz centres the caret line`() {
     val session = Session(caretLine = 20)
