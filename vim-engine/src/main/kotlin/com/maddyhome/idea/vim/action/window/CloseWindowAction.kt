@@ -17,9 +17,15 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 
 /**
+ * `<C-W>c`, and `<C-W>q` beside it.
+ *
+ * Vim spells the second as `:quit` and the first as `:close`, and the two differ only over the last
+ * window, which `:close` refuses to close. Both close the current window here, as they do in IdeaVim
+ * since VIM-4324 - where `<C-W>q` had been missing, so the `q` fell through and did nothing.
+ *
  * @author rasendubi
  */
-@CommandOrMotion(keys = ["<C-W>c"], modes = [Mode.NORMAL])
+@CommandOrMotion(keys = ["<C-W>c", "<C-W>q"], modes = [Mode.NORMAL])
 class CloseWindowAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

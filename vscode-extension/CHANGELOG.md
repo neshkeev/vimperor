@@ -11,6 +11,7 @@ The Marketplace renders this file on the extension's page, under Changelog.
   looks exactly like a window with no room left, and the new line looked off screen in both. Where
   the two cannot be told apart, Vimperor now asks VS Code to bring the caret into view, which scrolls
   by the minimum, or not at all.
+- `<C-W>q` did nothing. It closes the window now, as `<C-W>c` does.
 
 
 ## [0.0.4] - 2026-09-11
