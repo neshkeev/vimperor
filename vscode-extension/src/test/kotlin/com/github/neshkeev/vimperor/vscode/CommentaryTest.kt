@@ -33,8 +33,8 @@ import kotlin.test.assertTrue
 class CommentaryTest {
 
   /** A VS Code whose commands land when the test says so, and which comments when they do. */
-  private class Session(text: String) {
-    val fake = FakeEditor(text)
+  private class Session(text: String, path: String = "/test/buffer.txt") {
+    val fake = FakeEditor(text, path = path)
     val dispatched: MutableList<String> = mutableListOf()
     private val callbacks: MutableList<(Boolean) -> Unit> = mutableListOf()
 
@@ -231,5 +231,40 @@ class CommentaryTest {
 
   private companion object {
     const val PREFIX = "// "
+  }
+
+  // ---- g:commentary_block_comments -------------------------------------------------------------
+
+  /** A characterwise motion asks for a block comment, which is what lets `gciw` comment out one word. */
+  @Test
+  fun `test gc over a word asks for a block comment`() {
+    val session = Session("one two\n", path = "/test/commentary-block.txt")
+
+    session.type("gciw")
+
+    assertEquals(listOf("editor.action.blockComment"), session.dispatched)
+  }
+
+  /** vim-commentary's own behaviour, back on request: whole lines, whatever the motion covered. */
+  @Test
+  fun `test with block comments off gc over a word comments the line`() {
+    val session = Session("one two\n", path = "/test/commentary-block.txt")
+    session.ex("let g:commentary_block_comments = 0")
+
+    session.type("gciw")
+
+    assertEquals(listOf("editor.action.commentLine"), session.dispatched)
+  }
+
+  /** Read when it is used, so turning it back on needs no reload. */
+  @Test
+  fun `test setting block comments back on takes effect straight away`() {
+    val session = Session("one two\n", path = "/test/commentary-block.txt")
+    session.ex("let g:commentary_block_comments = 0")
+    session.ex("let g:commentary_block_comments = 1")
+
+    session.type("gciw")
+
+    assertEquals(listOf("editor.action.blockComment"), session.dispatched)
   }
 }

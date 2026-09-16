@@ -251,6 +251,9 @@ https://github.com/tpope/vim-commentary/blob/master/doc/commentary.txt
 Comments use the syntax VS Code knows for the file's language, the same as its own *Toggle Line Comment*.
 `gc` as a text object in operator-pending mode (`dgc`) needs a syntax tree and does nothing.
 
+Unlike vim-commentary, Vimperor uses a block comment when the range is not linewise, so `gciw` can
+comment out a single word. Set `let g:commentary_block_comments = 0` to always comment whole lines.
+
 </details>
 
 <details>

@@ -71,7 +71,7 @@ public object Util {
     resetCaret: Boolean = true,
   ): Boolean {
     val caretOffset = if (resetCaret) range.startOffset else null
-    if (selectionType !== SelectionType.LINE_WISE) {
+    if (selectionType !== SelectionType.LINE_WISE && areBlockCommentsEnabled()) {
       return injector.commentService.toggleBlockComment(editor, context, range, caretOffset)
     }
     val startLine = editor.offsetToBufferPosition(range.startOffset).line
@@ -82,6 +82,19 @@ public object Util {
     }
     return injector.commentService.toggleLineComment(editor, context, startLine, endLine, caretOffset)
   }
+
+  /**
+   * `g:commentary_block_comments`, on unless a config sets it to 0.
+   *
+   * vim-commentary comments whole lines whatever the motion covered. IdeaVim - and so this port -
+   * uses a block comment for a range that is not linewise instead, so that `gciw` can comment out a
+   * single argument. `let g:commentary_block_comments = 0` is the original's behaviour back: every
+   * range comments the lines it touches. Read on each use, so setting it takes effect straight away.
+   */
+  private fun areBlockCommentsEnabled(): Boolean =
+    injector.variableService.getGlobalVariableValue(BLOCK_COMMENTS_VARIABLE)?.toVimNumber()?.booleanValue ?: true
+
+  private const val BLOCK_COMMENTS_VARIABLE = "commentary_block_comments"
 }
 
 /** Everything the extension registers. `initApi` is named because the mappings scope needs it. */

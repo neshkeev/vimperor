@@ -4,6 +4,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- `let g:commentary_block_comments = 0` makes `gc` always comment whole lines, as vim-commentary does.
+  By default a range inside a line gets a block comment, so `gciw` comments out a single word.
+
 ### Fixed
 
 - `o` on the last line scrolled the file up, even with half the window empty below it. VS Code
