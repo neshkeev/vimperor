@@ -17,6 +17,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
   the two cannot be told apart, Vimperor now asks VS Code to bring the caret into view, which scrolls
   by the minimum, or not at all.
 - `<C-W>q` did nothing. It closes the window now, as `<C-W>c` does.
+- `<BS>` after `:startreplace` or `:startgreplace` moved back over the typed text without putting back
+  the characters it had replaced, as it does after `R`.
 
 
 ## [0.0.4] - 2026-09-11

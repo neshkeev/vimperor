@@ -126,7 +126,7 @@ data class StartReplaceCommand(val range: Range, val modifier: CommandModifier, 
     if (modifier == CommandModifier.BANG) {
       editor.currentCaret().moveToOffset(injector.motion.moveCaretToCurrentLineEnd(editor, editor.currentCaret()))
     }
-    injector.changeGroup.initInsert(editor, context, Mode.REPLACE)
+    injector.changeGroup.changeReplace(editor, context)
     return ExecutionResult.Success
   }
 }
@@ -151,7 +151,7 @@ data class StartVirtualReplaceCommand(val range: Range, val modifier: CommandMod
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     if (editor.mode is Mode.INSERT || editor.mode is Mode.REPLACE) return ExecutionResult.Success
-    injector.changeGroup.initInsert(editor, context, Mode.REPLACE)
+    injector.changeGroup.changeReplace(editor, context)
     return ExecutionResult.Success
   }
 }

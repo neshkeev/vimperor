@@ -19,6 +19,7 @@ import com.maddyhome.idea.vim.command.MappingMode
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.common.VimEditorReplaceMask
 import com.maddyhome.idea.vim.diagnostic.debug
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.ex.ranges.LineRange
@@ -545,6 +546,18 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       injector.vimState.ctrlXCompletionMode = CtrlXCompletionMode.NONE
       editor.mode = mode
     }
+  }
+
+  /**
+   * Begin Replace mode, the way `R` does - and the way anything else that starts Replace mode has to.
+   *
+   * Entering Replace mode is two things rather than one: the mode, and the replace mask that `<BS>` reads the
+   * overwritten characters back from. `:startreplace` and `:startgreplace` did only the first, so backspacing over
+   * what they had overwritten moved the caret and left the new text where it was.
+   */
+  override fun changeReplace(editor: VimEditor, context: ExecutionContext) {
+    initInsert(editor, context, Mode.REPLACE)
+    editor.replaceMask = VimEditorReplaceMask(editor)
   }
 
   override fun runEnterAction(editor: VimEditor, context: ExecutionContext) {

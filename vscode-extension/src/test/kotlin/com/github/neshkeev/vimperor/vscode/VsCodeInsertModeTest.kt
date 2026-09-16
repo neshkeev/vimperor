@@ -374,4 +374,39 @@ class VsCodeInsertModeTest {
   fun `test enter in select mode replaces the selection`() {
     assertEquals("Lorem ip\num", type("Lorem ipsum", "gh<CR><Esc>", caretOffset = 8))
   }
+
+  // `:startreplace` and `:startgreplace`, which leave the user typing in Replace mode.
+
+  /**
+   * `<BS>` in Replace mode puts back what was overwritten, however Replace mode was entered.
+   *
+   * These two entered it without the replace mask `R` sets up, which is what `<BS>` reads the old
+   * characters back from - so backspacing moved the caret and left the new text behind. IdeaVim
+   * found the same thing when it added `:startreplace` (VIM-2663) and moved the setup into the change
+   * group, where all three now share it.
+   */
+  @Test
+  fun `test backspace after startreplace restores what was overwritten`() {
+    val session = Session("abcdef", 0)
+    session.type(":startreplace<CR>XY<BS><BS><Esc>")
+
+    assertEquals("abcdef", session.fake.document.content)
+  }
+
+  @Test
+  fun `test backspace after startgreplace restores what was overwritten`() {
+    val session = Session("abcdef", 0)
+    session.type(":startgreplace<CR>XY<BS><BS><Esc>")
+
+    assertEquals("abcdef", session.fake.document.content)
+  }
+
+  /** `R`, which always did, and now goes through the same function. */
+  @Test
+  fun `test backspace after R restores what was overwritten`() {
+    val session = Session("abcdef", 0)
+    session.type("RXY<BS><BS><Esc>")
+
+    assertEquals("abcdef", session.fake.document.content)
+  }
 }
