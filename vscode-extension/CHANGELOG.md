@@ -4,6 +4,9 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+
+## [0.0.5] - 2026-09-16
+
 ### Added
 
 - `let g:commentary_block_comments = 0` makes `gc` always comment whole lines, as vim-commentary does.
@@ -27,7 +30,6 @@ The Marketplace renders this file on the extension's page, under Changelog.
   lines. White space you typed yourself is never touched.
 - `cc` on a file's only line lost its indent, `cc` on the last line after an empty line opened the new line
   in the wrong place, and Visual `c` over several lines took the indent of the last line rather than the first.
-
 
 ## [0.0.4] - 2026-09-11
 
