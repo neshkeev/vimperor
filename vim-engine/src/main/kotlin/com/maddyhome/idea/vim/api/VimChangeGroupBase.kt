@@ -94,6 +94,31 @@ abstract class VimChangeGroupBase : VimChangeGroup {
   @JvmField
   protected var processingEscape = false
 
+  /**
+   * Vim's `did_ai`: the indent on the caret's line was inserted automatically and nothing has been typed since, so it
+   * is removed again when Insert mode is left. Only valid for the current insert session
+   */
+  @JvmField
+  protected var didAutoIndent: Boolean = false
+
+  /**
+   * The value [didAutoIndent] gets when the next insert session starts.
+   *
+   * `cc` and `S` insert the indent before Insert mode is entered, so the flag cannot be set directly - [initInsert]
+   * would have to leave it alone, and a session that was never left (the user clicked away, the editor was closed)
+   * would leak the flag into the next one
+   */
+  private var pendingAutoIndent: Boolean = false
+
+  /**
+   * The lines [didAutoIndent] is about. Vim deletes the indent only on the line it was put on; a caret that has moved
+   * to another line by the time Insert mode is left must not take that line's white space - which is the user's
+   */
+  private var autoIndentLines: Set<Int> = emptySet()
+
+  /** The lines [pendingAutoIndent] is about, handed to [autoIndentLines] with it. */
+  private val pendingAutoIndentLines: MutableSet<Int> = mutableSetOf()
+
   override fun setInsertRepeat(lines: Int, column: Int, append: Boolean) {
     repeatLines = lines
     repeatColumn = column
@@ -276,11 +301,18 @@ abstract class VimChangeGroupBase : VimChangeGroup {
           when (stroke) {
             is String -> {
               insertText(editor, caret, stroke)
+              // Replayed typing, which clears `did_ai` the way the typing did
+              didAutoIndent = false
             }
 
             is NativeAction -> {
+              val hadAutoIndent = didAutoIndent
               injector.actionExecutor.executeAction(editor, stroke, context)
               strokes.add(stroke)
+              // A replayed Enter indents the way the original did, and has to be remembered or removed the same way
+              if (stroke == injector.nativeActionManager.enterAction) {
+                onAutoIndentInserted(editor, hadAutoIndent)
+              }
             }
 
             is EditorActionHandlerBase -> {
@@ -383,6 +415,10 @@ abstract class VimChangeGroupBase : VimChangeGroup {
 
   protected inner class VimChangesListener : ChangesListener {
     override fun documentChanged(change: ChangesListener.Change) {
+      // Vim clears `did_ai` for every character that is inserted (`insertchar()` in edit.c). Going by document changes
+      // instead of typed keys also covers text that the host inserts for us, e.g. a completion
+      didAutoIndent = false
+
       val newFragment = change.newFragment
       val oldFragment = change.oldFragment
       val newFragmentLength = newFragment.length
@@ -508,6 +544,11 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       return
     }
 
+    didAutoIndent = pendingAutoIndent
+    autoIndentLines = pendingAutoIndentLines.toSet()
+    pendingAutoIndent = false
+    pendingAutoIndentLines.clear()
+
     val state = injector.vimState
     injector.application.runReadAction {
       for (caret in editor.nativeCarets()) {
@@ -526,6 +567,12 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       if (mode == Mode.REPLACE) {
         editor.insertMode = true
       }
+      // A repeat leaves Insert mode without passing through `processEscape`, so the indent a replayed `o` or `cc` put
+      // there is taken back here instead - or `.` after `o<Esc>` would leave the white space `o<Esc>` did not
+      if (didAutoIndent) {
+        removeAutoIndent(editor)
+      }
+      clearAutoIndent()
       editor.mode = Mode.NORMAL()
     } else {
       lastInsert = cmd
@@ -651,11 +698,162 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       if (editor.mode is Mode.INSERT) {
         updateLastInsertedTextRegister()
       }
+      if (didAutoIndent) {
+        removeAutoIndent(editor)
+      }
 
       // The change pos '.' mark is the offset AFTER processing escape, and after switching to overtype
       markGroup.setMark(editor, MARK_CHANGE_POS)
       editor.mode = Mode.NORMAL()
+      clearAutoIndent()
     }
+  }
+
+  private fun clearAutoIndent() {
+    didAutoIndent = false
+    pendingAutoIndent = false
+    autoIndentLines = emptySet()
+    pendingAutoIndentLines.clear()
+  }
+
+  override fun autoIndentInserted(editor: VimEditor) = onAutoIndentInserted(editor)
+
+  /**
+   * Handles the indent that the host has just inserted for a new line, for `o`, `O` or Enter in Insert mode.
+   *
+   * With 'autoindent' on, the indent is remembered so that it can be removed again if the user leaves Insert mode
+   * without typing anything. With 'autoindent' off, Vim does not indent the new line at all, so the indent that the host
+   * has inserted is removed right away.
+   */
+  /**
+   * [leftAutoIndent] is whether the line the Enter left still held only its automatic indent, read before the Enter ran:
+   * the Enter's own insertion reaches [VimChangesListener], which clears [didAutoIndent] before this is called
+   */
+  private fun onAutoIndentInserted(editor: VimEditor, leftAutoIndent: Boolean = didAutoIndent) {
+    // Only inside an insert session. The `o` action tells the change group again after a `.` has already replayed it
+    // and gone back to Normal mode - by then the replayed Enter has dealt with the indent, and the line holds the
+    // replayed text. A flag set then would be picked up by the next insert, and with 'noautoindent' the removal below
+    // took white space the user had typed
+    if (editor.mode !is Mode.INSERT && editor.mode !is Mode.REPLACE) return
+    val autoIndent = injector.options(editor).autoindent
+    if (!autoIndent) {
+      didAutoIndent = false
+      removeIndentOfCaretLines(editor)
+      return
+    }
+    // Vim's `trunc_line` (`open_line()` in change.c): an Enter on a line that still holds nothing but its automatic
+    // indent empties that line on the way down. Without it only the last of `3o<Esc>`, `o<CR><Esc>` or
+    // `A<CR><CR>x` came out empty
+    if (leftAutoIndent) {
+      removeAutoIndentAboveCarets(editor)
+    }
+    didAutoIndent = true
+    autoIndentLines = caretLines(editor)
+  }
+
+  /**
+   * Empties the line above each caret when it is one [didAutoIndent] was about and it holds nothing but white space -
+   * the line an Enter has just left. Both conditions, so that a line of the user's own white space is never taken
+   */
+  private fun removeAutoIndentAboveCarets(editor: VimEditor) {
+    val ranges = injector.application.runReadAction {
+      val text = editor.text()
+      editor.nativeCarets().mapNotNull { caret ->
+        val line = editor.offsetToBufferPosition(caret.offset).line - 1
+        if (line < 0 || line !in autoIndentLines) return@mapNotNull null
+        val start = editor.getLineStartOffset(line)
+        val end = editor.getLineEndOffset(line)
+        if (start == end || (start until end).any { !isWhiteSpace(text[it]) }) null else TextRange(start, end)
+      }
+    }
+    deleteRanges(editor, ranges, "Remove auto indent")
+  }
+
+  private fun caretLines(editor: VimEditor): Set<Int> =
+    editor.nativeCarets().map { editor.offsetToBufferPosition(it.offset).line }.toSet()
+
+  private fun removeIndentOfCaretLines(editor: VimEditor) {
+    val ranges = injector.application.runReadAction {
+      editor.nativeCarets().mapNotNull { caret ->
+        val line = editor.offsetToBufferPosition(caret.offset).line
+        val lineStart = editor.getLineStartOffset(line)
+        val firstNonBlank = injector.motion.moveCaretToLineStartSkipLeading(editor, line)
+        if (firstNonBlank == lineStart) null else TextRange(lineStart, firstNonBlank)
+      }
+    }
+    deleteRanges(editor, ranges, "Remove indent")
+  }
+
+  /**
+   * Removes the indent that was inserted automatically for `cc`, `S`, `o`, `O` or Enter in Insert mode.
+   *
+   * Vim remembers such an indent in `did_ai` and, when Insert mode is left without anything being typed, deletes the
+   * white space at the end of the line again, leaving the line completely empty. Typing a character clears the flag, so
+   * white space typed by the user is never touched. See `stop_insert()` in Vim's edit.c and `:help 'autoindent'`.
+   *
+   * Like Vim, this only applies when the insert ended at the end of the line. `i<CR><Esc>` in the middle of a line keeps
+   * the indent of the new line, because the text after the caret is not white space.
+   */
+  private fun removeAutoIndent(editor: VimEditor) {
+    val ranges = injector.application.runReadAction {
+      val text = editor.text()
+      editor.nativeCarets()
+        .filter { caret -> editor.offsetToBufferPosition(caret.offset).line in autoIndentLines }
+        .mapNotNull { caret -> getAutoIndentRange(editor, text, caret.offset) }
+    }
+    deleteRanges(editor, ranges, "Remove auto indent")
+  }
+
+  /**
+   * The white space to delete for a caret that is leaving Insert mode, or null if there is nothing to delete.
+   *
+   * Vim looks at the character the insert ended on, stepping back one if that is the end of the line, and then deletes
+   * white space until it hits something else. This means the run of white space around that character is removed, and
+   * that a non-blank character at the insert position stops the whole thing.
+   */
+  private fun getAutoIndentRange(editor: VimEditor, text: CharSequence, offset: Int): TextRange? {
+    val lineStart = editor.getLineStartForOffset(offset)
+    val lineEnd = editor.getLineEndForOffset(offset)
+    var position = offset.coerceAtMost(lineEnd)
+    if (position == lineEnd) position--
+    if (position < lineStart || !isWhiteSpace(text[position])) return null
+    var start = position
+    while (start > lineStart && isWhiteSpace(text[start - 1])) start--
+    // An automatically inserted indent always starts at the beginning of the line. Vim gets this for free, because
+    // `did_ai` can only be set while the line holds nothing but that indent, but our flag is less precise, and eating
+    // the white space between two words would be much worse than leaving an indent behind
+    if (start != lineStart) return null
+    var end = position + 1
+    while (end < lineEnd && isWhiteSpace(text[end])) end++
+    // And it runs to the end of the line. `<Esc>` has stepped the caret back one by the time this looks, so after
+    // `i<CR><Esc>` in the middle of a line the caret is on the last space of the new line's indent, not on the text
+    // after it - and the start alone cannot tell that line from one holding nothing but the indent. Vim looks at where
+    // the insert ended instead, which is the same answer
+    if (end != lineEnd) return null
+    return TextRange(start, end)
+  }
+
+  private fun isWhiteSpace(char: Char) = char == ' ' || char == '\t'
+
+  /**
+   * Deletes the given ranges as a single change.
+   *
+   * Insert mode can also be left from outside the key handler (e.g. by an autocommand), so there is no guarantee that
+   * this runs inside a command already. Opening one is always correct: nested commands are merged into the outer one.
+   */
+  private fun deleteRanges(editor: VimEditor, ranges: List<TextRange>, name: String) {
+    if (ranges.isEmpty()) return
+    injector.actionExecutor.executeCommand(
+      editor,
+      {
+        injector.application.runWriteAction {
+          // Delete from the end of the document, so that the offsets of the remaining ranges stay valid
+          ranges.distinct().sortedByDescending { it.startOffset }.forEach { editor.deleteString(it) }
+        }
+      },
+      name,
+      null,
+    )
   }
 
   // processing escape might be entered from multiple places at once but we don't wont to repeat it.
@@ -693,6 +891,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
    * @param context The data context
    */
   override fun processEnter(editor: VimEditor, context: ExecutionContext) {
+    val hadAutoIndent = didAutoIndent
     if (editor.mode is Mode.REPLACE) {
       editor.insertMode = true
     }
@@ -707,6 +906,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       editor.insertMode = false
       editor.replaceMask?.recordLineBreakAtCaret()
     }
+    onAutoIndentInserted(editor, hadAutoIndent)
   }
 
   /**
@@ -843,6 +1043,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       editor.replaceMask?.recordTypedCharacterAtCaret()
       processResultBuilder.addExecutionStep { _, e, c ->
         type(e, c, key.keyChar)
+        didAutoIndent = false
       }
       return true
     } else if (key.keyCode == injector.parser.plugKeyStroke.keyCode || key.keyCode == injector.parser.actionKeyStroke.keyCode) {
@@ -850,6 +1051,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       // Insert or Select mode, we need to replace it with the name of the key as text.
       processResultBuilder.addExecutionStep { _, e, c ->
         type(e, c, injector.parser.toKeyNotation(key))
+        didAutoIndent = false
       }
       return true
     }
@@ -859,6 +1061,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       editor.replaceMask?.recordTypedCharacterAtCaret()
       processResultBuilder.addExecutionStep { _, e, c ->
         type(e, c, ' ')
+        didAutoIndent = false
       }
       return true
     }
@@ -1444,19 +1647,40 @@ abstract class VimChangeGroupBase : VimChangeGroup {
       }
     }
     val after = range.endOffset >= editor.fileSize()
-    val lp = editor.offsetToBufferPosition(injector.motion.moveCaretToCurrentLineStartSkipLeading(editor, caret))
+    // Where the new line opens depends on which newline the delete takes, and that is asked of the range before the
+    // delete rather than of the buffer after it. A range that ends with its own newline takes that one, and the next
+    // line moves up into its place, so the new line opens above it. A range with no newline at its end - the last line
+    // of a file without a trailing newline, or the empty line after one that has - takes the newline before it, so the
+    // new line opens below the line that is now last. The buffer afterwards cannot tell these apart once lines are
+    // empty: `cc<Esc>` leaves exactly such lines, and `.` on the line after one used to empty the whole buffer, or open
+    // the new line above the wrong one
+    val rangeEndsWithNewLine = range.endOffset > range.startOffset && editor.text().getOrNull(range.endOffset - 1) == '\n'
+    val wholeBuffer = range.startOffset == 0 && after && !rangeEndsWithNewLine
+    // The indent of the first line changed, which is the one Vim keeps. Not the caret's: after a Visual selection made
+    // downwards the caret is on the last line, and `jVjc` took the indent of the wrong one
+    val firstLine = editor.offsetToBufferPosition(range.startOffset).line
+    val lp = editor.offsetToBufferPosition(injector.motion.moveCaretToLineStartSkipLeading(editor, firstLine))
     val res = deleteRange(editor, context, caret, range, type, true)
     val updatedCaret = editor.findLastVersionOfCaret(caret) ?: caret
     if (res) {
       if (type === SelectionType.LINE_WISE) {
-        // Please don't use `getDocument().getText().isEmpty()` because it converts CharSequence into String
-        if (editor.fileSize() == 0L) {
-          insertBeforeCaret(editor, context)
-        } else if (after && !editor.endsWithNewLine()) {
-          insertNewLineBelow(editor, updatedCaret, lp.column)
+        // With 'autoindent' off, Vim does not keep the indent of the changed line, but puts the caret in column 0
+        // (`beginline(0)` in `op_delete()`, ops.c)
+        val autoIndent = injector.options(editor).autoindent
+        val indentColumn = if (autoIndent) lp.column else 0
+        if (wholeBuffer) {
+          // Every line went, so there is no line to open another beside: the buffer is one empty line, and the indent
+          // goes on it. This used to be `insertBeforeCaret`, which lost the indent
+          val indent = editor.createIndentBySize(indentColumn)
+          editor.vimChangeActionSwitchMode = Mode.INSERT
+          if (indent.isNotEmpty()) insertText(editor, updatedCaret, indent)
+        } else if (after && !rangeEndsWithNewLine) {
+          insertNewLineBelow(editor, updatedCaret, indentColumn)
         } else {
-          insertNewLineAbove(editor, updatedCaret, lp.column)
+          insertNewLineAbove(editor, updatedCaret, indentColumn)
         }
+        pendingAutoIndent = autoIndent
+        pendingAutoIndentLines += caretLines(editor)
       } else {
         if (type === SelectionType.BLOCK_WISE) {
           setInsertRepeat(lines, col, false)

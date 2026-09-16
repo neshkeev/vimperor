@@ -48,6 +48,15 @@ interface VimChangeGroup {
   fun changeReplace(editor: VimEditor, context: ExecutionContext)
 
   /**
+   * The host has just indented a new line for every caret, for `o` or `O`, and each caret is on its new line.
+   *
+   * Called by the action once the carets are where they will be typed at, rather than from inside the Enter action:
+   * `O` on the first line runs Enter on the line it pushes down and only then moves the caret up, so the indent to
+   * remember - or with 'noautoindent', to remove - is not on the line the caret was on when Enter finished.
+   */
+  fun autoIndentInserted(editor: VimEditor)
+
+  /**
    * Enter Insert mode for block selection.
    *
    * Given a [TextRange] representing a block selection, position the primary caret either at the start column of the

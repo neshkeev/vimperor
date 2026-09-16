@@ -8,6 +8,11 @@ Every effort is made to make these options compatible with Vim behaviour.
 However, some differences are inevitable.
 
 ```
+'autoindent'    'ai'    Copy indent from the current line when starting a new
+                        line with o, O or <CR>, and keep it for cc and S. On by
+                        default, unlike Vim. Leaving Insert mode without typing
+                        anything on the line removes the indent again. When off,
+                        the new line starts in column 0
 'clipboard'     'cb'    Defines clipboard behavior
         A comma-separated list of words to control clipboard behaviour:
            unnamed      The clipboard register '*' is used instead of the

@@ -196,7 +196,6 @@ internal object VsCodeOptions {
   val textwidth: NumberOption = UnsignedNumberOption("textwidth", LOCAL_TO_BUFFER, "tw", 0)
   val wrapmargin: NumberOption = UnsignedNumberOption("wrapmargin", LOCAL_TO_BUFFER, "wm", 0)
 
-  val autoindent: ToggleOption = ToggleOption("autoindent", LOCAL_TO_BUFFER, "ai", false)
   val smartindent: ToggleOption = ToggleOption("smartindent", LOCAL_TO_BUFFER, "si", false)
   val smarttab: ToggleOption = ToggleOption("smarttab", GLOBAL, "sta", false)
 
@@ -366,7 +365,6 @@ internal object VsCodeOptions {
     tabstop,
     shiftwidth,
     softtabstop,
-    autoindent,
     smartindent,
     smarttab,
     foldmethod,

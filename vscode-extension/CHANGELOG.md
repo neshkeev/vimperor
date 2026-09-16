@@ -8,6 +8,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 - `let g:commentary_block_comments = 0` makes `gc` always comment whole lines, as vim-commentary does.
   By default a range inside a line gets a block comment, so `gciw` comments out a single word.
+- `'autoindent'` (`'ai'`), on by default. With it off, `o`, `O`, Enter, `cc` and `S` start the new line in
+  column 0.
 
 ### Fixed
 
@@ -19,6 +21,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
 - `<C-W>q` did nothing. It closes the window now, as `<C-W>c` does.
 - `<BS>` after `:startreplace` or `:startgreplace` moved back over the typed text without putting back
   the characters it had replaced, as it does after `R`.
+- `o<Esc>`, `O<Esc>`, `cc<Esc>`, `S<Esc>` and Enter then `<Esc>` left the new line holding nothing but its
+  indent - trailing white space on every press. As in Vim, an indent you typed nothing after is taken back when
+  you leave Insert mode, and a line you press Enter on again comes out empty, so `3o<Esc>` opens three empty
+  lines. White space you typed yourself is never touched.
+- `cc` on a file's only line lost its indent, `cc` on the last line after an empty line opened the new line
+  in the wrong place, and Visual `c` over several lines took the indent of the last line rather than the first.
 
 
 ## [0.0.4] - 2026-09-11

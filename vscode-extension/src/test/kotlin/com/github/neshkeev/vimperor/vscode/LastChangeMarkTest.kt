@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,6 +35,10 @@ class LastChangeMarkTest {
 
     init {
       KeyHandler.getInstance().fullReset(host.editorFor(fake))
+      // The change list is engine state that outlives an injector, and every editor in this host shares
+      // one project - so without this, `999g;` walked to the oldest change any earlier test class had made.
+      // It passed or failed by how many edits the suite happened to make before this class ran.
+      VimChangeList.reset()
     }
 
     fun type(text: String) = text.forEach { host.type(fake, it.toString()) }

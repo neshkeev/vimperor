@@ -976,7 +976,7 @@ class VsCodeOptionsTest {
      * Names and abbreviations together, because either colliding is the same accident.
      */
     const val ENGINE_OPTIONS = """
-      clipboard cb cmdheight ch comments com digraph dg foldlevel fdl gdefault gd guicursor gcr
+      autoindent ai clipboard cb cmdheight ch comments com digraph dg foldlevel fdl gdefault gd guicursor gcr
       history hi hlsearch hls ideastrictmode ideatracetime ignorecase ic iminsert imi inccommand icm
       incsearch is isfname isf iskeyword isk keyboardlayout kbl keymap kmp keymodel km langmap lmap
       langnoremap lnr
@@ -993,7 +993,7 @@ class VsCodeOptionsTest {
       "ide", "ideastatusicon", "ideawrite",
       "relativenumber", "wrap", "linebreak", "list", "cursorline", "cursorcolumn", "breakindent",
       "colorcolumn", "signcolumn", "numberwidth", "conceallevel", "textwidth", "wrapmargin",
-      "expandtab", "tabstop", "shiftwidth", "softtabstop", "autoindent", "smartindent", "smarttab",
+      "expandtab", "tabstop", "shiftwidth", "softtabstop", "smartindent", "smarttab",
       "foldmethod", "foldenable", "foldcolumn", "encoding", "fileencoding", "fileformat",
       "fileformats", "swapfile", "backup", "writebackup", "undofile", "undodir", "autoread",
       "autowrite", "hidden", "modeline", "title", "ruler", "laststatus", "showtabline",

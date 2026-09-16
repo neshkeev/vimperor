@@ -353,20 +353,24 @@ class VsCodeInsertModeTest {
    * Six of IdeaVim's fixtures say so, and they were invisible until the harness learned to read a
    * method that binds its text before calling `doTest`.
    */
+  // Each types a character before leaving, because an indent with nothing after it is exactly what
+  // Vim takes back on `<Esc>` - see `AutoIndentTest`. These asserted `o<Esc>` left it in place, which
+  // was the behaviour that was wrong.
+
   @Test
   fun `test o keeps the indent of the line it opened from`() {
-    assertEquals("    one\n    \n    two", type("    one\n    two", "o<Esc>", caretOffset = 4))
+    assertEquals("    one\n    x\n    two", type("    one\n    two", "ox<Esc>", caretOffset = 4))
   }
 
   @Test
   fun `test O keeps the indent of the line above`() {
-    assertEquals("    one\n    \n    two", type("    one\n    two", "O<Esc>", caretOffset = 12))
+    assertEquals("    one\n    x\n    two", type("    one\n    two", "Ox<Esc>", caretOffset = 12))
   }
 
   /** On the first line there is no line above, so `O` matches the line it is pushing down. */
   @Test
   fun `test O on the first line keeps that line's indent`() {
-    assertEquals("    \n    one", type("    one", "O<Esc>", caretOffset = 4))
+    assertEquals("    x\n    one", type("    one", "Ox<Esc>", caretOffset = 4))
   }
 
   /** Enter in Select mode replaces the selection rather than pushing it along. */
