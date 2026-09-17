@@ -651,6 +651,59 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * The memory of a write expires, because the setting it describes is shared.
+   *
+   * `editor.wordWrap` is one setting for every window, so a `:set nowrap` on another file of the same
+   * language moves it underneath this editor. A memory with no expiry then refuses to write the value
+   * it believes is already there, and `:set wrap` does nothing in that tab for as long as it is open -
+   * which is how this was reported from a real window.
+   */
+  @Test
+  fun `test the memory of a write expires, so a setting moved underneath is written again`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      val editor = session.host.editorFor(session.fake)
+      session.run("set wrap")
+      // As another window would leave it.
+      js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'off' } }")
+      forget()
+
+      session.host.key(session.fake, "<Esc>")
+      assertEquals(emptyList(), writes(), "still fresh: the configuration is given time to catch up")
+
+      editor.wroteWordWrapAt = 0
+      session.host.key(session.fake, "<Esc>")
+      assertEquals(listOf("wordWrap=on"), writes(), "once it has had that time, Vim's answer is written again")
+    } finally {
+      js("delete require('vscode').workspace.languageConfiguration.plaintext")
+      reset()
+    }
+  }
+
+  /** What the wrap decided reaches the keystroke trace, which is the only way to see it in a window. */
+  @Test
+  fun `test the wrap writes a line into the trace`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+
+      session.run("set wrap")
+
+      val traced = session.host.describeState(session.fake)
+      assertTrue(traced.contains("wrap: writing wordWrap=on"), "the write should be traced, got: $traced")
+      assertTrue(traced.contains("[plaintext]"), "with the language block it went into, got: $traced")
+      assertEquals(
+        session.host.describeState(session.fake).contains("wrap:"),
+        false,
+        "and drained, so the next key does not repeat it",
+      )
+    } finally {
+      reset()
+    }
+  }
+
   /** And it is written where it can be read back, so the option and the editor cannot drift. */
   @Test
   fun `test the wrap that was written is the wrap that is read`() {

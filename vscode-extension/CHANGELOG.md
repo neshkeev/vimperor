@@ -17,6 +17,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `:set wrap` could do nothing in one tab, for as long as that tab stayed open. `editor.wordWrap` is one
+  setting for every window, so turning the wrap off on another file of the same language moved it
+  underneath - and Vimperor refused to write a value it remembered writing, however long ago. The
+  memory now expires after two seconds. With `vimperor.trace` on, what the wrap read, wrote and where
+  it wrote it now reaches the trace.
 - With `nowrap`, scrolling the window sideways with the mouse and then pressing `j`, `zt`, `zz`, `zb` or
   any other key that moves the caret or scrolls left the caret off screen. In Normal, Visual and
   Select mode the caret is now brought into view on both axes the way VS Code brings a clicked cursor

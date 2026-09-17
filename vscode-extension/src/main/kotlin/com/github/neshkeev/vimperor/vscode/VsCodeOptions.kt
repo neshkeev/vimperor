@@ -11,6 +11,7 @@ package com.github.neshkeev.vimperor.vscode
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.helper.currentTimeMillis
 import com.maddyhome.idea.vim.api.options
 import com.maddyhome.idea.vim.options.NumberOption
 import com.maddyhome.idea.vim.options.Option
@@ -607,6 +608,9 @@ internal fun watchLineNumbers() {
  * simply works, noisy for anyone who had that flag on for the keystroke trace it is documented as.
  * The caveat is in the extension's README instead, under "What does not".
  */
+/** How long a settings write is given to come back through the configuration before it is written again. */
+private const val WORD_WRAP_WRITE_SETTLES = 2000
+
 internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   val vsCode = editor as? VsCodeEditor ?: return
   val wanted = injector.optionGroup
@@ -623,12 +627,14 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
   // through this option's history - and the remembered write can be of a value the setting no
   // longer holds. Neither is a reason to do nothing when someone typed the command.
   if (asked) {
+    vsCode.trace("wrap: :set said $wanted, the setting says ${setting ?: "nothing"}")
     writeWordWrap(vsCode, wanted, force = true)
     return
   }
   // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
   // file on disk. Only when Vim's answer and the editor's have actually parted company.
   if (wanted == configured) return
+  vsCode.trace("wrap: Vim says $wanted, the setting says ${setting ?: "nothing"}")
   writeWordWrap(vsCode, wanted, force = false)
 }
 
@@ -659,11 +665,21 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
  * certain to be reversible.
  */
 private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolean) {
-  if (!force && editor.wroteWordWrap == wrapping) return
+  val remembered = editor.wroteWordWrap == wrapping &&
+    currentTimeMillis() - editor.wroteWordWrapAt < WORD_WRAP_WRITE_SETTLES
+  if (!force && remembered) {
+    editor.trace("wrap: $wrapping already written, waiting for the configuration to catch up")
+    return
+  }
   editor.wroteWordWrap = wrapping
+  editor.wroteWordWrapAt = currentTimeMillis()
   val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
   val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
+  editor.trace(
+    "wrap: writing ${VsCodeSettings.WORD_WRAP}=$value for [${editor.nativeEditor.document.languageId}] " +
+      "into ${if (inAFolder) "the folder's settings" else "the user's settings"}",
+  )
   try {
     workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
       .update(VsCodeSettings.WORD_WRAP, value, target, /* overrideInLanguage = */ true)
@@ -676,6 +692,10 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
         // the failure this option has already had twice.
         { reason ->
+          // The memory is left where it is rather than cleared, so that the path that runs after
+          // every keystroke does not report the same refusal on every key. An explicit `:set` forces
+          // its way past it and tries again.
+          editor.trace("wrap: the write was refused - $reason")
           injector.messages.showErrorMessage(
             editor,
             "Vimperor could not write ${VsCodeSettings.WORD_WRAP}=$value: $reason",

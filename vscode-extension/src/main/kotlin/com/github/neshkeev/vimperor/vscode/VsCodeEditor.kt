@@ -80,6 +80,32 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   internal var wroteWordWrap: Boolean? = null
 
+  /**
+   * When [wroteWordWrap] was written, so that the memory of it expires.
+   *
+   * It exists to stop the keystroke path writing a settings file again before the configuration has
+   * caught up with the last write, which takes a moment. It used to have no expiry at all, and a
+   * memory that never expires is a memory that can be wrong: the setting it describes is shared, so
+   * a `:set nowrap` in another window on a file of the same language moves it underneath, and this
+   * editor then refuses to write the value it thinks is already there. That is a `:set wrap` that
+   * does nothing, in one tab, for as long as the tab is open.
+   */
+  internal var wroteWordWrapAt: Long = 0
+
+  /** What the wrap decided and why, drained into the trace by `VimHost.describeState`. */
+  internal val wrapLog: MutableList<String> = mutableListOf()
+
+  /**
+   * A line for the keystroke trace, from code with no channel of its own - `'wrap'`, which is written
+   * to a settings file and whose failures are otherwise invisible.
+   *
+   * Capped, and drained by the trace: a host with `vimperor.trace` off never reads it, and a decision
+   * taken between two keystrokes still reaches the line for the second.
+   */
+  internal fun trace(line: String) {
+    if (wrapLog.size < 8) wrapLog += line
+  }
+
   internal var believedTopLine: Int? = null
   internal var lastReportedTopLine: Int? = null
 

@@ -713,7 +713,11 @@ class VimHost(
     val asked = if (editor.scrollLog.isEmpty()) "" else " scrolls=[" + editor.scrollLog.joinToString(" ") + "]"
     editor.scrollLog.clear()
     val believed = editor.believedTopLine?.let { " believedTop=$it" } ?: ""
-    return "${modeName()} carets=[$carets] pushed=[$pushed] view=[$view] of ${editor.lineCount()}$believed$asked"
+    // What the options wrote while the key was being handled, for the ones whose effect is a settings
+    // file rather than anything on this side - see `VsCodeEditor.trace`.
+    val decided = if (editor.wrapLog.isEmpty()) "" else " | " + editor.wrapLog.joinToString(" | ")
+    editor.wrapLog.clear()
+    return "${modeName()} carets=[$carets] pushed=[$pushed] view=[$view] of ${editor.lineCount()}$believed$asked$decided"
   }
 
   /**
