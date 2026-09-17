@@ -4,6 +4,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-09-17
+
 ### Added
 
 - `'sidescrolloff'` (`'siso'`): with `set sidescrolloff=10`, a caret that goes off screen sideways in Normal,

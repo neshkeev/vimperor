@@ -25,7 +25,7 @@ they search — and attaches the `.vsix` to its
 Install one by hand with *Install from VSIX…* in the Extensions view, or from the command line:
 
 ```bash
-codium --install-extension vimperor-0.0.5.vsix   # cursor, windsurf, code-insiders, ...
+codium --install-extension vimperor-0.0.6.vsix   # cursor, windsurf, code-insiders, ...
 ```
 
 Nothing in the extension is specific to VS Code, and `&ide` answers with whichever editor it is in.
