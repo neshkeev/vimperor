@@ -171,6 +171,37 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
     // to intercept - so this makes itself the focused one. See the stub's `commands.handlers`.
     val handlers = js("require('vscode').commands.handlers")
     handlers["editorScroll"] = { args: dynamic -> editorScroll(args) }
+    handlers["_moveTo"] = { args: dynamic -> moveCursor("_moveTo", args) }
+    handlers["_moveToSelect"] = { args: dynamic -> moveCursor("_moveToSelect", args) }
+  }
+
+  /** One `_moveTo` or `_moveToSelect`: the command, and the 0-based position it was sent to. */
+  data class CursorMove(val command: String, val line: Int, val character: Int, val source: String?)
+
+  /** Every cursor command, in order - the host's way of revealing the caret like a click. */
+  val cursorMoves: MutableList<CursorMove> = mutableListOf()
+
+  /** The column counts of every sideways `editorScroll`, negative for left. */
+  val horizontalScrolls: MutableList<Int> = mutableListOf()
+
+  /**
+   * VS Code's `_moveTo`, as far as the view goes: the minimal reveal of the line, with no padding.
+   *
+   * The cursor is not moved - the host writes `selections` itself, before and after - and the reveal
+   * only happens when the cursor would have moved, which here is whenever the position differs from
+   * the primary selection's active end.
+   */
+  private fun moveCursor(command: String, args: dynamic) {
+    val line = (args.position.lineNumber as Int) - 1
+    val character = (args.position.column as Int) - 1
+    cursorMoves += CursorMove(command, line, character, args.source as String?)
+    val current = scrollTop
+    val newTop = when {
+      line < current -> line
+      line > current + viewportHeight - 1 -> line - viewportHeight + 1
+      else -> return
+    }.coerceIn(0, lastLine)
+    if (revealsTakeEffectImmediately) topLine = newTop else pendingTopLine = newTop
   }
 
   /**
@@ -180,6 +211,11 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
    */
   private fun editorScroll(args: dynamic) {
     val value = args.value as Int
+    val to = args.to as String
+    if (to == "left" || to == "right") {
+      horizontalScrolls += if (to == "left") -value else value
+      return
+    }
     val signed = if (args.to as String == "up") -value else value
     val newTop = (scrollTop + signed).coerceIn(0, lastLine)
     scrolls += newTop

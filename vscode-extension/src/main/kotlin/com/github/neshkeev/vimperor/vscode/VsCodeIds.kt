@@ -206,6 +206,16 @@ internal object VsCodeCommands {
    */
   const val EDITOR_SCROLL = "editorScroll"
 
+  /**
+   * What a click in the text runs: the cursor to `{position}`, then the minimal reveal of it. Internal
+   * to VS Code - the underscore - and in its core commands since 2017. See
+   * `VsCodeEditor.revealLikeAClick` for why a Vim caret is revealed with it.
+   */
+  const val MOVE_CURSOR = "_moveTo"
+
+  /** The same, extending the selection from its anchor - a drag. */
+  const val MOVE_CURSOR_SELECTING = "_moveToSelect"
+
   /** `:e file`. One of the few built-ins that takes an argument, which is why the runner carries one. */
   const val OPEN = "vscode.open"
 
@@ -291,6 +301,8 @@ internal object VsCodeCommands {
     listOf("First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth")
 
   val all: List<String> = listOf(
+    MOVE_CURSOR,
+    MOVE_CURSOR_SELECTING,
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,

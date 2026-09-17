@@ -25,6 +25,7 @@ import com.maddyhome.idea.vim.api.VimVirtualFile
 import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.api.lineLength
 import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.common.TextRange
@@ -34,6 +35,7 @@ import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
+import kotlin.js.json
 import kotlin.math.abs
 
 /**
@@ -772,7 +774,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // rather than as the shorthand it is. The primary is already first in this list, which is where
     // VS Code takes it from.
     nativeEditor.selections = selections.toTypedArray()
-    pushedSelections = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
+    val pushed = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
+    val moved = pushed != pushedSelections
+    pushedSelections = pushed
+    val scrolled = scrollRequestedSinceFlush
+    scrollRequestedSinceFlush = false
+    if ((moved || scrolled || revealCaretAfterFlush) && revealLikeAClick(selections)) {
+      revealCaretAfterFlush = false
+      // Kept for the modes that still reveal the old way: a caret far along its line leaves the window
+      // scrolled off column zero, and coming back from Insert mode has to know that.
+      revealedForColumn = selections.single().active.character >= injector.engineEditorHelper.getApproximateScreenWidth(this)
+      return
+    }
     if (revealCaretAfterFlush) {
       revealCaretAfterFlush = false
       revealPrimaryCaret()
@@ -862,6 +875,87 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val clearOfBottom = line + maxOf(margin, 1) < bottom
     return clearOfTop && clearOfBottom
   }
+
+  /**
+   * Whether `zt`, `<C-E>` or any other scroll was asked for since the carets were last written.
+   *
+   * A scroll that leaves the caret where it was is still a reason to bring the caret into view
+   * sideways: the window may have been scrolled to the right by the mouse, and `zt` is the user
+   * asking to look at the caret's line.
+   */
+  internal var scrollRequestedSinceFlush = false
+
+  /**
+   * Brings the caret into view on both axes by the least scrolling that does it - VS Code's answer to
+   * a click - and reports whether it could be asked for that way.
+   *
+   * `revealRange` cannot do this, which is why [revealCaretColumn] is hedged the way it is. An
+   * extension's reveal is never *minimal*: `_computeScrollTopToRevealRange` pads it by
+   * `editor.cursorSurroundingLines`, or by `editor.stickyScroll.maxLineCount` while sticky scroll is
+   * on, so a caret on a window's top or bottom rows scrolled the window vertically as well - `zt`
+   * could not be followed by one without undoing itself. And there is no horizontal-only scroll to
+   * use instead, because the column a window starts at cannot be read: a mouse wheel moves it without
+   * telling an extension anything.
+   *
+   * `_moveTo` is the command a click in the text runs, and its reveal is the minimal one - no
+   * padding, the vertical scroll only if the line is really off screen, and the horizontal one it was
+   * missing. `_moveToSelect` is the same keeping the selection's anchor. Neither reveals when the
+   * cursor is already where it is sent, and after `selections` has just been written it always is -
+   * so the cursor goes one column along first and then back. Both arrive in the same task, before the
+   * editor paints, so the step is never drawn; and the second reveal is computed from the first one's
+   * scroll, which a caret on a visible line does not have.
+   *
+   * The selection events they cause carry this source, which VS Code gives no `kind`, so
+   * `VimHost.selectionChanged` ignores them as not the user's.
+   *
+   * Not attempted in four cases, which keep [revealCaretColumn]:
+   *  - more than one caret, because both commands leave VS Code with one;
+   *  - Insert and Replace mode, because both commands also close VS Code's undo group, and typing
+   *    would then undo a character at a time;
+   *  - the command line, whose preview selection is not the caret's;
+   *  - an editor that is not the active one - the command goes to the focused editor, and a keystroke
+   *    can move the carets of another (`<CR>` in `q:`).
+   */
+  private fun revealLikeAClick(selections: List<Selection>): Boolean {
+    if (selections.size != 1) return false
+    if (window.activeTextEditor !== nativeEditor) return false
+    val mode = mode
+    if (mode is Mode.INSERT || mode is Mode.REPLACE || mode is Mode.CMD_LINE) return false
+    val selection = selections.single()
+    val target = selection.active
+    val selecting = target.line != selection.anchor.line || target.character != selection.anchor.character
+    val command = if (selecting) VsCodeCommands.MOVE_CURSOR_SELECTING else VsCodeCommands.MOVE_CURSOR
+    val length = lineLength(target.line)
+    val detour = when {
+      target.character < length -> target.character + 1
+      target.character > 0 -> target.character - 1
+      // An empty line has no column to step to. Its caret is in column zero, and the one scroll that
+      // shows column zero is all the way left - which `editorScroll` can do without touching the
+      // vertical position. That line's vertical position is Vim's arithmetic alone.
+      else -> {
+        commands.executeCommand(
+          VsCodeCommands.EDITOR_SCROLL,
+          json("to" to "left", "by" to "column", "value" to Int.MAX_VALUE / 2, "revealCursor" to false),
+        )
+        return true
+      }
+    }
+    commands.executeCommand(command, cursorTo(target.line, detour))
+    commands.executeCommand(command, cursorTo(target.line, target.character))
+    return true
+  }
+
+  /**
+   * The source the cursor commands are given. Any string VS Code does not know becomes a selection
+   * event with no `kind`, which is how the host tells its own reveal from a user's click.
+   */
+  private val REVEAL_SOURCE = "vimperor.reveal"
+
+  /** `_moveTo`'s argument: a 1-based model position, and the source that keeps the event unattributed. */
+  private fun cursorTo(line: Int, character: Int) = json(
+    "position" to json("lineNumber" to line + 1, "column" to character + 1),
+    "source" to REVEAL_SOURCE,
+  )
 
   /** Whether a reveal has scrolled the view off column zero, and so whether coming back needs one. */
   private var revealedForColumn = false

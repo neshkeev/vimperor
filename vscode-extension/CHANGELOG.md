@@ -6,12 +6,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
-- With `nowrap`, scrolling the window sideways with the mouse and then pressing `j` left the caret off
-  screen. VS Code does not tell an extension about a sideways scroll, so the caret is now handed to
-  VS Code to bring into view on every key - except within a few lines of the window's top and bottom
-  edges, where doing so would scroll the window up or down as well. Those lines are as many as
-  `editor.stickyScroll.maxLineCount` (5 by default) or `editor.cursorSurroundingLines`, whichever is
-  larger.
+- With `nowrap`, scrolling the window sideways with the mouse and then pressing `j`, `zt`, `zz`, `zb` or
+  any other key that moves the caret or scrolls left the caret off screen. In Normal, Visual and
+  Select mode the caret is now brought into view on both axes the way VS Code brings a clicked cursor
+  into view: with the least scrolling, and without moving the window up or down when the line is
+  already visible. Insert mode, several carets and the command line keep the previous behaviour, which
+  cannot reveal the caret on the few lines nearest the window's top and bottom edges.
 
 ## [0.0.5] - 2026-09-16
 

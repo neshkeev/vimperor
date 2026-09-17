@@ -187,6 +187,8 @@ internal val VsCodeEditor.screenBottomLine: Int
  * top that contradicts it, which [screenTopLine] adopts.
  */
 internal fun VsCodeEditor.scrollViewTo(line: Int) {
+  // Before the early return: `zt` on a line already at the top is still a request to see the caret.
+  scrollRequestedSinceFlush = true
   val lastLine = max(0, lineCount() - 1)
   val target = line.coerceIn(0, lastLine)
   val from = screenTopLine
