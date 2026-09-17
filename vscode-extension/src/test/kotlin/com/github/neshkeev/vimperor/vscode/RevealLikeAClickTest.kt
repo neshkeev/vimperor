@@ -140,16 +140,28 @@ class RevealLikeAClickTest {
     assertEquals(active.line to active.character, last.line to last.character, "ending where the selection is drawn to")
   }
 
-  /** An empty line has no column to step to; its caret is in column zero, all the way left. */
+  /**
+   * An empty line has no column to step to; its caret is in column zero, all the way left.
+   *
+   * Reported from a real window as `2j` onto an empty line scrolling to the *right*: the column count
+   * was large enough that VS Code's `scrollLeft | 0` wrapped the pixel offset it came to. So the count
+   * has to stay inside 32 bits at any plausible character width.
+   */
   @Test
   fun `test an empty line scrolls all the way left instead`() {
-    val session = Session("$longLine\n\n$longLine")
+    val session = Session("$longLine\n$longLine\n\n$longLine")
 
-    session.type("j")
+    session.type("2j")
 
     assertEquals(emptyList(), session.moves())
-    assertEquals(1, session.fake.horizontalScrolls.size)
-    assertTrue(session.fake.horizontalScrolls.single() < 0, "to the left")
+    val columns = session.fake.horizontalScrolls.single()
+    assertTrue(columns < 0, "to the left")
+    val widestCharacterInPixels = 50.0
+    assertTrue(
+      -columns * widestCharacterInPixels < Int.MAX_VALUE.toDouble(),
+      "$columns columns wraps VS Code's 32-bit scroll position",
+    )
+    assertTrue(-columns >= 10_000, "and is still further than a line VS Code renders")
   }
 
   /** Both commands close VS Code's undo group, so typed text would undo a character at a time. */

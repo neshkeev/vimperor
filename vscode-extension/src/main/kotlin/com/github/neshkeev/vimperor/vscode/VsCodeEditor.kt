@@ -935,7 +935,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       else -> {
         commands.executeCommand(
           VsCodeCommands.EDITOR_SCROLL,
-          json("to" to "left", "by" to "column", "value" to Int.MAX_VALUE / 2, "revealCursor" to false),
+          json("to" to "left", "by" to "column", "value" to ALL_THE_WAY_LEFT, "revealCursor" to false),
         )
         return true
       }
@@ -950,6 +950,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * event with no `kind`, which is how the host tells its own reveal from a user's click.
    */
   private val REVEAL_SOURCE = "vimperor.reveal"
+
+  /**
+   * Columns enough to scroll any window back to column zero, and few enough to survive VS Code.
+   *
+   * `editorScroll` multiplies them by a character's width in pixels, and VS Code's scroll state then
+   * truncates the result to 32 bits (`scrollLeft | 0`) *before* clamping it to the scrollable range.
+   * `Int.MAX_VALUE / 2` columns was eight billion pixels, which wrapped to a large positive number and
+   * clamped to the far right: `2j` onto an empty line scrolled the window to the end of the long line
+   * above it. A hundred thousand columns is two million pixels at 20 each, and VS Code stops rendering
+   * a line long before that (`editor.stopRenderingLineAfter`, 10,000 by default).
+   */
+  private val ALL_THE_WAY_LEFT = 100_000
 
   /** `_moveTo`'s argument: a 1-based model position, and the source that keeps the event unattributed. */
   private fun cursorTo(line: Int, character: Int) = json(
