@@ -781,6 +781,15 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     pushedSelections = pushed
     val scrolled = scrollRequestedSinceFlush
     scrollRequestedSinceFlush = false
+    val sideways = scrolledSidewaysSinceFlush
+    scrolledSidewaysSinceFlush = false
+    // `zl`, `zs` and the rest have already put the window where it was asked to be, with the caret
+    // where it was. Revealing that caret now - either way - would scroll straight back.
+    if (sideways && !moved && !scrolled && !revealCaretAfterFlush) return
+    // Where a click's reveal can be used it is the only one: a key that neither moved the caret nor
+    // scrolled - a count, the `z` of `zl` - must not reveal it the old way either, or the window a
+    // `zl` or a mouse wheel just moved comes straight back.
+    if (!(moved || scrolled || revealCaretAfterFlush) && canRevealLikeAClick(selections)) return
     if ((moved || scrolled || revealCaretAfterFlush) && revealLikeAClick(selections)) {
       revealCaretAfterFlush = false
       // Kept for the modes that still reveal the old way: a caret far along its line leaves the window
@@ -986,6 +995,75 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
         commands.executeCommand(command, cursorTo(target.line, target.character))
       }
     }
+    return true
+  }
+
+  /** Whether `zl`, `zs` or another sideways scroll has moved the window since the carets were last written. */
+  private var scrolledSidewaysSinceFlush = false
+
+  /**
+   * `zl` and `zh` by a count, and `zL` and `zH` by the engine's forty: `editorScroll` by columns, which
+   * moves the window by that many character widths from wherever it is.
+   */
+  internal fun scrollSideways(columns: Int) {
+    // A `'sidescrolloff'` step still waiting would bring the window back to the caret.
+    pendingSideReveal.cancel()
+    pendingSideReveal = ScheduledTask.NONE
+    commands.executeCommand(
+      VsCodeCommands.EDITOR_SCROLL,
+      json("to" to if (columns > 0) "right" else "left", "by" to "column", "value" to abs(columns), "revealCursor" to false),
+    )
+    scrolledSidewaysSinceFlush = true
+  }
+
+  /**
+   * `zs` and `ze`: the caret's column at the left or the right edge of the window, `'sidescrolloff'`
+   * columns in.
+   *
+   * Neither the window's width nor where it starts can be read, and neither is needed. A minimal
+   * reveal of a column off the right of the window scrolls just far enough to show it, which leaves it
+   * at the right edge; off the left, at the left edge. So the window is first scrolled as far as it
+   * goes the other way - right for `zs`, left for `ze` - and the column is then revealed with `_moveTo`,
+   * as [revealLikeAClick] does. All of it is sent in one task, so nothing is painted in between, and in
+   * that order: a sideways scroll arriving after a reveal cancels it (`onScrollChanged`).
+   *
+   * Where the window cannot go far enough - `zs` on a column too close to the end of the longest line
+   * - VS Code stops at the end of the text and the caret is left short of the edge. Vim can scroll past
+   * the end of a line; VS Code only as far as `editor.scrollBeyondLastColumn`.
+   */
+  internal fun scrollCaretToEdge(left: Boolean): Boolean {
+    if (vimCarets.size != 1) return false
+    val caret = primaryCaret()
+    val selection = if (caret.hasSelection()) {
+      Selection(positionOf(caret.selectionStart), positionOf(shownEnd(caret.selectionStart, caret.selectionEnd)))
+    } else {
+      val position = positionOf(caret.offset)
+      Selection(position, position)
+    }
+    if (!canRevealLikeAClick(listOf(selection))) return false
+    pendingSideReveal.cancel()
+    pendingSideReveal = ScheduledTask.NONE
+    val target = selection.active
+    val length = lineLength(target.line)
+    commands.executeCommand(
+      VsCodeCommands.EDITOR_SCROLL,
+      json("to" to if (left && length > 0) "right" else "left", "by" to "column", "value" to ALL_THE_WAY_LEFT, "revealCursor" to false),
+    )
+    scrolledSidewaysSinceFlush = true
+    // An empty line's only column is the first, and all the way left is where both keys put it.
+    if (length == 0) return true
+    val command = cursorCommandFor(selection)
+    val margin = injector.options(this).sidescrolloff.coerceIn(0, MAX_SIDE_MARGIN)
+    val column = (if (left) target.character - margin else target.character + margin).coerceIn(0, length)
+    if (column != target.character) {
+      commands.executeCommand(command, cursorTo(target.line, column))
+      commands.executeCommand(command, cursorTo(target.line, target.character, reveal = false))
+    } else {
+      val detour = if (target.character < length) target.character + 1 else target.character - 1
+      commands.executeCommand(command, cursorTo(target.line, detour, reveal = false))
+      commands.executeCommand(command, cursorTo(target.line, target.character))
+    }
+    lastRevealedCharacter = target.character
     return true
   }
 

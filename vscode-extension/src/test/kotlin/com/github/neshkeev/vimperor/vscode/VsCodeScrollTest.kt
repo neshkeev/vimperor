@@ -343,10 +343,10 @@ class VsCodeScrollTest {
     assertEquals(0, session.caretLine, "there is nothing above line 0 to keep in view")
   }
 
-  // Sideways, which this host cannot do at all: `visibleRanges` carries no columns.
+  // Sideways scrolls leave the vertical view alone. What they send VS Code is in RevealLikeAClickTest.
 
   @Test
-  fun `test zl does not move the view`() {
+  fun `test zl does not move the view vertically`() {
     val session = Session(caretLine = 5)
     session.type("zl")
     assertEquals(0, session.top)

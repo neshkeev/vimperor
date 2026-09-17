@@ -11,6 +11,9 @@ The Marketplace renders this file on the extension's page, under Changelog.
   to three quick steps, because VS Code can only be asked to show one column at a time. The margin is
   capped at 40 columns, so large values do not centre the caret the way they do in Vim: that would
   need the window's width, which VS Code does not tell an extension.
+- `zl`, `zh`, `zL`, `zH`, `zs` and `ze` scroll the window sideways (with `nowrap`). `zL` and `zH` move it
+  40 columns, because VS Code does not say how wide the window is. Unlike Vim, the caret is not moved
+  when the scroll leaves it off screen; the next key that moves it brings the window back.
 
 ### Fixed
 

@@ -320,6 +320,107 @@ class RevealLikeAClickTest {
     session.sidescrolloff(0)
   }
 
+  // ---- zl, zh, zL, zH, zs, ze ------------------------------------------------------------------------
+
+  /** The window by columns, and the caret left where it is - revealing it would scroll straight back. */
+  @Test
+  fun `test zl and zh scroll the window by a count of columns`() {
+    val session = Session(longLines)
+    session.type("50l")
+    session.clear()
+
+    session.type("zl")
+    session.type("3zh")
+
+    assertEquals(listOf(1, -3), session.fake.horizontalScrolls.toList())
+    assertEquals(emptyList(), session.moves(), "no reveal to undo the scroll")
+    assertEquals(emptyList(), session.fake.reveals.toList(), "nor a padded one")
+  }
+
+  /** Half a width nobody can read: the engine's `getApproximateScreenWidth / 2`. */
+  @Test
+  fun `test zL and zH scroll the window by forty columns`() {
+    val session = Session(longLines)
+    session.type("50l")
+    session.clear()
+
+    session.type("zL")
+    session.type("zH")
+
+    assertEquals(listOf(40, -40), session.fake.horizontalScrolls.toList())
+    assertEquals(emptyList(), session.moves())
+  }
+
+  /** As far right as the window goes, then the caret revealed: it comes in from the left edge. */
+  @Test
+  fun `test zs scrolls right and brings the caret in at the left edge`() {
+    val session = Session(longLines)
+    session.type("50l")
+    session.clear()
+
+    session.type("zs")
+
+    assertEquals(1, session.fake.horizontalScrolls.size)
+    assertTrue(session.fake.horizontalScrolls.single() > 0, "all the way right first")
+    assertEquals(listOf("0:51", "0:50!"), session.steps())
+  }
+
+  @Test
+  fun `test ze scrolls left and brings the caret in at the right edge`() {
+    val session = Session(longLines)
+    session.type("50l")
+    session.clear()
+
+    session.type("ze")
+
+    assertTrue(session.fake.horizontalScrolls.single() < 0, "all the way left first")
+    assertEquals(listOf("0:51", "0:50!"), session.steps())
+  }
+
+  /** `'sidescrolloff'` columns in from the edge: the column that far out is the one revealed. */
+  @Test
+  fun `test zs and ze leave sidescrolloff columns at the edge`() {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.clear()
+
+    session.type("zs")
+    assertEquals(listOf("0:40!", "0:50"), session.steps())
+
+    session.clear()
+    session.type("ze")
+    assertEquals(listOf("0:60!", "0:50"), session.steps())
+    session.sidescrolloff(0)
+  }
+
+  @Test
+  fun `test zs on an empty line scrolls all the way left`() {
+    val session = Session("$longLine\n\n$longLine")
+    session.type("j")
+    session.clear()
+
+    session.type("zs")
+
+    assertTrue(session.fake.horizontalScrolls.single() < 0)
+    assertEquals(emptyList(), session.moves())
+  }
+
+  /** A `'sidescrolloff'` step still waiting from the last motion would bring the window back. */
+  @Test
+  fun `test zl abandons the sidescrolloff steps still waiting`(): Promise<Unit> {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.type("zl")
+    val sent = session.fake.cursorMoves.size
+
+    return after(200) {
+      assertEquals(sent, session.fake.cursorMoves.size, "nothing sent after zl: ${session.steps()}")
+      session.sidescrolloff(0)
+    }
+  }
+
   private fun after(millis: Int, block: () -> Unit): Promise<Unit> =
     Promise { resolve, reject ->
       setTimeout({

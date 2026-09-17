@@ -38,10 +38,10 @@ import kotlin.math.min
  * and nothing to be five lines out by. Every vertical scroll in Vim reduces to it, and the
  * arithmetic that decides N is Vim's own, in line numbers, here.
  *
- * Columns do not. `visibleRanges` is line ranges only - there is no horizontal viewport to read and
- * `editorScroll` moves only up and down - so `zh`, `zl`, `zs`, `ze`, `zH` and `zL` are the group that
- * cannot be written rather than merely not written yet. They report failure, which is what Vim does
- * when a scroll has nowhere to go.
+ * Columns do not. `visibleRanges` is line ranges only, so there is no horizontal viewport to read.
+ * `zh`, `zl`, `zH` and `zL` move the view by columns with `editorScroll`, which can scroll sideways
+ * by a count though not to a place; `zs` and `ze` let VS Code bring the caret in from the far side.
+ * Neither needs to know where the window was.
  */
 
 /** What VS Code says the window shows, which is where it has been painted rather than where it is. */
@@ -485,12 +485,33 @@ internal object VsCodeScrollGroup : VimScrollGroup {
     return true
   }
 
-  // Sideways. `visibleRanges` carries no columns and there is no API that scrolls by one, so these
-  // cannot be answered rather than merely being unwritten. Reporting failure is what Vim does when
-  // a scroll has nowhere to go, and it beats a crash and it beats silence.
-  override fun scrollColumns(editor: VimEditor, columns: Int): Boolean = false
-  override fun scrollCaretColumnToDisplayLeftEdge(vimEditor: VimEditor): Boolean = false
-  override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean = false
+  // Sideways. `visibleRanges` carries no columns, so nothing here can know where the window starts
+  // or how wide it is - but VS Code can move it by columns, and can bring a column in from either
+  // side, and those two are enough for all six keys. See `VsCodeEditor.scrollSideways` and
+  // `scrollCaretToEdge`.
+
+  /**
+   * `zl`, `zh`, and `zL`, `zH` - which the engine hands over as `getApproximateScreenWidth / 2`
+   * columns, forty, because half of a width nobody can read is the best it has.
+   *
+   * Vim moves the caret when the scroll would leave it off screen, and this cannot: whether it is
+   * off screen is exactly what cannot be read. So the caret stays, and the next key that moves it
+   * brings the window back to it.
+   */
+  override fun scrollColumns(editor: VimEditor, columns: Int): Boolean {
+    val vsCode = editor as? VsCodeEditor ?: return false
+    if (columns == 0) return false
+    vsCode.scrollSideways(columns)
+    return true
+  }
+
+  /** `zs`. */
+  override fun scrollCaretColumnToDisplayLeftEdge(vimEditor: VimEditor): Boolean =
+    (vimEditor as? VsCodeEditor)?.scrollCaretToEdge(left = true) ?: false
+
+  /** `ze`. */
+  override fun scrollCaretColumnToDisplayRightEdge(editor: VimEditor): Boolean =
+    (editor as? VsCodeEditor)?.scrollCaretToEdge(left = false) ?: false
 
   override fun onScrollOptionChanged(editor: VimEditor) = scrollCaretIntoView(editor)
 }
