@@ -4,6 +4,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- With `nowrap`, scrolling the window sideways with the mouse and then pressing `j` left the caret off
+  screen. VS Code does not tell an extension about a sideways scroll, so the caret is now handed to
+  VS Code to bring into view on every key - except within a few lines of the window's top and bottom
+  edges, where doing so would scroll the window up or down as well. Those lines are as many as
+  `editor.stickyScroll.maxLineCount` (5 by default) or `editor.cursorSurroundingLines`, whichever is
+  larger.
 
 ## [0.0.5] - 2026-09-16
 

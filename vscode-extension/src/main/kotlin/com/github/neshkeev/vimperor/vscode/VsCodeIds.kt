@@ -596,6 +596,14 @@ internal object VsCodeSettings {
   const val INDENT_SIZE_TAB_SIZE: String = "tabSize"
 
   const val WORD_WRAP_SETTING = "$EDITOR.$WORD_WRAP"
+
+  /**
+   * The three that decide how far from a window's edge a `revealRange` starts to scroll - see
+   * `VsCodeEditor.revealCannotScrollVertically`. Dotted, which `WorkspaceConfiguration.get` accepts.
+   */
+  const val CURSOR_SURROUNDING_LINES = "cursorSurroundingLines"
+  const val STICKY_SCROLL_ENABLED = "stickyScroll.enabled"
+  const val STICKY_SCROLL_MAX_LINE_COUNT = "stickyScroll.maxLineCount"
 }
 
 /**

@@ -797,7 +797,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    *
    * Guarded on the caret's line already being on screen, which keeps the two axes apart. `Default`
    * scrolls as little as it can, so with the line visible the only axis left for it to move is the
-   * horizontal one, and the vertical position stays whatever `zt`, `zz` or `<C-E>` last made it.
+   * horizontal one, and the vertical position stays whatever `zt`, `zz` or `<C-E>` last made it -
+   * as long as the line is far enough from the window's edges. See [revealCannotScrollVertically].
    */
   private fun revealCaretColumn() {
     val position = positionOf(primaryCaret().offset)
@@ -814,12 +815,52 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // 80 is `getApproximateScreenWidth`, which this host does not measure: VS Code exposes no
     // horizontal viewport to measure. It is a threshold, not a measurement, and it is only allowed
     // to be wrong in the cheap direction - too small costs a reveal nobody needed.
+    //
+    // Except that the threshold cannot see the user. A mouse wheel or a trackpad scrolls the window
+    // sideways without telling an extension anything - no event, no column in `visibleRanges` - so
+    // after one, `j` onto column zero is off the left-hand edge and was never revealed. Where a
+    // reveal provably cannot move the view vertically it is therefore asked for on every keystroke:
+    // it is a no-op when the caret is already on screen, and the one way back when it is not.
     val far = position.character >= injector.engineEditorHelper.getApproximateScreenWidth(this)
-    if (!far && !revealedForColumn) return
+    if (!far && !revealedForColumn && !revealCannotScrollVertically(position.line)) return
     val onScreen = nativeEditor.visibleRanges.any { position.line >= it.start.line && position.line <= it.end.line }
     if (!onScreen) return
     revealedForColumn = far
     revealPrimaryCaret()
+  }
+
+  /**
+   * Whether a `Default` reveal of [line] would leave the window's vertical position where it is.
+   *
+   * "The line is on screen" is not enough, and VS Code's own arithmetic says why. Its
+   * `_computeScrollTopToRevealRange` pads the line before deciding whether it is visible: by
+   * `editor.cursorSurroundingLines`, or by `editor.stickyScroll.maxLineCount` while sticky scroll is
+   * on - five lines above and below by default - and by a further line below for `Default`. A line
+   * inside that margin is scrolled towards the middle, which is the `G` that turned `view=[0..15]`
+   * into `view=[2..15]`.
+   *
+   * The padding is capped at half the window's height, which cannot be read; taking the uncapped
+   * value can only make the band narrower, never let a scrolling reveal through. The first and last
+   * reported lines may be partly off screen, so the band stays clear of both - except at the top of
+   * the document, where VS Code clamps the scroll to zero and the margin above costs nothing.
+   */
+  private fun revealCannotScrollVertically(line: Int): Boolean {
+    if (viewportIsStale) return false
+    val ranges = nativeEditor.visibleRanges
+    val top = ranges.firstOrNull()?.start?.line ?: return false
+    val bottom = ranges.last().end.line
+    if (ranges.size > 1) return false
+    val settings = workspace.getConfiguration(VsCodeSettings.EDITOR, nativeEditor.document)
+    val surrounding = settings.get(VsCodeSettings.CURSOR_SURROUNDING_LINES) as? Int ?: 0
+    val sticky = if (settings.get(VsCodeSettings.STICKY_SCROLL_ENABLED) == false) {
+      0
+    } else {
+      settings.get(VsCodeSettings.STICKY_SCROLL_MAX_LINE_COUNT) as? Int ?: 5
+    }
+    val margin = maxOf(surrounding, sticky)
+    val clearOfTop = top == 0 || line - margin > top
+    val clearOfBottom = line + maxOf(margin, 1) < bottom
+    return clearOfTop && clearOfBottom
   }
 
   /** Whether a reveal has scrolled the view off column zero, and so whether coming back needs one. */

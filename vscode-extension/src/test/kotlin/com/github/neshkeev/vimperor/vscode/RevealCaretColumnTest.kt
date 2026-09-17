@@ -72,6 +72,82 @@ class RevealCaretColumnTest {
   }
 
   /**
+   * Reported from a real window: `:set nowrap`, long lines, the mouse scrolls the view to the right,
+   * and `j` left the caret off the left-hand edge.
+   *
+   * A scroll by the user reaches an extension as nothing at all - `visibleRanges` has no columns and
+   * there is no event - so the caret in column zero looked as visible as it ever was, and the reveal
+   * was skipped because column zero "cannot be off screen". The fake cannot scroll sideways either,
+   * so what is asserted is the request: the caret's own line, handed to VS Code to reveal.
+   */
+  @Test
+  fun `test the caret is revealed in the first columns once it is clear of the window's edges`() {
+    val session = Session((0 until 40).joinToString("\n") { longLine })
+    session.fake.viewportHeight = 30
+
+    session.type("j")
+
+    assertEquals(listOf(1), session.fake.reveals.map { it.start }, "the line `j` moved to")
+  }
+
+  /**
+   * VS Code pads a reveal by `editor.stickyScroll.maxLineCount` - five lines by default - and by a
+   * line more below it, and scrolls a line inside that padding towards the middle. So close to the
+   * bottom of the window nothing may be revealed, however few columns the caret is in.
+   */
+  @Test
+  fun `test nothing is revealed within sticky scroll's padding of the bottom edge`() {
+    val session = Session((0 until 40).joinToString("\n") { longLine })
+    session.fake.viewportHeight = 30
+    session.type("24G")
+    session.fake.reveals.clear()
+
+    session.type("j")
+    assertEquals(listOf(), session.fake.reveals.map { it.start }, "line 24 is five lines above the bottom row, 29")
+
+    session.type("k")
+    assertEquals(listOf(23), session.fake.reveals.map { it.start }, "line 23 is six")
+  }
+
+  /** The top edge has the same padding, but only once the window is off the first line. */
+  @Test
+  fun `test nothing is revealed within sticky scroll's padding of the top edge`() {
+    val session = Session((0 until 60).joinToString("\n") { longLine })
+    session.fake.viewportHeight = 30
+    session.fake.topLine = 20
+    session.type("27G")
+    session.fake.reveals.clear()
+
+    session.type("k")
+    assertEquals(listOf(), session.fake.reveals.map { it.start }, "line 25 is five lines under the top row, 20")
+
+    session.type("j")
+    assertEquals(listOf(26), session.fake.reveals.map { it.start }, "line 26 is six")
+  }
+
+  /** With sticky scroll off and no surrounding lines, the padding is the one line `Default` adds. */
+  @Test
+  fun `test with sticky scroll off only the edge rows are left alone`() {
+    val editor = js("require('vscode').workspace.configuration.editor")
+    editor["stickyScroll.enabled"] = false
+    try {
+      val session = Session((0 until 40).joinToString("\n") { longLine })
+      session.fake.viewportHeight = 30
+      session.type("29G")
+      session.fake.reveals.clear()
+
+      session.type("k")
+      assertEquals(listOf(27), session.fake.reveals.map { it.start }, "two lines above the bottom row")
+      session.fake.reveals.clear()
+
+      session.type("j")
+      assertEquals(listOf(), session.fake.reveals.map { it.start }, "the line above the bottom row")
+    } finally {
+      js("delete editor['stickyScroll.enabled']")
+    }
+  }
+
+  /**
    * The regression this guard exists for, from a trace of a real window.
    *
    * `G` with every line of the document already showing revealed the last line, and VS Code
