@@ -22,6 +22,12 @@ Install it, reload the window, and start typing. The mode appears in the status 
 release also goes to [Open VSX](https://open-vsx.org/extension/neshkeev/vimperor), which is what
 they search — and attaches the `.vsix` to its
 [GitHub release](https://github.com/neshkeev/vimperor/releases) for anything that searches neither.
+Install one by hand with *Install from VSIX…* in the Extensions view, or from the command line:
+
+```bash
+codium --install-extension vimperor-0.0.5.vsix   # cursor, windsurf, code-insiders, ...
+```
+
 Nothing in the extension is specific to VS Code, and `&ide` answers with whichever editor it is in.
 
 > **Disable any other Vim extension first.** Seeing ordinary typing means taking over VS Code's
