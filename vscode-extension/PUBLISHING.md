@@ -191,11 +191,29 @@ arrangement rather than the one with a date on it. It expires when you tell it t
 `publishToOpenVsx` passes `--skip-duplicate`, so a version already there is not an error. That is
 deliberate and asymmetric: adding a second registry creates a failure this release did not have -
 one registry accepting a version and the other not - and finishing the missing half has to be
-possible without tripping over the done half. The Marketplace publish has no such flag, because it
-goes first and should still refuse a version that has been used.
+possible without tripping over the done half.
 
 So if Open VSX is the half that failed, fix the token and run that one task; there is no need to
 re-run the whole workflow.
+
+**`vsce` has no such flag, and the workflow supplies the missing half of it rather than the whole.**
+The Marketplace still refuses a version it has published - that refusal is worth keeping, because
+it is the one thing standing between a mistake and a release nobody can replace - but the workflow's
+`Publish` step reads what `vsce` printed and, when the refusal names the version in `package.json`,
+turns it into a notice and carries on. Any other failure still fails the build.
+
+That is a fix for a failure this repository has now had. 0.0.6 published to both registries and then
+GitHub's own asset upload answered `Error creating asset temp dir`, which left the release as the
+draft `action-gh-release` uploads into. The obvious response - re-run the tag - could not work: the
+re-run died on the Marketplace refusing a version its own first attempt had published, and every
+step after that, including the release, is skipped by default. A tag that is published everywhere
+but has no release is exactly the half-delivered release this file exists to avoid.
+
+`Release` is gated differently for the same reason: on the *packaging* step having succeeded rather
+than on the whole job. The suite passed and the `.vsix` exists, which is all a release needs; a
+registry that refused is not a reason to leave the tag without one. It also fails rather than
+publishing an empty release, because a release with nothing attached looks like a release from the
+outside and installs as nothing.
 
 ## Testing a release before making one
 
