@@ -257,10 +257,25 @@ const workspace = {
    * describe the screen.
    */
   languageConfiguration: {},
+  /**
+   * The workspace layer - a `.code-workspace`, or the folder's `.vscode/settings.json` in a window
+   * with one folder open. It beats the user's settings, which is not a detail: a `:set nowrap` wrote
+   * `off` into the user's settings of a window whose workspace said `on`, and nothing happened. A
+   * stub with one layer cannot show that, so it has two.
+   */
+  workspaceConfiguration: {},
+  workspaceLanguageConfiguration: {},
   getConfiguration: (section, scope) => ({
     get: (key) => {
       // A document has a `languageId`; a URI does not. Only the first sees the language block.
       const language = scope && scope.languageId
+      // Layer by layer, and a language block beats the plain value at the same layer.
+      const workspaceByLanguage = language && workspace.workspaceLanguageConfiguration[language]
+      const inWorkspaceLanguage =
+        workspaceByLanguage && workspaceByLanguage[section] ? workspaceByLanguage[section][key] : undefined
+      if (inWorkspaceLanguage != null) return inWorkspaceLanguage
+      const inWorkspace = (workspace.workspaceConfiguration[section] || {})[key]
+      if (inWorkspace != null) return inWorkspace
       const byLanguage = language && workspace.languageConfiguration[language]
       const inLanguage = byLanguage && byLanguage[section] ? byLanguage[section][key] : undefined
       if (inLanguage != null) return inLanguage
@@ -273,11 +288,31 @@ const workspace = {
       const narrow = scoped && scoped[section] ? scoped[section][key] : undefined
       return narrow == null ? (workspace.configuration[section] || {})[key] : narrow
     },
+    /** Which layer holds the value, which is what decides where a write has to go. */
+    inspect: (key) => {
+      const language = scope && scope.languageId
+      const workspaceByLanguage = language && workspace.workspaceLanguageConfiguration[language]
+      return {
+        workspaceLanguageValue:
+          workspaceByLanguage && workspaceByLanguage[section] ? workspaceByLanguage[section][key] : undefined,
+        workspaceValue: (workspace.workspaceConfiguration[section] || {})[key],
+        // Nothing here models a multi-root workspace's per-folder settings.
+        workspaceFolderLanguageValue: undefined,
+        workspaceFolderValue: undefined,
+      }
+    },
     /** Writes where `get` will read it back from, which is what makes `'wrap'` checkable. */
     update: (key, value, target, overrideInLanguage) => {
       const language = scope && scope.languageId
       let into
-      if (overrideInLanguage && language) {
+      if (target === ConfigurationTarget.Workspace) {
+        if (overrideInLanguage && language) {
+          const byLanguage = (workspace.workspaceLanguageConfiguration[language] ||= {})
+          into = (byLanguage[section] ||= {})
+        } else {
+          into = (workspace.workspaceConfiguration[section] ||= {})
+        }
+      } else if (overrideInLanguage && language) {
         const byLanguage = (workspace.languageConfiguration[language] ||= {})
         into = (byLanguage[section] ||= {})
       } else {

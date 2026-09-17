@@ -673,15 +673,15 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
   }
   editor.wroteWordWrap = wrapping
   editor.wroteWordWrapAt = currentTimeMillis()
-  val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
-  val target = if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
+  val configuration = workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
+  val target = wordWrapTarget(editor, configuration)
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
   editor.trace(
     "wrap: writing ${VsCodeSettings.WORD_WRAP}=$value for [${editor.nativeEditor.document.languageId}] " +
-      "into ${if (inAFolder) "the folder's settings" else "the user's settings"}",
+      "into ${nameOf(target)}",
   )
   try {
-    workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
+    configuration
       .update(VsCodeSettings.WORD_WRAP, value, target, /* overrideInLanguage = */ true)
       .then(
         // Nothing to say when it works. This used to report what it wrote, and add a hint about the
@@ -708,6 +708,46 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
       "Vimperor could not write ${VsCodeSettings.WORD_WRAP}=$value: ${e.message}",
     )
   }
+}
+
+/**
+ * The layer to write the wrap into: the one the value is coming from.
+ *
+ * Settings are layered - a folder's `.vscode/settings.json`, then the workspace's, then the user's,
+ * then VS Code's own default - and a write to a layer *under* the one that holds a value changes a
+ * file and nothing on screen. That is the second way this option has been silently ignored, reported
+ * from a real window: an untitled file belongs to no folder, so the write went to the user's
+ * settings, while the window had a folder open whose settings turned word wrap on
+ * for `[plaintext]` - which had itself been written by a `:set wrap` on a file *in* that folder. `:set nowrap`
+ * wrote `off` where nothing could read it.
+ *
+ * So the target is whichever layer already has a value, narrowest first, and the old rule - the
+ * file's folder, or the user's settings for a file in none - only when no layer has one. The
+ * language block is checked beside the plain value at each layer, because it is what a write lands
+ * in and what beats the plain value there.
+ */
+private fun wordWrapTarget(editor: VsCodeEditor, configuration: WorkspaceConfiguration): Int {
+  val inspected = try {
+    configuration.inspect(VsCodeSettings.WORD_WRAP)
+  } catch (e: Throwable) {
+    null
+  }
+  val inAFolder = workspace.getWorkspaceFolder(editor.nativeEditor.document.uri) != null
+  return when {
+    inspected == null -> if (inAFolder) ConfigurationTarget.WorkspaceFolder else ConfigurationTarget.Global
+    inspected.workspaceFolderLanguageValue != null || inspected.workspaceFolderValue != null ->
+      ConfigurationTarget.WorkspaceFolder
+    inspected.workspaceLanguageValue != null || inspected.workspaceValue != null ->
+      ConfigurationTarget.Workspace
+    inAFolder -> ConfigurationTarget.WorkspaceFolder
+    else -> ConfigurationTarget.Global
+  }
+}
+
+private fun nameOf(target: Int): String = when (target) {
+  ConfigurationTarget.WorkspaceFolder -> "the folder's settings"
+  ConfigurationTarget.Workspace -> "the workspace's settings"
+  else -> "the user's settings"
 }
 
 /**

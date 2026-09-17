@@ -17,6 +17,9 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `:set wrap` and `:set nowrap` were written to the user's settings for a file in no folder - an untitled
+  tab - even when a folder's or workspace's settings held the value. Those layers win, so the write
+  changed a file and nothing on screen. The wrap is now written into the layer the value comes from.
 - `:set wrap` could do nothing in one tab, for as long as that tab stayed open. `editor.wordWrap` is one
   setting for every window, so turning the wrap off on another file of the same language moved it
   underneath - and Vimperor refused to write a value it remembered writing, however long ago. The

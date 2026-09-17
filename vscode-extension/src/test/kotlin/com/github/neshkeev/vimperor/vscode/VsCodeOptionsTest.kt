@@ -682,6 +682,53 @@ class VsCodeOptionsTest {
     }
   }
 
+  /**
+   * The write goes to the layer that holds the value, not to the one the file belongs to.
+   *
+   * Reported from a real window, and the second way this option could be written and ignored: an
+   * untitled file is in no folder, so the write went to the user's settings, while the window had a
+   * folder open whose settings turned word wrap on for `[plaintext]`. The workspace layer
+   * wins, so `:set nowrap` wrote `off` where nothing read it.
+   */
+  @Test
+  fun `test the wrap is written to the layer the value comes from`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      // As a folder's `.vscode/settings.json` leaves it in a window with that folder open.
+      js("require('vscode').workspace.workspaceLanguageConfiguration.plaintext = { editor: { wordWrap: 'on' } }")
+      val session = Session()
+      forget()
+
+      session.run("set nowrap")
+
+      val target = js("require('vscode').workspace.updates[0].target") as Int
+      assertEquals(ConfigurationTarget.Workspace, target, "the workspace layer is what decides this file")
+      assertTrue(
+        !configuredWordWrap(session.host.editorFor(session.fake)),
+        "and the write has to be what the setting now reads back as",
+      )
+    } finally {
+      reset()
+    }
+  }
+
+  /** With no layer holding a value, an untitled file still writes to the user's settings. */
+  @Test
+  fun `test the wrap of a file in no folder is written to the user's settings`() {
+    VsCodeOptions.wrapWasAsked = false
+    try {
+      val session = Session()
+      forget()
+
+      session.run("set wrap")
+
+      val target = js("require('vscode').workspace.updates[0].target") as Int
+      assertEquals(ConfigurationTarget.Global, target)
+    } finally {
+      reset()
+    }
+  }
+
   /** What the wrap decided reaches the keystroke trace, which is the only way to see it in a window. */
   @Test
   fun `test the wrap writes a line into the trace`() {
@@ -804,6 +851,8 @@ class VsCodeOptionsTest {
 
   private fun reset() {
     js("require('vscode').workspace.configuration.editor.wordWrap = 'off'")
+    js("require('vscode').workspace.workspaceConfiguration = {}")
+    js("require('vscode').workspace.workspaceLanguageConfiguration = {}")
     // The language blocks too. Every write goes into one now, so a test that set the wrap left the
     // next one's editor already wrapping - and `set wrap` is not a change, so it wrote nothing and
     // the failure read as the write being broken.

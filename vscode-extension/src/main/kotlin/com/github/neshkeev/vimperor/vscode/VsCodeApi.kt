@@ -292,6 +292,27 @@ external interface WorkspaceConfiguration {
     target: Int,
     overrideInLanguage: Boolean = definedExternally,
   ): Thenable<Unit>
+
+  /**
+   * Which layer holds this setting, which is what a write has to match to have any effect.
+   *
+   * Settings resolve in layers - a folder's `.vscode/settings.json`, then the workspace's, then the
+   * user's, then VS Code's default - and a language block wins over the plain value at the same
+   * layer. Writing to a layer under the one that holds the value changes the file and nothing else,
+   * which is how `:set nowrap` came to be silently ignored in a window with a folder open.
+   */
+  fun inspect(section: String): ConfigurationInspection?
+}
+
+/**
+ * What [WorkspaceConfiguration.inspect] answers. Every field is undefined when that layer says
+ * nothing; only the ones this host reads are declared.
+ */
+external interface ConfigurationInspection {
+  val workspaceFolderValue: Any?
+  val workspaceFolderLanguageValue: Any?
+  val workspaceValue: Any?
+  val workspaceLanguageValue: Any?
 }
 
 /** Where a settings write goes. VS Code's `ConfigurationTarget`: Global 1, Workspace 2, Folder 3. */
