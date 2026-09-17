@@ -10,8 +10,9 @@ way somebody reimplemented them. **It reads your existing `~/.ideavimrc` unchang
 
 ![Vim commands on a Russian keyboard layout](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/cyrillic_normal.gif)
 
-*Normal mode with a Cyrillic layout active: `вфц` is `daw`, `Эйнн` yanks into register `q`. No
-layout switching, and Insert mode still types Russian.*
+*The same edit twice. First `vf,x` — select to the first comma, delete it — and `u` to put it back.
+Then `ма,ч` and `г`, which is those same keys struck on a Russian layout, with nothing switched.
+The comma stays a comma: it is `f`'s argument, and an argument is text.*
 
 ## Install
 
