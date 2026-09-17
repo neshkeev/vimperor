@@ -4,6 +4,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- `'sidescrolloff'` (`'siso'`): with `set sidescrolloff=10`, a caret that goes off screen sideways in Normal,
+  Visual or Select mode comes back ten columns from the edge rather than at it. The window scrolls in up
+  to three quick steps, because VS Code can only be asked to show one column at a time. The margin is
+  capped at 40 columns, so large values do not centre the caret the way they do in Vim: that would
+  need the window's width, which VS Code does not tell an extension.
+
 ### Fixed
 
 - With `nowrap`, scrolling the window sideways with the mouse and then pressing `j`, `zt`, `zz`, `zb` or

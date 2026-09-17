@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.LineDeleteShift
 import com.maddyhome.idea.vim.api.MutableVimEditor
+import com.maddyhome.idea.vim.api.ScheduledTask
 import com.maddyhome.idea.vim.api.VimCaret
 import com.maddyhome.idea.vim.api.VimCaretListener
 import com.maddyhome.idea.vim.api.VimDocument
@@ -26,6 +27,7 @@ import com.maddyhome.idea.vim.api.VimVisualPosition
 import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.lineLength
+import com.maddyhome.idea.vim.api.options
 import com.maddyhome.idea.vim.common.ChangesListener
 import com.maddyhome.idea.vim.common.LiveRange
 import com.maddyhome.idea.vim.common.TextRange
@@ -917,33 +919,115 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    *    can move the carets of another (`<CR>` in `q:`).
    */
   private fun revealLikeAClick(selections: List<Selection>): Boolean {
-    if (selections.size != 1) return false
-    if (window.activeTextEditor !== nativeEditor) return false
-    val mode = mode
-    if (mode is Mode.INSERT || mode is Mode.REPLACE || mode is Mode.CMD_LINE) return false
+    if (!canRevealLikeAClick(selections)) return false
+    pendingSideReveal.cancel()
+    pendingSideReveal = ScheduledTask.NONE
     val selection = selections.single()
     val target = selection.active
-    val selecting = target.line != selection.anchor.line || target.character != selection.anchor.character
-    val command = if (selecting) VsCodeCommands.MOVE_CURSOR_SELECTING else VsCodeCommands.MOVE_CURSOR
+    val command = cursorCommandFor(selection)
+    val previous = lastRevealedCharacter
+    lastRevealedCharacter = target.character
     val length = lineLength(target.line)
-    val detour = when {
-      target.character < length -> target.character + 1
-      target.character > 0 -> target.character - 1
+    if (length == 0) {
       // An empty line has no column to step to. Its caret is in column zero, and the one scroll that
       // shows column zero is all the way left - which `editorScroll` can do without touching the
       // vertical position. That line's vertical position is Vim's arithmetic alone.
-      else -> {
-        commands.executeCommand(
-          VsCodeCommands.EDITOR_SCROLL,
-          json("to" to "left", "by" to "column", "value" to ALL_THE_WAY_LEFT, "revealCursor" to false),
-        )
-        return true
+      commands.executeCommand(
+        VsCodeCommands.EDITOR_SCROLL,
+        json("to" to "left", "by" to "column", "value" to ALL_THE_WAY_LEFT, "revealCursor" to false),
+      )
+      return true
+    }
+    val margin = injector.options(this).sidescrolloff.coerceIn(0, MAX_SIDE_MARGIN)
+    if (margin == 0) {
+      val detour = if (target.character < length) target.character + 1 else target.character - 1
+      commands.executeCommand(command, cursorTo(target.line, detour))
+      commands.executeCommand(command, cursorTo(target.line, target.character))
+      return true
+    }
+
+    // `'sidescrolloff'`: the caret kept that many columns from either edge. A reveal of the caret
+    // cannot say so - the cursor commands reveal a point, and the range reveal an extension has is
+    // padded vertically - so the columns either side of the caret are revealed one at a time, each
+    // with the cursor sent there and straight back without a reveal (`revealType: 2`).
+    //
+    // One at a time means one frame at a time. VS Code keeps a single pending horizontal reveal and
+    // works it out when it paints, so a second request before the paint replaces the first. Hence
+    // the timer, and hence the order, which is chosen so that every step leaves the caret on screen
+    // on its own and whichever steps are merged by a late paint:
+    //  1. the side the caret is heading - its column went up, or it is far along the line - which is
+    //     the only step needed when it left the window that way;
+    //  2. the other side, which from a caret already on screen cannot take it off again as long as
+    //     the margin is narrower than the window;
+    //  3. the caret itself, so that if the first two were painted together and the one that survived
+    //     was the wrong side, the caret still ends up on screen, at the edge.
+    val rightFirst = if (previous != null && previous != target.character) {
+      target.character > previous
+    } else {
+      target.character >= injector.engineEditorHelper.getApproximateScreenWidth(this) / 2
+    }
+    val first = if (rightFirst) target.character + margin else target.character - margin
+    val second = if (rightFirst) target.character - margin else target.character + margin
+    val expected = pushedSelections
+    fun stillCurrent() = pushedSelections == expected && canRevealLikeAClick(selections)
+    fun revealColumn(character: Int) {
+      commands.executeCommand(command, cursorTo(target.line, character.coerceIn(0, length)))
+      commands.executeCommand(command, cursorTo(target.line, target.character, reveal = false))
+    }
+
+    revealColumn(first)
+    pendingSideReveal = injector.application.schedule(ONE_FRAME) {
+      if (!stillCurrent()) return@schedule
+      revealColumn(second)
+      pendingSideReveal = injector.application.schedule(ONE_FRAME) {
+        if (!stillCurrent()) return@schedule
+        val detour = if (target.character < length) target.character + 1 else target.character - 1
+        commands.executeCommand(command, cursorTo(target.line, detour, reveal = false))
+        commands.executeCommand(command, cursorTo(target.line, target.character))
       }
     }
-    commands.executeCommand(command, cursorTo(target.line, detour))
-    commands.executeCommand(command, cursorTo(target.line, target.character))
     return true
   }
+
+  /** The cases [revealLikeAClick] leaves to [revealCaretColumn] - see its documentation. */
+  private fun canRevealLikeAClick(selections: List<Selection>): Boolean {
+    if (selections.size != 1) return false
+    if (window.activeTextEditor !== nativeEditor) return false
+    val mode = mode
+    return mode !is Mode.INSERT && mode !is Mode.REPLACE && mode !is Mode.CMD_LINE
+  }
+
+  /** A click for a caret, a drag for a selection, so that the anchor stays where it is. */
+  private fun cursorCommandFor(selection: Selection): String {
+    val selecting = selection.active.line != selection.anchor.line ||
+      selection.active.character != selection.anchor.character
+    return if (selecting) VsCodeCommands.MOVE_CURSOR_SELECTING else VsCodeCommands.MOVE_CURSOR
+  }
+
+  /** The column the caret was last revealed at, for which way it is heading. */
+  private var lastRevealedCharacter: Int? = null
+
+  /**
+   * The rest of a `'sidescrolloff'` reveal, waiting for the editor to paint the step before it.
+   *
+   * A step belongs to the carets it was worked out for: run against newer ones it would send the
+   * cursor back to where the caret used to be. So each step checks that the pushed selections and
+   * the mode still allow it, and the next reveal cancels whatever is left of this one.
+   */
+  private var pendingSideReveal: ScheduledTask = ScheduledTask.NONE
+
+  /**
+   * How long a step waits for VS Code to paint the one before it: a frame at 60Hz and some slack.
+   * Too short and the steps are painted together, which the order in [revealLikeAClick] survives.
+   */
+  private val ONE_FRAME = 30
+
+  /**
+   * The widest margin asked for. Vim treats a `'sidescrolloff'` of half the window or more as "keep
+   * the caret centred", which needs the window's width and this host cannot read it; revealing a
+   * column further away than the window is wide would take the caret off screen for a step.
+   */
+  private val MAX_SIDE_MARGIN = 40
 
   /**
    * The source the cursor commands are given. Any string VS Code does not know becomes a selection
@@ -963,11 +1047,19 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   private val ALL_THE_WAY_LEFT = 100_000
 
-  /** `_moveTo`'s argument: a 1-based model position, and the source that keeps the event unattributed. */
-  private fun cursorTo(line: Int, character: Int) = json(
+  /**
+   * `_moveTo`'s argument: a 1-based model position, and the source that keeps the event unattributed.
+   *
+   * `revealType: 2` is `_moveTo`'s own way to move the cursor without revealing it - it checks for
+   * exactly that value before calling `revealAllCursors`.
+   */
+  private fun cursorTo(line: Int, character: Int, reveal: Boolean = true) = json(
     "position" to json("lineNumber" to line + 1, "column" to character + 1),
     "source" to REVEAL_SOURCE,
+    "revealType" to if (reveal) 0 else NO_REVEAL,
   )
+
+  private val NO_REVEAL = 2
 
   /** Whether a reveal has scrolled the view off column zero, and so whether coming back needs one. */
   private var revealedForColumn = false

@@ -176,7 +176,13 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   }
 
   /** One `_moveTo` or `_moveToSelect`: the command, and the 0-based position it was sent to. */
-  data class CursorMove(val command: String, val line: Int, val character: Int, val source: String?)
+  data class CursorMove(
+    val command: String,
+    val line: Int,
+    val character: Int,
+    val source: String?,
+    val reveals: Boolean = true,
+  )
 
   /** Every cursor command, in order - the host's way of revealing the caret like a click. */
   val cursorMoves: MutableList<CursorMove> = mutableListOf()
@@ -194,7 +200,10 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   private fun moveCursor(command: String, args: dynamic) {
     val line = (args.position.lineNumber as Int) - 1
     val character = (args.position.column as Int) - 1
-    cursorMoves += CursorMove(command, line, character, args.source as String?)
+    // `_moveTo` skips its reveal for exactly this value.
+    val reveals = (args.revealType as Int?) != 2
+    cursorMoves += CursorMove(command, line, character, args.source as String?, reveals)
+    if (!reveals) return
     val current = scrollTop
     val newTop = when {
       line < current -> line

@@ -9,9 +9,12 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.api.options
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.js.Promise
 import kotlin.test.assertTrue
 
 /**
@@ -45,6 +48,15 @@ class RevealLikeAClickTest {
     fun type(keys: String) = keys.forEach { host.type(fake, it.toString()) }
 
     fun key(notation: String) = host.key(fake, notation)
+
+    /** `:set sidescrolloff`, without going through the command line. */
+    fun sidescrolloff(columns: Int) {
+      injector.options(host.editorFor(fake)).sidescrolloff = columns
+    }
+
+    /** Where each cursor command was sent and whether it revealed, as `line:character` or `line:character!`. */
+    fun steps(): List<String> =
+      fake.cursorMoves.map { "${it.line}:${it.character}" + if (it.reveals) "!" else "" }
 
     /** Where each cursor command was sent, as `command line:character`. */
     fun moves(): List<String> = fake.cursorMoves.map { "${it.command} ${it.line}:${it.character}" }
@@ -195,4 +207,130 @@ class RevealLikeAClickTest {
 
     assertEquals(emptyList(), session.moves())
   }
+
+  // ---- 'sidescrolloff' ---------------------------------------------------------------------------
+
+  /**
+   * `:set sidescrolloff=10`, asked for instead of centring: the caret kept ten columns from either
+   * edge. The cursor commands reveal a point, and VS Code keeps only the last reveal requested before
+   * it paints, so the two sides go a frame apart - the side the caret is heading first, then the
+   * other, then the caret itself - each sending the cursor back to the caret without revealing.
+   */
+  @Test
+  fun `test sidescrolloff reveals the columns either side of the caret a frame apart`(): Promise<Unit> {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.clear()
+
+    session.type("j")
+
+    assertEquals(listOf("1:60!", "1:50"), session.steps(), "heading right, so the right-hand margin first")
+    return after(200) {
+      assertEquals(
+        listOf("1:60!", "1:50", "1:40!", "1:50", "1:51", "1:50!"),
+        session.steps(),
+        "then the left-hand margin, then the caret",
+      )
+      session.sidescrolloff(0)
+    }
+  }
+
+  @Test
+  fun `test sidescrolloff starts with the left-hand margin when the caret moves left`(): Promise<Unit> {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.clear()
+
+    session.type("h")
+
+    assertEquals(listOf("0:39!", "0:49"), session.steps())
+    return after(200) {
+      assertEquals(listOf("0:39!", "0:49", "0:59!", "0:49", "0:50", "0:49!"), session.steps())
+      session.sidescrolloff(0)
+    }
+  }
+
+  /** A step worked out for an older caret would send the cursor back to where that caret was. */
+  @Test
+  fun `test a newer key abandons the steps left from the last one`(): Promise<Unit> {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.clear()
+
+    session.type("j")
+    session.type("j")
+
+    return after(200) {
+      val lines = session.fake.cursorMoves.map { it.line }
+      assertEquals(listOf(1, 1), lines.take(2), "the first j's first step went out at once")
+      assertTrue(lines.drop(2).all { it == 2 }, "and nothing for line 1 after the second j: ${session.steps()}")
+      session.sidescrolloff(0)
+    }
+  }
+
+  /** In Insert mode the cursor commands would split typed text into undo steps. */
+  @Test
+  fun `test entering Insert mode abandons the steps`(): Promise<Unit> {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("50l")
+    session.clear()
+
+    session.type("j")
+    session.type("i")
+
+    return after(200) {
+      assertEquals(listOf("1:60!", "1:50"), session.steps())
+      session.sidescrolloff(0)
+    }
+  }
+
+  /** Near the start of the line the left-hand margin is the line's start. */
+  @Test
+  fun `test the margin stops at the start of the line`() {
+    val session = Session(longLines)
+    session.sidescrolloff(10)
+    session.type("3l")
+    session.clear()
+
+    session.type("h")
+
+    assertEquals(listOf("0:0!", "0:2"), session.steps())
+    session.sidescrolloff(0)
+  }
+
+  /**
+   * Vim reads a margin of half the window or more as "keep the caret centred", which needs the window's
+   * width. A column further than the window is wide would take the caret off screen for a step, so the
+   * margin stops at forty.
+   */
+  @Test
+  fun `test a very wide margin is capped`() {
+    val session = Session(longLines)
+    session.sidescrolloff(999)
+    session.type("100l")
+    session.clear()
+
+    session.type("l")
+
+    assertEquals(listOf("0:141!", "0:101"), session.steps())
+    session.sidescrolloff(0)
+  }
+
+  private fun after(millis: Int, block: () -> Unit): Promise<Unit> =
+    Promise { resolve, reject ->
+      setTimeout({
+        try {
+          block()
+          resolve(Unit)
+        } catch (e: Throwable) {
+          reject(e)
+        }
+      }, millis)
+    }
 }
+
+private external fun setTimeout(handler: () -> Unit, timeout: Int): Int
