@@ -233,7 +233,7 @@ sealed class QuickfixProgramCommand(
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
     val option = if (isGrep) Options.grepprg else Options.makeprg
-    val program = injector.optionGroup.getOptionValue(option, OptionAccessScope.EFFECTIVE(editor)).asString()
+    val program = injector.optionGroup.getOptionValue(option, OptionAccessScope.EFFECTIVE(editor)).toVimString().value
     val arguments = commandArgument.trim()
     // Vim's rule: `$*` is where the argument goes, and it is appended when the program has no `$*`.
     val command = if (program.contains("$*")) program.replace("$*", arguments) else "$program $arguments".trim()

@@ -359,7 +359,7 @@ abstract class VimVariableServiceBase : VariableService {
       // is read through, and without it `getVariable<Boolean>` threw "Unsupported type: Boolean".
       // `textobj-entire` has been reading `g:textobj_entire_no_default_mappings` that way since it
       // was bundled, and a config runs with `indicateErrors = false`, so it failed in silence.
-      Boolean::class -> vimDataType.asBoolean()
+      Boolean::class -> vimDataType.toVimNumber().booleanValue
 
       Double::class -> {
         if (vimDataType is VimFloat) {

@@ -18,6 +18,7 @@ import com.maddyhome.idea.vim.api.VimProcessGroup
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.common.ModeChangeListener
@@ -443,7 +444,7 @@ class VimHost(
     while (remaining.isNotEmpty()) {
       val stroke = remaining.removeAt(0)
       val caretBefore = editor.primaryCaret().offset
-      handler.handleKey(editor, stroke, VsCodeExecutionContext, state)
+      handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, state)
       // Vim's `arrow_used`: an abbreviation does not expand once the caret has been moved during
       // this insert by something that was not an edit. IdeaVim hears about that from IntelliJ's
       // caret listener; this host has none, so the keystroke loop is where a caret move is visible.

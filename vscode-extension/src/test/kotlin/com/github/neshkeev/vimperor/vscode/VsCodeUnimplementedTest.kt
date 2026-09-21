@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
+import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.vimscript.model.commands.engineExCommandProvider
 import com.maddyhome.idea.vim.vimscript.model.functions.engineFunctionProvider
 import com.maddyhome.idea.vim.api.VimCommandGroup
@@ -148,10 +149,10 @@ class VsCodeUnimplementedTest {
       val handler = KeyHandler.getInstance()
       handler.fullReset(editor)
       for (stroke in injector.parser.stringToKeys(":" + probe.removePrefix(":"))) {
-        handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+        handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, handler.keyHandlerState)
       }
       for (stroke in injector.parser.parseKeys("<CR>")) {
-        handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+        handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, handler.keyHandlerState)
       }
       editor.flush()
     } catch (e: NotImplementedError) {
@@ -190,7 +191,7 @@ class VsCodeUnimplementedTest {
         val handler = KeyHandler.getInstance()
         handler.fullReset(editor)
         for (stroke in injector.parser.parseKeys(":" + name + "<CR>")) {
-          handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+          handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, handler.keyHandlerState)
         }
         editor.flush()
       } catch (e: NotImplementedError) {
@@ -228,7 +229,7 @@ class VsCodeUnimplementedTest {
           val handler = KeyHandler.getInstance()
           handler.fullReset(editor)
           for (stroke in keys) {
-            handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+            handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, handler.keyHandlerState)
           }
           editor.flush()
         } catch (e: NotImplementedError) {

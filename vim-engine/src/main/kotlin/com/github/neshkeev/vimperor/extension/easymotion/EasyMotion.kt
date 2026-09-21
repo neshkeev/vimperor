@@ -483,13 +483,13 @@ private fun labelKeys(): String? {
 }
 
 private fun globalString(name: String): String? = try {
-  injector.variableService.getGlobalVariableValue(name)?.asString()
+  injector.variableService.getGlobalVariableValue(name)?.toVimString()?.value
 } catch (e: Exception) {
   null
 }
 
 private fun globalFlag(name: String, default: Boolean): Boolean = try {
-  injector.variableService.getGlobalVariableValue(name)?.asBoolean() ?: default
+  injector.variableService.getGlobalVariableValue(name)?.toVimNumber()?.booleanValue ?: default
 } catch (e: Exception) {
   default
 }

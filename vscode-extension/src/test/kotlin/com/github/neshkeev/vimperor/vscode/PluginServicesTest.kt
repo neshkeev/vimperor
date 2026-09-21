@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.api.Options
+import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.options.OptionAccessScope
 import com.maddyhome.idea.vim.common.CommandAliasHandler
 import com.maddyhome.idea.vim.ex.ranges.Range
@@ -126,7 +127,7 @@ class PluginServicesTest {
     )
 
     for (key in injector.parser.parseKeys("g@w")) {
-      KeyHandler.getInstance().handleKey(session.editor, key, VsCodeExecutionContext, KeyHandler.getInstance().keyHandlerState)
+      KeyHandler.getInstance().handleKey(session.editor, key, KeySource.TYPED, VsCodeExecutionContext, KeyHandler.getInstance().keyHandlerState)
     }
 
     assertEquals(SelectionType.CHARACTER_WISE, calledWith, "g@w should have called the exported function")

@@ -61,7 +61,7 @@ internal class VsCodeIndentConfig(private val editor: VsCodeEditor) : VimIndentC
   val usesTabs: Boolean
     get() = !injector.optionGroup
       .getOptionValue(VsCodeOptions.expandtab, OptionAccessScope.EFFECTIVE(editor))
-      .asBoolean()
+      .toVimNumber().booleanValue
 
   /**
    * How many columns a Tab pressed in [column] covers: the distance to the next stop, never zero.

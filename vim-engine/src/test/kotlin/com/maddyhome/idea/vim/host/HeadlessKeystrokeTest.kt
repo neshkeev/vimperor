@@ -11,6 +11,7 @@ package com.maddyhome.idea.vim.host
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.key.KeySource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -38,7 +39,7 @@ class HeadlessKeystrokeTest {
     val handler = KeyHandler.getInstance()
     val state = handler.keyHandlerState
     for (stroke in injector.parser.parseKeys(keys)) {
-      handler.handleKey(buffer.editor, stroke, HeadlessExecutionContext, state)
+      handler.handleKey(buffer.editor, stroke, KeySource.TYPED, HeadlessExecutionContext, state)
     }
     return buffer.editor.text
   }

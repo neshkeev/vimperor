@@ -37,6 +37,7 @@ import com.maddyhome.idea.vim.helper.EngineMessageHelper
 import com.maddyhome.idea.vim.history.VimHistory
 import com.maddyhome.idea.vim.history.VimHistoryBase
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
+import com.maddyhome.idea.vim.key.KeySource
 import com.maddyhome.idea.vim.key.ShortcutOwnerInfo
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
@@ -446,7 +447,7 @@ open class VsCodeInjector(
           repeat(total) {
             try {
               while (keyStack.hasStroke()) {
-                handler.handleKey(editor, keyStack.feedStroke(), context, handler.keyHandlerState)
+                handler.handleKey(editor, keyStack.feedStroke(), KeySource.TYPED, context, handler.keyHandlerState)
                 if (injector.messages.isError()) return
               }
             } finally {

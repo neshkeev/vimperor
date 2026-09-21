@@ -13,6 +13,7 @@ import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.VimSearchGroupBase
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.changelist.VimChangeList
+import com.maddyhome.idea.vim.key.KeySource
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -170,7 +171,7 @@ class VimFixtureReplayTest {
           val keys = injector.parser.parseKeys(":") + injector.parser.stringToKeys(command) +
             injector.parser.parseKeys("<CR>")
           for (stroke in keys) {
-            handler.handleKey(editor, stroke, VsCodeExecutionContext, handler.keyHandlerState)
+            handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, handler.keyHandlerState)
             editor.flush()
           }
         }

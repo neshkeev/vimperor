@@ -490,7 +490,7 @@ internal fun applyLineNumbers(editor: VimEditor) {
   val vsCode = editor as? VsCodeEditor ?: return
   val relative = injector.optionGroup
     .getOptionValue(VsCodeOptions.relativenumber, OptionAccessScope.EFFECTIVE(editor))
-    .asBoolean()
+    .toVimNumber().booleanValue
   val absolute = injector.options(editor).number
 
   val style = when {
@@ -528,8 +528,8 @@ internal fun applyLineNumbers(editor: VimEditor) {
 internal fun applyLanguage(editor: VimEditor) {
   val vsCode = editor as? VsCodeEditor ?: return
   val scope = OptionAccessScope.EFFECTIVE(editor)
-  val filetype = injector.optionGroup.getOptionValue(VsCodeOptions.filetype, scope).asString()
-  val syntax = injector.optionGroup.getOptionValue(VsCodeOptions.syntax, scope).asString()
+  val filetype = injector.optionGroup.getOptionValue(VsCodeOptions.filetype, scope).toVimString().value
+  val syntax = injector.optionGroup.getOptionValue(VsCodeOptions.syntax, scope).toVimString().value
   val wanted = filetype.ifEmpty { syntax }
   if (wanted.isEmpty()) return
 
@@ -862,7 +862,7 @@ internal fun applyIndent(editor: VimEditor) {
   val tabstop = injector.optionGroup.getOptionValue(VsCodeOptions.tabstop, scope).value
   if (tabstop > 0 && tabstop != options.tabSize) options.tabSize = tabstop
 
-  val expandtab = injector.optionGroup.getOptionValue(VsCodeOptions.expandtab, scope).asBoolean()
+  val expandtab = injector.optionGroup.getOptionValue(VsCodeOptions.expandtab, scope).toVimNumber().booleanValue
   if (expandtab != options.insertSpaces) options.insertSpaces = expandtab
 
   // Zero is Vim's "however wide a tab is", and `"tabSize"` is VS Code's spelling of the same thing.
@@ -978,7 +978,7 @@ internal enum class StatusIcon {
  * asking here does not already do, and one fewer thing to unregister.
  */
 internal fun statusIcon(): StatusIcon =
-  when (injector.optionGroup.getOptionValue(VsCodeOptions.ideastatusicon, OptionAccessScope.GLOBAL(null)).asString()) {
+  when (injector.optionGroup.getOptionValue(VsCodeOptions.ideastatusicon, OptionAccessScope.GLOBAL(null)).toVimString().value) {
     "disabled" -> StatusIcon.HIDDEN
     "gray" -> StatusIcon.GRAY
     else -> StatusIcon.SHOWN
@@ -986,4 +986,4 @@ internal fun statusIcon(): StatusIcon =
 
 /** Whether `:w` saves every open file, which is `set ideawrite=all` - not the default here. */
 internal fun writesEveryFile(): Boolean =
-  injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).asString() == "all"
+  injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).toVimString().value == "all"
