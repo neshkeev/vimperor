@@ -122,6 +122,9 @@ class VimHost(
     // with no effect.
     registerExtensionOptions()
     watchLineNumbers()
+    // A new host is a new window, and the transient wraps this remembers belonged to the last one's
+    // models. See [WordWrapSettingMapper].
+    forgetWordWraps()
   }
 
   /**
@@ -205,6 +208,16 @@ class VimHost(
   }
 
   /**
+   * `Alt+Z`, with what the `editorWordWrap` context key said before VS Code runs its own toggle.
+   *
+   * The one time this host can read the editor's real wrap - see [WordWrapSettingMapper] - so it is
+   * taken as the truth rather than reconciled against what was believed.
+   */
+  fun wordWrapToggled(textEditor: TextEditor, wasWrapping: Boolean) {
+    wordWrapToggledByHand(editorFor(textEditor), wasWrapping)
+  }
+
+  /**
    * A document VS Code has closed, and the editor state that went with it.
    *
    * Nothing called `forget` until this existed, so the host kept every editor of every file opened
@@ -215,6 +228,10 @@ class VimHost(
   fun forgetDocument(document: TextDocument) {
     val identity = "${document.uri.scheme}://${document.uri.path}"
     symbols.forget(document)
+    // The transient wrap VS Code keeps is disposed with the model, so what this host remembers
+    // about it has to go at the same moment - or a file reopened would be answered for out of a
+    // memory of the last time it was open. See [WordWrapSettingMapper].
+    forgetWordWrap(identity)
     editors.remove(identity)?.let { vimInjector.unregister(it) }
     if (lastActiveEditor?.document?.uri?.path == document.uri.path) lastActiveEditor = null
   }
@@ -302,6 +319,10 @@ class VimHost(
       // now means the answer is there before the first key. A file opened and never edited is
       // otherwise asked about only when a text object declines once.
       symbols.refresh(editor.document)
+      // A wrap asked for while this file was not the one on screen can be delivered now that it is.
+      // `editor.action.toggleWordWrap` runs against whatever has focus and cannot be aimed, so this
+      // is the moment the ask becomes possible. See [WordWrapSettingMapper].
+      applyPendingWordWrap(editorFor(editor))
       fire(AutoCmdEvent.BufEnter, editorFor(editor))
     }
     return if (ended) "Visual mode ended in the editor left behind" else null

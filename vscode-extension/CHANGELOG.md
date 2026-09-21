@@ -6,15 +6,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
-- Switching tabs changed the wrap. `'wrap'` is window-local in Vim, VS Code's `editor.wordWrap` is one
-  setting for every editor showing the language, and Vimperor kept a per-window value and wrote it to
-  that setting whenever an editor was shown - so `:set wrap` in one tab, a switch to the next and back,
-  and the first tab had stopped wrapping with nothing said. Worse, a settings file outlives the session:
-  a window opening on a file that wrapped *because Vimperor had written it there* decided it did not
-  wrap and wrote `off` on arrival. `'wrap'` is now read from the setting rather than stored, so
-  `:set wrap?` always answers with what the editor is drawn with, and nothing but a `:set` you typed -
-  or a `set nowrap` in your config - writes the setting. Two tabs of one language still share one wrap;
-  they no longer take it away from each other.
+- The wrap is per file now, and switching tabs no longer changes it. `'wrap'` is window-local in
+  Vim, and Vimperor was writing it to `editor.wordWrap` - one setting for every editor showing the
+  language - so `:set wrap` in one tab, a switch to the next and back, and the first tab had
+  stopped wrapping with nothing said. Worse, that setting outlives the session: a window opening on
+  a file that wrapped *because Vimperor had written it there* could decide it did not wrap and turn
+  it off on arrival. `'wrap'` is now the editor's own word wrap - the one `Alt+Z` sets, which VS
+  Code keeps per document - so each file keeps its own answer, `:set wrap?` always reports what the
+  file is drawn with, and nothing is written to `settings.json` at all. A file opened from a window
+  where you typed `:set wrap` wraps too, as Vim means it to, and `set nowrap` in a `~/.vimperorrc`
+  now reaches every file rather than the first window. `Alt+Z` is claimed so that your own toggling
+  is kept up with; *View: Toggle Word Wrap* from the Command Palette still cannot be seen, and the
+  README says what that costs.
 
 ## [0.0.6] - 2026-09-17
 

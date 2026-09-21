@@ -38,6 +38,14 @@ internal object VsCodeCommands {
   const val UNFOLD_RECURSIVELY = "editor.unfoldRecursively"
   const val TOGGLE_FOLD = "editor.toggleFold"
 
+  /**
+   * `'wrap'`. Not a setting: it stores a transient property on the *model*, which is the editor's
+   * wrap overriding `editor.wordWrap`, and clears it when one is already there. See
+   * [com.github.neshkeev.vimperor.vscode.WordWrapSettingMapper], which counts presses rather than
+   * hoping.
+   */
+  const val TOGGLE_WORD_WRAP = "editor.action.toggleWordWrap"
+
   const val REVEAL_DEFINITION = "editor.action.revealDefinition"
 
   /**
@@ -305,6 +313,7 @@ internal object VsCodeCommands {
     MOVE_CURSOR_SELECTING,
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
+    TOGGLE_WORD_WRAP,
     REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,

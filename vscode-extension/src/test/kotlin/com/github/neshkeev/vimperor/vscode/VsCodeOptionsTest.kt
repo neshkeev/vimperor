@@ -490,128 +490,176 @@ class VsCodeOptionsTest {
     assertEquals(StatusIcon.SHOWN, statusIcon())
   }
 
-  // `'wrap'`, which is the third option here that does something rather than being accepted.
+  // `'wrap'`, which is the third option here that does something rather than being accepted - and
+  // the only one that is not a value this host keeps. See [WordWrapSettingMapper]: it is the
+  // editor's own transient wrap, driven by counted presses of `editor.action.toggleWordWrap`, and
+  // no settings file is written at all.
+
+  /** Every press of the wrap toggle the host asked VS Code for. */
+  private fun Session.toggles(): List<String> = dispatched.filter { it == VsCodeCommands.TOGGLE_WORD_WRAP }
 
   /**
-   * `:set nowrap` and `:set wrap` reach VS Code's own word wrap, by *writing* it.
+   * `:set wrap` presses the toggle once, and writes nothing.
    *
-   * The first attempt at this ran `editor.action.toggleWordWrap` and kept a belief about which way
-   * the editor currently was, because VS Code will not report it. That is unfixable rather than
-   * merely fragile: one wrong belief and every command means its opposite, which is what it did in
-   * a real window - `:set nowrap` wrapped the file and `:set wrap` unwrapped it. A written value
-   * cannot be inverted, and it reads back, so `:set wrap?` answers from the editor.
+   * The first version of this option ran the same command and kept a belief about which way the
+   * editor was, which is unfixable: one wrong belief and every command means its opposite, and it
+   * did exactly that in a real window. The second wrote `editor.wordWrap`, which is absolute but is
+   * one setting for every editor showing the language, so two tabs could not disagree.
+   *
+   * The toggle is not a coin flip once its rule is known: with no override it sets one to the
+   * opposite of the setting. The setting says `off` here, so one press is the whole of it.
    */
   @Test
-  fun `test set wrap writes VS Code's own setting`() {
+  fun `test set wrap toggles the editor's own wrap`() {
     try {
       val session = Session()
+      val editor = session.host.editorFor(session.fake)
+      session.dispatched.clear()
       forget()
 
       session.run("set wrap")
+
       assertEquals(emptyList(), session.errors)
-      assertEquals(listOf("wordWrap=on"), writes())
-
-      forget()
-      session.run("set nowrap")
-      assertEquals(listOf("wordWrap=off"), writes())
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles())
+      assertTrue(wordWrapNow(editor), "the file wraps now")
+      assertEquals(emptyList(), writes(), "and settings.json is not touched")
     } finally {
       reset()
     }
   }
 
   /**
-   * A file outside every workspace folder is written for in the user's settings.
+   * Turning it off again clears the override rather than setting a second one.
    *
-   * The target is not "workspace if the window has one": a workspace setting covers the folders in
-   * the workspace and nothing else, so a file opened on its own alongside a project would have been
-   * written for and unaffected. Target 1 is Global, 3 is WorkspaceFolder.
+   * Which is one press, not two, because the setting underneath already says `off` - and knowing
+   * that is the difference between counting presses and guessing at them.
    */
-  /** Both directions go to the same layer, always, or they cannot undo each other. */
   @Test
-  fun `test both directions are written into the language block`() {
+  fun `test set nowrap clears the override when the setting already agrees`() {
     try {
       val session = Session()
-      forget()
-
+      val editor = session.host.editorFor(session.fake)
       session.run("set wrap")
+      session.dispatched.clear()
+
       session.run("set nowrap")
 
-      val updates = js("require('vscode').workspace.updates").unsafeCast<Array<dynamic>>()
-      assertEquals(listOf(true, true), updates.map { it.overrideInLanguage as Boolean })
-    } finally {
-      reset()
-    }
-  }
-
-  @Test
-  fun `test the wrap is written where it reaches this file`() {
-    try {
-      val session = Session()
-      forget()
-
-      session.run("set wrap")
-
-      val target = js("require('vscode').workspace.updates[0].target")
-      assertEquals(1, target, "the stub has no folders, so nothing is inside one")
-    } finally {
-      reset()
-    }
-  }
-
-  /** Written once per value, not once per keystroke: a settings write is a file on disk. */
-  @Test
-  fun `test the wrap is written once for one set`() {
-    try {
-      val session = Session()
-      forget()
-
-      session.run("set wrap")
-      session.host.type(session.fake, "x")
-      session.host.key(session.fake, "<Esc>")
-
-      assertEquals(listOf("wordWrap=on"), writes())
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles())
+      assertEquals(false, wordWrapNow(editor))
     } finally {
       reset()
     }
   }
 
   /**
-   * A `[language]` block is what usually turns word wrap on, and it is what the read must see.
+   * ...and two presses when it does not, which is the case the arithmetic exists for.
    *
-   * The scope decides: a `Uri` resolves the folder's value and stops, a *document* resolves the
-   * language override too. Reading by URI answered `off` for a file VS Code was wrapping, so every
-   * read agreed with every write and neither described the screen - three rebuilds' worth of a
-   * setting that was written, read back, and shadowed.
+   * An override is in place and the setting has moved underneath it - another window's `:set`, or
+   * the user editing `settings.json`. Clearing the override lands on the setting, which is the
+   * wrong answer, so a second press sets a fresh override to the opposite of it.
    */
   @Test
-  fun `test a language block is read and written, not shadowed`() {
+  fun `test two presses when clearing the override would land on the wrong answer`() {
+    try {
+      val session = Session()
+      val editor = session.host.editorFor(session.fake)
+      session.run("set wrap")
+      // The setting moves underneath: what the override was hiding now says `on` too.
+      js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'on' } }")
+      session.dispatched.clear()
+
+      session.run("set nowrap")
+
+      assertEquals(2, session.toggles().size, "clear it, then set one the other way")
+      assertEquals(false, wordWrapNow(editor))
+    } finally {
+      js("delete require('vscode').workspace.languageConfiguration.plaintext")
+      reset()
+    }
+  }
+
+  /**
+   * The wrap is per file, which is the whole point and is what was reported.
+   *
+   * `:set wrap` in one tab, `:set nowrap` in the next, and the first one is still wrapping when you
+   * come back to it. Under the old design it was not: `'wrap'` was pushed at `editor.wordWrap`,
+   * which is one setting for every editor showing the language, so the tab touched last took the
+   * answer away from the other one.
+   */
+  @Test
+  fun `test the wrap is per file`() {
+    try {
+      val session = Session()
+      val a = session.host.editorFor(session.fake)
+      session.host.activeEditorChanged(session.fake)
+      session.run("set wrap")
+
+      val other = FakeEditor("other\nfile", path = "/test/other.txt")
+      session.host.activeEditorChanged(other)
+      session.run("set nowrap", on = other)
+
+      assertEquals(false, wordWrapNow(session.host.editorFor(other)))
+      session.host.activeEditorChanged(session.fake)
+      assertTrue(wordWrapNow(a), "the first tab kept its own answer")
+      assertEquals(emptyList(), writes(), "and neither tab wrote a settings file")
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * A file opened later takes the wrap of the window it was opened from, which is Vim.
+   *
+   * `'wrap'` is local to a window and Vim copies window-local options into a new one, so `:set
+   * wrap` and then opening a file means that file wraps too - and it is what makes a `set nowrap`
+   * in a `~/.vimperorrc` reach every file rather than whichever window happened to be open when the
+   * config ran.
+   *
+   * Safe in a way it was not when the value was a setting: what arrives is applied to the arriving
+   * tab and reaches no other.
+   */
+  @Test
+  fun `test a file opened later takes the wrap of the window it came from`() {
+    try {
+      val session = Session()
+      session.host.activeEditorChanged(session.fake)
+      session.run("set wrap")
+      session.dispatched.clear()
+
+      val later = FakeEditor("later\nfile", path = "/test/later.txt")
+      session.host.activeEditorChanged(later)
+
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles())
+      assertTrue(wordWrapNow(session.host.editorFor(later)), "the new tab wraps, as Vim means it to")
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * ...but opening a file does not flip its wrap when nobody asked.
+   *
+   * An option nobody set is [OptionValue.Default], and a window carries one into every file it
+   * opens. Acting on it would mean a file that wraps because of a `[markdown]` block stopped
+   * wrapping the moment it was opened, on the strength of an option's default - which is the shape
+   * of the bug the previous design had, one level down.
+   */
+  @Test
+  fun `test opening a file does not flip a wrap nobody asked about`() {
     val byLanguage = js("require('vscode').workspace.languageConfiguration")
     byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
     try {
       val session = Session()
+      session.host.activeEditorChanged(session.fake)
+      session.dispatched.clear()
       forget()
 
-      // The file wraps because of its language, so Vim's option starts there rather than at the
-      // folder's `off`.
-      session.run("set wrap?")
-      assertTrue(
-        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
-        "the language block should be what `'wrap'` is read from, printed: ${session.printed}",
-      )
+      val later = FakeEditor("later\nfile", path = "/test/later.txt")
+      session.host.activeEditorChanged(later)
 
-      // And turning it off has to go into the language block, or the block shadows the write.
-      session.run("set nowrap")
-      assertEquals(listOf("wordWrap=off"), writes())
-      assertEquals(true, js("require('vscode').workspace.updates[0].overrideInLanguage"))
-      assertEquals(false, configuredWordWrap(session.host.editorFor(session.fake)))
-
-      // And back, into the same layer. Writing the two directions to *different* layers is what
-      // made `:set wrap` wrap and `:set nowrap` do nothing: the second could not undo the first.
-      forget()
-      session.run("set wrap")
-      assertEquals(listOf("wordWrap=on"), writes())
-      assertEquals(true, js("require('vscode').workspace.updates[0].overrideInLanguage"))
-      assertEquals(true, configuredWordWrap(session.host.editorFor(session.fake)))
+      assertEquals(emptyList(), session.toggles(), "nobody asked, so nothing is pressed")
+      assertTrue(wordWrapNow(session.host.editorFor(later)), "and the file goes on wrapping")
+      assertEquals(emptyList(), writes())
     } finally {
       byLanguage["plaintext"] = undefined
       reset()
@@ -619,105 +667,173 @@ class VsCodeOptionsTest {
   }
 
   /**
-   * A wrap that has been asked for is what is read back, until the configuration catches up.
+   * `Alt+Z` is seen rather than missed, and that is what makes the one bit of belief affordable.
    *
-   * `WorkspaceConfiguration.update` does not take effect in the turn that asks for it, so the read
-   * on the next line still answers `off` for a `:set wrap` that has just happened. Nothing else
-   * stores the option, so without this memory `:set wrap?` would answer `nowrap` immediately after
-   * `:set wrap`.
+   * The editor's real wrap is not something an extension can read. It *is* something a `when`
+   * clause can read, so the manifest binds the chord twice - under `editorWordWrap` and under its
+   * negation - and what arrives here is the answer. Without it a single `Alt+Z` would invert every
+   * later `:set wrap` in that file for as long as it stayed open.
    */
   @Test
-  fun `test a wrap just written is what is read back`() {
+  fun `test Alt+Z is read back rather than lost`() {
+    try {
+      val session = Session()
+      val editor = session.host.editorFor(session.fake)
+      session.run("set wrap")
+      assertTrue(wordWrapNow(editor))
+
+      // The user presses Alt+Z while the file is wrapping. The setting says `off`, so what VS Code
+      // is about to do is clear the override.
+      session.host.wordWrapToggled(session.fake, wasWrapping = true)
+      assertEquals(false, wordWrapNow(editor), "the override is gone, so the setting answers")
+
+      session.dispatched.clear()
+      session.run("set wrap")
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles(), "and `:set wrap` works again")
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * A file VS Code has closed forgets its wrap, because VS Code forgot it too.
+   *
+   * The transient property is disposed with the model, so what this host remembers has to go at the
+   * same moment - or a file reopened would be answered for out of a memory of the last time it was
+   * open, and every press counted from it would be one out.
+   */
+  @Test
+  fun `test a closed file forgets its wrap`() {
     try {
       val session = Session()
       session.run("set wrap")
-      // As the configuration reads while VS Code has not finished applying the write.
-      js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'off' } }")
+      assertTrue(wordWrapNow(session.host.editorFor(session.fake)))
 
-      session.printed.clear()
+      session.host.forget(session.fake)
+
+      val again = FakeEditor("one two\nthree four")
+      assertEquals(false, wordWrapNow(session.host.editorFor(again)), "back to what the setting says")
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * A wrap asked for while the file is not on screen waits until it is.
+   *
+   * `editor.action.toggleWordWrap` is an editor action: it runs against whatever has focus and
+   * cannot be pointed at another tab. A `~/.vimperorrc` read before VS Code has focused anything is
+   * the case this exists for.
+   */
+  @Test
+  fun `test a wrap asked for off screen waits for the file`() {
+    try {
+      val session = Session()
+      val other = FakeEditor("other\nfile", path = "/test/other.txt")
+      val otherEditor = session.host.editorFor(other)
+      session.host.activeEditorChanged(session.fake)
+      session.dispatched.clear()
+
+      setWordWrap(otherEditor, wrapping = true)
+      assertEquals(emptyList(), session.toggles(), "not the file on screen, so not yet")
+      assertTrue(wordWrapNow(otherEditor), "though `:set wrap?` answers with what was asked for")
+
+      session.host.activeEditorChanged(other)
+
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles(), "delivered once it is")
+    } finally {
+      reset()
+    }
+  }
+
+  /** Setting it to what it already is presses nothing: the editor is already doing it. */
+  @Test
+  fun `test setting wrap to what it already is presses nothing`() {
+    try {
+      val session = Session()
+      session.run("set wrap")
+      session.dispatched.clear()
+
+      session.run("set wrap")
+      session.run("set wrap")
+
+      assertEquals(emptyList(), session.toggles())
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * And nothing happens just because the extension loaded, or because a key was pressed.
+   *
+   * Vim wraps by default and VS Code does not, so an option carrying Vim's answer would turn
+   * wrapping on in every editor the moment Vimperor was installed. Nothing carries an answer: the
+   * option is what the editor is drawn with, so there is nothing for a keystroke to apply.
+   */
+  @Test
+  fun `test starting up and typing leave the wrap alone`() {
+    try {
+      val session = Session()
+      session.dispatched.clear()
+      forget()
+
+      session.host.type(session.fake, "x")
+      session.host.key(session.fake, "<Esc>")
+
+      assertEquals(emptyList(), session.toggles())
+      assertEquals(emptyList(), writes())
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * With no override, `'wrap'` is the setting - resolved for the *document*, so a `[language]`
+   * block is seen.
+   *
+   * Without a scope VS Code answers for the window and ignores a `[markdown]` block turning word
+   * wrap on, which is how people usually turn it on. `'wrap'` came out `nowrap` while the lines
+   * wrapped, so `:set nowrap` agreed with itself and changed nothing.
+   */
+  @Test
+  fun `test a language block is what the wrap is read from`() {
+    val byLanguage = js("require('vscode').workspace.languageConfiguration")
+    byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
+    try {
+      val session = Session()
+      session.dispatched.clear()
+
+      session.run("set wrap?")
+      assertTrue(
+        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
+        "the language block should be what `'wrap'` is read from, printed: ${session.printed}",
+      )
+
+      session.run("set nowrap")
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles())
+      assertEquals(false, wordWrapNow(session.host.editorFor(session.fake)))
+    } finally {
+      byLanguage["plaintext"] = undefined
+      reset()
+    }
+  }
+
+  /** The same for a setting scoped to the file rather than to its language. */
+  @Test
+  fun `test a scoped setting is what the wrap is read from`() {
+    val settings = js("require('vscode').workspace.scopedConfiguration")
+    settings["/test/buffer.txt"] = js("({ editor: { wordWrap: 'on' } })")
+    try {
+      val session = Session()
+
       session.run("set wrap?")
 
       assertTrue(
         session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
-        "the wrap that was asked for should be the answer, printed: ${session.printed}",
+        "the option should start where the editor is, printed: ${session.printed}",
       )
     } finally {
-      js("delete require('vscode').workspace.languageConfiguration.plaintext")
-      reset()
-    }
-  }
-
-  /**
-   * ...and then it expires, because the setting it describes is shared.
-   *
-   * `editor.wordWrap` is one setting for every window showing the language, so another window's
-   * `:set nowrap` - or an edit to `settings.json` - moves it underneath this one. A memory with no
-   * expiry is a memory that can be wrong, and this option is the value of the setting rather than
-   * of the memory.
-   */
-  @Test
-  fun `test the memory of a write expires, so the setting is what answers`() {
-    try {
-      val session = Session()
-      session.run("set wrap")
-      // As another window would leave it.
-      js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'off' } }")
-
-      wroteWordWrap = null
-      session.printed.clear()
-      session.run("set wrap?")
-
-      assertTrue(
-        session.printed.any { it.contains("nowrap") },
-        "once the memory has gone the setting is the answer, printed: ${session.printed}",
-      )
-    } finally {
-      js("delete require('vscode').workspace.languageConfiguration.plaintext")
-      reset()
-    }
-  }
-
-  /**
-   * The write goes to the layer that holds the value, not to the one the file belongs to.
-   *
-   * Reported from a real window, and the second way this option could be written and ignored: an
-   * untitled file is in no folder, so the write went to the user's settings, while the window had a
-   * folder open whose settings turned word wrap on for `[plaintext]`. The workspace layer
-   * wins, so `:set nowrap` wrote `off` where nothing read it.
-   */
-  @Test
-  fun `test the wrap is written to the layer the value comes from`() {
-    try {
-      // As a folder's `.vscode/settings.json` leaves it in a window with that folder open.
-      js("require('vscode').workspace.workspaceLanguageConfiguration.plaintext = { editor: { wordWrap: 'on' } }")
-      val session = Session()
-      forget()
-
-      session.run("set nowrap")
-
-      val target = js("require('vscode').workspace.updates[0].target") as Int
-      assertEquals(ConfigurationTarget.Workspace, target, "the workspace layer is what decides this file")
-      assertTrue(
-        !configuredWordWrap(session.host.editorFor(session.fake)),
-        "and the write has to be what the setting now reads back as",
-      )
-    } finally {
-      reset()
-    }
-  }
-
-  /** With no layer holding a value, an untitled file still writes to the user's settings. */
-  @Test
-  fun `test the wrap of a file in no folder is written to the user's settings`() {
-    try {
-      val session = Session()
-      forget()
-
-      session.run("set wrap")
-
-      val target = js("require('vscode').workspace.updates[0].target") as Int
-      assertEquals(ConfigurationTarget.Global, target)
-    } finally {
+      settings["/test/buffer.txt"] = undefined
       reset()
     }
   }
@@ -731,186 +847,11 @@ class VsCodeOptionsTest {
       session.run("set wrap")
 
       val traced = session.host.describeState(session.fake)
-      assertTrue(traced.contains("wrap: writing wordWrap=on"), "the write should be traced, got: $traced")
-      assertTrue(traced.contains("[plaintext]"), "with the language block it went into, got: $traced")
+      assertTrue(traced.contains("wrap: true, by 1 press"), "the presses should be traced, got: $traced")
       assertEquals(
         session.host.describeState(session.fake).contains("wrap:"),
         false,
         "and drained, so the next key does not repeat it",
-      )
-    } finally {
-      reset()
-    }
-  }
-
-  /** And it is written where it can be read back, so the option and the editor cannot drift. */
-  @Test
-  fun `test the wrap that was written is the wrap that is read`() {
-    try {
-      val session = Session()
-      val editor = session.host.editorFor(session.fake)
-      session.run("set wrap")
-      // Read *for this editor*: the write goes into the file's language block, and an unscoped read
-      // does not resolve one. That asymmetry is the bug this option kept having, in miniature.
-      assertTrue(configuredWordWrap(editor), "the setting should say the editor wraps now")
-
-      session.run("set nowrap")
-      assertEquals(false, configuredWordWrap(editor))
-    } finally {
-      reset()
-    }
-  }
-
-  /** Setting it to what it already is writes nothing: a settings write is a file on disk. */
-  @Test
-  fun `test setting wrap to what it already is writes nothing`() {
-    try {
-      val session = Session()
-      session.run("set wrap")
-      forget()
-
-      session.run("set wrap")
-      session.run("set wrap")
-
-      assertEquals(emptyList(), writes())
-    } finally {
-      reset()
-    }
-  }
-
-  /**
-   * And nothing is written just because the extension loaded.
-   *
-   * Vim wraps by default and VS Code does not, so an option that carried Vim's answer would turn
-   * wrapping on in every editor the moment Vimperor was installed. Nothing carries an answer: the
-   * option *is* the setting, so there is nothing for a keystroke to apply.
-   */
-  @Test
-  fun `test starting up leaves the wrap alone`() {
-    try {
-      val session = Session()
-      forget()
-
-      session.host.type(session.fake, "x")
-      session.host.key(session.fake, "<Esc>")
-
-      assertEquals(emptyList(), writes())
-    } finally {
-      reset()
-    }
-  }
-
-  /**
-   * An editor wrapping because of a *scoped* setting is read as wrapping.
-   *
-   * Without a scope VS Code answers for the window and ignores a `[markdown]` block turning word
-   * wrap on, or a folder's settings - which is how people usually turn it on. `'wrap'` came out
-   * `nowrap` while the lines wrapped, so `:set nowrap` agreed with itself and changed nothing.
-   */
-  @Test
-  fun `test a language override is what the wrap is read from`() {
-    val settings = js("require('vscode').workspace.scopedConfiguration")
-    settings["/test/buffer.txt"] = js("({ editor: { wordWrap: 'on' } })")
-    try {
-      val session = Session()
-      forget()
-
-      session.run("set wrap?")
-      assertTrue(
-        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
-        "the option should start where the editor is, printed: ${session.printed}",
-      )
-
-      session.run("set nowrap")
-      assertEquals(listOf("wordWrap=off"), writes())
-    } finally {
-      settings["/test/buffer.txt"] = undefined
-      reset()
-    }
-  }
-
-  // Two tabs, one setting. This is what `'wrap'` was reported against.
-
-  /**
-   * Switching tabs writes nothing, and the tab you come back to still wraps.
-   *
-   * VS Code hands out a new `TextEditor` every time a hidden tab is shown, so the host replaces its
-   * wrapper and the engine initialises that window's local options from the window it was opened
-   * from. `'wrap'` used to be one of those values and used to be pushed at the setting whenever an
-   * editor was registered - so `:set wrap` here, a switch to the next tab and back, and this tab
-   * had stopped wrapping with nothing said. A window that opens has no opinion to impose now.
-   */
-  @Test
-  fun `test switching tabs does not rewrite the wrap`() {
-    try {
-      val session = Session()
-      session.host.activeEditorChanged(session.fake)
-      session.run("set wrap")
-      forget()
-
-      // To the next tab, and back - each arrival is a `TextEditor` object VS Code has just made.
-      session.host.activeEditorChanged(FakeEditor("other\nfile", path = "/test/other.txt"))
-      val again = FakeEditor("one two\nthree four")
-      session.host.activeEditorChanged(again)
-
-      assertEquals(emptyList(), writes(), "a tab switch is not a `:set`")
-      assertTrue(configuredWordWrap(session.host.editorFor(again)), "and the file still wraps")
-    } finally {
-      reset()
-    }
-  }
-
-  /**
-   * A wrap the settings already hold survives a window opening on it.
-   *
-   * The worse half of the same bug, because a settings file outlives the session: `'wrap'`'s
-   * default was one unscoped read taken at startup, and the write goes into a `[language]` block,
-   * which an unscoped read does not resolve. So a window opening on a file that wrapped *because of
-   * what this host wrote last time* started at `nowrap`, disagreed with the screen, and wrote `off`
-   * - undoing the user's own setting on arrival, in silence.
-   */
-  @Test
-  fun `test a window opening does not undo a wrap the settings hold`() {
-    val byLanguage = js("require('vscode').workspace.languageConfiguration")
-    byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
-    try {
-      val session = Session()
-      forget()
-
-      val later = FakeEditor("later\nfile", path = "/test/later.txt")
-      session.host.activeEditorChanged(later)
-
-      assertEquals(emptyList(), writes(), "nothing was asked for, so nothing is written")
-      assertTrue(configuredWordWrap(session.host.editorFor(later)), "and the file goes on wrapping")
-    } finally {
-      byLanguage["plaintext"] = undefined
-      reset()
-    }
-  }
-
-  /**
-   * Every window answers with the setting, because the setting is what there is.
-   *
-   * `'wrap'` is declared local-to-window, as it is in Vim, and `editor.wordWrap` is one value for
-   * every window showing the language. That is a real difference from Vim and it is reported rather
-   * than hidden: a second tab of the same language says `wrap` because it *does* wrap, instead of
-   * saying `nowrap` from a per-window value nobody can see.
-   */
-  @Test
-  fun `test a second tab reports the wrap it is actually drawn with`() {
-    try {
-      val session = Session()
-      session.host.activeEditorChanged(session.fake)
-      session.run("set wrap")
-
-      val other = FakeEditor("other\nfile", path = "/test/other.txt")
-      session.host.activeEditorChanged(other)
-      session.printed.clear()
-      session.run("set wrap?", on = other)
-
-      assertTrue(
-        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
-        "the other tab wraps too, and should say so, printed: ${session.printed}",
       )
     } finally {
       reset()
@@ -934,7 +875,6 @@ class VsCodeOptionsTest {
     // the failure read as the write being broken.
     js("require('vscode').workspace.languageConfiguration = {}")
     forget()
-    wroteWordWrap = null
   }
 
   /**

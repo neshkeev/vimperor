@@ -372,46 +372,61 @@ what this host last asked for. The cost is that a window-local Vim option is wri
 setting that is not: it lands in the workspace when there is one and in the user's settings
 otherwise, and it persists. That is the better of the two trades.
 
-The default was the other half, and it took a fourth attempt to see that there should not be
-one. Vim wraps and VS Code does not, so an option that started at Vim's answer would turn
-wrapping *on* in every editor the moment Vimperor loaded; so it was seeded from the editor's
-own setting instead, and the host pushed Vim's answer back at the setting whenever an editor
-was registered and after every keystroke. **That is a per-window belief about something that
-is not per-window, and it broke twice over.** Two tabs could not hold two answers: `:set
+The default was the other half, and it took a fourth attempt to see that the whole approach
+was wrong. Vim wraps and VS Code does not, so an option that started at Vim's answer would
+turn wrapping *on* in every editor the moment Vimperor loaded; so it was seeded from the
+editor's own setting instead, and the host pushed Vim's answer back at the setting whenever an
+editor was registered and after every keystroke. **That is a per-window belief about something
+that is not per-window, and it broke twice over.** Two tabs could not hold two answers: `:set
 wrap` here, a switch to the next tab and back, and this one had stopped wrapping with nothing
 said. And because a settings file outlives the session, a window opening on a file that
-wrapped *because of what this host wrote last time* started at the default, disagreed with
-the screen, and wrote `off` on arrival - the default being one **unscoped** read taken at
-startup, which does not resolve the `[markdown]` block that every write goes into, while
-every other read is scoped to a document.
+wrapped *because of what this host wrote last time* started at the default, disagreed with the
+screen, and wrote `off` on arrival - the default being one **unscoped** read taken at startup,
+which does not resolve the `[markdown]` block that every write goes into.
 
-So there is no stored value now. `WordWrapSettingMapper` is a `LocalOptionValueOverride` -
-the engine's own seam for an option whose value is an editor setting, and what IdeaVim maps
-IntelliJ's soft wraps through - and it answers every read from the setting and makes every
-write something the user asked for. `:set wrap?` cannot drift from the screen because there
-is nothing for it to drift from, and `applyEditorOptions` does not touch `'wrap'` at all.
-What a window inherits is not written: `VsCodeInjector.register` raises `openingAWindow`
-around the engine's initialisation, and the one value let through is `OptionValue.InitVimRc`,
-because a `~/.vimperorrc` is the config speaking for every window rather than one window's
-opinion about a shared setting. The cost is that per-tab wrap does not exist - and it never
-did; two tabs of one language share one setting whatever Vim calls the option.
+**VS Code does have a per-editor wrap, and the first attempt was reaching for it with the wrong
+hand.** `editor.action.toggleWordWrap` does not touch the setting: it stores a *transient
+property on the model*, keyed by the document's URI and disposed with it, and the editor's wrap
+is that property when it is set and the setting when it is not. That is `'wrap'`, one level
+down. `WordWrapSettingMapper` drives it and writes no setting at all, so the wrap is per file,
+survives a tab switch, goes when the file closes - which is also what IntelliJ's own soft-wrap
+toggle does - and leaves nothing in `settings.json`.
+
+**What makes a belief affordable here and not in the first attempt is that the toggle's rule is
+known.** It is a strict two-cycle: with no override it sets one to the opposite of what the
+setting says *now*, and with an override it clears it. So the belief is one bit per document -
+"is there an override, and what is it" - the presses that reach any target are 0, 1 or 2 and
+are arithmetic, and the bit starts **correct**, because a document this host has not seen
+cannot have an override. `VimHost.forgetDocument` drops it when VS Code closes the file, and
+`VimHost.start` drops the lot, because a new host is a new set of models.
+
+**`Alt+Z` used to be what broke it and is now what repairs it.** `editorWordWrap` is a context
+key - unreadable by an extension, readable in a `when` clause, which is the trick
+`youcompleteme` is built out of - so `package.json` binds the chord twice, under it and under
+its negation, and the user's own toggle arrives saying which way the editor was. What is left
+is `editor.action.toggleWordWrap` run from the Command Palette: a built-in command id cannot be
+claimed, so that one inverts a file's answers until it is closed. The README says so.
 
 **The general rule, and it is the fourth question below asked from the other side: an option
-whose value lives in the editor must not also be stored here.** A stored copy of something
-the host owns is a belief, and a belief drifts - silently, because nothing compares the two.
+whose value lives in the editor must not also be stored here.** A stored copy of something the
+host owns is a belief, and a belief drifts - silently, because nothing compares the two. The
+belief that is left is not a copy of the value; it is a record of what this host has done to
+it, which is a different and much smaller thing.
 
-**And a setting has to be written where it is read**, which cost one more round. Whether the
-`[markdown]` block or the plain value decided a file's wrap was being worked out per call, by
-comparing a document-scoped read against a URI-scoped one - so `:set wrap` wrote the language
-value and took effect while `:set nowrap` wrote the plain one and was shadowed by what the
-previous command had just written. The two directions were not the same setting, so the second
-could not undo the first. Every write goes into the language block now: it is the layer that
-wins, which is both why people use it and why it is the only one certain to be reversible. The
-cost is that `:set nowrap` on a Kotlin file writes `"[kotlin]"` into the user's settings.
+**And a setting has to be written where it is read**, which cost one more round while the value
+still *was* a setting. Whether the `[markdown]` block or the plain value decided a file's wrap
+was being worked out per call, by comparing a document-scoped read against a URI-scoped one -
+so `:set wrap` wrote the language value and took effect while `:set nowrap` wrote the plain one
+and was shadowed by what the previous command had just written. The two directions were not the
+same setting, so the second could not undo the first. That is history for `'wrap'`, which
+writes no setting at all now; it is kept because the read is still scoped to the **document**,
+which is what resolves the `[markdown]` block, and because the next option to reach for a
+setting will meet the same trap.
 
-Anything else moved out of the accepted group will need all four questions asked of it: can it
-be set rather than toggled, what is its default here, is the read scoped, and does the write
-land in the layer the read comes from.
+Anything else moved out of the accepted group will need all five questions asked of it: is it
+editor state or configuration, can it be set rather than toggled, what is its default here, is
+the read scoped, and does the write land in the layer the read comes from. The first question
+is the one `'wrap'` took four attempts to ask, and it is the one that decides the rest.
 
 **`'expandtab'`, `'tabstop'` and `'shiftwidth'` were the next three out, and they were easier
 than `'wrap'` - for a reason worth knowing before reaching for the fourth.** VS Code models

@@ -500,6 +500,22 @@
         "key": "escape",
         "command": "workbench.action.focusActiveEditorGroup",
         "when": "vimperor.escapeReturnsToEditor && !editorTextFocus && !terminalFocus && !inputFocus && !textInputFocus && !sideBarFocus && !panelFocus && !auxiliaryBarFocus && !listFocus && !inQuickOpen && !notificationFocus && !notificationCenterVisible && !statusBarFocused && !bannerFocused && !referenceSearchVisible && !commentFocused && !suggestWidgetVisible && !findWidgetVisible && !notebookEditorFocused"
+      },
+      {
+        "key": "alt+z",
+        "command": "vimperor.toggleWordWrap",
+        "args": {
+          "wrapping": true
+        },
+        "when": "editorTextFocus && editorWordWrap"
+      },
+      {
+        "key": "alt+z",
+        "command": "vimperor.toggleWordWrap",
+        "args": {
+          "wrapping": false
+        },
+        "when": "editorTextFocus && !editorWordWrap"
       }
     ],
     "configuration": {

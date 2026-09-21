@@ -408,6 +408,24 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // `Alt+Z`, claimed so that the user's own word wrap toggle is seen rather than missed.
+  //
+  // `'wrap'` is the editor's transient wrap rather than a setting - see `WordWrapSettingMapper` -
+  // and knowing which way an editor currently is takes one bit this host cannot read. It can be
+  // read in a `when` clause, though, which is why the manifest binds this chord twice: once under
+  // `editorWordWrap` and once under its negation, each carrying the answer. Without it, `Alt+Z`
+  // would invert every later `:set wrap` in that file.
+  //
+  // VS Code's own toggle is run afterwards, because claiming the chord takes it away from VS Code.
+  val wordWrapToggle = commands.registerCommand("vimperor.toggleWordWrap") { arguments ->
+    val editor = window.activeTextEditor
+    val wrapping = arguments?.wrapping as? Boolean
+    if (editor != null && wrapping != null) {
+      reporting(output, "the word wrap toggle") { vim.wordWrapToggled(editor, wrapping) }
+    }
+    commands.executeCommand(VsCodeCommands.TOGGLE_WORD_WRAP)
+  }
+
   // The system paste chord at the `:` and `/` prompts. A command rather than a `vimperor.key`
   // binding because it waits for the clipboard to be re-read before it types anything - see
   // [VimHost.pasteIntoCommandLine]. The manifest claims the chord only while the prompt is open, so
@@ -426,7 +444,7 @@ fun activate(context: ExtensionContext) {
 
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
-    output, status, commandLine, matches, typing, namedKey, tutor, pasteInCommandLine,
+    output, status, commandLine, matches, typing, namedKey, tutor, pasteInCommandLine, wordWrapToggle,
     activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
     documentSaved,
   )) {

@@ -126,14 +126,12 @@ twenty-six in all, enabled with `set <name>` or a `Plug` line:
 
 ## What does not
 
-- **A wrap of its own per tab.** `'wrap'` is window-local in Vim; VS Code's `editor.wordWrap` is
-  one setting per language, shared by every editor showing that language. `:set wrap` turns
-  wrapping on for the language, and `:set wrap?` answers with what the editor is actually drawn
-  with — so two tabs of one language agree, because they cannot disagree.
-- **`:set nowrap` in an editor you have pressed `Alt+Z` in.** VS Code lets a single editor carry a
-  word wrap of its own, on top of the setting, and no extension can read or clear it. `:set wrap`
-  and `:set nowrap` write the setting correctly and that editor goes on ignoring them. Press
-  `Alt+Z` again, or reopen the file.
+- **`:set wrap` after *View: Toggle Word Wrap* from the Command Palette.** `'wrap'` is the editor's
+  own word wrap — the one `Alt+Z` sets — so it is per file, survives a tab switch, and writes
+  nothing to your settings. Vimperor claims `Alt+Z` so that your own toggling is kept up with, but
+  the Command Palette entry runs a built-in command no extension can see. After it, `:set wrap` and
+  `:set nowrap` mean the opposite in that file until you close it or press `Alt+Z`. Two splits of
+  one file share a wrap, because VS Code attaches it to the document.
 - **Vim plugins.** There is no `pack/` directory. 2 of IdeaVim's 27 bundled extensions are absent —
   `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups, so `<C-w>`
