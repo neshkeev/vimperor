@@ -10,7 +10,29 @@ package com.maddyhome.idea.vim.regexp
 import kotlin.jvm.JvmOverloads
 
 
-@Deprecated("Remove once old regex engine is removed")
+/**
+ * A C `char*` over a `CharSequence`: a sequence and an index into it, which can be copied, walked
+ * and read past its own start.
+ *
+ * **Not a relic of the old regex engine, though it was marked as one.** It carried
+ * `@Deprecated("Remove once old regex engine is removed")` and that engine is gone - from this fork
+ * and from IdeaVim - so the annotation warned about a cleanup that had already happened, thirty
+ * times a build. What is left of the class is one thing and one caller:
+ * `VimSearchGroupBase.parseGlobalCommandArguments`, which splits `:g/pattern/command` the way Vim's
+ * own `ex_docmd.c` does.
+ *
+ * That parsing is transcribed rather than reimplemented, and it needs the pointer's two C-isms to
+ * stay transcribed. [ref] makes a second pointer into the *same* buffer, so the pattern and the
+ * rest of the line are two views of one string; [set] writes a NUL into it, so [toString] on the
+ * first view stops where the delimiter was. Replacing that with offsets is a real change to how
+ * `:g` reads its argument, with the replayed fixtures behind it, and is a separate job from
+ * removing a stale annotation.
+ *
+ * The parts that *were* the old engine went with the annotation: `OP`, `OPERAND`, `NEXT`,
+ * `OPERAND_MIN`, `OPERAND_MAX` and `OPERAND_CMP` decoded Vim's compiled-regex program, and nothing
+ * has compiled one since. So did `assign`, `dec`, `digits`, `strchr` and `istrchr`, which no caller
+ * was left for either.
+ */
 class CharPointer {
   private var seq: CharSequence
   var pointer: Int = 0
@@ -55,19 +77,6 @@ class CharPointer {
   @JvmOverloads
   operator fun inc(cnt: Int = 1): CharPointer {
     pointer += cnt
-    return this
-  }
-
-  @JvmOverloads
-  operator fun dec(cnt: Int = 1): CharPointer {
-    pointer -= cnt
-    return this
-  }
-
-  fun assign(ptr: CharPointer): CharPointer {
-    seq = ptr.seq
-    pointer = ptr.pointer
-    readonly = ptr.readonly
     return this
   }
 
@@ -124,43 +133,6 @@ class CharPointer {
     return 0
   }
 
-  fun strchr(c: Char): CharPointer? {
-    if (end()) {
-      return null
-    }
-    val len = seq.length
-    for (i in pointer until len) {
-      val ch = seq[i]
-      if (ch == '\u0000') {
-        return null
-      }
-      if (ch == c) {
-        return ref(i - pointer)
-      }
-    }
-    return null
-  }
-
-  fun istrchr(c: Char): CharPointer? {
-    var c = c
-    if (end()) {
-      return null
-    }
-    val len = seq.length
-    val cc = c.uppercaseChar()
-    c = c.lowercaseChar()
-    for (i in pointer until len) {
-      val ch = seq[i]
-      if (ch == '\u0000') {
-        return null
-      }
-      if (ch == c || ch == cc) {
-        return ref(i - pointer)
-      }
-    }
-    return null
-  }
-
   val isNul: Boolean
     get() = charAt() == '\u0000'
 
@@ -169,57 +141,16 @@ class CharPointer {
     return pointer + offset >= seq.length
   }
 
-  fun OP(): Int {
-    return charAt().code
-  }
-
-  fun OPERAND(): CharPointer {
-    return ref(3)
-  }
-
-  fun NEXT(): Int {
-    return (seq[pointer + 1].code and 0xff shl 8) + (seq[pointer + 2].code and 0xff)
-  }
-
-  fun OPERAND_MIN(): Int {
-    return (seq[pointer + 3].code shl 24) +
-      (seq[pointer + 4].code shl 16) +
-      (seq[pointer + 5].code shl 8) +
-      seq[pointer + 6].code
-  }
-
-  fun OPERAND_MAX(): Int {
-    return (seq[pointer + 7].code shl 24) +
-      (seq[pointer + 8].code shl 16) +
-      (seq[pointer + 9].code shl 8) +
-      seq[pointer + 10].code
-  }
-
-  fun OPERAND_CMP(): Char {
-    return seq[pointer + 7]
-  }
-
-  override fun equals(obj: Any?): Boolean {
-    if (obj is CharPointer) {
-      val ptr = obj
-      return ptr.seq === seq && ptr.pointer == pointer
-    }
-    return false
+  // `other`, because that is what `Any.equals` calls it: a mismatched name is a warning, and it
+  // means `equals(obj = ...)` compiles while `equals(other = ...)` does not.
+  override fun equals(other: Any?): Boolean {
+    if (other !is CharPointer) return false
+    return other.seq === seq && other.pointer == pointer
   }
 
   override fun hashCode(): Int {
     return 31 * (31 + seq.hashCode()) + pointer.hashCode()
   }
-
-  val digits: Int
-    get() {
-      var res = 0
-      while (charAt().isDigit()) {
-        res = res * 10 + (charAt() - '0')
-        inc()
-      }
-      return res
-    }
 
   private fun normalize(pos: Int): Int {
     return minOf(seq.length, pos)
