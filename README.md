@@ -13,6 +13,11 @@ Vimperor
      img.shields.io/badge/... form people moved to has to be hand-edited on every release, which is
      a version number that goes stale silently - this one is read from the Marketplace. -->
 [![Marketplace](https://vsmarketplacebadges.dev/version-short/neshkeev.vimperor.svg)](https://marketplace.visualstudio.com/items?itemName=neshkeev.vimperor)
+<!-- Open VSX is the other half of the release and shields.io does serve this one: Eclipse
+     publishes a documented API - https://open-vsx.org/api/neshkeev/vimperor answers with the
+     version list - so the badge family was never retired. Both badges read the registry, so a
+     release that reached one and not the other says so here rather than passing unnoticed. -->
+[![Open VSX](https://img.shields.io/open-vsx/v/neshkeev/vimperor?label=Open%20VSX)](https://open-vsx.org/extension/neshkeev/vimperor)
 
 A hard fork of [IdeaVim](https://github.com/JetBrains/ideavim/blob/master/README.md).
 
