@@ -4,6 +4,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.7] - 2026-09-22
+
 ### Fixed
 
 - The wrap is per file now, and switching tabs no longer changes it. `'wrap'` is window-local in
