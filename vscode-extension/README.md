@@ -126,6 +126,10 @@ twenty-six in all, enabled with `set <name>` or a `Plug` line:
 
 ## What does not
 
+- **A wrap of its own per tab.** `'wrap'` is window-local in Vim; VS Code's `editor.wordWrap` is
+  one setting per language, shared by every editor showing that language. `:set wrap` turns
+  wrapping on for the language, and `:set wrap?` answers with what the editor is actually drawn
+  with — so two tabs of one language agree, because they cannot disagree.
 - **`:set nowrap` in an editor you have pressed `Alt+Z` in.** VS Code lets a single editor carry a
   word wrap of its own, on top of the setting, and no extension can read or clear it. `:set wrap`
   and `:set nowrap` write the setting correctly and that editor goes on ignoring them. Press

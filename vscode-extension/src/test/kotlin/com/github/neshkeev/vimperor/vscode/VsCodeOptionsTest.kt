@@ -72,14 +72,14 @@ class VsCodeOptionsTest {
      * every keystroke - a test that called the executor would have been asserting the option
      * listener alone, which is exactly the part that cannot be relied on.
      */
-    fun run(line: String) {
+    fun run(line: String, on: TextEditor = fake) {
       // Back to Normal first: a line that leaves the editor somewhere else - `:startinsert` does -
       // would otherwise swallow the `:` of the next one, and a probe that never ran reports no
       // error, which reads as a command that works.
-      host.key(fake, "<Esc>")
-      host.type(fake, ":")
-      line.forEach { host.type(fake, it.toString()) }
-      host.key(fake, "<CR>")
+      host.key(on, "<Esc>")
+      host.type(on, ":")
+      line.forEach { host.type(on, it.toString()) }
+      host.key(on, "<CR>")
     }
 
     val lineNumbers: Int get() = fake.lineNumbers
@@ -503,7 +503,6 @@ class VsCodeOptionsTest {
    */
   @Test
   fun `test set wrap writes VS Code's own setting`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -530,7 +529,6 @@ class VsCodeOptionsTest {
   /** Both directions go to the same layer, always, or they cannot undo each other. */
   @Test
   fun `test both directions are written into the language block`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -547,7 +545,6 @@ class VsCodeOptionsTest {
 
   @Test
   fun `test the wrap is written where it reaches this file`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -564,7 +561,6 @@ class VsCodeOptionsTest {
   /** Written once per value, not once per keystroke: a settings write is a file on disk. */
   @Test
   fun `test the wrap is written once for one set`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -591,7 +587,6 @@ class VsCodeOptionsTest {
   fun `test a language block is read and written, not shadowed`() {
     val byLanguage = js("require('vscode').workspace.languageConfiguration")
     byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -624,58 +619,58 @@ class VsCodeOptionsTest {
   }
 
   /**
-   * A typed `:set` is written even when this host thinks it already wrote that value.
+   * A wrap that has been asked for is what is read back, until the configuration catches up.
    *
-   * The once-per-value guard is for the path that runs after every keystroke, so that a typed word
-   * is not fifty settings writes. On the path where the user asked it is a way to refuse an
-   * instruction, and it did: a `set nowrap` in a vimrc wrote at startup, and the `:set nowrap` the
-   * user then typed was suppressed as a repeat. The read is no better a guard - it has disagreed
-   * with the screen at every stage of this option's life.
+   * `WorkspaceConfiguration.update` does not take effect in the turn that asks for it, so the read
+   * on the next line still answers `off` for a `:set wrap` that has just happened. Nothing else
+   * stores the option, so without this memory `:set wrap?` would answer `nowrap` immediately after
+   * `:set wrap`.
    */
   @Test
-  fun `test a typed set is written even if the same value was written before`() {
-    VsCodeOptions.wrapWasAsked = false
+  fun `test a wrap just written is what is read back`() {
     try {
       val session = Session()
-      val editor = session.host.editorFor(session.fake)
       session.run("set wrap")
-      // As if a vimrc had already written `nowrap` for this editor.
-      editor.wroteWordWrap = false
-      forget()
+      // As the configuration reads while VS Code has not finished applying the write.
+      js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'off' } }")
 
-      session.run("set nowrap")
+      session.printed.clear()
+      session.run("set wrap?")
 
-      assertEquals(listOf("wordWrap=off"), writes())
+      assertTrue(
+        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
+        "the wrap that was asked for should be the answer, printed: ${session.printed}",
+      )
     } finally {
+      js("delete require('vscode').workspace.languageConfiguration.plaintext")
       reset()
     }
   }
 
   /**
-   * The memory of a write expires, because the setting it describes is shared.
+   * ...and then it expires, because the setting it describes is shared.
    *
-   * `editor.wordWrap` is one setting for every window, so a `:set nowrap` on another file of the same
-   * language moves it underneath this editor. A memory with no expiry then refuses to write the value
-   * it believes is already there, and `:set wrap` does nothing in that tab for as long as it is open -
-   * which is how this was reported from a real window.
+   * `editor.wordWrap` is one setting for every window showing the language, so another window's
+   * `:set nowrap` - or an edit to `settings.json` - moves it underneath this one. A memory with no
+   * expiry is a memory that can be wrong, and this option is the value of the setting rather than
+   * of the memory.
    */
   @Test
-  fun `test the memory of a write expires, so a setting moved underneath is written again`() {
-    VsCodeOptions.wrapWasAsked = false
+  fun `test the memory of a write expires, so the setting is what answers`() {
     try {
       val session = Session()
-      val editor = session.host.editorFor(session.fake)
       session.run("set wrap")
       // As another window would leave it.
       js("require('vscode').workspace.languageConfiguration.plaintext = { editor: { wordWrap: 'off' } }")
-      forget()
 
-      session.host.key(session.fake, "<Esc>")
-      assertEquals(emptyList(), writes(), "still fresh: the configuration is given time to catch up")
+      wroteWordWrap = null
+      session.printed.clear()
+      session.run("set wrap?")
 
-      editor.wroteWordWrapAt = 0
-      session.host.key(session.fake, "<Esc>")
-      assertEquals(listOf("wordWrap=on"), writes(), "once it has had that time, Vim's answer is written again")
+      assertTrue(
+        session.printed.any { it.contains("nowrap") },
+        "once the memory has gone the setting is the answer, printed: ${session.printed}",
+      )
     } finally {
       js("delete require('vscode').workspace.languageConfiguration.plaintext")
       reset()
@@ -692,7 +687,6 @@ class VsCodeOptionsTest {
    */
   @Test
   fun `test the wrap is written to the layer the value comes from`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       // As a folder's `.vscode/settings.json` leaves it in a window with that folder open.
       js("require('vscode').workspace.workspaceLanguageConfiguration.plaintext = { editor: { wordWrap: 'on' } }")
@@ -715,7 +709,6 @@ class VsCodeOptionsTest {
   /** With no layer holding a value, an untitled file still writes to the user's settings. */
   @Test
   fun `test the wrap of a file in no folder is written to the user's settings`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -732,7 +725,6 @@ class VsCodeOptionsTest {
   /** What the wrap decided reaches the keystroke trace, which is the only way to see it in a window. */
   @Test
   fun `test the wrap writes a line into the trace`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
 
@@ -754,7 +746,6 @@ class VsCodeOptionsTest {
   /** And it is written where it can be read back, so the option and the editor cannot drift. */
   @Test
   fun `test the wrap that was written is the wrap that is read`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       val editor = session.host.editorFor(session.fake)
@@ -773,7 +764,6 @@ class VsCodeOptionsTest {
   /** Setting it to what it already is writes nothing: a settings write is a file on disk. */
   @Test
   fun `test setting wrap to what it already is writes nothing`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       session.run("set wrap")
@@ -791,13 +781,12 @@ class VsCodeOptionsTest {
   /**
    * And nothing is written just because the extension loaded.
    *
-   * Vim wraps by default and VS Code does not, so an option that started at Vim's answer would turn
-   * wrapping on in every editor the moment Vimperor was installed. The option is seeded from the
-   * editor's own setting instead, which is why typing keys changes nothing.
+   * Vim wraps by default and VS Code does not, so an option that carried Vim's answer would turn
+   * wrapping on in every editor the moment Vimperor was installed. Nothing carries an answer: the
+   * option *is* the setting, so there is nothing for a keystroke to apply.
    */
   @Test
   fun `test starting up leaves the wrap alone`() {
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -822,7 +811,6 @@ class VsCodeOptionsTest {
   fun `test a language override is what the wrap is read from`() {
     val settings = js("require('vscode').workspace.scopedConfiguration")
     settings["/test/buffer.txt"] = js("({ editor: { wordWrap: 'on' } })")
-    VsCodeOptions.wrapWasAsked = false
     try {
       val session = Session()
       forget()
@@ -837,6 +825,94 @@ class VsCodeOptionsTest {
       assertEquals(listOf("wordWrap=off"), writes())
     } finally {
       settings["/test/buffer.txt"] = undefined
+      reset()
+    }
+  }
+
+  // Two tabs, one setting. This is what `'wrap'` was reported against.
+
+  /**
+   * Switching tabs writes nothing, and the tab you come back to still wraps.
+   *
+   * VS Code hands out a new `TextEditor` every time a hidden tab is shown, so the host replaces its
+   * wrapper and the engine initialises that window's local options from the window it was opened
+   * from. `'wrap'` used to be one of those values and used to be pushed at the setting whenever an
+   * editor was registered - so `:set wrap` here, a switch to the next tab and back, and this tab
+   * had stopped wrapping with nothing said. A window that opens has no opinion to impose now.
+   */
+  @Test
+  fun `test switching tabs does not rewrite the wrap`() {
+    try {
+      val session = Session()
+      session.host.activeEditorChanged(session.fake)
+      session.run("set wrap")
+      forget()
+
+      // To the next tab, and back - each arrival is a `TextEditor` object VS Code has just made.
+      session.host.activeEditorChanged(FakeEditor("other\nfile", path = "/test/other.txt"))
+      val again = FakeEditor("one two\nthree four")
+      session.host.activeEditorChanged(again)
+
+      assertEquals(emptyList(), writes(), "a tab switch is not a `:set`")
+      assertTrue(configuredWordWrap(session.host.editorFor(again)), "and the file still wraps")
+    } finally {
+      reset()
+    }
+  }
+
+  /**
+   * A wrap the settings already hold survives a window opening on it.
+   *
+   * The worse half of the same bug, because a settings file outlives the session: `'wrap'`'s
+   * default was one unscoped read taken at startup, and the write goes into a `[language]` block,
+   * which an unscoped read does not resolve. So a window opening on a file that wrapped *because of
+   * what this host wrote last time* started at `nowrap`, disagreed with the screen, and wrote `off`
+   * - undoing the user's own setting on arrival, in silence.
+   */
+  @Test
+  fun `test a window opening does not undo a wrap the settings hold`() {
+    val byLanguage = js("require('vscode').workspace.languageConfiguration")
+    byLanguage["plaintext"] = js("({ editor: { wordWrap: 'on' } })")
+    try {
+      val session = Session()
+      forget()
+
+      val later = FakeEditor("later\nfile", path = "/test/later.txt")
+      session.host.activeEditorChanged(later)
+
+      assertEquals(emptyList(), writes(), "nothing was asked for, so nothing is written")
+      assertTrue(configuredWordWrap(session.host.editorFor(later)), "and the file goes on wrapping")
+    } finally {
+      byLanguage["plaintext"] = undefined
+      reset()
+    }
+  }
+
+  /**
+   * Every window answers with the setting, because the setting is what there is.
+   *
+   * `'wrap'` is declared local-to-window, as it is in Vim, and `editor.wordWrap` is one value for
+   * every window showing the language. That is a real difference from Vim and it is reported rather
+   * than hidden: a second tab of the same language says `wrap` because it *does* wrap, instead of
+   * saying `nowrap` from a per-window value nobody can see.
+   */
+  @Test
+  fun `test a second tab reports the wrap it is actually drawn with`() {
+    try {
+      val session = Session()
+      session.host.activeEditorChanged(session.fake)
+      session.run("set wrap")
+
+      val other = FakeEditor("other\nfile", path = "/test/other.txt")
+      session.host.activeEditorChanged(other)
+      session.printed.clear()
+      session.run("set wrap?", on = other)
+
+      assertTrue(
+        session.printed.any { it.contains("wrap") && !it.contains("nowrap") },
+        "the other tab wraps too, and should say so, printed: ${session.printed}",
+      )
+    } finally {
       reset()
     }
   }
@@ -858,7 +934,7 @@ class VsCodeOptionsTest {
     // the failure read as the write being broken.
     js("require('vscode').workspace.languageConfiguration = {}")
     forget()
-    VsCodeOptions.wrapWasAsked = false
+    wroteWordWrap = null
   }
 
   /**

@@ -8,6 +8,8 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.maddyhome.idea.vim.api.LocalOptionValueOverride
+import com.maddyhome.idea.vim.api.OptionValue
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
@@ -123,23 +125,16 @@ internal object VsCodeOptions {
   )
 
   /**
-   * `'wrap'`, against VS Code's own word wrap. See [applyWordWrap].
+   * `'wrap'`, against VS Code's own word wrap. See [WordWrapSettingMapper], which is where the
+   * value lives - no window stores one.
    *
-   * The default is read from the editor's own `wordWrap` setting rather than being Vim's `true`, and that is what
-   * makes this safe to apply. Vim wraps by default and VS Code does not, so an option that started
-   * at Vim's answer would turn wrapping *on* in every editor the moment the extension loaded -
-   * which is not what anyone asked for. Starting where the editor already is means nothing happens
-   * until the user says `:set nowrap`, and `:set wrap?` tells the truth in the meantime.
+   * The default is `false` because that is VS Code's default for `editor.wordWrap`, not because it
+   * is Vim's, which is `true`. It is what `:set wrap&` goes back to, and it is read by nothing else:
+   * every other read of this option answers from the setting. An option that started at Vim's
+   * answer would turn wrapping *on* in every editor the moment the extension loaded, which is not
+   * what anyone asked for.
    */
-  val wrap: ToggleOption = ToggleOption("wrap", LOCAL_TO_WINDOW, "wrap", configuredWordWrap())
-
-  /**
-   * Whether anything has set `'wrap'` - a vimrc, or a `:set` - so that seeding stops.
-   *
-   * Without it a window opened after `set nowrap` would be seeded back out of it from VS Code's own
-   * setting, and the config would apply to the windows that happened to exist when it ran.
-   */
-  internal var wrapWasAsked: Boolean = false
+  val wrap: ToggleOption = ToggleOption("wrap", LOCAL_TO_WINDOW, "wrap", false)
 
   /** `'relativenumber'`, with `'number'`, against `editor.lineNumbers`. See [applyLineNumbers]. */
   val relativenumber: ToggleOption = ToggleOption("relativenumber", LOCAL_TO_WINDOW, "rnu", false)
@@ -568,32 +563,43 @@ internal fun watchLineNumbers() {
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.tabstop) { applyIndent(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.shiftwidth) { applyIndent(it) }
   injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.expandtab) { applyIndent(it) }
-  injector.optionGroup.addEffectiveOptionValueChangeListener(VsCodeOptions.wrap) {
-    VsCodeOptions.wrapWasAsked = true
-    applyWordWrap(it, asked = true)
-  }
 }
 
 /**
- * Whether the editor wraps, from `'wrap'`.
+ * `'wrap'` is not a value this host keeps. It is VS Code's own word wrap, read and written.
  *
- * **Written rather than toggled, and that is the whole of what makes it work.** VS Code has no
+ * **Written rather than toggled, and that is the first half of what makes it work.** VS Code has no
  * per-editor setting for the wrap - `TextEditorOptions` carries the gutter, the tab size and the
  * caret shape and not this - so the first version of this reached for
  * `editor.action.toggleWordWrap`, which is what `Alt+Z` runs. A toggle cannot be pointed at a
  * state, only flipped, so it needed a belief about which way the editor currently was; and VS Code
  * will not report that either. One wrong belief and every command means its opposite, which is
- * exactly what it did: `:set nowrap` wrapped the file and `:set wrap` unwrapped it. There is no
- * amount of care in maintaining that belief that makes a guess safe.
- *
+ * exactly what it did in a real window: `:set nowrap` wrapped the file and `:set wrap` unwrapped it.
  * `WorkspaceConfiguration.update` sets an absolute value, so it cannot be inverted, and the same
- * setting reads back - so `:set wrap?` is answering from the editor rather than from a memory of
- * what this host last asked for.
+ * setting reads back.
  *
- * The cost is that a Vim option that is *window*-local is written as a setting that is not: it
- * lands in the workspace when there is one and in the user's settings otherwise, and it persists.
- * That is a real difference from Vim and the better of the two trades - the alternative is a
- * `:set nowrap` that means nothing, or means the opposite half the time.
+ * **Not stored anywhere, and that is the second half.** `'wrap'` is declared `LOCAL_TO_WINDOW`
+ * because that is what it is in Vim, and `editor.wordWrap` is one setting shared by every window
+ * showing the language. A per-window value is therefore a belief about something that is not
+ * per-window, and this host used to keep one and push it at the setting - when an editor was
+ * registered, and again after every keystroke. Two tabs could not hold two answers, and the last
+ * tab touched rewrote the setting under the other one: `:set wrap` here, a switch to the next tab,
+ * and this one stopped wrapping with nothing said.
+ *
+ * It was worse than a tab switch losing an answer, because a written setting outlives the session.
+ * A window opening on a file that wrapped *because of what this host wrote last time* started at
+ * the option's default, decided it did not wrap, and wrote `off` - undoing the user's own setting
+ * on arrival. The default could not see that write: it was one unscoped read taken at startup,
+ * while every write goes into a `[language]` block and every other read is scoped to a document.
+ *
+ * So there is no stored value at all. [WordWrapSettingMapper] answers every read from the setting
+ * and makes every write something the user asked for. `LocalOptionValueOverride` is the seam the
+ * engine offers for exactly this, and is how IdeaVim maps IntelliJ's soft wraps. `:set wrap?`
+ * cannot drift from the screen because there is nothing for it to drift from, and a window that
+ * opens has no opinion to impose on the windows already open.
+ *
+ * What is given up is per-tab wrap, and it was never there to give up: two tabs of one language
+ * share one setting, whatever Vim calls the option.
  *
  * ## What this cannot reach
  *
@@ -603,39 +609,113 @@ internal fun watchLineNumbers() {
  * setting is written, and the only way out is to press `Alt+Z` again.
  *
  * That is not a gap waiting to be filled; it is the same missing API that made the toggle
- * unworkable, seen from the other side. This used to say so at runtime, on every explicit
- * `:set wrap`, behind the `vimperor.trace` flag - which made the ordinary case, where the write
- * simply works, noisy for anyone who had that flag on for the keystroke trace it is documented as.
- * The caveat is in the extension's README instead, under "What does not".
+ * unworkable, seen from the other side. The caveat is in the extension's README, under "What does
+ * not".
  */
-/** How long a settings write is given to come back through the configuration before it is written again. */
+internal class WordWrapSettingMapper : LocalOptionValueOverride<VimInt> {
+
+  /**
+   * What VS Code is drawing, rather than what Vim last said.
+   *
+   * The stored value is handed back when it agrees, so that `:set` can still report whether the
+   * answer came from the user or from a default. When it disagrees the screen wins and says so:
+   * [OptionValue.External] is the engine's word for "set outside Vim", which a shared setting can
+   * be at any moment - another window's `:set`, or the user editing `settings.json`.
+   *
+   * The fallback window is the exception and has to be. It has no document, so there is no setting
+   * to read for it, and a `~/.vimperorrc` evaluated before any window opened is stored against it -
+   * reading a screen it does not have would answer for a file that does not exist and throw the
+   * config's answer away.
+   */
+  override fun getLocalValue(storedValue: OptionValue<VimInt>?, editor: VimEditor): OptionValue<VimInt> {
+    val vsCode = attached(editor) ?: return storedValue ?: OptionValue.Default(VsCodeOptions.wrap.defaultValue)
+    val value = VimInt(if (wordWrapNow(vsCode)) 1 else 0)
+    return when {
+      storedValue == null -> OptionValue.Default(value)
+      storedValue.value == value -> storedValue
+      else -> OptionValue.External(value)
+    }
+  }
+
+  /**
+   * Writes the setting, unless a window is being opened.
+   *
+   * [openingAWindow] is the whole of the rule, and it is a rule about the setting rather than about
+   * the option. A window that opens copies window-local values from the window it was opened from,
+   * and writing one of those would be this window's opinion imposed on every other window showing
+   * the language - which is the bug this option had.
+   *
+   * [OptionValue.InitVimRc] is the one exception, and it is the config rather than a window: a
+   * `~/.vimperorrc` with `set nowrap` in it means every window, and it is evaluated before any
+   * window exists, so it can only arrive as a value a window inherited. Everything else a window
+   * inherits is some other window's answer to the same shared setting, and writing it back would
+   * change nothing and undo something.
+   *
+   * The answer returned is "does this differ from the screen", not "does this differ from what was
+   * stored". Nothing reads the stored value, so a comparison against it would be reporting a change
+   * to a number nobody can see.
+   */
+  override fun setLocalValue(
+    storedValue: OptionValue<VimInt>?,
+    newValue: OptionValue<VimInt>,
+    editor: VimEditor,
+  ): Boolean {
+    val vsCode = attached(editor) ?: return storedValue?.value != newValue.value
+    val wanted = newValue.value.booleanValue
+    if (wordWrapNow(vsCode) == wanted) return false
+    if (!openingAWindow || newValue is OptionValue.InitVimRc) writeWordWrap(vsCode, wanted)
+    return true
+  }
+
+  /**
+   * The editor as a window with a file in it, or null for the fallback window.
+   *
+   * Compared against [DetachedTextEditor] rather than against `injector.fallbackWindow`, which is a
+   * `lazy` whose own initialiser reaches this code: reading it from here would be re-entrant.
+   */
+  private fun attached(editor: VimEditor): VsCodeEditor? =
+    (editor as? VsCodeEditor)?.takeUnless { it.nativeEditor is DetachedTextEditor }
+}
+
+/**
+ * Whether a window is being opened, so that the options it inherits are not written to the settings.
+ *
+ * One flag for the whole host rather than one per editor, for the same reason [seeding] is one:
+ * initialising a window is synchronous and there is one thread, so no two are ever inside it at
+ * once.
+ */
+internal var openingAWindow: Boolean = false
+
+/** How long a settings write is believed for, before the configuration is asked again. */
 private const val WORD_WRAP_WRITE_SETTLES = 2000
 
-internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
-  val vsCode = editor as? VsCodeEditor ?: return
-  val wanted = injector.optionGroup
-    .getOptionValue(VsCodeOptions.wrap, OptionAccessScope.EFFECTIVE(editor))
-    .asBoolean()
-  val setting = wordWrapSetting(vsCode)
-  val configured = setting != null && setting != VsCodeSettings.WORD_WRAP_OFF
+/**
+ * The last wrap written, the language it was written for, and when.
+ *
+ * `WorkspaceConfiguration.update` does not take effect in the turn that asks for it, so a read
+ * straight after a write still answers `off` for a `:set wrap` that has just happened. Without this
+ * `:set wrap?` would say `nowrap` on the next line, and `:set wrap` would write a second time.
+ *
+ * Here rather than on the editor, which is where it used to be, because the setting is shared and
+ * an editor is not: VS Code hands out a new `TextEditor` every time a hidden tab is shown, so a
+ * memory kept on the wrapper was thrown away by the tab switch that most needed it.
+ *
+ * It expires, because a memory that does not expire can be wrong: the setting is shared, so another
+ * window - or the user, in `settings.json` - can move it underneath. `internal` so that a test can
+ * expire it without waiting.
+ */
+internal var wroteWordWrap: Triple<String, Boolean, Long>? = null
 
-  // An explicit `:set wrap` is written whatever the read says and whatever was written before.
-  //
-  // Both of the guards below are for the path that runs after *every* keystroke, where the point is
-  // not to write a settings file fifty times for a typed word. On the path where the user asked,
-  // they are two ways to refuse an instruction: the read can disagree with the screen - it has, all
-  // through this option's history - and the remembered write can be of a value the setting no
-  // longer holds. Neither is a reason to do nothing when someone typed the command.
-  if (asked) {
-    vsCode.trace("wrap: :set said $wanted, the setting says ${setting ?: "nothing"}")
-    writeWordWrap(vsCode, wanted, force = true)
-    return
+/** What VS Code is drawing for this file, counting a write it has not reported back yet. */
+internal fun wordWrapNow(editor: VsCodeEditor): Boolean {
+  val setting = configuredWordWrap(editor)
+  val pending = wroteWordWrap ?: return setting
+  if (pending.first != editor.nativeEditor.document.languageId) return setting
+  if (pending.second == setting || currentTimeMillis() - pending.third >= WORD_WRAP_WRITE_SETTLES) {
+    wroteWordWrap = null
+    return setting
   }
-  // Not on every keystroke - this runs after each one, and a settings write is a round trip and a
-  // file on disk. Only when Vim's answer and the editor's have actually parted company.
-  if (wanted == configured) return
-  vsCode.trace("wrap: Vim says $wanted, the setting says ${setting ?: "nothing"}")
-  writeWordWrap(vsCode, wanted, force = false)
+  return pending.second
 }
 
 /**
@@ -646,10 +726,10 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
  * ordinary thing to have - would be written for and unaffected. The folder the file is in is the
  * narrowest target that certainly covers it; a file in no folder gets the user's settings.
  *
- * Written at most once per value on the keystroke path: that runs after every key, and a settings
- * write is a file on disk. The read cannot be used to tell - it answers from the configuration,
- * which has not caught up in the same turn, which is why the first version of this wrote twice for
- * one `:set wrap`. A typed `:set` forces its way past that guard; see [applyWordWrap].
+ * Called from one place - [WordWrapSettingMapper.setLocalValue], and only when the user asked -
+ * so there is no guard here against writing on every keystroke. There used to be, because there
+ * used to be a path that ran after every key; the guard is [wroteWordWrap] now, and what it is for
+ * is the read, which answers from a configuration that has not caught up in the same turn.
  *
  * ## Always into the language block
  *
@@ -664,15 +744,8 @@ internal fun applyWordWrap(editor: VimEditor, asked: Boolean = false) {
  * to turn word wrap on - so writing there is the only choice that is certain to take effect and
  * certain to be reversible.
  */
-private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolean) {
-  val remembered = editor.wroteWordWrap == wrapping &&
-    currentTimeMillis() - editor.wroteWordWrapAt < WORD_WRAP_WRITE_SETTLES
-  if (!force && remembered) {
-    editor.trace("wrap: $wrapping already written, waiting for the configuration to catch up")
-    return
-  }
-  editor.wroteWordWrap = wrapping
-  editor.wroteWordWrapAt = currentTimeMillis()
+private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
+  wroteWordWrap = Triple(editor.nativeEditor.document.languageId, wrapping, currentTimeMillis())
   val configuration = workspace.getConfiguration(VsCodeSettings.EDITOR, editor.nativeEditor.document)
   val target = wordWrapTarget(editor, configuration)
   val value = if (wrapping) VsCodeSettings.WORD_WRAP_ON else VsCodeSettings.WORD_WRAP_OFF
@@ -692,9 +765,10 @@ private fun writeWordWrap(editor: VsCodeEditor, wrapping: Boolean, force: Boolea
         // no folder, a read-only settings file - and a `:set nowrap` that silently does nothing is
         // the failure this option has already had twice.
         { reason ->
-          // The memory is left where it is rather than cleared, so that the path that runs after
-          // every keystroke does not report the same refusal on every key. An explicit `:set` forces
-          // its way past it and tries again.
+          // Forgotten, so that the next read answers from the setting rather than from a write that
+          // did not happen - and so that the same `:set` typed again tries again rather than being
+          // told it has nothing to do.
+          wroteWordWrap = null
           editor.trace("wrap: the write was refused - $reason")
           injector.messages.showErrorMessage(
             editor,
@@ -748,25 +822,6 @@ private fun nameOf(target: Int): String = when (target) {
   ConfigurationTarget.WorkspaceFolder -> "the folder's settings"
   ConfigurationTarget.Workspace -> "the workspace's settings"
   else -> "the user's settings"
-}
-
-/**
- * What the editor is doing, so that Vim's option starts where the editor already is.
- *
- * Vim wraps by default and VS Code does not, so an option left at Vim's answer would turn wrapping
- * on in every editor the moment Vimperor loaded. Seeded from the editor, the two agree and nothing
- * is written until the user asks.
- *
- * Not once the user has said something: a `~/.vimperorrc` with `set nowrap` in it means the answer
- * for every window, and a window that opened afterwards must not be re-seeded back out of it.
- */
-private fun seedWordWrap(editor: VsCodeEditor) {
-  if (VsCodeOptions.wrapWasAsked) return
-  injector.optionGroup.setOptionValue(
-    VsCodeOptions.wrap,
-    OptionAccessScope.LOCAL(editor),
-    VimInt(if (configuredWordWrap(editor)) 1 else 0),
-  )
 }
 
 /**
@@ -913,15 +968,17 @@ private fun <T : VimDataType> seed(option: Option<T>, editor: VsCodeEditor, valu
   injector.optionGroup.setOptionValue(option, OptionAccessScope.LOCAL(editor), value)
 }
 
-/** Everything Vim tells VS Code about an editor, applied together. */
+/**
+ * Everything Vim tells VS Code about an editor, applied together.
+ *
+ * `'wrap'` is deliberately not here. It is the one option whose value *is* a VS Code setting rather
+ * than something this host pushes at one - see [WordWrapSettingMapper] - and applying it from here
+ * is what made a tab switch rewrite the setting under the tab being left.
+ */
 internal fun applyEditorOptions(editor: VimEditor) {
   applyLineNumbers(editor)
   applyLanguage(editor)
-  (editor as? VsCodeEditor)?.let {
-    seedWordWrap(it)
-    seedIndent(it)
-  }
-  applyWordWrap(editor)
+  (editor as? VsCodeEditor)?.let { seedIndent(it) }
   applyIndent(editor)
 }
 

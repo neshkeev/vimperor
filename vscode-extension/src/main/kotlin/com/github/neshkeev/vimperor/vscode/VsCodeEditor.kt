@@ -72,26 +72,6 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * that differs from the last one seen is the editor saying where it actually is - because the
    * user scrolled, or because it caught up - and that is adopted. Anything else keeps Vim's answer.
    */
-  /**
-   * The last value `'wrap'` wrote for this editor, so that it is written once rather than per key.
-   *
-   * The configuration read cannot serve: it answers from a value VS Code has not finished updating
-   * in the same turn, so the keystroke after `:set wrap` still saw `off` and wrote `on` again.
-   */
-  internal var wroteWordWrap: Boolean? = null
-
-  /**
-   * When [wroteWordWrap] was written, so that the memory of it expires.
-   *
-   * It exists to stop the keystroke path writing a settings file again before the configuration has
-   * caught up with the last write, which takes a moment. It used to have no expiry at all, and a
-   * memory that never expires is a memory that can be wrong: the setting it describes is shared, so
-   * a `:set nowrap` in another window on a file of the same language moves it underneath, and this
-   * editor then refuses to write the value it thinks is already there. That is a `:set wrap` that
-   * does nothing, in one tab, for as long as the tab is open.
-   */
-  internal var wroteWordWrapAt: Long = 0
-
   /** What the wrap decided and why, drained into the trace by `VimHost.describeState`. */
   internal val wrapLog: MutableList<String> = mutableListOf()
 

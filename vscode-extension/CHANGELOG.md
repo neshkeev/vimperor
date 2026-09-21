@@ -4,6 +4,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Switching tabs changed the wrap. `'wrap'` is window-local in Vim, VS Code's `editor.wordWrap` is one
+  setting for every editor showing the language, and Vimperor kept a per-window value and wrote it to
+  that setting whenever an editor was shown - so `:set wrap` in one tab, a switch to the next and back,
+  and the first tab had stopped wrapping with nothing said. Worse, a settings file outlives the session:
+  a window opening on a file that wrapped *because Vimperor had written it there* decided it did not
+  wrap and wrote `off` on arrival. `'wrap'` is now read from the setting rather than stored, so
+  `:set wrap?` always answers with what the editor is drawn with, and nothing but a `:set` you typed -
+  or a `set nowrap` in your config - writes the setting. Two tabs of one language still share one wrap;
+  they no longer take it away from each other.
+
 ## [0.0.6] - 2026-09-17
 
 ### Added

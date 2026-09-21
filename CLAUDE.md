@@ -372,11 +372,33 @@ what this host last asked for. The cost is that a window-local Vim option is wri
 setting that is not: it lands in the workspace when there is one and in the user's settings
 otherwise, and it persists. That is the better of the two trades.
 
-The default is the other half. Vim wraps and VS Code does not, so an option that started at
-Vim's answer would turn wrapping *on* in every editor the moment Vimperor loaded. It is
-seeded from the editor's own setting, scoped to the document - unscoped, VS Code answers for
-the *window* and ignores a `[markdown]` block turning wrap on, which is how people usually do
-it.
+The default was the other half, and it took a fourth attempt to see that there should not be
+one. Vim wraps and VS Code does not, so an option that started at Vim's answer would turn
+wrapping *on* in every editor the moment Vimperor loaded; so it was seeded from the editor's
+own setting instead, and the host pushed Vim's answer back at the setting whenever an editor
+was registered and after every keystroke. **That is a per-window belief about something that
+is not per-window, and it broke twice over.** Two tabs could not hold two answers: `:set
+wrap` here, a switch to the next tab and back, and this one had stopped wrapping with nothing
+said. And because a settings file outlives the session, a window opening on a file that
+wrapped *because of what this host wrote last time* started at the default, disagreed with
+the screen, and wrote `off` on arrival - the default being one **unscoped** read taken at
+startup, which does not resolve the `[markdown]` block that every write goes into, while
+every other read is scoped to a document.
+
+So there is no stored value now. `WordWrapSettingMapper` is a `LocalOptionValueOverride` -
+the engine's own seam for an option whose value is an editor setting, and what IdeaVim maps
+IntelliJ's soft wraps through - and it answers every read from the setting and makes every
+write something the user asked for. `:set wrap?` cannot drift from the screen because there
+is nothing for it to drift from, and `applyEditorOptions` does not touch `'wrap'` at all.
+What a window inherits is not written: `VsCodeInjector.register` raises `openingAWindow`
+around the engine's initialisation, and the one value let through is `OptionValue.InitVimRc`,
+because a `~/.vimperorrc` is the config speaking for every window rather than one window's
+opinion about a shared setting. The cost is that per-tab wrap does not exist - and it never
+did; two tabs of one language share one setting whatever Vim calls the option.
+
+**The general rule, and it is the fourth question below asked from the other side: an option
+whose value lives in the editor must not also be stored here.** A stored copy of something
+the host owns is a belief, and a belief drifts - silently, because nothing compares the two.
 
 **And a setting has to be written where it is read**, which cost one more round. Whether the
 `[markdown]` block or the plain value decided a file's wrap was being worked out per call, by

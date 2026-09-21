@@ -167,11 +167,23 @@ open class VsCodeInjector(
     // instead. `FALLBACK` is the scenario written for exactly that: it copies what the config set
     // into the first real window. `NEW` carries them on from there, which is Vim's `:new`, and is
     // what IdeaVim uses for every editor after the first.
-    if (initialisedFirstEditor) {
-      optionGroup.initialiseLocalOptions(editor, opening ?: fallbackWindow, LocalOptionInitialisationScenario.NEW)
-    } else {
-      initialisedFirstEditor = true
-      optionGroup.initialiseLocalOptions(editor, fallbackWindow, LocalOptionInitialisationScenario.FALLBACK)
+    //
+    // `openingAWindow` is up throughout, and what it stops is an inherited option being written to
+    // a *setting*. `'wrap'` is `editor.wordWrap`, one value for every window showing the language,
+    // so a window that opened and wrote what it had inherited would change the wrap of the window
+    // it was opened from - which is the bug `:set wrap` had in two tabs, and, because a setting
+    // outlives the session, the bug a window opening had all on its own. See
+    // [WordWrapSettingMapper], which lets the `~/.vimperorrc`'s own answer through and nothing else.
+    openingAWindow = true
+    try {
+      if (initialisedFirstEditor) {
+        optionGroup.initialiseLocalOptions(editor, opening ?: fallbackWindow, LocalOptionInitialisationScenario.NEW)
+      } else {
+        initialisedFirstEditor = true
+        optionGroup.initialiseLocalOptions(editor, fallbackWindow, LocalOptionInitialisationScenario.FALLBACK)
+      }
+    } finally {
+      openingAWindow = false
     }
   }
 
@@ -509,6 +521,11 @@ open class VsCodeInjector(
         // mean anything. The mapper is the engine's, shared with the IntelliJ host, because
         // deciding that level zero closes everything is Vim's rule rather than an editor's.
         addOptionValueOverride(Options.foldlevel, FoldLevelOptionMapper())
+        // `'wrap'` is not a value any window keeps: it is VS Code's own `editor.wordWrap`, read
+        // through this on every `:set wrap?` and written through it on every `:set wrap`. See
+        // [WordWrapSettingMapper] for why a window-local value could not be kept - the setting is
+        // one per language, so a window that kept an opinion imposed it on every other window.
+        addOptionValueOverride(VsCodeOptions.wrap, WordWrapSettingMapper())
       }
     }.also { it.initialiseOptions() }
   }
