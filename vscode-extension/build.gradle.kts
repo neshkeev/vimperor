@@ -24,7 +24,7 @@ repositories {
 }
 
 kotlin {
-  js(IR) {
+  js {
     // The name of the bundle VS Code loads, and of nothing else. Without it the file is named from
     // the Gradle project - `vimperor-vscode-extension.js` - and `package.json` names this file as
     // `main`. The other modules need no such setting: they are `<rootProject.name>-<module>.js`,

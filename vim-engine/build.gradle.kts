@@ -383,7 +383,7 @@ val checkJsLibraryIsNotEmpty = tasks.register("checkJsLibraryIsNotEmpty") {
 
 kotlin {
   jvm()
-  js(IR) {
+  js {
     // This compiles to `vimperor-vim-engine.js`, and no `outputModuleName` says so: the Kotlin
     // plugin names a module's output `<rootProject.name>-<module>.js`, and `settings.gradle.kts`
     // sets the root to `vimperor` for exactly that reason. It briefly had an explicit name here

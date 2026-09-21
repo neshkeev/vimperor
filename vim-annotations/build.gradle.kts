@@ -26,7 +26,7 @@ repositories {
 // 2153 errors the first JS compile produced.
 kotlin {
   jvm()
-  js(IR) {
+  js {
     nodejs()
     binaries.library()
   }

@@ -17,7 +17,7 @@ repositories {
 kotlin {
   jvm()
   // PHASE 4 PROBE: does this module compile for JS? Nothing consumes the JS artifact yet.
-  js(IR) {
+  js {
     nodejs()
     binaries.library()
   }
