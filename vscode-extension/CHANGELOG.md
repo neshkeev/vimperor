@@ -4,6 +4,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- Vim's messages go to the status bar, and a failed search no longer opens the output panel. A
+  mistyped `/` used to throw the panel open over your code to say `E486: Pattern not found`, and
+  the panel then stayed open. That one line now appears at the bottom of the window, in red, next
+  to the mode - along with everything else Vim says on its message line: the `/pattern` echo,
+  `search hit BOTTOM, continuing at TOP`, `1 match on 1 line` and the rest, about seventy messages
+  that until now had nowhere to appear at all. The Vimperor output channel still receives every one
+  of them, because it is the log a bug report is pasted out of, but it no longer opens itself: a
+  panel that was hidden when a command ran is hidden after it. `:registers`, `:marks` and `:!cmd`
+  are unchanged - that is output you asked to see. Hover the message to read a long one in full.
+
 ## [0.0.7] - 2026-09-22
 
 ### Fixed

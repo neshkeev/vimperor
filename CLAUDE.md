@@ -805,6 +805,53 @@ now `isIdentifierStart` in `helper/Characters.kt` are the JDK's own rules spelle
 out for both targets, and `StrictMode.assert` is IdeaVim's idiom for an internal
 invariant. Look there before writing an approximation.
 
+### Vim's message line is a status bar item, and the output panel is not it
+
+**`E486: Pattern not found` used to open the output panel over the editor.** Every mistyped `/`
+did it, for one line of text, because the host's sink called `show()` on the output channel for
+anything it was told was an error - and the method actually named for the status bar wrote the
+message into the *mode indicator's tooltip*, which nobody hovers. So the one path built for this
+displayed nothing, and the fallback took over the screen.
+
+`MessageLine` is the whole of the fix and its shape is Vim's: the bottom row is the command line
+while one is open and the last message the rest of the time, so all three of `MessageSink`'s
+methods write to one status bar item and the last one wins. That is what makes a failed search
+read correctly - the engine says `/pattern`, then `search hit BOTTOM, continuing at TOP`, then the
+error, and it is the error the user is left looking at.
+
+**Three things that are not obvious about a status bar entry.**
+
+- **`$(name)` in the text is drawn as an icon**, and VS Code offers no escape for it. A search for
+  a literal `$(` is ordinary, and its failure would have been reported with a picture in the middle
+  of the pattern. A zero-width space after the dollar stops the parse and is invisible.
+- **The background takes exactly two colours** - `statusBarItem.errorBackground` and
+  `statusBarItem.warningBackground` - and ignores anything else. That is why the API declaration
+  takes a `ThemeColor` rather than a string.
+- **One row, so a message is flattened and cut**, with the whole of it kept in the tooltip. A line
+  break becomes a space rather than nothing, because running the two sides together invents a word.
+
+**The engine's legacy one-liner carries both kinds down one path**, which is the only place a
+decision was needed. `showStatusBarMessage` predates the split into `showMessage` and
+`showErrorMessage`, so `"1 match on 1 line"` and `"E486: Pattern not found"` arrive spelled the
+same and the text cannot say which is which. `isError()` can, and it is not a guess about wording:
+`KeyHandler` clears it at the top of every keystroke and the engine sets it immediately before each
+of those errors. Matching `^E\d+:` instead would have been a rule about Vim's prose.
+
+**What the output channel keeps is the log; what it loses is the right to open itself.** Every
+message still goes there - a message line cannot be scrolled back, and that channel is what a bug
+report gets pasted out of - but a panel that was hidden when the command ran is hidden after it.
+`OutputChannelPanel` keeps its `show()`, and that is the line: `:registers` is output a user asked
+for, and an error is not.
+
+The command line clears the message when it *opens*, not on every redraw, and the difference is a
+test: `/pattern` reports three times while its own prompt is still open, so a clear on every draw
+would leave the row empty after every search.
+
+**One hole is left, and it is the same one.** `StatusBarPrompt` writes the typed command straight
+into an item, so a `$(` typed at a `:` or `/` prompt still renders as an icon. Same one-line fix;
+not applied there because the bug was reported against the message and that item has tests of its
+own.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

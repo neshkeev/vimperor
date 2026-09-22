@@ -133,7 +133,7 @@ const window = {
   showTextDocument: (document) => Promise.resolve({ document, selections: [], options: {} }),
   visibleTextEditors: [],
   tabGroups,
-  createStatusBarItem: () => ({ text: '', tooltip: '', show() {}, hide() {}, dispose() {} }),
+  createStatusBarItem: () => ({ text: '', tooltip: '', color: undefined, backgroundColor: undefined, show() {}, hide() {}, dispose() {} }),
   createTextEditorDecorationType: (options) => ({ options, dispose() {} }),
   onDidChangeActiveTextEditor: () => ({ dispose() {} }),
   onDidChangeTextEditorSelection: () => ({ dispose() {} }),

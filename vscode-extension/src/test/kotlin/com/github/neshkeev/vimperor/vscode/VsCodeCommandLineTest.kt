@@ -442,6 +442,7 @@ class VsCodeCommandLineTest {
     override var text: String = ""
     override var tooltip: String? = null
     override var color: ThemeColor? = null
+    override var backgroundColor: ThemeColor? = null
     var visible: Boolean = false
       private set
 

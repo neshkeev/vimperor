@@ -1370,10 +1370,19 @@ private class VsCodeMessages(private val sink: MessageSink) : VimMessagesBase() 
     sink.error(message)
   }
 
+  /**
+   * The engine's legacy one-liner, which carries reports and errors down the same path.
+   *
+   * `"1 match on 1 line"` and `"E486: Pattern not found"` are both spelled this way - the method
+   * predates the split into [displayMessage] and [displayErrorMessage] - so the text cannot say
+   * which it is. [isError] can: `KeyHandler` clears the flag at the top of every keystroke and the
+   * engine sets it immediately before each of these errors, so by the time this runs it is a
+   * statement about the command that just ran rather than a guess about its wording.
+   */
   override fun displayStatusBarMessage(editor: VimEditor?, message: String?) {
     if (isSilent) return
     statusBar = message
-    sink.status(message)
+    if (message != null && isError()) sink.error(message) else sink.status(message)
   }
 
   override fun getStatusBarMessage(): String? = statusBar

@@ -299,7 +299,24 @@ internal class StatusBarPrompt(
   private val item: StatusBarItem,
   /** Where the wildmenu goes: a second item, to the right of the prompt. */
   private val matches: StatusBarItem,
+  /**
+   * The message line, taken back when a prompt opens over it.
+   *
+   * Vim draws both on the bottom row, so opening a command line erases whatever was said last and
+   * there is nothing to decide. Here they are two items side by side, and without this an `E486`
+   * would sit in red beside the `:noh` being typed to get rid of it.
+   */
+  private val message: MessageLine? = null,
 ) : CommandLineDisplay {
+
+  /**
+   * Whether a prompt is on screen, so that [show] can tell opening from redrawing.
+   *
+   * The distinction is the whole reason this is tracked: [show] runs on every keystroke of the
+   * command line, and a command that reports something *while its own prompt is still open* - which
+   * `/pattern` does, three times over - would have its report wiped by the next redraw.
+   */
+  private var open: Boolean = false
 
   override fun showMatches(line: String?) {
     if (line.isNullOrEmpty()) {
@@ -312,6 +329,10 @@ internal class StatusBarPrompt(
   }
 
   override fun show(text: String, caret: Int?) {
+    if (!open) {
+      open = true
+      message?.clear()
+    }
     item.text = if (caret == null) text else {
       val at = caret.coerceIn(0, text.length)
       text.substring(0, at) + CARET + text.substring(at)
@@ -320,6 +341,7 @@ internal class StatusBarPrompt(
   }
 
   override fun hide() {
+    open = false
     item.text = ""
     item.hide()
     showMatches(null)

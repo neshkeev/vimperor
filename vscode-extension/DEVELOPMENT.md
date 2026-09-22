@@ -704,6 +704,28 @@ screen and then takes keys - space pages, `q` closes - and VS Code has no equiva
 fight the editor for focus, so this prints and gets out of the way. Typing carries on working while
 the output is showing, which is a deliberate difference from Vim.
 
+What is *not* output is Vim's message line, and telling the two apart is the whole of `MessageLine`.
+`E486: Pattern not found` used to open that same channel over the editor, every time, for one line
+of text - while the method actually named for the status bar wrote into the mode indicator's
+*tooltip*, so the path built for this displayed nothing. Vim's bottom row is the command line while
+one is open and the last message the rest of the time, so all of it now lands on one status bar item
+and the last message wins: `/pattern`, then `search hit BOTTOM, continuing at TOP`, then the error,
+which is what a failed search should leave you looking at. The channel still gets every line,
+because a message line cannot be scrolled back, but it no longer opens itself.
+
+Three things a status bar entry will not do quietly. `$(name)` in the text is drawn as an *icon* and
+there is no escape for it, so a search for a literal `$(` would have reported its failure with a
+picture in the middle of the pattern - a zero-width space after the dollar stops the parse and is
+invisible. The background accepts exactly two theme colours, `statusBarItem.errorBackground` and
+`statusBarItem.warningBackground`, and ignores anything else. And it is one row, so a message is
+flattened onto it and cut at 96 characters with the whole of it kept in the tooltip.
+
+The engine's `showStatusBarMessage` is the one place a decision was needed: it predates the split
+into `showMessage` and `showErrorMessage`, so `1 match on 1 line` and `E486: Pattern not found`
+arrive spelled the same. `isError()` tells them apart and is not a guess about wording - `KeyHandler`
+clears it at the top of every keystroke and the engine sets it immediately before each of those
+errors.
+
 What is not built yet is written down rather than left to be discovered. `VsCodeUnimplementedTest`
 presses every key the engine registers and asserts the list of the ones that land on a host service
 this port has not written; implementing a service shrinks the list, and a key that starts or stops

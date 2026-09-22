@@ -131,6 +131,13 @@ external interface StatusBarItem : Disposable {
    * colour already is. Null is the status bar's own foreground.
    */
   var color: ThemeColor?
+
+  /**
+   * The entry's background. VS Code accepts exactly two theme colours here -
+   * `statusBarItem.errorBackground` and `statusBarItem.warningBackground` - and ignores anything
+   * else, which is why this is a [ThemeColor] and not a string. Null is the status bar's own.
+   */
+  var backgroundColor: ThemeColor?
   fun show()
   fun hide()
 }

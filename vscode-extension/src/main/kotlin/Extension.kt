@@ -14,7 +14,7 @@ import com.github.neshkeev.vimperor.vscode.DecorationHighlighter
 import com.github.neshkeev.vimperor.vscode.Disposable
 import com.github.neshkeev.vimperor.vscode.ExtensionContext
 import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
-import com.github.neshkeev.vimperor.vscode.MessageSink
+import com.github.neshkeev.vimperor.vscode.MessageLine
 import com.github.neshkeev.vimperor.vscode.NodeFileSystem
 import com.github.neshkeev.vimperor.vscode.OutputChannel
 import com.github.neshkeev.vimperor.vscode.OutputChannelPanelService
@@ -81,9 +81,14 @@ fun activate(context: ExtensionContext) {
   // sits to the right of the prompt instead and is hidden whenever Tab is not walking a list.
   val matches = window.createStatusBarItem(StatusBarAlignment.Left, 98)
 
+  // Vim's message line, which is the same row as the command line and so is the next item along.
+  // Hidden until Vim says something; see `MessageLine`.
+  val messageItem = window.createStatusBarItem(StatusBarAlignment.Left, 97)
+  val messageLine = MessageLine(output, messageItem)
+
   val vim = VimHost(
-    sink = OutputAndStatusBar(output, status),
-    commandLineDisplay = StatusBarPrompt(commandLine, matches),
+    sink = messageLine,
+    commandLineDisplay = StatusBarPrompt(commandLine, matches, messageLine),
     highlighter = DecorationHighlighter(),
     clipboard = VsCodeClipboard(),
     outputPanel = OutputChannelPanelService(output),
@@ -444,7 +449,8 @@ fun activate(context: ExtensionContext) {
 
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
-    output, status, commandLine, matches, typing, namedKey, tutor, pasteInCommandLine, wordWrapToggle,
+    output, status, commandLine, matches, messageItem, typing, namedKey, tutor, pasteInCommandLine,
+    wordWrapToggle,
     activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
     documentSaved,
   )) {
@@ -502,23 +508,3 @@ private inline fun reporting(output: OutputChannel, what: String, block: () -> U
   }
 }
 
-/** Vim's messages, to the output channel and the status bar - which is where Vim puts them. */
-private class OutputAndStatusBar(
-  private val output: OutputChannel,
-  private val status: StatusBarItem,
-) : MessageSink {
-  override fun message(text: String?) {
-    text?.let { output.appendLine(it) }
-  }
-
-  override fun error(text: String?) {
-    text?.let {
-      output.appendLine(it)
-      output.show(preserveFocus = true)
-    }
-  }
-
-  override fun status(text: String?) {
-    status.tooltip = text ?: ""
-  }
-}
