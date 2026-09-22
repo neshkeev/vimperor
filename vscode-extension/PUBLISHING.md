@@ -245,8 +245,8 @@ switched off - and it is here because a release should not depend on which machi
 from.
 
 ```bash
-git tag vimperor-v0.0.7
-git push origin vimperor-v0.0.7
+git tag vimperor-v0.0.8
+git push origin vimperor-v0.0.8
 ```
 
 The tag's version and `package.json`'s must agree; the workflow checks and stops if they do not,

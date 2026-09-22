@@ -4,6 +4,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-09-23
+
 ### Fixed
 
 - `:action HideAllWindows` puts back only what it hid. It used to close the sidebar, the panel and
