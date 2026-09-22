@@ -110,7 +110,11 @@ class KeybindingManifestTest {
     fun declaredKeys(manifest: String): Set<String> {
       val parsed = JSON.parse<dynamic>(manifest)
       val bindings = parsed.contributes.keybindings as Array<dynamic>
-      return bindings.mapNotNull { it.args as? String }.toSet()
+      // A string, or the `key` of an object - which is exactly what `vimperor.key` reads at
+      // runtime. Enter takes the object form so that its `when` clause can hand over the workbench
+      // layout beside it; reading only the string half here would have reported `<CR>` as a key
+      // this extension never asked VS Code for.
+      return bindings.mapNotNull { it.args as? String ?: it.args?.key as? String }.toSet()
     }
 
     /**

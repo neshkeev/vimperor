@@ -852,6 +852,52 @@ into an item, so a `$(` typed at a `:` or `/` prompt still renders as an icon. S
 not applied there because the bug was reported against the message and that item has tests of its
 own.
 
+### `HideAllWindows` reads the layout from a `when` clause, because nothing else will say
+
+**VS Code answers no API about its own workbench.** Whether the sidebar, the panel or the auxiliary
+bar is showing is not in `vscode.d.ts` at all - checked against 1.138.0, where the only layout read
+is `vscode.getEditorLayout` and that is editor *splits*. IntelliJ's `HideAllToolWindowsAction` asks
+its tool window manager which windows are visible, hides those and remembers their ids; there is
+nothing here to ask. So this alternated between closing all three and opening all three, and a panel
+deliberately left closed came back with the sidebar.
+
+**The third use of the `when`-clause trick, after `youcompleteme` and `Alt+Z`.** `sideBarVisible`,
+`panelVisible` and `auxiliaryBarVisible` are context keys - unreadable by an extension, readable by
+a keybinding - and `:action HideAllWindows` ends in a keystroke, because `<CR>` at the command line
+is a manifest binding. So that one binding is split into its eight combinations, each carrying the
+three bits in its arguments, and the reading is taken at the instant the key was pressed: a fact
+about the layout a moment before the action runs, not a belief that drifts. `vimperor.key` already
+read either a string or an object with a `key`, so the handler barely changed.
+
+**Consumed on use, and that is the part that took a red test to get right.** A mapping replays
+`<CR>` through the engine rather than through the keybinding, and `<Action>(HideAllWindows)` presses
+no key at all, so both arrive with nothing fresh. Keeping the last reading instead looks harmless
+and is not: one that still claims the sidebar is open would hide an already-hidden sidebar, remember
+it, and answer the same way for ever - **it would never restore again**. With no reading this falls
+back to the alternating latch, which is wrong less often and is at least predictable. The latch is
+kept in step by the readings, so the two do not disagree about which half of the cycle it is in.
+
+**The direction is "is anything showing", not a flip**, which is IntelliJ's rule and is what makes
+it self-correcting: open something by hand and the next press hides it rather than treating the
+press as a restore. Nothing is remembered about *why* an area is open.
+
+**The restore now opens absolutely.** It used to send the three `toggle*` commands, on the
+reasoning that a toggle does not steal focus where `focus*` opens the area *and* puts the cursor in
+it. That traded away the wrong risk - a toggle is only right if the area is in the state you left
+it in, so opening the panel by hand while everything was hidden meant the next press *closed* it -
+and the focus a `focus*` takes is given straight back with `workbench.action.focusActiveEditorGroup`.
+
+**Zen Mode was looked at and is the wrong tool.** It does remember and restore the layout, which is
+the feature, but its defaults are full screen, centred layout, hidden line numbers and a hidden
+status bar - and the status bar is where the mode indicator and the message line live.
+
+**What splitting a binding costs, for the next one.** Eight `when` clauses have to be *exhaustive*
+- a combination with no binding is an Enter that does nothing at all - and each argument has to
+agree with the clause written beside it, which no reader can check by eye. Both are asserted against
+the real `package.json`. And `KeybindingManifestTest.declaredKeys` read `args as? String` only, so
+the moment Enter took the object form `<CR>` was reported as a key this extension never asked for;
+anything reading the manifest has to accept both shapes, exactly as the runtime handler does.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

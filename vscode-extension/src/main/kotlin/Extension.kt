@@ -26,6 +26,7 @@ import com.github.neshkeev.vimperor.vscode.TextEditor
 import com.github.neshkeev.vimperor.vscode.TextEditorSelectionChangeKind
 import com.github.neshkeev.vimperor.vscode.ThemeColor
 import com.github.neshkeev.vimperor.vscode.VimHost
+import com.github.neshkeev.vimperor.vscode.workbenchLayoutOf
 import com.github.neshkeev.vimperor.vscode.VsCodeClipboard
 import com.github.neshkeev.vimperor.vscode.VsCodeCommands
 import com.github.neshkeev.vimperor.vscode.VsCodeDocumentSymbols
@@ -233,6 +234,16 @@ fun activate(context: ExtensionContext) {
   val namedKey = commands.registerCommand("vimperor.key") { arguments ->
     val editor = window.activeTextEditor
     val notation = arguments as? String ?: arguments?.key as? String
+
+    // The workbench layout, which a `when` clause can read and an extension cannot. Only the `<CR>`
+    // binding carries it, and only because `:action HideAllWindows` runs off the end of one - see
+    // `WorkbenchToggle`. Every other binding passes a bare string and this answers null.
+    workbenchLayoutOf(
+      arguments?.sideBar as? Boolean,
+      arguments?.panel as? Boolean,
+      arguments?.auxiliaryBar as? Boolean,
+    )?.let { vim.layoutReported(it) }
+
     if (editor != null && notation != null) {
       reporting(output, "the key " + notation) {
         vim.key(editor, notation)

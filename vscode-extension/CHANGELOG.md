@@ -6,6 +6,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `:action HideAllWindows` puts back only what it hid. It used to close the sidebar, the panel and
+  the secondary sidebar and then, on the next press, open all three - so a panel you had
+  deliberately left closed came back with the rest. Now it hides whatever is open, remembers
+  exactly that, and restores exactly that; if you reopen something by hand, the next press hides it
+  again rather than treating the press as a restore. This is what the same action does in IntelliJ.
+  VS Code has no API that reports which of those three areas are showing, so the layout is read
+  from the `when` clause on the Enter key that runs the command - which means it is exact when you
+  type `:action HideAllWindows` at the prompt, and falls back to the old all-or-nothing alternation
+  when the action is run from a mapping or from `<Action>(HideAllWindows)`. The restore also stopped
+  using toggles, so it can no longer close something you opened while everything was hidden, and it
+  hands focus back to the editor when it is done.
+
 - Vim's messages go to the status bar, and a failed search no longer opens the output panel. A
   mistyped `/` used to throw the panel open over your code to say `E486: Pattern not found`, and
   the panel then stayed open. That one line now appears at the bottom of the window, in red, next

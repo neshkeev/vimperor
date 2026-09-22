@@ -79,10 +79,26 @@ class ActionCommandTest {
       key("<CR>")
     }
 
+    /**
+     * The same, with the workbench layout arriving on the `<CR>` - which is where it arrives.
+     *
+     * The manifest binds Enter eight times, one per combination of the three context keys, so the
+     * reading is taken at the instant the key is pressed and reaches the host a moment before the
+     * command it is about runs. Modelled rather than described, because the order is the point.
+     */
+    fun run(command: String, visible: Set<WorkbenchArea>) {
+      type(":")
+      type(command)
+      host.layoutReported(visible)
+      key("<CR>")
+    }
+
     val printed: String get() = channel.lines.joinToString("\n")
   }
 
   private companion object {
+    val ALL_THREE = WorkbenchArea.entries.toSet()
+
     /** A plausible slice of what a real window answers, in the order it does not answer it. */
     val SOME_COMMANDS = listOf(
       "workbench.action.showCommands",
@@ -248,9 +264,9 @@ class ActionCommandTest {
    * VS Code puts these.
    */
   @Test
-  fun `test HideAllWindows closes the panel and the bars as well as the sidebar`() {
+  fun `test HideAllWindows closes every area that is open`() {
     val session = Session(known = null)
-    session.run("action HideAllWindows")
+    session.run("action HideAllWindows", ALL_THREE)
 
     assertEquals(
       listOf(
@@ -263,33 +279,135 @@ class ActionCommandTest {
   }
 
   /**
-   * ...and the second press puts them back, which is what IntelliJ's does.
+   * ...and only what is open, which is the whole point of reading the layout.
    *
-   * The hide direction closes - `closeSidebar` means one thing whatever the layout - and the show
-   * direction toggles, because this host knows it closed them a press ago and because a toggle does
-   * not steal focus from the editor the way a `focus*` command would.
+   * IntelliJ's `HideAllToolWindowsAction` hides the visible tool windows and remembers their ids.
+   * VS Code answers no API about its three areas, so this reads them from the `when` clause on the
+   * key that ran the command - see [WorkbenchToggle].
    */
   @Test
-  fun `test a second HideAllWindows puts the windows back`() {
+  fun `test HideAllWindows leaves alone what is already closed`() {
     val session = Session(known = null)
-    session.run("action HideAllWindows")
+    session.run("action HideAllWindows", setOf(WorkbenchArea.SIDEBAR))
+
+    assertEquals(listOf(VsCodeCommands.CLOSE_SIDEBAR), session.dispatched)
+  }
+
+  /**
+   * The second press puts back exactly what the first one hid, and nothing else.
+   *
+   * This is what was asked for and what IdeaVim does. Before the layout could be read, the restore
+   * opened all three - so a panel deliberately left closed came back with the sidebar.
+   */
+  @Test
+  fun `test HideAllWindows puts back only what it hid`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows", setOf(WorkbenchArea.SIDEBAR, WorkbenchArea.PANEL))
     session.dispatched.clear()
 
-    session.run("action HideAllWindows")
+    // Nothing is showing now, which is what the next key's `when` clause reports.
+    session.run("action HideAllWindows", emptySet())
 
     assertEquals(
       listOf(
-        VsCodeCommands.TOGGLE_SIDEBAR,
-        VsCodeCommands.TOGGLE_PANEL,
-        VsCodeCommands.TOGGLE_AUXILIARY_BAR,
+        VsCodeCommands.FOCUS_SIDEBAR,
+        VsCodeCommands.FOCUS_PANEL,
+        VsCodeCommands.FOCUS_EDITOR,
+      ),
+      session.dispatched,
+      "the auxiliary bar was closed before any of this and stays closed",
+    )
+  }
+
+  /**
+   * The restore opens absolutely and then hands focus back.
+   *
+   * It used to toggle, on the reasoning that a toggle does not steal focus. That traded the wrong
+   * risk away: a toggle is only right if the area is in the state you left it in, so opening the
+   * panel by hand while everything was hidden meant the next press *closed* it. `focus*` means one
+   * thing whatever the layout, and the focus it takes is given straight back.
+   */
+  @Test
+  fun `test the restore ends by putting the cursor back in the editor`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows", ALL_THREE)
+    session.dispatched.clear()
+
+    session.run("action HideAllWindows", emptySet())
+
+    assertEquals(VsCodeCommands.FOCUS_EDITOR, session.dispatched.last())
+  }
+
+  /**
+   * An area you opened by hand is hidden again rather than treated as a restore.
+   *
+   * There is no latch to get stuck on once the layout can be read: the direction is "is anything
+   * showing", which is IntelliJ's rule as well, so this self-corrects however the user got there.
+   */
+  @Test
+  fun `test an area reopened by hand is hidden rather than restored`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows", ALL_THREE)
+    session.dispatched.clear()
+
+    session.run("action HideAllWindows", setOf(WorkbenchArea.PANEL))
+
+    assertEquals(listOf(VsCodeCommands.CLOSE_PANEL), session.dispatched)
+  }
+
+  /**
+   * With nothing showing and nothing remembered, everything comes back.
+   *
+   * A window that starts with all three closed has nothing for this to restore. Doing nothing at
+   * all would be the strictly honest answer and is useless: the user pressed a key and would see
+   * no reason why it did nothing.
+   */
+  @Test
+  fun `test nothing open and nothing hidden yet opens all three`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows", emptySet())
+
+    assertEquals(
+      listOf(
+        VsCodeCommands.FOCUS_SIDEBAR,
+        VsCodeCommands.FOCUS_PANEL,
+        VsCodeCommands.FOCUS_AUXILIARY_BAR,
+        VsCodeCommands.FOCUS_EDITOR,
       ),
       session.dispatched,
     )
   }
 
-  /** And a third hides again, so the two directions alternate rather than latching. */
+  /**
+   * With no reading at all it alternates, which is what it did before one was possible.
+   *
+   * A mapping replays `<CR>` through the engine rather than through the keybinding, and
+   * `<Action>(HideAllWindows)` presses no key, so both arrive here. Alternating is not right, but
+   * it is predictable, and it is better than a stale reading - one that always claimed something
+   * was visible would hide forever and never restore.
+   */
   @Test
-  fun `test HideAllWindows alternates`() {
+  fun `test with no reading it alternates as it used to`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows")
+    assertEquals(
+      listOf(
+        VsCodeCommands.CLOSE_SIDEBAR,
+        VsCodeCommands.CLOSE_PANEL,
+        VsCodeCommands.CLOSE_AUXILIARY_BAR,
+      ),
+      session.dispatched,
+    )
+
+    session.dispatched.clear()
+    session.run("action HideAllWindows")
+    assertEquals(VsCodeCommands.FOCUS_SIDEBAR, session.dispatched.first())
+    assertEquals(VsCodeCommands.FOCUS_EDITOR, session.dispatched.last())
+  }
+
+  /** ...and a third hides again, so the two directions alternate rather than latching. */
+  @Test
+  fun `test HideAllWindows alternates without a reading`() {
     val session = Session(known = null)
     session.run("action HideAllWindows")
     session.run("action HideAllWindows")
@@ -301,11 +419,29 @@ class ActionCommandTest {
   }
 
   /**
-   * Asking whether the action exists must not spend a press.
+   * A reading is spent by the press it arrived with, and the next press falls back.
+   *
+   * The alternative is to keep it, and that is the failure worth naming: a reading kept from three
+   * minutes ago that says the sidebar is open would hide a sidebar that is already hidden, remember
+   * it, and answer the same way for ever. This never restores. Alternating does.
+   */
+  @Test
+  fun `test a reading is not reused by a later press`() {
+    val session = Session(known = null)
+    session.run("action HideAllWindows", setOf(WorkbenchArea.SIDEBAR))
+    session.dispatched.clear()
+
+    session.run("action HideAllWindows")
+
+    assertEquals(VsCodeCommands.FOCUS_SIDEBAR, session.dispatched.first(), "the latch says restore")
+  }
+
+  /**
+   * Asking whether the action exists must not spend a press, or the reading it would run on.
    *
    * `:action` looks a name up before running it, so a toggle that advanced on lookup would flip
-   * twice per press and never appear to do anything. This is the reason the direction moves in
-   * `executeAction` rather than in `resolve`.
+   * twice per press and never appear to do anything. This is the reason both the direction and the
+   * reading move in `executeAction` rather than in `resolve`.
    */
   @Test
   fun `test looking the action up does not move the toggle`() {
@@ -314,9 +450,58 @@ class ActionCommandTest {
 
     executor.getAction("HideAllWindows")
     executor.getAction("HideAllWindows")
-    session.run("action HideAllWindows")
+    session.run("action HideAllWindows", setOf(WorkbenchArea.PANEL))
 
-    assertEquals(VsCodeCommands.CLOSE_SIDEBAR, session.dispatched.first(), "the first press still hides")
+    assertEquals(listOf(VsCodeCommands.CLOSE_PANEL), session.dispatched, "the first press still hides")
+  }
+
+  /**
+   * A reading has to name all three areas or it is not a reading.
+   *
+   * A partial one is the single thing this must not produce: an area missing from the set reads as
+   * "closed", and a restore would quietly stop putting it back. The manifest's eight bindings each
+   * carry all three, so anything short of that came from somewhere else.
+   */
+  @Test
+  fun `test a partial reading is refused`() {
+    assertEquals(null, workbenchLayoutOf(true, true, null))
+    assertEquals(null, workbenchLayoutOf(null, null, null))
+    assertEquals(emptySet(), workbenchLayoutOf(false, false, false))
+    assertEquals(ALL_THREE, workbenchLayoutOf(true, true, true))
+    assertEquals(setOf(WorkbenchArea.PANEL), workbenchLayoutOf(false, true, false))
+  }
+
+  /**
+   * The manifest carries the layout on Enter, once per combination of the three context keys.
+   *
+   * Eight bindings for one key is a cost, and this is what buys it: `sideBarVisible`, `panelVisible`
+   * and `auxiliaryBarVisible` are readable in a `when` clause and nowhere else, so the only way to
+   * learn the layout is to be told by a key. They have to be exhaustive - a combination with no
+   * binding is an Enter that does nothing at all - and each argument has to agree with the clause it
+   * is written beside, which is the half no reader can check by eye.
+   */
+  @Test
+  fun `test every combination of the layout is bound to Enter and says what it means`() {
+    val root = repositoryRoot()
+    assertTrue(root != null, "could not find the repository root, so package.json could not be read")
+    val parsed = JSON.parse<dynamic>(readText("$root/vscode-extension/package.json"))
+    val bindings = parsed.contributes.keybindings as Array<dynamic>
+
+    val enters = bindings.filter { it.key == "enter" && it.command == "vimperor.key" }
+    assertEquals(8, enters.size, "one per combination of three context keys")
+
+    val seen = enters.map { binding ->
+      val clause = binding.`when` as String
+      assertEquals("<CR>", binding.args.key as? String, "every one of them is still the Enter key")
+      WorkbenchArea.entries.map { area ->
+        val visible = binding.args[area.key] as? Boolean
+        assertTrue(visible != null, "${area.key} is missing from an Enter binding's arguments")
+        val expected = if (visible == true) " ${area.key}Visible" else " !${area.key}Visible"
+        assertTrue(clause.contains(expected), "`$clause` does not agree with ${area.key}=$visible")
+        visible
+      }
+    }
+    assertEquals(8, seen.toSet().size, "and no combination is bound twice")
   }
 
   // The table itself.

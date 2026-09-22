@@ -87,8 +87,90 @@
       {
         "key": "enter",
         "command": "vimperor.key",
-        "args": "<CR>",
-        "when": "editorTextFocus && !suggestWidgetVisible"
+        "args": {
+          "key": "<CR>",
+          "sideBar": false,
+          "panel": false,
+          "auxiliaryBar": false
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && !sideBarVisible && !panelVisible && !auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": false,
+          "panel": false,
+          "auxiliaryBar": true
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && !sideBarVisible && !panelVisible && auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": false,
+          "panel": true,
+          "auxiliaryBar": false
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && !sideBarVisible && panelVisible && !auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": false,
+          "panel": true,
+          "auxiliaryBar": true
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && !sideBarVisible && panelVisible && auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": true,
+          "panel": false,
+          "auxiliaryBar": false
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && sideBarVisible && !panelVisible && !auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": true,
+          "panel": false,
+          "auxiliaryBar": true
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && sideBarVisible && !panelVisible && auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": true,
+          "panel": true,
+          "auxiliaryBar": false
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && sideBarVisible && panelVisible && !auxiliaryBarVisible"
+      },
+      {
+        "key": "enter",
+        "command": "vimperor.key",
+        "args": {
+          "key": "<CR>",
+          "sideBar": true,
+          "panel": true,
+          "auxiliaryBar": true
+        },
+        "when": "editorTextFocus && !suggestWidgetVisible && sideBarVisible && panelVisible && auxiliaryBarVisible"
       },
       {
         "key": "shift+enter",

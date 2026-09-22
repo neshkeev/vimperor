@@ -96,18 +96,21 @@ internal object VsCodeCommands {
   const val CLOSE_AUXILIARY_BAR = "workbench.action.closeAuxiliaryBar"
 
   /**
-   * The same three areas, put back.
+   * The same three areas, opened.
    *
-   * Toggles rather than the `focus*` commands, for two reasons. They certainly exist - `Ctrl+B` and
-   * `Ctrl+J` are bound to two of them - where a `workbench.action.focusPanel` is an id typed from
-   * memory. And they do not move focus: a `focus*` command opens the area *and* puts the cursor in
-   * it, which is the wrong end of a restore for someone who is about to keep typing.
+   * These used to be the three `toggle*` commands, on the reasoning that a toggle does not move
+   * focus where a `focus*` command opens the area *and* puts the cursor in it. That was a trade
+   * made against the wrong risk. A toggle is only right if the area is in the state you last left
+   * it in, and it is not: close the panel, open it again by hand, and the restore closed it. These
+   * mean one thing whatever the layout, and the focus they take is given straight back with
+   * [FOCUS_EDITOR] - which is one more command and no ambiguity at all.
    *
-   * A toggle is only safe here because [WorkbenchToggle] knows it closed them; see the trap it
-   * describes.
+   * All three are in VS Code 1.138.0 and every one of them is checked against the real window at
+   * activation, so an id typed from memory cannot survive here in any case.
    */
-  const val TOGGLE_PANEL = "workbench.action.togglePanel"
-  const val TOGGLE_AUXILIARY_BAR = "workbench.action.toggleAuxiliaryBar"
+  const val FOCUS_SIDEBAR = "workbench.action.focusSideBar"
+  const val FOCUS_PANEL = "workbench.action.focusPanel"
+  const val FOCUS_AUXILIARY_BAR = "workbench.action.focusAuxiliaryBar"
 
   /**
    * Back to the document. Sent by the manifest's Escape binding rather than from here, but declared
@@ -318,7 +321,8 @@ internal object VsCodeCommands {
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, CLOSE_PANEL, CLOSE_AUXILIARY_BAR,
-    TOGGLE_PANEL, TOGGLE_AUXILIARY_BAR, FOCUS_EDITOR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
+    FOCUS_SIDEBAR, FOCUS_PANEL, FOCUS_AUXILIARY_BAR,
+    FOCUS_EDITOR, REVEAL_IN_EXPLORER, REFRESH_EXPLORER,
     LIST_FOCUS_DOWN, LIST_FOCUS_UP, LIST_FOCUS_FIRST, LIST_FOCUS_LAST, LIST_SELECT,
     LIST_EXPAND_ALL, LIST_COLLAPSE, EXPLORER_OPEN_TO_SIDE, EXPLORER_NEW_FILE, EXPLORER_NEW_FOLDER,
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
@@ -487,18 +491,7 @@ internal object IdeaActionAliases {
    * one. The state is [WorkbenchToggle]'s; this table only says which ids have one.
    */
   private val toggles: Map<String, WorkbenchToggle> = mapOf(
-    "HideAllWindows" to WorkbenchToggle(
-      hide = listOf(
-        VsCodeCommands.CLOSE_SIDEBAR,
-        VsCodeCommands.CLOSE_PANEL,
-        VsCodeCommands.CLOSE_AUXILIARY_BAR,
-      ),
-      show = listOf(
-        VsCodeCommands.TOGGLE_SIDEBAR,
-        VsCodeCommands.TOGGLE_PANEL,
-        VsCodeCommands.TOGGLE_AUXILIARY_BAR,
-      ),
-    ),
+    "HideAllWindows" to WorkbenchToggle(),
   )
 
   fun contains(ideaId: String): Boolean = ideaId in aliases || ideaId in toggles
@@ -516,6 +509,17 @@ internal object IdeaActionAliases {
    */
   fun resetToggles() {
     toggles.values.forEach { it.reset() }
+  }
+
+  /**
+   * Hands every toggle the layout a keybinding's `when` clause just reported.
+   *
+   * Called from the `<CR>` binding rather than from `:action`, because that is where the reading
+   * comes from - see [WorkbenchToggle]. Broadcast to all of them because there is one, and because
+   * a second would want the same fact.
+   */
+  fun reportLayout(visible: Set<WorkbenchArea>) {
+    toggles.values.forEach { it.report(visible) }
   }
 
   /**
@@ -563,29 +567,126 @@ internal object IdeaActionAliases {
  * and shows all three. Someone whose layout is the Explorer alone gets the panel as well when they
  * restore. Reading the layout is the only fix and there is nothing to read it with.
  */
-internal class WorkbenchToggle(private val hide: List<String>, private val show: List<String>) {
+/**
+ * One of the three places VS Code puts what IntelliJ would call a tool window.
+ *
+ * [close] and [open] are both absolute, which is what lets `HideAllWindows` act on a set rather
+ * than on a direction. [key] is the name the manifest uses for the area in a keybinding's
+ * arguments; it is the same word as VS Code's own context key with `Visible` taken off, so the
+ * `when` clause and the argument beside it read as one line.
+ */
+internal enum class WorkbenchArea(val key: String, val close: String, val open: String) {
+  SIDEBAR("sideBar", VsCodeCommands.CLOSE_SIDEBAR, VsCodeCommands.FOCUS_SIDEBAR),
+  PANEL("panel", VsCodeCommands.CLOSE_PANEL, VsCodeCommands.FOCUS_PANEL),
+  AUXILIARY_BAR("auxiliaryBar", VsCodeCommands.CLOSE_AUXILIARY_BAR, VsCodeCommands.FOCUS_AUXILIARY_BAR),
+}
 
+/**
+ * The layout a keybinding reported, or null when it did not report one.
+ *
+ * Null rather than an empty set, and all-or-nothing rather than per-area, because a *partial*
+ * reading is the one thing this must not produce: a set missing an area it could not see reads as
+ * "that area is closed", which is how a restore would quietly stop putting it back. The manifest's
+ * eight bindings each carry all three, so anything that arrives with one missing came from
+ * somewhere else and is not a reading at all.
+ */
+internal fun workbenchLayoutOf(sideBar: Boolean?, panel: Boolean?, auxiliaryBar: Boolean?): Set<WorkbenchArea>? {
+  if (sideBar == null || panel == null || auxiliaryBar == null) return null
+  return buildSet {
+    if (sideBar) add(WorkbenchArea.SIDEBAR)
+    if (panel) add(WorkbenchArea.PANEL)
+    if (auxiliaryBar) add(WorkbenchArea.AUXILIARY_BAR)
+  }
+}
+
+/**
+ * `HideAllWindows`: hide whatever is open, then put back exactly that much.
+ *
+ * IntelliJ's `HideAllToolWindowsAction` asks its tool window manager which windows are visible,
+ * hides those and remembers their ids; pressing again shows the remembered set and nothing else.
+ * **VS Code will not answer the question.** Nothing in `vscode.d.ts` reports whether the sidebar,
+ * the panel or the auxiliary bar is showing - the one layout read it has is `vscode.getEditorLayout`,
+ * which is editor splits - so for a long time this alternated between "close all three" and "open
+ * all three" and a panel you had deliberately left closed came back with the rest.
+ *
+ * **The answer is a `when` clause**, which is the third time this port has reached for it: VS Code
+ * keeps `sideBarVisible`, `panelVisible` and `auxiliaryBarVisible` as context keys, unreadable by an
+ * extension and readable by a keybinding. `:action HideAllWindows` ends in a keystroke - the `<CR>`
+ * at the command line, which the manifest binds - so that binding is split into its eight
+ * combinations and hands the layout over with the key. The reading is taken at the instant the key
+ * was pressed, which is the instant before the action runs, so it is a fact rather than a belief.
+ *
+ * **It is consumed on use, and that is the honest part.** A mapping replays `<CR>` through the
+ * engine rather than through the keybinding, and `<Action>(HideAllWindows)` presses no key at all,
+ * so those arrive with nothing fresh to read - and a *stale* reading is worse than none, because one
+ * that always claims something is visible would hide forever and never restore. With no reading this
+ * falls back to the alternating latch it used to be, which is predictable even when it is not right.
+ */
+internal class WorkbenchToggle {
+
+  /** What the last [hid] closed, and therefore what a restore puts back. Empty until one has. */
+  private var remembered: Set<WorkbenchArea> = emptySet()
+
+  /** The fallback direction, used only when no [report] has arrived. */
   private var hidden: Boolean = false
 
+  /** The layout as a keybinding last reported it, or null once it has been spent. */
+  private var reading: Set<WorkbenchArea>? = null
+
   /**
-   * The commands for this press, and the flip that decides the next one.
+   * What a `when` clause saw at the moment its key was pressed.
+   *
+   * Overwrites rather than merges: every reading names all three areas, because the manifest's
+   * eight bindings are one per combination and exactly one of them can match.
+   */
+  fun report(visible: Set<WorkbenchArea>) {
+    reading = visible
+  }
+
+  /**
+   * The commands for this press.
    *
    * Called once per press and only while executing - never from a lookup. `:action` asks whether a
-   * name exists before running it, and answering that question by advancing the toggle would make
-   * every press a no-op pair.
+   * name exists before running it, and answering that question by spending the reading or moving
+   * the latch would make every press a no-op pair.
    */
   fun press(): List<String> {
+    val visible = reading
+    reading = null
+    if (visible == null) return pressBlind()
+
+    // Kept in step so that a later press with no reading of its own alternates from where this
+    // left it rather than from where it last guessed.
+    hidden = visible.isNotEmpty()
+    if (visible.isNotEmpty()) {
+      remembered = visible
+      return visible.map { it.close }
+    }
+    // Nothing is open, so this is the restore half. An empty memory means this host has not hidden
+    // anything yet - a window that starts with all three closed, or a restore that already ran - and
+    // opening everything is the more useful of the two things it could do with no information.
+    val back = remembered.ifEmpty { WorkbenchArea.entries.toSet() }
+    return back.map { it.open } + VsCodeCommands.FOCUS_EDITOR
+  }
+
+  /** No reading: alternate, which is what this did before a reading was possible. */
+  private fun pressBlind(): List<String> {
     hidden = !hidden
-    return if (hidden) hide else show
+    if (hidden) return WorkbenchArea.entries.map { it.close }
+    val back = remembered.ifEmpty { WorkbenchArea.entries.toSet() }
+    return back.map { it.open } + VsCodeCommands.FOCUS_EDITOR
   }
 
-  /** Back to "showing", which is what a host that has just started must assume. */
+  /** Back to "showing" and remembering nothing, which is what a host that has just started knows. */
   fun reset() {
+    remembered = emptySet()
     hidden = false
+    reading = null
   }
 
-  /** Both directions, so activation can check the ids against the real window. */
-  val everything: List<String> get() = hide + show
+  /** Every command this can send, so activation can check the ids against the real window. */
+  val everything: List<String>
+    get() = WorkbenchArea.entries.flatMap { listOf(it.close, it.open) } + VsCodeCommands.FOCUS_EDITOR
 }
 
 /**

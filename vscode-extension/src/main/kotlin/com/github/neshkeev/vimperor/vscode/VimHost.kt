@@ -262,6 +262,17 @@ class VimHost(
     handle(textEditor, injector.parser.parseKeys(notation))
   }
 
+  /**
+   * Which workbench areas were showing when a key was pressed, as its `when` clause saw them.
+   *
+   * The only way an extension can learn this - VS Code keeps the three as context keys and answers
+   * no API about them - and it arrives with a keystroke because a `when` clause is the one place
+   * they can be read. `:action HideAllWindows` is what wants it. See [WorkbenchToggle].
+   */
+  internal fun layoutReported(visible: Set<WorkbenchArea>) {
+    IdeaActionAliases.reportLayout(visible)
+  }
+
   // ---- Autocommand events.
   //
   // What a host owes `:autocmd`: the registry is the engine's, and the events are VS Code's. Only
