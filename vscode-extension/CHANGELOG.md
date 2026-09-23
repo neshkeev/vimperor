@@ -16,6 +16,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
   document now, so a tab switch changes nothing, two views of one file agree, and closing a file
   forgets its buffer the way Vim does.
 
+- ...and a language change is no longer mistaken for a closed file. VS Code fires the same event
+  when a document is closed and when its language changes, and it works out the language of an
+  untitled buffer by itself - so typing Java into a new tab made Vimperor forget everything it knew
+  about that buffer, and `:set syntax` in another tab then reached it anyway. The word wrap was
+  being lost the same way. Both are kept now; only the cached symbols are dropped, which is the one
+  thing a language change really does invalidate.
+
 ## [0.0.8] - 2026-09-23
 
 ### Fixed

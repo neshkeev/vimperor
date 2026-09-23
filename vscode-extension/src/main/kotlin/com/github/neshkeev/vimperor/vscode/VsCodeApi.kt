@@ -369,6 +369,19 @@ external interface TextDocument {
   val isDirty: Boolean
 
   /**
+   * Whether this document is really gone, which is the only thing that separates a close from a
+   * *language change*.
+   *
+   * `onDidCloseTextDocument` fires for both - VS Code's own words are "disposed **or** when the
+   * language id of a text document has been changed" - and the two need opposite answers: one ends
+   * a buffer and the other is the same buffer wearing a different colour scheme. The extension host
+   * makes the difference visible here and nowhere else. A real close disposes the document data and
+   * removes it before firing, so this is true; a language change fires `remove` and `add` around the
+   * *same* object without disposing it, so this is false. See [VimHost.forgetDocument].
+   */
+  val isClosed: Boolean
+
+  /**
    * Which line ending this file uses, and the reason the engine cannot read the text raw.
    *
    * IntelliJ normalises a document to `\n` and applies the file's separator on the way to disk, so

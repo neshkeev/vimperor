@@ -303,6 +303,66 @@ class VsCodeOptionsTest {
   }
 
   /**
+   * VS Code detecting the language of an untitled buffer must not count as closing it.
+   *
+   * The whole of the second report, and the reason the first fix was not enough.
+   * `onDidCloseTextDocument` fires for a *language change* as well as for a close - VS Code's own
+   * words are "disposed or when the language id of a text document has been changed" - and VS Code
+   * detects the language of an untitled buffer by itself. So typing Java into a new tab fired this
+   * host's `forgetDocument`, the buffer's options went, and switching back after `:set syntax=sql`
+   * in another tab re-initialised them from the global value that `:set` had just written.
+   *
+   * `isClosed` separates the two exactly rather than by guess: a real close disposes the document
+   * and drops it from the collection before firing, a language change fires the same object out and
+   * straight back in.
+   */
+  @Test
+  fun `test a language change is not a close`() {
+    val session = Session()
+    val java = FakeEditor("class Hello {}", path = "Untitled-1", untitled = true)
+    session.host.editorFor(java)
+    session.run("setlocal shiftwidth=7", on = java)
+
+    // What VS Code's own language detection does to an untitled buffer: the document is handed to
+    // `onDidCloseTextDocument` and then straight back, without ever being disposed.
+    java.document.languageId = "java"
+    session.host.forgetDocument(java.document)
+
+    assertEquals(
+      7,
+      injector.optionGroup.getOptionValue(VsCodeOptions.shiftwidth, OptionAccessScope.EFFECTIVE(session.host.editorFor(java)))
+        .toVimNumber().value,
+      "the buffer is still open and still the same buffer",
+    )
+  }
+
+  /**
+   * ...and the report end to end: two untitled tabs, a detected language, and `:set syntax` in the
+   * other one.
+   */
+  @Test
+  fun `test a detected language survives a set syntax in another tab`() {
+    val session = Session()
+    val java = FakeEditor("class Hello {}", path = "Untitled-1", untitled = true)
+    session.host.editorFor(java)
+    // VS Code works out that this is Java, which reaches the host as a close and an open.
+    java.document.languageId = "java"
+    session.host.forgetDocument(java.document)
+
+    val sql = FakeEditor("select * from table", path = "Untitled-2", untitled = true)
+    session.host.editorFor(sql)
+    session.run("set syntax=sql", on = sql)
+
+    // Switching back: a new `TextEditor` for a document that was open the whole time.
+    val javaAgain = FakeEditor("class Hello {}", path = "Untitled-1", untitled = true)
+    javaAgain.document.languageId = "java"
+    session.host.editorFor(javaAgain)
+
+    assertEquals("sql", sql.document.languageId, "the tab that asked")
+    assertEquals("java", javaAgain.document.languageId, "and the one that did not")
+  }
+
+  /**
    * An indent option is local to the buffer too, and was being reset by the same path.
    *
    * Worth its own test because it is the half nobody would have reported: `'shiftwidth'` is usually
@@ -335,6 +395,9 @@ class VsCodeOptionsTest {
     val session = Session()
     session.run("setlocal shiftwidth=7")
 
+    // `isClosed` is what a real close looks like; without it this is a language change, which the
+    // host is right to leave alone. See [VimHost.forgetDocument].
+    session.fake.document.isClosed = true
     session.host.forgetDocument(session.fake.document)
     val reopened = FakeEditor("one two", path = "/test/buffer.txt")
     val editor = session.host.editorFor(reopened)
@@ -838,6 +901,7 @@ class VsCodeOptionsTest {
       session.run("set wrap")
       assertTrue(wordWrapNow(session.host.editorFor(session.fake)))
 
+      session.fake.document.isClosed = true
       session.host.forget(session.fake)
 
       val again = FakeEditor("one two\nthree four")

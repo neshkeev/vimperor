@@ -48,6 +48,16 @@ class FakeDocument(
   override var isDirty: Boolean = false
 
   /**
+   * Whether VS Code has really finished with this document.
+   *
+   * False while it is open, which is also what a *language change* leaves it as - and a language
+   * change arrives at `onDidCloseTextDocument` looking exactly like a close. See
+   * [VimHost.forgetDocument]; a fake that reported every close as final would have agreed with the
+   * bug rather than caught it.
+   */
+  override var isClosed: Boolean = false
+
+  /**
    * How this file ends its lines, which a test sets alongside CRLF text.
    *
    * VS Code hands the text back exactly as the file has it, so a fake that reported CRLF while

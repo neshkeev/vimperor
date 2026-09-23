@@ -127,6 +127,7 @@ class AutoCmdTest {
     session.host.editorFor(session.second)
     val open = com.maddyhome.idea.vim.api.injector.editorGroup.getEditors().size
 
+    session.second.document.isClosed = true
     session.host.forgetDocument(session.second.document)
 
     assertEquals(open - 1, com.maddyhome.idea.vim.api.injector.editorGroup.getEditors().size)

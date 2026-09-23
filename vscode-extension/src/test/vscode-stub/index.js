@@ -231,6 +231,9 @@ const workspace = {
       uri: Uri.parse('untitled:Untitled-1'),
       eol: 1,
       isUntitled: true,
+      // A document VS Code is still holding. `isClosed` is what separates a real close from a
+      // language change, both of which arrive at `onDidCloseTextDocument`.
+      isClosed: false,
     }
     openedDocuments.push(document)
     return Promise.resolve(document)

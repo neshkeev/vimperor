@@ -926,6 +926,26 @@ is a new window - that is why `register` initialises it from whichever editor wa
 reopening a file is a new buffer in Vim and takes its local options from the globals afresh, and
 keeping them would answer for a file out of a memory of the last time it was open.
 
+**And the first fix was not enough, because `onDidCloseTextDocument` does not mean closed.** VS
+Code's own words: it fires when a document "is disposed **or** when the language id of a text
+document has been changed". VS Code detects the language of an untitled buffer on its own, so typing
+Java into a new tab fired this host's `forgetDocument` - and every line of it ran against a buffer
+that was open, on screen, and about to be typed into again. `:set syntax=sql` in a second tab then
+turned the first one into SQL, because its buffer had been forgotten and switching back
+re-initialised it from the global value `:set` had just written. `'wrap'` was being thrown away the
+same way, and had been since before any of this.
+
+`TextDocument.isClosed` separates the two and is exact rather than a heuristic, which the extension
+host source settles: a real close disposes the document data and removes it from the collection
+*before* firing, while `$acceptModelLanguageChanged` fires remove and add around the **same**
+undisposed object. The symbols are forgotten either way and are the one thing that really is stale -
+a file that is now Java has the symbols of whatever it was before.
+
+**Three existing tests had to be corrected to keep passing, which is the tell.** They called
+`forgetDocument` on a document whose `isClosed` was false - a close nothing in VS Code produces. A
+fake that answers the way the editor answers is the whole reason this was catchable; see the same
+lesson under `'wrap'`.
+
 **The second half was `getEditors(buffer)` answering "all of them".** That is what the engine asks
 before reporting a local-to-buffer change, so every `:set` ran every language, filetype and indent
 listener against every open file. It was wasted work rather than a wrong answer - each editor then

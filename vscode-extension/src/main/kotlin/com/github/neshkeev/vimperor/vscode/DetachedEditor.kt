@@ -110,6 +110,9 @@ private class DetachedDocument : TextDocument {
   override val isUntitled: Boolean = true
   override val languageId: String = "plaintext"
   override val isDirty: Boolean = false
+
+  /** Never closed: this one is the fallback window and outlives every real document. */
+  override val isClosed: Boolean = false
   override val eol: Int = EndOfLine.LF
   override val lineCount: Int get() = text.count { it == '\n' } + 1
   override val version: Int = 1

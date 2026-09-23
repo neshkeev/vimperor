@@ -226,9 +226,29 @@ class VimHost(
    * `'hlsearch'` paints every editor the engine knows about, and `getFocusedEditor` falls back to
    * the last one registered - which could be a file closed an hour ago.
    */
+  /**
+   * A document VS Code has finished with - or has merely changed the language of.
+   *
+   * **`onDidCloseTextDocument` means both**, which is not a subtlety: VS Code's own words are
+   * "disposed **or** when the language id of a text document has been changed", and it detects the
+   * language of an untitled buffer on its own. So typing Java into a new tab fires this, and every
+   * line below used to run against a buffer that was open, in front of the user, and about to be
+   * typed into again. The symptom was `:set syntax=sql` in a second tab turning the first one into
+   * SQL: its buffer had been forgotten, so switching back re-initialised it from the global value,
+   * which is exactly what `:set` had just written. `'wrap'` was being thrown away the same way.
+   *
+   * [TextDocument.isClosed] is what tells them apart, and it is exact rather than a heuristic: a
+   * real close disposes the document data and drops it from the collection *before* firing, while a
+   * language change fires the same object out and straight back in without disposing it.
+   *
+   * The symbols go either way, and only they: a file that is now Java has the symbols of whatever it
+   * was before, which is the one thing a language change really does invalidate.
+   */
   fun forgetDocument(document: TextDocument) {
     val identity = "${document.uri.scheme}://${document.uri.path}"
     symbols.forget(document)
+    if (!document.isClosed) return
+
     // The transient wrap VS Code keeps is disposed with the model, so what this host remembers
     // about it has to go at the same moment - or a file reopened would be answered for out of a
     // memory of the last time it was open. See [WordWrapSettingMapper].
