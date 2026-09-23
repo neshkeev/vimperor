@@ -4,6 +4,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.9] - 2026-09-24
+
 ### Fixed
 
 - Line numbers no longer disappear. VS Code numbers the gutter without being asked and Vim's
