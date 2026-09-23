@@ -267,7 +267,6 @@ class HeadlessInjector : HeadlessInjectorBase() {
       // any of it, which is why the substitution itself is common code.
       override fun isSomeTextHighlighted(): Boolean = false
       override fun getCurrentIncsearchResultRange(editor: VimEditor): TextRange? = null
-      override fun highlightSearchLines(editor: VimEditor, startLine: Int, endLine: Int) {}
       override fun updateSearchHighlights(force: Boolean) {}
       override fun updateSearchCount(matchOffset: Int) {}
       override fun resetIncsearchHighlights() {}

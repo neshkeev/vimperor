@@ -6,6 +6,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- A mapping made for Visual mode now runs as a Visual mode command when you trigger it from Select
+  mode, which is what Vim does. Select mode replaces the selection with whatever you type, and the
+  mapping's keys were being fed back as exactly that - so `:noremap j d` with a selection in Select
+  mode did not delete it, it replaced it with the letter `d`. Select mode is handed back afterwards
+  unless the mapping ended the selection itself. Ported from IdeaVim (VIM-4326). A mapping written
+  with `:snoremap` is untouched, because that one really does mean Select mode.
+
 - `:set syntax` and `:set filetype` change one document instead of all of them. Setting the syntax
   in an untitled buffer turned every other open file into that language as you visited it, saved
   files included. The indent options - `'expandtab'`, `'tabstop'`, `'shiftwidth'`, `'softtabstop'` -

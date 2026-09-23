@@ -839,12 +839,6 @@ open class VsCodeInjector(
       /** Whether `:nohlsearch` has anything to clear, and whether `n` should repaint. */
       override fun isSomeTextHighlighted(): Boolean = highlighter.isShowingAnything()
 
-      override fun highlightSearchLines(editor: VimEditor, startLine: Int, endLine: Int) {
-        val vsCode = editor as? VsCodeEditor ?: return
-        val pattern = getLastUsedPattern() ?: return
-        highlighter.showMatches(vsCode, searchHelper.findAll(editor, pattern, startLine, endLine, shouldIgnoreCase(pattern)))
-      }
-
       override fun clearSearchHighlight() {
         shouldShowHighlights = false
         val editor = editorGroup.getFocusedEditor() as? VsCodeEditor ?: return

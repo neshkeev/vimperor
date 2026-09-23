@@ -26,6 +26,7 @@ import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.group.visual.VimSelection.Companion.create
 import com.maddyhome.idea.vim.handler.ExternalActionHandler
 import com.maddyhome.idea.vim.helper.VimNlsSafe
+import com.maddyhome.idea.vim.impl.state.toMappingMode
 import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.KeyHandlerState
@@ -51,6 +52,38 @@ sealed class MappingInfo(
   abstract fun getPresentableString(): String
 
   abstract fun execute(editor: VimEditor, context: ExecutionContext, keyState: KeyHandlerState)
+
+  /**
+   * Runs [action] in Visual mode when the mapping was triggered from Select mode, and puts Select back.
+   *
+   * Vim's rule for a `:vmap` reached from Select: `:help Select-mode-mapping` says the mapping is
+   * executed as if the user were in Visual mode, and Select mode is restored afterwards. Without
+   * this, `:vnoremap` from Select ran the right-hand side against a Select-mode command set that
+   * does not contain it, so the keys were typed as *text* and the selection was replaced.
+   *
+   * Only when the mapping was declared for Visual - [originalModes] is what the user wrote, so a
+   * mapping made with `:smap` stays in Select, where it belongs.
+   */
+  protected fun <T> withSelectModeAsVisual(editor: VimEditor, keyState: KeyHandlerState, action: () -> T): T {
+    if (editor.mode !is Mode.SELECT || MappingMode.VISUAL !in originalModes) return action()
+
+    toggleSelectVisual(editor, keyState)
+    try {
+      return action()
+    } finally {
+      // The right-hand side may have ended the selection - `:vnoremap j d` does - and then there is
+      // no Select mode to go back to.
+      if (editor.mode is Mode.VISUAL) toggleSelectVisual(editor, keyState)
+    }
+  }
+
+  private fun toggleSelectVisual(editor: VimEditor, keyState: KeyHandlerState) {
+    injector.visualMotionGroup.toggleSelectVisual(editor)
+    // The command builder caches the key stroke trie of the mode it was last reset for, and changing
+    // the mode does not update it. Without this the right-hand side's keys are not recognised as
+    // commands at all.
+    keyState.commandBuilder.resetCommandTrie(injector.keyGroup.getBuiltinCommandsTrie(editor.mode.toMappingMode()))
+  }
 
   override fun compareTo(other: MappingInfo): Int {
     val size = fromKeys.size
@@ -100,18 +133,20 @@ class ToKeysMappingInfo(
     LOG.trace { "Adding new keys to keyStack as toKeys of mapping. State before adding keys: ${keyHandler.keyStack.dump()}" }
     keyHandler.keyStack.addKeys(toKeys)
     try {
-      var first = true
-      while (keyHandler.keyStack.hasStroke()) {
-        val keySource = if (!isRecursive || (first && lhsIsPrefixOfRhs)) {
-          KeySource.MAPPED_NON_RECURSIVE
+      withSelectModeAsVisual(editor, keyState) {
+        var first = true
+        while (keyHandler.keyStack.hasStroke()) {
+          val keySource = if (!isRecursive || (first && lhsIsPrefixOfRhs)) {
+            KeySource.MAPPED_NON_RECURSIVE
+          }
+          else {
+            KeySource.MAPPED
+          }
+          val keyStroke = keyHandler.keyStack.feedStroke()
+          keyHandler.handleKey(editor, keyStroke, keySource, context, keyState)
+          first = false
+          if (keyHandler.maxMapDepthReached) break
         }
-        else {
-          KeySource.MAPPED
-        }
-        val keyStroke = keyHandler.keyStack.feedStroke()
-        keyHandler.handleKey(editor, keyStroke, keySource, context, keyState)
-        first = false
-        if (keyHandler.maxMapDepthReached) break
       }
     } finally {
       keyHandler.keyStack.removeFirst()
