@@ -4,6 +4,18 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- `:set syntax` and `:set filetype` change one document instead of all of them. Setting the syntax
+  in an untitled buffer turned every other open file into that language as you visited it, saved
+  files included. The indent options - `'expandtab'`, `'tabstop'`, `'shiftwidth'`, `'softtabstop'` -
+  were being reset by the same path and were simply harder to notice. All of these are local to the
+  *buffer*, and Vimperor was keying buffer-local state by the editor object rather than by the
+  document; VS Code hands out a fresh editor object whenever a hidden tab is shown, so every tab
+  looked like a brand-new buffer and took its options from the global values. They are keyed by the
+  document now, so a tab switch changes nothing, two views of one file agree, and closing a file
+  forgets its buffer the way Vim does.
+
 ## [0.0.8] - 2026-09-23
 
 ### Fixed

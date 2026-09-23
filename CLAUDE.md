@@ -898,6 +898,47 @@ the real `package.json`. And `KeybindingManifestTest.declaredKeys` read `args as
 the moment Enter took the object form `<CR>` was reported as a key this extension never asked for;
 anything reading the manifest has to accept both shapes, exactly as the runtime handler does.
 
+### A buffer is keyed by its document, and the wrapper is not the buffer
+
+**`:set syntax=html` in one document turned every open file into HTML.** Titled files included, and
+`'filetype'`, `'expandtab'`, `'tabstop'`, `'shiftwidth'` and `'softtabstop'` were going the same way
+without anybody noticing, because those are usually the same in every file anyway.
+
+The cause is one map. `EditorKeyedStorage` held buffer-scoped data in a `Map<VimEditor, ...>`, and
+`VsCodeEditor` has no `equals`, so the key was the *wrapper object*. VS Code hands out a new
+`TextEditor` every time a hidden tab is shown, `VimHost.editorFor` replaces the wrapper, and from
+then on `isLocalToBufferOptionStorageInitialised` answered **false** about a buffer that had been
+open all along. `initialiseLocalToBufferOptions` believed it and copied every local-to-buffer option
+from the global values - and `:set` on a local option writes the global value as well as the local
+one, which is Vim's own rule so that a new buffer inherits it. So the global said `html`, and each
+tab took it as it was looked at.
+
+**The wrapper is the window; the document is the buffer.** Keying by `VimEditor.getPath()` -
+`scheme://path`, which is what `VimHost.editorFor` already keys its editors by, and what marks
+already depend on - makes a replaced wrapper find the buffer it has always had. It also makes two
+views of one file share one set of buffer-local options, which is what "local to buffer" means; that
+costs nothing here, because this host keeps one editor per document and cannot tell two views apart
+in the first place. Window and tab data stay keyed by the object, because a replaced wrapper really
+is a new window - that is why `register` initialises it from whichever editor was active, and why
+`'relativenumber'` from a config survives a tab switch.
+
+**`VimHost.forgetDocument` drops the buffer with the file**, for the same reason it drops the wrap:
+reopening a file is a new buffer in Vim and takes its local options from the globals afresh, and
+keeping them would answer for a file out of a memory of the last time it was open.
+
+**The second half was `getEditors(buffer)` answering "all of them".** That is what the engine asks
+before reporting a local-to-buffer change, so every `:set` ran every language, filetype and indent
+listener against every open file. It was wasted work rather than a wrong answer - each editor then
+read its *own* effective value and did nothing - which is exactly why it survived, and why the test
+for it asserts the seam rather than a side effect.
+
+**Three of the five regression tests do not discriminate, and that is worth knowing before trusting
+a green suite.** `:set` writes the global value too, so a test that sets an option and then replaces
+the editor reads the right answer either way; only a *second* buffer, or `:setlocal`, can tell the
+two apart. The two that fail without the fix are the reported repro - untitled buffer, `:set
+syntax`, switch to a file that was already open - and a `:setlocal shiftwidth` that survives its
+editor being replaced.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

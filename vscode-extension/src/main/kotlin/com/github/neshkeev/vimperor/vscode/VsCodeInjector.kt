@@ -573,7 +573,22 @@ open class VsCodeInjector(
     object : VimEditorGroup {
       override fun getEditorsRaw(): Collection<VimEditor> = openEditors.toList()
       override fun getEditors(): Collection<VimEditor> = openEditors.toList()
-      override fun getEditors(buffer: VimDocument): Collection<VimEditor> = openEditors.toList()
+
+      /**
+       * The editors showing [buffer], which used to be answered as "all of them".
+       *
+       * This is what the engine asks before telling anyone that a local-to-buffer option changed,
+       * so answering with every open editor ran every `'syntax'`, `'filetype'` and indent listener
+       * against every open file on every `:set`. Each one then read its *own* effective value and
+       * mostly did nothing, which is why it stayed hidden - it was wasted work rather than a wrong
+       * answer, until a buffer that had lost its local values met it.
+       *
+       * A `VimDocument` here is one object per editor, held as a `val`, so identity is the whole
+       * comparison. An editor that has been replaced is no longer in [openEditors] and cannot
+       * match, which is right: its document is one nothing is showing any more.
+       */
+      override fun getEditors(buffer: VimDocument): Collection<VimEditor> =
+        openEditors.filter { it.document === buffer }
 
       /** VS Code's active editor, as this host's wrapper for it. */
       override fun getFocusedEditor(): VimEditor? = activeEditor ?: openEditors.lastOrNull()
@@ -596,7 +611,13 @@ open class VsCodeInjector(
    * but nothing yet tells them apart here, so they share a map. Local option values live in this,
    * which is why getting it wrong later shows up as `:setlocal` leaking across a split.
    */
-  override val vimStorageService: VimStorageService by lazy { EditorKeyedStorage() }
+  private val editorStorage: EditorKeyedStorage by lazy { EditorKeyedStorage() }
+  override val vimStorageService: VimStorageService get() = editorStorage
+
+  /** What a closed document takes with it. See [EditorKeyedStorage.forgetBuffer]. */
+  fun forgetBuffer(identity: String) {
+    editorStorage.forgetBuffer(identity)
+  }
 
   override val timerService: VimTimerService by lazy { NodeTimerService }
 
@@ -1610,30 +1631,75 @@ private object NoStatistics : VimStatistics {
   override fun addSourcedFile(path: String) {}
 }
 
+/**
+ * Vim's three storage scopes, of which only one can be keyed by the editor object.
+ *
+ * **A buffer is keyed by the document, not by the wrapper, and that is the whole of a bug.** VS Code
+ * hands out a new `TextEditor` for a document every time a hidden tab is shown, so [VimHost.editorFor]
+ * replaces the [VsCodeEditor] while the document stays exactly where it was. A map keyed by the
+ * wrapper therefore says "this buffer has never been seen" about a file that has been open all
+ * along - and `initialiseLocalToBufferOptions` believes it and copies every local-to-buffer option
+ * from the *global* values.
+ *
+ * That is what `:set syntax=html` in one document did to every other one. `:set` on a local option
+ * sets the local value and the global value - Vim does the same, so that a new buffer inherits it -
+ * and here every tab became a new buffer the moment it was looked at. The global said `html` and
+ * each tab in turn took it, titled files included. `'filetype'`, `'expandtab'`, `'tabstop'`,
+ * `'shiftwidth'` and `'softtabstop'` are local-to-buffer too and were all being reset the same way;
+ * they were harder to notice because they are usually the same in every file.
+ *
+ * Keying by [VimEditor.getPath] - `scheme://path`, the identity this host uses for a buffer
+ * everywhere else, and the same string [VimHost.editorFor] keys its editors by - makes a replaced
+ * wrapper find the buffer it has always had. It also makes two views of one file share one set of
+ * buffer-local options, which is what "local to buffer" means; that costs nothing here, because
+ * this host keeps one editor per document and cannot tell two views apart in the first place.
+ *
+ * Window and tab data stay keyed by the editor object. A window *is* the wrapper, and a replaced one
+ * is a new window as far as Vim is concerned - which is why `register` initialises it from whichever
+ * editor was active, and why `'relativenumber'` set in a config survives a tab switch.
+ */
 private class EditorKeyedStorage : VimStorageService {
   private val windowData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
-  private val bufferData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
+  private val bufferData = mutableMapOf<Any, MutableMap<Key<*>, Any?>>()
   private val tabData = mutableMapOf<VimEditor, MutableMap<Key<*>, Any?>>()
 
   @Suppress("UNCHECKED_CAST")
-  private fun <T> get(store: MutableMap<VimEditor, MutableMap<Key<*>, Any?>>, editor: VimEditor, key: Key<T>): T? =
-    store[editor]?.get(key) as T?
+  private fun <K, T> get(store: MutableMap<K, MutableMap<Key<*>, Any?>>, at: K, key: Key<T>): T? =
+    store[at]?.get(key) as T?
 
-  private fun <T> put(
-    store: MutableMap<VimEditor, MutableMap<Key<*>, Any?>>,
-    editor: VimEditor,
-    key: Key<T>,
-    data: T,
-  ) {
-    store.getOrPut(editor) { mutableMapOf() }[key] = data
+  private fun <K, T> put(store: MutableMap<K, MutableMap<Key<*>, Any?>>, at: K, key: Key<T>, data: T) {
+    store.getOrPut(at) { mutableMapOf() }[key] = data
   }
 
   override fun <T> getDataFromWindow(editor: VimEditor, key: Key<T>): T? = get(windowData, editor, key)
   override fun <T> putDataToWindow(editor: VimEditor, key: Key<T>, data: T) = put(windowData, editor, key, data)
-  override fun <T> getDataFromBuffer(editor: VimEditor, key: Key<T>): T? = get(bufferData, editor, key)
-  override fun <T> putDataToBuffer(editor: VimEditor, key: Key<T>, data: T) = put(bufferData, editor, key, data)
+  override fun <T> getDataFromBuffer(editor: VimEditor, key: Key<T>): T? = get(bufferData, bufferKey(editor), key)
+  override fun <T> putDataToBuffer(editor: VimEditor, key: Key<T>, data: T) =
+    put(bufferData, bufferKey(editor), key, data)
+
+  /**
+   * The buffer's identity, or the editor itself when it has none.
+   *
+   * `VimEditor.getPath()` is nullable and no editor this host makes answers null - every VS Code
+   * document has a URI, untitled ones included, which is the reason `VsCodeEditor` keys its identity
+   * off one. The fallback is there so that an editor from somewhere else cannot silently share a
+   * buffer with every other pathless editor, which is the failure this whole class is fixing.
+   */
+  private fun bufferKey(editor: VimEditor): Any = editor.getPath() ?: editor
+
   override fun <T> getDataFromTab(editor: VimEditor, key: Key<T>): T? = get(tabData, editor, key)
   override fun <T> putDataToTab(editor: VimEditor, key: Key<T>, data: T) = put(tabData, editor, key, data)
+
+  /**
+   * A closed document's buffer is gone, so what was local to it goes too.
+   *
+   * Vim's rule and not a tidy-up: reopening a file gives you a *new* buffer, which takes its local
+   * options from the global values afresh. Keeping them would answer for a file out of a memory of
+   * the last time it was open - the same mistake [forgetWordWrap] exists to avoid, one scope down.
+   */
+  fun forgetBuffer(identity: String) {
+    bufferData.remove(identity)
+  }
 }
 
 /** `'timeoutlen'`: an unfinished mapping waits, and executes as typed if nothing more arrives. */

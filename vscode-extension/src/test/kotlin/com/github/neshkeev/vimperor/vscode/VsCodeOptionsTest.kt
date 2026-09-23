@@ -218,6 +218,135 @@ class VsCodeOptionsTest {
     assertEquals(TextEditorLineNumbersStyle.Relative, again.lineNumbers)
   }
 
+  // ---- `'syntax'` and `'filetype'`, which are local to the *buffer*.
+
+  /**
+   * `:set syntax=html` names one buffer, and every other document keeps the language it had.
+   *
+   * Reported from a real window: `:set syntax` in an untitled document turned every open file into
+   * that language, saved ones included. `:set` on a local option writes the local value *and* the
+   * global one - Vim does the same, so that a new buffer inherits it - and this host keyed
+   * buffer-local storage by the `VsCodeEditor` wrapper. VS Code hands out a new `TextEditor`
+   * whenever a hidden tab is shown, so the wrapper is replaced, so the engine was told the buffer
+   * had never been initialised, so it copied every local-to-buffer option from the globals. Each tab
+   * became `html` as it was looked at. See `EditorKeyedStorage`.
+   */
+  @Test
+  fun `test the syntax of one document does not reach another`() {
+    val session = Session()
+    val other = FakeEditor("another file", path = "/test/other.txt")
+    session.host.editorFor(other)
+
+    session.run("set syntax=html")
+
+    assertEquals("html", session.fake.document.languageId, "the document it was typed in")
+    assertEquals("plaintext", other.document.languageId, "and no other")
+  }
+
+  /**
+   * The engine asks which editors show a buffer before it reports a local-to-buffer change.
+   *
+   * This host used to answer "all of them", so every `:set syntax` ran the language, filetype and
+   * indent listeners against every open file. That was wasted work rather than a wrong answer -
+   * each editor then read its own effective value and mostly did nothing - which is why it survived
+   * so long, and why it is asserted here directly rather than through a side effect.
+   */
+  @Test
+  fun `test only the editors showing a buffer are told its local options changed`() {
+    val session = Session()
+    val mine = session.host.editorFor(session.fake)
+    val other = session.host.editorFor(FakeEditor("another file", path = "/test/other.txt"))
+
+    assertEquals(listOf(mine), injector.editorGroup.getEditors(mine.document).toList())
+    assertEquals(listOf(other), injector.editorGroup.getEditors(other.document).toList())
+  }
+
+  /**
+   * The exact report: an untitled buffer, then a switch to a file that was open all along.
+   *
+   * A tab *switch* is what makes this visible rather than a tab open, because VS Code hands the
+   * host a new `TextEditor` object for a document it has had open the whole time - and that is what
+   * used to read as a new buffer.
+   */
+  @Test
+  fun `test a tab switched to after a set syntax keeps its own language`() {
+    val session = Session()
+    val titled = FakeEditor("saved file", path = "/test/saved.txt")
+    session.host.editorFor(titled)
+    val untitled = FakeEditor("pasted text", path = "Untitled-1", untitled = true)
+    session.host.editorFor(untitled)
+
+    session.run("set syntax=html", on = untitled)
+    // The switch back: the same document, a new `TextEditor`, whose wrapper the host replaces.
+    val shownAgain = FakeEditor("saved file", path = "/test/saved.txt")
+    session.host.editorFor(shownAgain)
+
+    assertEquals("html", untitled.document.languageId, "the buffer that asked for it")
+    assertEquals("plaintext", shownAgain.document.languageId, "the one that did not")
+  }
+
+  /** ...and the buffer that *did* ask keeps it when its own editor is replaced. */
+  @Test
+  fun `test a document keeps its syntax when its editor is replaced`() {
+    val session = Session()
+    session.run("set syntax=html")
+
+    val again = FakeEditor("one two", path = "/test/buffer.txt")
+    val editor = session.host.editorFor(again)
+
+    assertEquals(
+      "html",
+      injector.optionGroup.getOptionValue(VsCodeOptions.syntax, OptionAccessScope.EFFECTIVE(editor))
+        .toVimString().value,
+      "the buffer is the same buffer, whatever object VS Code handed over",
+    )
+  }
+
+  /**
+   * An indent option is local to the buffer too, and was being reset by the same path.
+   *
+   * Worth its own test because it is the half nobody would have reported: `'shiftwidth'` is usually
+   * the same in every file, so a buffer quietly taking the global value looks like nothing at all.
+   */
+  @Test
+  fun `test a buffer local indent survives its editor being replaced`() {
+    val session = Session()
+    session.run("setlocal shiftwidth=7")
+
+    val again = FakeEditor("one two", path = "/test/buffer.txt")
+    val editor = session.host.editorFor(again)
+
+    assertEquals(
+      7,
+      injector.optionGroup.getOptionValue(VsCodeOptions.shiftwidth, OptionAccessScope.EFFECTIVE(editor))
+        .toVimNumber().value,
+    )
+  }
+
+  /**
+   * Closing a file takes its buffer with it, so reopening one starts from the global values.
+   *
+   * Vim's rule rather than a tidy-up: `:bdelete` and a fresh `:edit` give a new buffer. Keeping the
+   * old local values would answer for a file out of a memory of the last time it was open, which is
+   * the mistake `forgetWordWrap` exists to avoid one scope down.
+   */
+  @Test
+  fun `test a reopened file does not keep the last one's buffer options`() {
+    val session = Session()
+    session.run("setlocal shiftwidth=7")
+
+    session.host.forgetDocument(session.fake.document)
+    val reopened = FakeEditor("one two", path = "/test/buffer.txt")
+    val editor = session.host.editorFor(reopened)
+
+    assertEquals(
+      0,
+      injector.optionGroup.getOptionValue(VsCodeOptions.shiftwidth, OptionAccessScope.EFFECTIVE(editor))
+        .toVimNumber().value,
+      "back to the global value, which `setlocal` never touched",
+    )
+  }
+
   /** Writing the same style twice is a round trip to VS Code that buys nothing. */
   @Test
   fun `test the gutter is only written when the answer changes`() {

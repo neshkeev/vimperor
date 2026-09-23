@@ -233,6 +233,9 @@ class VimHost(
     // about it has to go at the same moment - or a file reopened would be answered for out of a
     // memory of the last time it was open. See [WordWrapSettingMapper].
     forgetWordWrap(identity)
+    // And what was local to the buffer, for the same reason: reopening a file is a new buffer in
+    // Vim, and it takes its local options from the global values afresh.
+    vimInjector.forgetBuffer(identity)
     editors.remove(identity)?.let { vimInjector.unregister(it) }
     if (lastActiveEditor?.document?.uri?.path == document.uri.path) lastActiveEditor = null
   }
