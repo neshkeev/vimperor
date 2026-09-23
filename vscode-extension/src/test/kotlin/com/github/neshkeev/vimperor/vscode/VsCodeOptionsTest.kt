@@ -32,8 +32,24 @@ import kotlin.test.assertTrue
  */
 class VsCodeOptionsTest {
 
-  private class Session(text: String = "one two\nthree four") {
-    val fake = FakeEditor(text)
+  /**
+   * VS Code's `TextEditorLineNumbersStyle.Interval`, which [TextEditorLineNumbersStyle] does not
+   * declare: it was added to the enum after the 1.85 API this extension is built against, and
+   * declaring it would fail the guard that checks every `external` against `@types/vscode`. A real
+   * editor can still be in that state, so the tests put a fake in it the same way - by number.
+   */
+  private val INTERVAL = 3
+
+  private class Session(
+    text: String = "one two\nthree four",
+    /**
+     * The gutter VS Code is drawing before Vimperor has seen this editor, which `seedLineNumbers`
+     * reads. Set on the fake before the host is built, because the host reads it while registering
+     * and a test that assigned it afterwards would be asserting against a seed already taken.
+     */
+    gutter: Int = TextEditorLineNumbersStyle.On,
+  ) {
+    val fake = FakeEditor(text).also { it.lineNumbers = gutter }
     val errors: MutableList<String> = mutableListOf()
     val messages: MutableList<String> = mutableListOf()
 
@@ -216,6 +232,104 @@ class VsCodeOptionsTest {
     session.host.editorFor(again)
 
     assertEquals(TextEditorLineNumbersStyle.Relative, again.lineNumbers)
+  }
+
+  // ---- The gutter an editor already had, which is where its options start.
+  //
+  // Reported as "line numbers disappeared", and it was every file: VS Code numbers the gutter
+  // without being asked and Vim's `'number'` defaults to off, so a host that pushed Vim's answer
+  // turned them off in the first editor it saw and in every one after it. Nobody had set the
+  // option, so nobody could unset it. `seedLineNumbers` starts the pair off at what VS Code was
+  // already drawing, exactly as `seedIndent` does for the indent options and for the same reason.
+
+  @Test
+  fun `test an editor keeps the line numbers VS Code was drawing`() {
+    val session = Session()
+    assertEquals(TextEditorLineNumbersStyle.On, session.lineNumbers)
+  }
+
+  /** ...and the option says so, which is what makes `:set nonu` mean something afterwards. */
+  @Test
+  fun `test number answers with the gutter that was seeded`() {
+    val session = Session()
+    session.run("set number?")
+    assertTrue(session.printed.any { it.contains("number") && !it.contains("nonumber") }, session.printed.toString())
+  }
+
+  /** The other direction: an editor VS Code was not numbering is not numbered by this either. */
+  @Test
+  fun `test an editor with no line numbers is left without them`() {
+    val session = Session(gutter = TextEditorLineNumbersStyle.Off)
+    assertEquals(TextEditorLineNumbersStyle.Off, session.lineNumbers)
+  }
+
+  /** The seed is a starting point, not a floor: `:set nonu` still empties a numbered gutter. */
+  @Test
+  fun `test set nonumber turns off a gutter that was seeded on`() {
+    val session = Session()
+    session.run("set nonumber")
+    assertEquals(TextEditorLineNumbersStyle.Off, session.lineNumbers)
+  }
+
+  /**
+   * ...and it survives the next keystroke, which is what "once per editor" buys.
+   *
+   * [applyEditorOptions] runs after every key, so a seed that ran again would read the `Off` this
+   * host had just written, seed `'number'` back off from it - harmless here - and, in the editor
+   * where the user had turned numbers *on*, keep reading its own answer instead of theirs.
+   */
+  @Test
+  fun `test a gutter turned off stays off across a keystroke`() {
+    val session = Session()
+    session.run("set nonumber")
+    session.host.type(session.fake, "j")
+    assertEquals(TextEditorLineNumbersStyle.Off, session.lineNumbers)
+  }
+
+  /** An editor that had none takes them when the user asks, which is the seed not being a ceiling. */
+  @Test
+  fun `test set number numbers an editor that had no gutter`() {
+    val session = Session(gutter = TextEditorLineNumbersStyle.Off)
+    session.run("set number")
+    assertEquals(TextEditorLineNumbersStyle.On, session.lineNumbers)
+  }
+
+  /**
+   * A config outranks the editor, because its values are global and the seed skips what was asked
+   * for. Without that rule `set nu rnu` would be overwritten by the gutter of whatever file opened.
+   */
+  @Test
+  fun `test a config beats the gutter the editor was drawing`() {
+    val session = Session(gutter = TextEditorLineNumbersStyle.Off)
+    session.run("set relativenumber")
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.lineNumbers)
+  }
+
+  /**
+   * `Interval` is a gutter Vim has no word for, so `'number'` is left satisfied by it.
+   *
+   * Flattening it to `On` would take away a setting the user chose and give back a state they can
+   * already have. The two commands that name a *different* state still reach it.
+   */
+  @Test
+  fun `test an interval gutter survives set number`() {
+    val session = Session(gutter = INTERVAL)
+    session.run("set number")
+    assertEquals(INTERVAL, session.lineNumbers)
+  }
+
+  @Test
+  fun `test set nonumber reaches an interval gutter`() {
+    val session = Session(gutter = INTERVAL)
+    session.run("set nonumber")
+    assertEquals(TextEditorLineNumbersStyle.Off, session.lineNumbers)
+  }
+
+  @Test
+  fun `test set relativenumber reaches an interval gutter`() {
+    val session = Session(gutter = INTERVAL)
+    session.run("set relativenumber")
+    assertEquals(TextEditorLineNumbersStyle.Relative, session.lineNumbers)
   }
 
   // ---- `'syntax'` and `'filetype'`, which are local to the *buffer*.

@@ -1595,6 +1595,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * answers. See `seedIndent`.
    */
   internal var seededIndent: Boolean = false
+
+  /**
+   * Whether `'number'` and `'relativenumber'` have been started off at the gutter VS Code was
+   * already drawing. Per editor, because `editor.lineNumbers` resolves per language. See
+   * `seedLineNumbers`.
+   */
+  internal var seededLineNumbers: Boolean = false
   /**
    * What `R` overwrote, so that backspace in replace mode puts it back. Held per editor because
    * replace mode is per window; the engine builds and clears it.

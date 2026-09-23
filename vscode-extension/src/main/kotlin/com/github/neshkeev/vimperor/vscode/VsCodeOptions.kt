@@ -487,6 +487,11 @@ internal object VsCodeOptions {
  * line you are on is the useful half of the pair.
  */
 internal fun applyLineNumbers(editor: VimEditor) {
+  // Held off while [seedLineNumbers] is part-way through, for the reason [seedIndent] documents:
+  // seeding one of the pair fires the engine's change listener, and a run that read the *un-seeded*
+  // other half would write the gutter from half an answer - flattening a `Relative` editor to `On`
+  // a line before `'relativenumber'` was seeded from it.
+  if (seeding) return
   val vsCode = editor as? VsCodeEditor ?: return
   val relative = injector.optionGroup
     .getOptionValue(VsCodeOptions.relativenumber, OptionAccessScope.EFFECTIVE(editor))
@@ -508,8 +513,65 @@ internal fun applyLineNumbers(editor: VimEditor) {
   // our own writes cannot see that happen. It would go on saying "already relative" while the
   // gutter sat empty, and never write again for the life of that editor. The editor's own answer
   // cannot drift from the editor.
-  if (style == vsCode.nativeEditor.options.lineNumbers) return
+  val showing = vsCode.nativeEditor.options.lineNumbers
+  // A gutter that is neither off nor relative and is not plain `On` either is VS Code's
+  // `Interval` - every tenth number, a kind of absolute numbering Vim cannot spell. `'number'` is
+  // satisfied by what that editor is already showing, so asking for plain `On` would take away a
+  // gutter the user chose and give nothing back. `:set nonumber` and `:set relativenumber` still
+  // reach it, because neither is the state it is in.
+  //
+  // Recognised by exclusion rather than by name, because the constant postdates the VS Code this
+  // extension declares - see [TextEditorLineNumbersStyle]. Anything else the enum grows that means
+  // "numbered somehow" lands here too, which is the right answer for a state Vim has no word for.
+  if (style == TextEditorLineNumbersStyle.On &&
+    showing != TextEditorLineNumbersStyle.Off &&
+    showing != TextEditorLineNumbersStyle.Relative
+  ) return
+  if (style == showing) return
   vsCode.nativeEditor.options.lineNumbers = style
+}
+
+/**
+ * `'number'` and `'relativenumber'`, started off at the gutter the editor already had.
+ *
+ * **Without this the extension turned line numbers off in every file it was loaded into.** VS
+ * Code's `editor.lineNumbers` defaults to `on` and Vim's `'number'` defaults to off, so a host that
+ * pushed Vim's answer wrote `Off` onto the first editor it saw and onto every one after it. Nobody
+ * had asked for that: `set number` is not in a VS Code user's config because VS Code has always
+ * numbered the gutter without being told, and there is no `:set` that puts back a default you never
+ * knowingly left.
+ *
+ * It is the same trade `seedIndent` makes and the same one `'wrap'` took four attempts to find:
+ * where the value lives in the editor, the editor's answer is the default and Vim's is not. `'wrap'`
+ * is the mirror image of this one - Vim wraps and VS Code does not - and the note under it in
+ * `CLAUDE.md` is what this should have been read against when the gutter was written.
+ *
+ * Once per editor, because [applyEditorOptions] runs after every keystroke and a `:setlocal nonu`
+ * typed into this window has to survive the next key. Per editor rather than once overall because
+ * `editor.lineNumbers` resolves per language, so two windows genuinely have two answers.
+ *
+ * Not for an option the user has set: a config's values are the global ones, so an option whose
+ * global value has moved off its default was asked for and is left alone - which is what carries
+ * `set nu rnu` into a window that opens later. The case that misses is a config setting an option
+ * to exactly Vim's default, `set nonumber`, which is read here as not having asked. That is the
+ * same ambiguity `seedIndent` documents and it fails the same way: towards the editor's own answer.
+ */
+private fun seedLineNumbers(editor: VsCodeEditor) {
+  if (editor.seededLineNumbers) return
+  editor.seededLineNumbers = true
+
+  // Read once, before either half is written, for the reason [seedIndent] gives at length.
+  val showing = editor.nativeEditor.options.lineNumbers
+  val absolute = showing != TextEditorLineNumbersStyle.Off
+  val relative = showing == TextEditorLineNumbersStyle.Relative
+
+  seeding = true
+  try {
+    seed(Options.number, editor, VimInt(if (absolute) 1 else 0))
+    seed(VsCodeOptions.relativenumber, editor, VimInt(if (relative) 1 else 0))
+  } finally {
+    seeding = false
+  }
 }
 
 /**
@@ -918,7 +980,8 @@ private fun seedIndent(editor: VsCodeEditor) {
 }
 
 /**
- * Whether [seedIndent] is part-way through, so that its own writes do not look like a `:set`.
+ * Whether [seedIndent] or [seedLineNumbers] is part-way through, so that its own writes do not look
+ * like a `:set`.
  *
  * One flag for the whole host rather than one per editor: seeding is synchronous and there is one
  * thread, so no two editors are ever inside it at once.
@@ -927,7 +990,11 @@ private var seeding: Boolean = false
 
 /** Sets an editor's local value, unless a config has already set the option globally. */
 private fun <T : VimDataType> seed(option: Option<T>, editor: VsCodeEditor, value: T) {
-  if (injector.optionGroup.getOptionValue(option, OptionAccessScope.GLOBAL(null)) != option.defaultValue) return
+  // Read against the editor rather than against nothing. A local-to-*window* option keeps its
+  // global value per window - that is how `set nu rnu` in a config reaches a file opened later,
+  // since the scenarios copy the globals on from the window that was open - and the engine refuses
+  // a global read of one without a window to read it in.
+  if (injector.optionGroup.getOptionValue(option, OptionAccessScope.GLOBAL(editor)) != option.defaultValue) return
   injector.optionGroup.setOptionValue(option, OptionAccessScope.LOCAL(editor), value)
 }
 
@@ -940,6 +1007,10 @@ private fun <T : VimDataType> seed(option: Option<T>, editor: VsCodeEditor, valu
  * one on screen, delivered now that it is, because the toggle only reaches the focused editor.
  */
 internal fun applyEditorOptions(editor: VimEditor) {
+  // The seed runs before the apply, and that order is the whole of it: seeding reads what the
+  // editor is drawing, and an apply that went first would have written Vim's default over it and
+  // left the seed reading this host's own answer back.
+  (editor as? VsCodeEditor)?.let { seedLineNumbers(it) }
   applyLineNumbers(editor)
   applyLanguage(editor)
   (editor as? VsCodeEditor)?.let {

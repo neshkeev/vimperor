@@ -54,7 +54,7 @@ const TextEditorSelectionChangeKind = { Keyboard: 1, Mouse: 2, Command: 3 }
 const TextEditorCursorStyle = { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 }
 
 /* Whether the gutter numbers lines, and from where. Vim's `'number'` and `'relativenumber'`. */
-const TextEditorLineNumbersStyle = { Off: 0, On: 1, Relative: 2 }
+const TextEditorLineNumbersStyle = { Off: 0, On: 1, Relative: 2, Interval: 3 }
 
 const TextEditorRevealType = {
   Default: 0,

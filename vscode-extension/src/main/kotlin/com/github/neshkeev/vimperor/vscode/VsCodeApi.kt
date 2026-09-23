@@ -552,9 +552,15 @@ external interface TextEditorOptions {
 /**
  * VS Code's `TextEditorLineNumbersStyle`: `Off = 0`, `On = 1`, `Relative = 2`.
  *
- * There is no fourth. Vim's `'relativenumber'` without `'number'` puts a `0` on the caret's line
- * and VS Code's `Relative` puts the absolute number there, which is Vim with both set - so the two
- * spellings of relative land in the same place. See [applyLineNumbers].
+ * Vim's `'relativenumber'` without `'number'` puts a `0` on the caret's line and VS Code's
+ * `Relative` puts the absolute number there, which is Vim with both set - so the two spellings of
+ * relative land in the same place, and the state that is lost is the one nobody sets on purpose.
+ *
+ * **There is a fourth and it is deliberately not declared.** `Interval = 3` draws every tenth
+ * number and was added to the enum after 1.85, which is this extension's `engines.vscode` and the
+ * `@types/vscode` the API guard checks against - so naming it here is declaring API that the oldest
+ * VS Code this runs in does not have. An editor can still be *in* that state, because the user's
+ * settings put it there, so [applyLineNumbers] recognises it by what it is not rather than by name.
  */
 external object TextEditorLineNumbersStyle {
   val Off: Int

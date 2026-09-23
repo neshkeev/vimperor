@@ -284,7 +284,7 @@ const vscode = {
       return { then: (onFulfilled) => (onFulfilled(document), { then: () => {} }) }
     },
   },
-  TextEditorLineNumbersStyle: { Off: 0, On: 1, Relative: 2 },
+  TextEditorLineNumbersStyle: { Off: 0, On: 1, Relative: 2, Interval: 3 },
   TextEditorRevealType: { Default: 0, InCenter: 1, InCenterIfOutsideViewport: 2, AtTop: 3 },
   window: {
     activeTextEditor: editor,

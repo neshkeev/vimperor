@@ -6,6 +6,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- Line numbers no longer disappear. VS Code numbers the gutter without being asked and Vim's
+  `'number'` defaults to off, so Vimperor pushed Vim's answer and turned the numbers off in every
+  file it was loaded into - and because nobody had set the option, nobody could unset it. Both
+  `'number'` and `'relativenumber'` now start at whatever the editor was already drawing, which is
+  what `'expandtab'`, `'tabstop'` and `'shiftwidth'` have always done. `set nu` and `set rnu` in a
+  config still win over it, `:set nonumber` still empties a numbered gutter, and a gutter set to
+  VS Code's every-tenth-line style is left alone by `:set number` rather than flattened.
+
 - A mapping made for Visual mode now runs as a Visual mode command when you trigger it from Select
   mode, which is what Vim does. Select mode replaces the selection with whatever you type, and the
   mapping's keys were being fed back as exactly that - so `:noremap j d` with a selection in Select

@@ -959,6 +959,43 @@ two apart. The two that fail without the fix are the reported repro - untitled b
 syntax`, switch to a file that was already open - and a `:setlocal shiftwidth` that survives its
 editor being replaced.
 
+### The gutter starts at VS Code's answer, not at Vim's
+
+**Vimperor turned line numbers off in every file it was opened in**, and had since
+`'relativenumber'` was written. VS Code numbers the gutter out of the box, Vim's `'number'` defaults
+to off, and this host pushed Vim's answer onto the editor at registration and after every keystroke.
+Nobody had typed `set nonumber`, so nobody could type `set number` to undo it - a VS Code user's
+config does not mention the option at all, because VS Code has never needed telling.
+
+It is the `'wrap'` lesson with the sign reversed - Vim wraps and VS Code does not; VS Code numbers
+and Vim does not - and the rule it turns on was already written down here: **where the value lives
+in the editor, the editor's answer is the default and Vim's is not.** `seedLineNumbers` is
+`seedIndent` for the other pair, with the same three properties: once per editor, so `:set nonu`
+survives the next key; skipped when the option's global value has moved off its default, which is
+how a config still wins; and read *before* anything is applied, because an apply that went first
+would have written Vim's default and left the seed reading this host's own answer back.
+
+**Two traps, both of which the indent seed had already met and one of which is new.** Seeding one
+half of a pair fires the engine's change listener, so `applyLineNumbers` has to be held off by the
+same `seeding` flag `applyIndent` uses - otherwise seeding `'number'` writes the gutter from a
+still-unseeded `'relativenumber'` and flattens a relative editor to absolute one line early. And the
+global read has to name the editor: `OptionAccessScope.GLOBAL(null)` is what `seedIndent` uses and
+it *throws* for a local-to-window option, because a window-local option keeps its global value per
+window - which is exactly how `set nu rnu` in a config reaches a file opened later.
+
+**`TextEditorLineNumbersStyle` has a fourth value that this host must not declare.** `Interval = 3`
+draws every tenth number; it was added to the enum after 1.85, which is `engines.vscode` and the
+`@types/vscode` that `checkVsCodeApiDeclarations` checks against, so naming it fails the build. An
+editor can still be in that state because a user setting put it there, so `applyLineNumbers`
+recognises it by exclusion - numbered, but neither plain `On` nor `Relative` - and leaves it alone
+when Vim asks for `'number'`, which it already satisfies.
+
+**Seven of the ten tests pass without the fix, and that is worth knowing before trusting them.**
+Only three discriminate: the editor that keeps the numbers it had, `:set number?` answering from the
+seed, and the interval gutter. The rest assert that the seed is a starting point rather than a floor
+or a ceiling - `:set nonumber` still empties a seeded gutter, `:set number` still fills an empty one
+- which is the half a future change is most likely to break.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the
