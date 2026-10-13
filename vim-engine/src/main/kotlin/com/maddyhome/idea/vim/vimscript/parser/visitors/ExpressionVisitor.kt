@@ -464,7 +464,26 @@ object ExpressionVisitor : VimscriptBaseVisitor<Expression?>() {
   }
 
   override fun visitCurlyBracesName(ctx: VimscriptParser.CurlyBracesNameContext): CurlyBracesName {
-    val parts = ctx.element().map { if (it.expr() != null) visitExpression(it.expr()!!) else SimpleExpression(it.text) }
+    // `{...}` is now a rule of its own rather than a bare `expr` on the element, so the expression
+    // is one level further in. The nullable accessors are this port's: antlr-kotlin returns null
+    // where the Java runtime returned a non-null context.
+    val parts = ctx.element().map {
+      val expression = it.curlyBracesExpression()?.expr()
+      if (expression != null) visitExpression(expression) else SimpleExpression(it.text)
+    }
+    val result = CurlyBracesName(parts)
+    result.originalString = ctx.text
+    return result
+  }
+
+  /**
+   * A curly braces name that can contain the `#` character as used by an autoload function name.
+   */
+  override fun visitCurlyBracesFunctionName(ctx: VimscriptParser.CurlyBracesFunctionNameContext): CurlyBracesName {
+    val parts = ctx.curlyBracesFunctionNamePart().map {
+      val expression = it.curlyBracesExpression()?.expr()
+      if (expression != null) visitExpression(expression) else SimpleExpression(it.text)
+    }
     val result = CurlyBracesName(parts)
     result.originalString = ctx.text
     return result

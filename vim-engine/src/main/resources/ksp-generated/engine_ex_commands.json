@@ -501,6 +501,10 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldOpenCommand",
     "standardConstructor": true
   },
+  "fu[nction]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.FunctionCommand",
+    "standardConstructor": false
+  },
   "g[lobal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
     "standardConstructor": false,

@@ -6,6 +6,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `:function` lists what a config has defined, which is the command you reach for when a
+  `.vimperorrc` has quietly not worked: it runs with errors suppressed, so a `function!` that failed
+  to parse left no trace and there was no way to ask. `:function` lists the user-defined functions,
+  `:function {name}` answers for one, and `:function /{pattern}` for the ones that match - which is
+  also the only way to see a lambda, since the plain listing leaves the `<lambda>N` names out. A
+  definition with no `:endfunction` is now `E126` instead of being silently half-made. Ported from
+  IdeaVim.
+
 - `|` between ex commands is now the command's own business, the way Vim's `TRLBAR` flag makes it.
   A chain of plain commands already worked, but the commands whose argument may *hold* a bar were
   being cut at the first one: `:normal 0|w` pressed `0` and then ran `:w`, so a line meant to move
