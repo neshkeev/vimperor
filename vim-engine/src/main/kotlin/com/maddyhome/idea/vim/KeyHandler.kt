@@ -148,6 +148,19 @@ class KeyHandler {
     Signs.repaint(editor)
   }
 
+  /**
+   * The entry point for a key the *user* typed, as opposed to one the engine feeds to itself.
+   *
+   * [KeySource] cannot tell those apart on its own: a `.` repeat and a replayed mapping prefix are
+   * [KeySource.TYPED] too, because as far as the command machinery is concerned they were typed.
+   * A host calls this for a real keystroke and [handleKey] for anything it is playing back, which is
+   * the difference `keylog` and Vim's `-w {scriptout}` are about.
+   */
+  fun handleUserKey(editor: VimEditor, key: VimKeyStroke, context: ExecutionContext, keyState: KeyHandlerState) {
+    injector.listenersNotifier.notifyKeyTyped(editor, key)
+    handleKey(editor, key, KeySource.TYPED, context, keyState)
+  }
+
   // Deprecated. Has external usages
   @Deprecated(
     "Use handleKey(editor, key, keySource, context, keyState)",

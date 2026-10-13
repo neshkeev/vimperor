@@ -60,6 +60,11 @@
     "className": "com.maddyhome.idea.vim.extension.indentwise.IndentWiseKt"
   },
   {
+    "extensionName": "keylog",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.keylog.KeyLogKt"
+  },
+  {
     "extensionName": "mini-ai",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.miniai.MiniAINewApiKt"

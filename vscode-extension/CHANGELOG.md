@@ -6,6 +6,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `keylog`, the twenty-seventh bundled extension: every key you type, in Vim's own notation,
+  appended to a file. `set keylog` turns it on and `let g:keylog_file = '...'` says where. Only what
+  you pressed is written - a mapping's right-hand side, a macro being played back and a `.` repeat
+  are not keys anybody typed, and none of them is logged. It buffers and writes on a timer, so the
+  disk is never in front of the caret, and a typed `<` is written `<lt>` so the log can be read back
+  as keys. Ported from IdeaVim (VIM-1306).
+
 - Pasting in Replace mode replaces, as Vim does. `R` and then `Cmd+V` (`Ctrl+V` elsewhere) used to
   insert the clipboard and push the rest of the line along, where Vim puts the pasted characters on
   top of the ones that follow the caret. Replacing stops at the end of the line rather than eating

@@ -56,7 +56,7 @@ The six that fail all name an IntelliJ action with no VS Code command behind it 
 Nothing structural. Every key the engine registers reaches something this host
 has built or a refusal that is itself an answer, and `VsCodeUnimplementedTest`
 asserts the empty list; ex commands are at parity in both directions. 22 of
-IdeaVim's 24 extensions are bundled. One injector seam is still `TODO` -
+IdeaVim's 30 extensions are bundled. One injector seam is still `TODO` -
 `pluginActivator` - and nothing in the engine calls it.
 
 What remains is a backlog of small things.
@@ -159,8 +159,8 @@ single-key-priority grouping. Labels are drawn the way VSCodeVim draws them, als
 source was read in the review that decided this, so it is not a clean room in the strict sense; the
 grouping follows vim-easymotion's algorithm, which is a different method from AceJump's.
 
-It is not one of IdeaVim's twenty-seven, so that count stays at 25 of 27. Vimperor bundles
-twenty-six.
+It is not one of IdeaVim's thirty, so it is not part of that count. Vimperor bundles
+twenty-seven: twenty-six of upstream's and this one.
 
 **Three small things, and the biggest had been here all along.** IdeaVim built `ExternalActionHandler`
 for IdeaVim-EasyMotion, the one extension it never shipped, and nothing in this fork had used it:
@@ -518,31 +518,35 @@ already what it last wrote.
 An empty list is not the end of the port. It says every key lands somewhere, not that
 every key is right; the fixtures and the suites say that.
 
-**Twenty-seven now, and it was twenty-four.** This file said 26 for a long time and the
+**Thirty now, and it was twenty-four.** This file said 26 for a long time and the
 number was never checked; `IdeaVIM.ideavim-frontend.xml` declared 24 `vimExtension`
 points, and `windownavigation` - which looks like a 25th in `src/main/java` - is not
 one of them. It is `ToolWindowNavEverywhere`, support code that `hints` constructs.
 
-Upstream has added three since this fork's snapshot of it: `vim-textobj-line`,
-`vim-visual-star-search` and `vim-signature`. **Count it from the XML rather than from
-this paragraph** - `git show upstream/master:ideavim-frontend/src/main/resources/IdeaVIM.ideavim-frontend.xml
+Then it said 27, and that was right at the fork's snapshot and is not now: upstream has
+added `keylog`, `clever-f` and `visual-multi` since. **Count it from the XML rather than
+from this paragraph** - `git show upstream/master:ideavim-frontend/src/main/resources/IdeaVIM.ideavim-frontend.xml
 | grep -c '<vimExtension'` is the whole check, and the number has now been wrong here
-twice.
+three times. Diff the names against `VsCodeExtensions.BUNDLED` rather than trusting the
+list below for the same reason.
 
-**Twenty-five are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+**Twenty-six are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `textobj-line`, `visual-star-search`, `signature`, `mini-ai`,
 `CamelCaseMotion`, `indentwise`,
 `textobj-user`, `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
-`functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`. Each lives in
+`highlightedyank`, `keylog`, `exchange`, `sneak`, `surround`, `multiple-cursors`,
+`yankring`, `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`. Each lives in
 `vim-engine/src/main/kotlin/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The two that are left - `matchit` and `VimEverywhere` - **are not being ported, and
-that is a decision rather than a backlog entry.** Neither is waiting on a seam and
-neither should be proposed again. Treat 25 of 27 as complete.
+The four that are left are not one group. `matchit` and `VimEverywhere` **are not being
+ported, and that is a decision rather than a backlog entry** - neither is waiting on a
+seam and neither should be proposed again. `clever-f` and `visual-multi` are upstream
+additions nobody here has looked at yet, and they are not refusals: they are simply
+newer than the last pass over this list. Treat 26 of 30 as complete and those two as
+open.
 
 `signature` is worth a note as the one port that did not follow upstream's
 implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on

@@ -513,11 +513,22 @@ class VimHost(
 
     val handler = KeyHandler.getInstance()
     val state = handler.keyHandlerState
-    val remaining = keys.toMutableList()
-    while (remaining.isNotEmpty()) {
-      val stroke = remaining.removeAt(0)
+    // Two queues rather than one, because the two kinds of key are not interchangeable. What the
+    // user pressed goes through `handleUserKey`, which reports it to a `VimKeyTypedListener` -
+    // `keylog`, and Vim's `-w {scriptout}`. What the engine posted for itself did not come from a
+    // keyboard: `<C-V>065x` ends its literal on the `x`, which the engine hands back to be handled
+    // next. `KeySource` cannot tell them apart; both are TYPED as far as the command machinery goes.
+    val typed = keys.toMutableList()
+    val posted = mutableListOf<com.maddyhome.idea.vim.key.VimKeyStroke>()
+    while (posted.isNotEmpty() || typed.isNotEmpty()) {
+      val fromUser = posted.isEmpty()
+      val stroke = if (fromUser) typed.removeAt(0) else posted.removeAt(0)
       val caretBefore = editor.primaryCaret().offset
-      handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, state)
+      if (fromUser) {
+        handler.handleUserKey(editor, stroke, VsCodeExecutionContext, state)
+      } else {
+        handler.handleKey(editor, stroke, KeySource.TYPED, VsCodeExecutionContext, state)
+      }
       // Vim's `arrow_used`: an abbreviation does not expand once the caret has been moved during
       // this insert by something that was not an edit. IdeaVim hears about that from IntelliJ's
       // caret listener; this host has none, so the keystroke loop is where a caret move is visible.
@@ -528,9 +539,9 @@ class VimHost(
       if (editor.mode is Mode.INSERT && editor.primaryCaret().offset != caretBefore) {
         noteCaretMoveInInsertSession(editor, editor.documentStamp())
       }
-      // A key the engine asked to have handled after this one - `<C-V>065x` ends its literal on the
-      // `x`, which is not part of it. Ahead of the rest, because Vim replays it immediately.
-      remaining.addAll(0, postedKeys())
+      // A key the engine asked to have handled after this one. Ahead of anything still untyped,
+      // because Vim replays it immediately.
+      posted.addAll(0, postedKeys())
     }
     editor.flush { applied ->
       if (!applied) {

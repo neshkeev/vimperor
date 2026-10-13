@@ -37,6 +37,26 @@ interface VimFileSystem {
    * Asked before writing rather than after, because Vim's `E189` is a refusal and not a report: a
    * `:mkvimrc` with no `!` must leave the file that is already there completely alone.
    */
+  /**
+   * Adds [content] to the end of the file at [path], creating it if it is not there. Null on success,
+   * the reason otherwise - the same contract as [writeText].
+   *
+   * Defaulted as a read and a write, which is correct and quadratic over a session: a host that can
+   * append should say so. `keylog` is the one caller, and it batches, so the default is survivable.
+   */
+  fun appendText(path: String, content: String): String? {
+    val existing = if (exists(path)) {
+      try {
+        readText(path)
+      } catch (e: VimFileReadException) {
+        return e.message
+      }
+    } else {
+      ""
+    }
+    return writeText(path, existing + content)
+  }
+
   fun exists(path: String): Boolean
 
   /** Whether [path] is a directory, which decides whether a glob may descend into it. */

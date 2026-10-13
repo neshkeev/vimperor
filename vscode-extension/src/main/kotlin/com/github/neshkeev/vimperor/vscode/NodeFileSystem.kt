@@ -81,6 +81,20 @@ class NodeFileSystem : VimFileSystem {
   } catch (e: Throwable) {
     e.message ?: "write failed"
   }
+
+  /**
+   * Adding to the end of a file, which Node can do in one call.
+   *
+   * Overridden because the engine's default is a read and a whole-file write, and the one caller -
+   * `keylog` - appends for as long as the session lasts. `appendFileSync` creates the file when it
+   * is not there, which is what the default's `exists` check is for.
+   */
+  override fun appendText(path: String, content: String): String? = try {
+    fs.appendFileSync(path, content)
+    null
+  } catch (e: Throwable) {
+    e.message ?: "write failed"
+  }
 }
 
 /**

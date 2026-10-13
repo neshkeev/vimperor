@@ -23,6 +23,8 @@ import com.maddyhome.idea.vim.extension.exchange.init as exchangeInit
 import com.maddyhome.idea.vim.extension.functextobj.init as funcTextObjInit
 import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
+import com.maddyhome.idea.vim.extension.keylog.disposeKeyLog
+import com.maddyhome.idea.vim.extension.keylog.init as keyLogInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.multiplecursors.disposeMultipleCursors
@@ -169,6 +171,11 @@ internal object VsCodeExtensions {
     // `g:highlightedyank_highlight_duration` and `..._color` set how long and what colour.
     "highlightedyank" to { api -> api.highlightedYankInit() },
 
+    // `keylog`: every key you type, in Vim's notation, appended to `g:keylog_file` - Vim's
+    // `-w {scriptout}`. Only what you pressed: a mapping's right-hand side, a macro and a `.` are
+    // not reported. It buffers and writes on a timer, because the listener runs in the keystroke.
+    "keylog" to { api -> api.keyLogInit() },
+
     // `vim-exchange`: `cx{motion}` marks a region, `cx` on a second one swaps the two. `cxx` for
     // lines, `X` in visual, `cxc` to forget the mark.
     "exchange" to { api -> api.exchangeInit() },
@@ -244,6 +251,10 @@ internal object VsCodeExtensions {
     // Its yank and mode listeners, which go straight onto `listenersNotifier` rather than through
     // the thin API's listener scope - so no owner covers them - plus any highlight still showing.
     "highlightedyank" to { disposeHighlightedYank() },
+
+    // Its key listener, which goes straight onto `listenersNotifier` under no owner - and the keys
+    // still sitting in the buffer, which are written out rather than dropped.
+    "keylog" to { disposeKeyLog() },
 
     // A region marked and never exchanged, and the highlight showing where it is.
     "exchange" to { disposeExchange() },

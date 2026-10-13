@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.state.mode.Mode
+import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.annotations.Internal
 
@@ -26,6 +27,7 @@ class VimListenersNotifier {
   val yankListeners: MutableCollection<VimYankListener> = concurrentCollectionOf()
   val registerListeners: MutableCollection<VimRegisterListener> = concurrentCollectionOf()
   val markListeners: MutableCollection<VimMarkListener> = concurrentCollectionOf()
+  val keyTypedListeners: MutableCollection<VimKeyTypedListener> = concurrentCollectionOf()
 
   fun notifyModeWillChange(editor: VimEditor, oldMode: Mode, newMode: Mode) {
     if (!injector.enabler.isEnabled()) return
@@ -92,6 +94,17 @@ class VimListenersNotifier {
   fun notifyYankPerformed(caretToRange: Map<ImmutableVimCaret, TextRange>) {
     if (!injector.enabler.isEnabled()) return // we remove all the listeners when turning the plugin off, but let's do it just in case
     yankListeners.forEach { it.yankPerformed(caretToRange) }
+  }
+
+  /**
+   * A key the user typed, reported before anything is done with it. See [VimKeyTypedListener].
+   *
+   * A listener here runs inside the keystroke, so a slow one is a slow editor - `keylog` buffers and
+   * writes on a timer rather than touching the disk from this call.
+   */
+  fun notifyKeyTyped(editor: VimEditor, key: VimKeyStroke) {
+    if (!injector.enabler.isEnabled()) return
+    keyTypedListeners.forEach { it.keyTyped(editor, key) }
   }
 
   fun notifyRegisterStored(register: Char, copiedText: VimCopiedText, type: SelectionType, isDelete: Boolean) {
