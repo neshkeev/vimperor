@@ -11,6 +11,7 @@ package com.github.neshkeev.vimperor.vscode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -432,6 +433,55 @@ class VimHostTest {
     session.type(":bn")
     session.key("<CR>")
     assertEquals(listOf("workbench.action.nextEditor"), session.commands.dispatched)
+  }
+
+  // ---- Which editor a key belongs to, when VS Code has stopped saying.
+  //
+  // `window.activeTextEditor` flickers to null and back whenever focus leaves the editor area, and
+  // is null at startup before a restored editor has been focused. `Extension.kt` used to read it
+  // alone, and a key that arrived in one of those windows was handed to `default:type` - which
+  // inserts it. `editorForKey` is what it reads instead. The handler itself is checked in the stub
+  // host, which is the only place `Extension.kt` runs; these are the invariants the field owes it.
+
+  @Test
+  fun `test the editor a key goes to survives VS Code answering null for the active one`() {
+    val session = Session("one two")
+    session.host.activeEditorChanged(session.fake)
+    session.host.activeEditorChanged(null)
+
+    assertEquals(
+      session.fake,
+      session.host.editorForKey(),
+      "focus leaving the editor area and coming back must not lose where the keys go",
+    )
+  }
+
+  @Test
+  fun `test a key has somewhere to go as soon as one has been handled`() {
+    val session = Session("one two")
+    assertNull(session.host.editorForKey(), "nothing has been typed into yet")
+
+    session.type("x")
+
+    assertEquals(session.fake, session.host.editorForKey())
+  }
+
+  /**
+   * A key must not reach a buffer VS Code has closed, so the note goes with the document - and only
+   * on a real close, which is the distinction `forgetDocument` is built on.
+   */
+  @Test
+  fun `test the editor a key goes to is dropped with its document`() {
+    val session = Session("one two")
+    session.type("x")
+
+    session.fake.document.isClosed = false
+    session.host.forgetDocument(session.fake.document)
+    assertEquals(session.fake, session.host.editorForKey(), "a language change is not a close")
+
+    session.fake.document.isClosed = true
+    session.host.forgetDocument(session.fake.document)
+    assertNull(session.host.editorForKey(), "a closed document is nowhere to send a key")
   }
 
   /**

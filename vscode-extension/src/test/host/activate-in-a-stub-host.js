@@ -1098,6 +1098,45 @@ type('R')
 assert.strictEqual(editor.options.cursorStyle, 3, 'Replace mode should draw an underline caret')
 press('<Esc>')
 
+// A key that arrives while VS Code is answering null for its own active editor.
+//
+// `window.activeTextEditor` flickers to null and back when focus leaves the editor area, and is
+// null at startup before a restored editor has been focused. The `type` handler used to read it
+// alone and hand the character to `default:type` when it came back empty - which *inserts* it. So
+// `0` in Normal mode wrote a zero into the file instead of moving the caret to the start of the
+// line, and the trace said nothing at all, because that branch wrote no line. A unit test cannot
+// see any of this: the field, the handler and the fallback are all in `Extension.kt`.
+reset()
+type('i')
+for (const character of 'one two three') type(character)
+press('<Esc>')
+dispatchedCommands.length = 0
+vscode.window.activeTextEditor = undefined
+type('0')
+assert.deepStrictEqual(
+  dispatchedCommands,
+  [],
+  `a key with no active editor was handed to VS Code: ${dispatchedCommands.join(', ')}`,
+)
+assert.strictEqual(
+  editor.document._text,
+  'one two three',
+  `the key was inserted instead of being interpreted. Got: ${editor.document._text}`,
+)
+assert.strictEqual(
+  editor.selection.active.character,
+  0,
+  `0 should have moved the caret to the start of the line. Got column ${editor.selection.active.character}`,
+)
+
+// And a named key, which was dropped outright rather than inserted - so `<Esc>` landing in the
+// flicker left the mode where it was.
+type('i')
+press('<Esc>')
+assert.strictEqual(editor.options.cursorStyle, 2, 'Escape with no active editor did not leave Insert mode')
+vscode.window.activeTextEditor = editor
+reset()
+
 assert.ok(documentSavedListeners.length > 0, 'the extension registered no save listener')
 for (const listener of documentSavedListeners) listener(editor.document)
 

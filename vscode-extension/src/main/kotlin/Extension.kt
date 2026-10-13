@@ -213,11 +213,19 @@ fun activate(context: ExtensionContext) {
    * enabled.
    */
   val typing = commands.registerCommand("type") { arguments ->
-    val editor = window.activeTextEditor
+    // `window.activeTextEditor` is asked first and is not trusted alone: it answers null while
+    // focus flickers out of the editor area and back, and at startup before a restored editor has
+    // been focused. VS Code runs `type` only when a text editor has the keyboard, so a null here is
+    // a stale answer and `editorForKey` is the editor that still has it. Trusting the null is what
+    // put a `0` in the buffer where Normal mode should have moved the caret.
+    val editor = window.activeTextEditor ?: vim.editorForKey()
     val text = arguments?.text as? String
     if (editor == null || text == null) {
-      // No editor to type into, or an argument shaped differently than expected. Handing the key
-      // back to VS Code is better than swallowing it.
+      // No editor this host has ever seen, or an argument shaped differently than expected. Handing
+      // the key back to VS Code is better than swallowing it *here*, where there is no Vim state to
+      // interpret it with - and said out loud, because this branch inserts the character and used
+      // to do it without writing a line.
+      traceLine(output, "typing '" + (text ?: arguments?.text) + "' with no editor of this host's: handed to VS Code")
       commands.executeCommand("default:type", arguments)
     } else {
       reporting(output, "typing '" + text + "'") {
@@ -232,7 +240,9 @@ fun activate(context: ExtensionContext) {
   // carries the Vim notation for the key it stands for, so the manifest and the engine agree
   // without a table in between.
   val namedKey = commands.registerCommand("vimperor.key") { arguments ->
-    val editor = window.activeTextEditor
+    // The same fallback as `type`, and for the same reason: a named key is dropped outright when
+    // there is no editor, so `<Esc>` landing in the flicker left the mode where it was.
+    val editor = window.activeTextEditor ?: vim.editorForKey()
     val notation = arguments as? String ?: arguments?.key as? String
 
     // The workbench layout, which a `when` clause can read and an extension cannot. Only the `<CR>`
@@ -250,6 +260,8 @@ fun activate(context: ExtensionContext) {
         refreshMode()
         trace(output, vim, editor, notation)
       }
+    } else {
+      traceLine(output, "the key " + notation + " with no editor of this host's: dropped")
     }
   }
 
@@ -508,6 +520,19 @@ private fun selectionKind(kind: Int?): String = when (kind) {
 private fun trace(output: OutputChannel, vim: VimHost, editor: TextEditor, key: String) {
   if (!tracing()) return
   output.appendLine("  $key -> " + vim.describeState(editor))
+}
+
+/**
+ * A line of trace with no state behind it, for a key that did not reach an editor.
+ *
+ * This is the half the trace was missing. A key handed to `default:type` or dropped for want of an
+ * editor wrote nothing at all, so the report of the bug that found it had no line for the keystroke
+ * the user had pressed - and a key that is simply absent from a log reads as a key that was never
+ * sent.
+ */
+private fun traceLine(output: OutputChannel, what: String) {
+  if (!tracing()) return
+  output.appendLine("  <$what>")
 }
 
 private inline fun reporting(output: OutputChannel, what: String, block: () -> Unit) {

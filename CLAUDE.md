@@ -996,6 +996,42 @@ seed, and the interval gutter. The rest assert that the seed is a starting point
 or a ceiling - `:set nonumber` still empties a seeded gutter, `:set number` still fills an empty one
 - which is the half a future change is most likely to break.
 
+### `window.activeTextEditor` is not an answer a keystroke can rely on
+
+**A key that arrived while VS Code was answering `null` for its own active editor was written into
+the file as text.** `0` in Normal mode put a zero in the buffer and moved no caret; a `/` typed into
+`:%s/ /1/` landed in the document instead of the command line. Two reports, one cause.
+
+`Extension.kt`'s `type` handler read `window.activeTextEditor` and nothing else, and its answer to
+no editor was `commands.executeCommand("default:type", arguments)` - under a comment saying "handing
+the key back to VS Code is better than swallowing it". That is true in Insert mode and **ruinous in
+every other mode**, because `default:type` *inserts*. Vim's answer to a key it cannot place is a
+beep, never an edit.
+
+**The field was already known to be unreliable, twice over, in this host's own comments.**
+`activeEditorChanged` says "VS Code reports the active editor changing to null and back when focus
+goes to a panel and returns", and `startupEditor` says it "is often null at exactly the moment the
+`.ideavimrc` should be read". Neither note had been carried across to the keystroke path. **VS Code
+runs `type` only when a text editor has the keyboard**, so a null arriving there is a stale answer
+rather than a true one - and the last editor this host handled a key in is the editor that still has
+the focus. `VimHost.editorForKey` is that note, and `vimperor.key` reads it too: a named key was
+*dropped* in the same window, so an `<Esc>` could leave the mode where it was.
+
+It is deliberately not `lastActiveEditor`, which is a different fact - what `BufLeave` will name, and
+which has to go null when focus leaves the editor area. The flicker is the thing that field is *for*.
+
+**The fallback traced no line, and that is why this took two round trips to find.** The report it was
+finally caught in is a trace with `<Esc>` in it, six cursor-move echoes after it, and then **no entry
+for the key the user pressed** - followed by a document that had changed. A key that is absent from a
+log reads as a key that was never sent. `traceLine` writes both cases now.
+
+**Only the stub host can test this.** The field, the handler and the fallback are all in
+`Extension.kt`, which no unit test loads; `activate-in-a-stub-host.js` sets
+`window.activeTextEditor` to `undefined`, presses `0`, and asserts that the caret moved, the text did
+not, and `default:type` was never dispatched. The three tests in `VimHostTest` cover the invariants
+the field owes it: it survives a null, it is set by the first keystroke, and it goes with its
+document - on a real close only, which is the distinction `forgetDocument` already turns on.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

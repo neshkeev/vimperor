@@ -258,6 +258,7 @@ class VimHost(
     vimInjector.forgetBuffer(identity)
     editors.remove(identity)?.let { vimInjector.unregister(it) }
     if (lastActiveEditor?.document?.uri?.path == document.uri.path) lastActiveEditor = null
+    if (keyedEditor?.document?.uri?.path == document.uri.path) keyedEditor = null
   }
 
   /** A document written to disk, which is Vim's `BufWritePost`. */
@@ -321,6 +322,36 @@ class VimHost(
   private var lastActiveEditor: TextEditor? = null
 
   /**
+   * The editor a key belongs to when VS Code will not say which one that is.
+   *
+   * `window.activeTextEditor` is not an answer a keystroke can rely on, and this host had already
+   * written that down twice without drawing the conclusion: [activeEditorChanged] exists partly
+   * because "VS Code reports the active editor changing to null and back when focus goes to a panel
+   * and returns", and [startupEditor] exists because it "is often null at exactly the moment the
+   * `.ideavimrc` should be read". A key that arrives inside one of those windows found no editor -
+   * and the `type` handler's answer to no editor was to hand the character to `default:type`, which
+   * **inserts it**. So `0` pressed in Normal mode put a zero in the file instead of moving the
+   * caret to the start of the line, and nothing said so: that fallback traced no line, which is why
+   * the key is simply missing from the report it was found in.
+   *
+   * VS Code only runs `type` when a text editor has keyboard focus, so a null there is a stale
+   * answer rather than a true one, and the last editor this host handled a key in is the editor
+   * that still has the focus. Not [lastActiveEditor], which is a different fact - what `BufLeave`
+   * will name, which has to go null when focus leaves the editor area, and which is the field the
+   * flicker is *supposed* to move. Dropped with its document, because a key must not reach a buffer
+   * VS Code has closed.
+   */
+  private var keyedEditor: TextEditor? = null
+
+  /**
+   * Where a key goes when `window.activeTextEditor` answers null. See [keyedEditor].
+   *
+   * Null only before this host has seen any editor at all, which is the one case where handing the
+   * key back to VS Code is the right answer: there is no Vim state to interpret it with.
+   */
+  internal fun editorForKey(): TextEditor? = keyedEditor
+
+  /**
    * Vim's alternate file, `#`: the buffer that was current before this one.
    *
    * The same fact `BufLeave` is fired from, kept one step longer. VS Code will not answer it -
@@ -339,6 +370,9 @@ class VimHost(
   fun activeEditorChanged(editor: TextEditor?): String? {
     val left = lastActiveEditor
     lastActiveEditor = editor
+    // Only ever set, never cleared here: this is the editor a key is going to, and the null half of
+    // the flicker below is exactly what it has to survive. See [keyedEditor].
+    if (editor != null) keyedEditor = editor
     // Before `BufLeave`, so that an autocommand there runs in the mode the user is going to be in
     // rather than in a Visual mode that is about to end.
     val ended = editor != null && endVisualModeLeftBehind(identityOf(editor))
@@ -468,6 +502,10 @@ class VimHost(
     }
 
     val editor = editorFor(textEditor)
+    // Where the next key goes if VS Code has stopped answering which editor is active. A key
+    // arriving here is proof that this editor has the keyboard, whatever `activeTextEditor` says a
+    // moment later. See [keyedEditor].
+    keyedEditor = textEditor
     // Someone else may have edited the document since the last command - the user with a mouse, a
     // formatter, a language server. The engine reads the buffer, so it has to be told first.
     if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()

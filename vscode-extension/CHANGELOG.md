@@ -4,6 +4,21 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- A keystroke is no longer written into the file as text. VS Code answers `null` for its own active
+  editor while focus flickers out of the editor area and back, and at startup before a restored
+  editor has been focused; Vimperor read that answer and, finding no editor, handed the character to
+  VS Code - which inserts it. So `0` pressed in Normal mode put a zero in the buffer instead of
+  moving the caret to the start of the line, and a `/` typed into a `:%s/ /1/` command landed in the
+  file instead of the command line. Keys now go to the editor the host last handled one in, which is
+  the editor that still has the keyboard. Named keys were being dropped outright in the same window,
+  so an `<Esc>` could leave the mode where it was; they take the same route now.
+
+- `vimperor.trace` now records a key that did not reach an editor. Both of the paths above wrote no
+  line at all, so the keystroke was simply missing from the log - which reads like a key that was
+  never pressed.
+
 ## [0.0.9] - 2026-09-24
 
 ### Fixed
