@@ -39,6 +39,12 @@ class HeadlessRegisterTest {
 
   private fun Session.type(keys: String) {
     val handler = KeyHandler.getInstance()
+    // `KeyHandler` is a singleton that outlives an injector, so this inherits whatever the test
+    // before it left part-way through, and leftover state swallows a keystroke. Which test pays for
+    // that is decided by the order the suite runs in - emission order on JS - so it moves whenever
+    // anything in the engine is regenerated. `reset` rather than `fullReset`: the partial one clears
+    // the command builder and the pending operator, where the full one also wipes the registers.
+    handler.reset(editor)
     val state = handler.keyHandlerState
     for (stroke in injector.parser.parseKeys(keys)) {
       handler.handleKey(editor, stroke, KeySource.TYPED, HeadlessExecutionContext, state)

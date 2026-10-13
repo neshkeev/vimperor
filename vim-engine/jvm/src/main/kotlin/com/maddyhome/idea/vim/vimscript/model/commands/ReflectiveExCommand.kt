@@ -24,6 +24,8 @@ internal fun lazyExCommand(
   className: String,
   standardConstructor: Boolean,
   classLoader: ClassLoader,
+  barSeparates: Boolean = true,
+  delimitedSections: Int = 0,
 ): LazyExCommandInstance {
   @Suppress("UNCHECKED_CAST")
   val kClass = classLoader.loadClass(className).kotlin as KClass<out Command>
@@ -42,5 +44,5 @@ internal fun lazyExCommand(
       ctor.call(range, modifier, argument)
     }
   }
-  return LazyExCommandInstance(kClass, factory)
+  return LazyExCommandInstance(kClass, factory, barSeparates, delimitedSections)
 }

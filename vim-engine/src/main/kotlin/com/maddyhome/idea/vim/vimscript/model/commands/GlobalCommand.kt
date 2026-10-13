@@ -28,7 +28,7 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * see "h :global" / "h :vglobal"
  */
 // FIXME: I'm such a mess, please refactor me, responsible developer
-@ExCommand(command = "g[lobal],v[global]")
+@ExCommand(command = "g[lobal],v[global]", barSeparates = false)
 data class GlobalCommand(val range: Range, val modifier: CommandModifier, val argument: String, val invert: Boolean) :
   Command.SingleExecution(range, modifier, argument) {
 

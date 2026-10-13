@@ -189,7 +189,11 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
         } else {
           "null"
         }
-      "  ${quote(name)} to LazyExCommandInstance($className::class, $factory),"
+      // Both flags are defaulted in the JSON, so a command that follows the rule writes nothing and
+      // reads back as `true, 0` here. See `ExCommandBean`.
+      val barSeparates = bean["barSeparates"] as? Boolean ?: true
+      val delimitedSections = (bean["delimitedSections"] as? Number)?.toInt() ?: 0
+      "  ${quote(name)} to LazyExCommandInstance($className::class, $factory, $barSeparates, $delimitedSections),"
     }
 
     val out = outputDir.get().file("com/maddyhome/idea/vim/GeneratedEngineRegistry.kt").asFile

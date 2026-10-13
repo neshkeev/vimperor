@@ -56,14 +56,18 @@ class ExCommandProcessor(private val environment: SymbolProcessorEnvironment) : 
   private inner class EXCommandVisitor : KSVisitorVoid() {
     @OptIn(KspExperimental::class)
     override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
-      val exCommandAnnotation = classDeclaration.getAnnotationsByType(ExCommand::class).firstOrNull() ?: return
-      val commands = exCommandAnnotation.command.split(",")
-      val bean = ExCommandBean(
-        classDeclaration.qualifiedName!!.asString(),
-        hasStandardConstructor(classDeclaration),
-      )
-      for (command in commands) {
-        commandToClass[command] = bean
+      // The annotation is repeatable, so one class can declare different bar handling for different names - `:s`
+      // takes two delimited sections where its `~` and `&` synonyms take none.
+      for (exCommandAnnotation in classDeclaration.getAnnotationsByType(ExCommand::class)) {
+        val bean = ExCommandBean(
+          classDeclaration.qualifiedName!!.asString(),
+          hasStandardConstructor(classDeclaration),
+          exCommandAnnotation.barSeparates,
+          exCommandAnnotation.delimitedSections,
+        )
+        for (command in exCommandAnnotation.command.split(",")) {
+          commandToClass[command] = bean
+        }
       }
     }
 

@@ -28,7 +28,7 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * is a reason: the first is the host service above, and the second is a dozen lines of percent
  * encoding that the JDK happens to ship.
  */
-@ExCommand(command = "h[elp]")
+@ExCommand(command = "h[elp]", barSeparates = false)
 data class HelpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -39,21 +39,43 @@ class VimscriptCorpusTest {
     return parser.script().toStringTree(parser)
   }
 
+  private companion object {
+    private const val WITHOUT_BARS = "(commandArgumentWithoutBars"
+    private const val WITH_BARS = "(commandArgumentWithBars"
+  }
+
   @Test
   fun `test every corpus command parses the way the Java parser parsed it`() {
     assertTrue(VIMSCRIPT_CORPUS.size > 1800, "expected the full corpus, got ${VIMSCRIPT_CORPUS.size}")
 
     val divergences = mutableListOf<String>()
+    val relabelled = mutableListOf<String>()
     for ((input, expected) in VIMSCRIPT_CORPUS) {
       val actual = try {
         parseTree(input)
       } catch (e: Throwable) {
         "threw ${e::class.simpleName}: ${e.message}"
       }
-      if (actual != expected) {
-        divergences.add("input: $input\n  java:   $expected\n  kotlin: $actual")
+      if (actual == expected) continue
+      // One deliberate difference, and only one: `|` as a command separator moved `:normal`,
+      // `:lockvar`, `:sort`, `:help`, `:command` and `:read` into the grammar alternative whose
+      // argument may hold a bar, so their trees now say `commandArgumentWithBars` where the Java
+      // parser said `commandArgumentWithoutBars`. The *tokens* are untouched, which is what this
+      // comparison is for, so a relabelling is allowed and anything else is not.
+      if (actual == expected.replace(WITHOUT_BARS, WITH_BARS)) {
+        relabelled.add(input)
+        continue
       }
+      divergences.add("input: $input\n  java:   $expected\n  kotlin: $actual")
     }
     assertEquals(emptyList(), divergences.take(20), "${divergences.size} commands parse differently")
+    // Counted, so that a later grammar change cannot quietly move more commands across and have it
+    // read as the same allowance. The number is a fact about the corpus, not a target.
+    assertEquals(
+      26,
+      relabelled.size,
+      "the bar change relabels 26 corpus commands; these are the ones it covers:\n" +
+        relabelled.joinToString("\n"),
+    )
   }
 }

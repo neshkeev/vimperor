@@ -23,7 +23,13 @@ interface JsonExCommandProvider : ExCommandProvider {
     val classLoader = this.javaClass.classLoader
     val commandToClass: Map<String, ExCommandBean> = Json.decodeFromStream(getFile())
     return commandToClass.entries.associate {
-      it.key to lazyExCommand(it.value.`class`, it.value.standardConstructor, classLoader)
+      it.key to lazyExCommand(
+        it.value.`class`,
+        it.value.standardConstructor,
+        classLoader,
+        it.value.barSeparates,
+        it.value.delimitedSections,
+      )
     }
   }
 
@@ -36,7 +42,13 @@ interface JsonExCommandProvider : ExCommandProvider {
 /**
  * The processor's record of one ex-command. [standardConstructor] is computed by KSP from the
  * declared types, so the JVM and a generated registry read the same answer rather than each
- * working it out.
+ * working it out. [barSeparates] and [delimitedSections] are the annotation's own values, and are
+ * defaulted here as they are there - the table names only the commands that differ from the rule.
  */
 @Serializable
-data class ExCommandBean(val `class`: String, val standardConstructor: Boolean)
+data class ExCommandBean(
+  val `class`: String,
+  val standardConstructor: Boolean,
+  val barSeparates: Boolean = true,
+  val delimitedSections: Int = 0,
+)

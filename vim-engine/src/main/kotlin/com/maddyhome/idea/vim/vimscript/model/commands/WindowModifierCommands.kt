@@ -50,7 +50,7 @@ sealed class WindowPlacementCommand(range: Range, modifier: CommandModifier, arg
  * Makes the following command work on the vertical axis: `:vertical split` splits beside rather
  * than below, and `:vertical resize 30` sets a width where a bare `:resize 30` sets a height.
  */
-@ExCommand(command = "vert[ical]")
+@ExCommand(command = "vert[ical]", barSeparates = false)
 data class VerticalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 

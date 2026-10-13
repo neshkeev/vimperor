@@ -46,6 +46,14 @@ sealed class Command(
 
   protected var defaultRange: String = "."
 
+  /**
+   * The rest of the command line after the `|` that ended this command, or empty when there is none.
+   *
+   * Set by the parser, which is the only place that can work it out: whether a `|` separates two commands or belongs
+   * to the argument is a fact about the command's name. See `CommandVisitor.splitOffNextCommand`.
+   */
+  var nextCommand: String = ""
+
   private var nextArgumentTokenOffset = 0
   private val logger = vimLogger<Command>()
 
@@ -107,7 +115,21 @@ sealed class Command(
 
     val operatorArguments = OperatorArguments(0, editor.mode)
 
-    return runCommand(editor, context, operatorArguments)
+    val result = runCommand(editor, context, operatorArguments)
+
+    // `:set nu | set rnu` is two commands, and the second runs only if the first worked: Vim abandons the rest of the
+    // line on a failure (`:help :bar`), which is what makes a chain safe to write in a config.
+    if (result is ExecutionResult.Success && nextCommand.isNotEmpty()) {
+      return injector.vimscriptExecutor.execute(
+        nextCommand,
+        editor,
+        context,
+        skipHistory = true,
+        indicateErrors = true,
+        if (this::vimContext.isInitialized) vimContext else null,
+      )
+    }
+    return result
   }
 
   private fun runCommand(

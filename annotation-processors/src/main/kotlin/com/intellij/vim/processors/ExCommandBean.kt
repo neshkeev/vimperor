@@ -20,4 +20,10 @@ import kotlinx.serialization.Serializable
  * would be a second answer that can disagree with this one.
  */
 @Serializable
-data class ExCommandBean(val `class`: String, val standardConstructor: Boolean)
+data class ExCommandBean(
+  val `class`: String,
+  val standardConstructor: Boolean,
+  /** Both carried through from the annotation unchanged; see `ExCommand` and `CommandVisitor.splitOffNextCommand`. */
+  val barSeparates: Boolean = true,
+  val delimitedSections: Int = 0,
+)

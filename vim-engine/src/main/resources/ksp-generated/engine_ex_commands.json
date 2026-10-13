@@ -1,7 +1,8 @@
 {
   "!": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "&": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
@@ -301,7 +302,8 @@
   },
   "com[mand]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "comc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdClearCommand",
@@ -501,7 +503,8 @@
   },
   "g[lobal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "barSeparates": false
   },
   "go[to]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
@@ -521,7 +524,8 @@
   },
   "h[elp]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "ha[rdcopy]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HardcopyCommand",
@@ -737,7 +741,8 @@
   },
   "loadk[eymap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "barSeparates": false
   },
   "loadv[iew]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LoadViewCommand",
@@ -749,7 +754,8 @@
   },
   "lockv[ar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "lop[en]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
@@ -881,7 +887,8 @@
   },
   "norm[al]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NormalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "noswapf[ile]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoSwapFileCommand",
@@ -1037,7 +1044,8 @@
   },
   "r[ead]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "rec[over]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RecoverCommand",
@@ -1101,7 +1109,8 @@
   },
   "s[ubstitute]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "delimitedSections": 2
   },
   "san[dbox]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SandboxCommand",
@@ -1197,7 +1206,8 @@
   },
   "sor[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SortCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "delimitedSections": 1
   },
   "sp[lit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
@@ -1445,7 +1455,8 @@
   },
   "unlo[ckvar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnlockVarCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "unm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
@@ -1461,7 +1472,8 @@
   },
   "v[global]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "barSeparates": false
   },
   "ve[rsion]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VersionCommand",
@@ -1473,7 +1485,8 @@
   },
   "vert[ical]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.VerticalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "barSeparates": false
   },
   "vi[sual]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",

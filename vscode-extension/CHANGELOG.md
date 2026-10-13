@@ -4,6 +4,17 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- `|` between ex commands is now the command's own business, the way Vim's `TRLBAR` flag makes it.
+  A chain of plain commands already worked, but the commands whose argument may *hold* a bar were
+  being cut at the first one: `:normal 0|w` pressed `0` and then ran `:w`, so a line meant to move
+  the caret saved the file. `:normal`, `:global`, `:vglobal`, `:command`, `:lockvar`, `:unlockvar`,
+  `:help`, `:read`, `:vertical`, `:loadkeymap` and `:!` keep the bar now. In the other direction
+  `:s` and `:sort` can be followed by another command - `:%s/a/b/ | nohlsearch` - because their
+  delimited sections are counted first, so a bar inside a pattern or a replacement stays in it.
+  A failure abandons the rest of the line, as in Vim. Ported from IdeaVim (VIM-748).
+
 ### Fixed
 
 - `:for x in [1, 2]` with a `:continue` in it never finished. In a config that is an editor that

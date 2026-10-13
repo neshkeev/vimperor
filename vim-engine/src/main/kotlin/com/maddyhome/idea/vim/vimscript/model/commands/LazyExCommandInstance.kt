@@ -18,10 +18,16 @@ import kotlin.reflect.KClass
  * commands that need something other than the standard constructor. `kotlin.reflect.KClass` is
  * multiplatform, so that comparison is fine here; it was `kotlin.reflect.full` and the class loader
  * that were not, and both now live in the provider.
+ *
+ * [barSeparates] and [delimitedSections] are the command's `@ExCommand` values, carried through the generated table
+ * unchanged. They are what tells the parser whether a `|` in the argument ends this command or belongs to it - Vim's
+ * `TRLBAR` flag, read back. See `CommandVisitor.splitOffNextCommand`.
  */
 class LazyExCommandInstance(
   private val kClass: KClass<out Command>,
   private val factory: ((Range, CommandModifier, String) -> Command)?,
+  val barSeparates: Boolean = true,
+  val delimitedSections: Int = 0,
 ) {
   fun getKClass(): KClass<out Command> = kClass
 
