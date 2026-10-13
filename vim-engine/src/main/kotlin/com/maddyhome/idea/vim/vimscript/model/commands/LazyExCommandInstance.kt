@@ -28,6 +28,8 @@ class LazyExCommandInstance(
   private val factory: ((Range, CommandModifier, String) -> Command)?,
   val barSeparates: Boolean = true,
   val delimitedSections: Int = 0,
+  /** The line `:help` shows beside the command name, from `@ExCommand`. Empty when nobody has written one. */
+  val description: String = "",
 ) {
   fun getKClass(): KClass<out Command> = kClass
 

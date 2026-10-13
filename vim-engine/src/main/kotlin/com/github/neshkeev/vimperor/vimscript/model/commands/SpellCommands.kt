@@ -66,7 +66,10 @@ sealed class SpellCommandBase(
 }
 
 /** see "h :spellgood" */
-@ExCommand(command = "spe[llgood]")
+@ExCommand(
+  command = "spe[llgood]",
+  description = "Add {word} to the list of correctly spelled words.",
+)
 data class SpellGoodCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SpellCommandBase(range, modifier, argument) {
   override fun apply(word: String, editor: VimEditor) {
@@ -75,7 +78,10 @@ data class SpellGoodCommand(val range: Range, val modifier: CommandModifier, val
 }
 
 /** see "h :spellwrong" */
-@ExCommand(command = "spellw[rong]")
+@ExCommand(
+  command = "spellw[rong]",
+  description = "Add {word} to the list of misspelled words.",
+)
 data class SpellWrongCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SpellCommandBase(range, modifier, argument) {
   override fun apply(word: String, editor: VimEditor) {
@@ -84,7 +90,10 @@ data class SpellWrongCommand(val range: Range, val modifier: CommandModifier, va
 }
 
 /** see "h :spellundo" */
-@ExCommand(command = "spellu[ndo]")
+@ExCommand(
+  command = "spellu[ndo]",
+  description = "Undo :spellgood or :spellwrong for {word}.",
+)
 data class SpellUndoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SpellCommandBase(range, modifier, argument) {
   override fun apply(word: String, editor: VimEditor) {

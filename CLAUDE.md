@@ -1124,6 +1124,36 @@ it beside `forgetWordWraps`, for the same reason - a new host is a new session -
 replay resets it in `resetEngineState`, which is what IdeaVim's own `VimTestCase.setUp` does. Without
 that a fixture typing `.` repeats whatever its neighbour last changed.
 
+### `:help` is rendered from the commands, not kept in a file
+
+**Every command describes itself now** - 691 of them, in a `description` on `@CommandOrMotion` or
+`@ExCommand` - and `:help` lays those out in the format of Vim's own help files, a `*tag*` per
+command. It used to open Vim's website through `VimExternalOpener`, on the reasoning that "there is
+no help file to open in an IDE"; that stopped being true once the commands could say what they do.
+
+**Rendered on demand rather than generated into a resource, which is the one divergence from
+upstream and is forced.** IdeaVim writes `help/ideavim.txt` with a Gradle task, commits it, and has
+a workflow to regenerate it when a description changes. `commonMain` compiles for JS, where there is
+no classpath to read a resource from - so the help is built from the live registries in `HelpText`
+instead. Nothing to commit, nothing to keep in step, and **one** copy of the tag-naming rule rather
+than upstream's two (the generator's and the command's, each with a comment asking that they agree).
+
+**Where a description lives, and the two places that are easy to miss.** The annotation is the source;
+KSP carries it into `engine_commands.json` and `engine_ex_commands.json`; `generateJsCommandRegistry`
+puts it in the generated Kotlin, and the two JVM readers put it on the same holders. A command the
+*host* registers has no annotation at all - `VsCodeExCommandProvider` passes the line to
+`LazyExCommandInstance` directly, and `:tutor`, `:actionlist`, `:setfiletype` and `:menu` were found
+missing by the test below rather than by reading.
+
+**One test is there to keep it honest: every registered ex command must describe itself.** A missing
+description shows up in the help as an *absence*, which is the kind of hole nobody notices, so a new
+command with no line fails the suite instead. Three of the 479 descriptions taken from upstream were
+wrong before that: keying them by `(kind, keys)` alone collided wherever upstream has two handlers
+for one key in different modes, and `X` was documented as the Visual-mode delete. The modes are part
+of the key now, and `action/lookup/LookupActions.kt` is skipped, because its six handlers share their
+keys with the commands they stand in for while a completion popup is open - a popup this host cannot
+see.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

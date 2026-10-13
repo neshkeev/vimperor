@@ -37,7 +37,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :saveas"
  */
-@ExCommand(command = "sav[eas]")
+@ExCommand(
+  command = "sav[eas]",
+  description = "Write the buffer to {file} and edit that file from now on.",
+)
 data class SaveAsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -87,7 +90,10 @@ data class SaveAsCommand(val range: Range, val modifier: CommandModifier, val ar
  *
  * see "h :oldfiles"
  */
-@ExCommand(command = "ol[dfiles]")
+@ExCommand(
+  command = "ol[dfiles]",
+  description = "List the files edited recently.",
+)
 data class OldFilesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -17,7 +17,18 @@ package com.intellij.vim.annotations
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
-annotation class CommandOrMotion(val keys: Array<String>, vararg val modes: Mode)
+annotation class CommandOrMotion(
+  val keys: Array<String>,
+  vararg val modes: Mode,
+  /**
+   * One line, in the present tense, saying what the command does - the line `:help` shows beside the keys.
+   *
+   * Write it the way Vim's own `index.txt` writes it: "Delete [count] lines", not "Deletes lines". `[count]`,
+   * `{motion}` and `["x]` are Vim's notation for the parts a user supplies and are worth keeping. Empty means the
+   * command is left out of the help, which is a hole rather than a decision.
+   */
+  val description: String = "",
+)
 
 annotation class TextObject(val keys: String)
 

@@ -24,7 +24,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * apart: a file appears once, in one list, whichever of the three you ask about. `:rewind`, `:brewind` and
  * `:tabrewind` are Vim's own second names for the three.
  */
-@ExCommand(command = "fir[st],rew[ind],bf[irst],br[ewind],tabfir[st],tabr[ewind]")
+@ExCommand(
+  command = "fir[st],rew[ind],bf[irst],br[ewind],tabfir[st],tabr[ewind]",
+  description = "Go to the first file, buffer or tab.",
+)
 data class SelectFirstFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

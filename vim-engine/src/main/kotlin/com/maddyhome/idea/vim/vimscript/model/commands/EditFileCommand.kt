@@ -28,7 +28,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * read-only flag an extension can set, so both open the file and the flag is what is lost; the file
  * being opened is the part anyone typing `:view` was after.
  */
-@ExCommand(command = "e[dit],bro[wse],dr[op],vie[w],vi[sual]")
+@ExCommand(
+  command = "e[dit],bro[wse],dr[op],vie[w],vi[sual]",
+  description = "Open [file] in the current window.",
+)
 data class EditFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -31,7 +31,10 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.VariableExpression
  * what it finds and says nothing about the rest, which is what makes it usable at the top of a file
  * that may or may not have been sourced before.
  */
-@ExCommand(command = "unl[et]")
+@ExCommand(
+  command = "unl[et]",
+  description = "Delete the variables named. With [!] a variable that does not exist is not an error.",
+)
 data class UnletCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

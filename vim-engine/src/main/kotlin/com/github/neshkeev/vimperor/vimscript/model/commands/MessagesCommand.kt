@@ -32,7 +32,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :messages"
  */
-@ExCommand(command = "mes[sages]")
+@ExCommand(
+  command = "mes[sages]",
+  description = "Show the message history. With [clear] empty it.",
+)
 data class MessagesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

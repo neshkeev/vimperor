@@ -20,7 +20,11 @@ import com.maddyhome.idea.vim.group.visual.VimSelection
 import com.maddyhome.idea.vim.handler.VisualOperatorActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["gw"], modes = [Mode.VISUAL])
+@CommandOrMotion(
+  keys = ["gw"],
+  modes = [Mode.VISUAL],
+  description = "Like gq, format the highlighted lines, but put the cursor back at the start of the selection.",
+)
 class ReformatCodeVisualPreserveCursorAction : VisualOperatorActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.CHANGE
 

@@ -50,7 +50,11 @@ sealed class WindowPlacementCommand(range: Range, modifier: CommandModifier, arg
  * Makes the following command work on the vertical axis: `:vertical split` splits beside rather
  * than below, and `:vertical resize 30` sets a width where a bare `:resize 30` sets a height.
  */
-@ExCommand(command = "vert[ical]", barSeparates = false)
+@ExCommand(
+  command = "vert[ical]",
+  barSeparates = false,
+  description = "Run :resize {cmd} on the window width instead of its height, e.g. :vertical resize +5.",
+)
 data class VerticalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -62,7 +66,10 @@ data class VerticalCommand(val range: Range, val modifier: CommandModifier, val 
 }
 
 /** see "h :horizontal" - [VerticalCommand] the other way round. */
-@ExCommand(command = "hor[izontal]")
+@ExCommand(
+  command = "hor[izontal]",
+  description = "Make the following command split horizontally.",
+)
 data class HorizontalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -84,22 +91,34 @@ private inline fun withVerticalModifier(vertical: Boolean, body: () -> Execution
 }
 
 /** see "h :topleft" - the placement is the host's; see [WindowPlacementCommand]. */
-@ExCommand(command = "to[pleft]")
+@ExCommand(
+  command = "to[pleft]",
+  description = "Make the following command put its new window at the very top or far left.",
+)
 data class TopLeftCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   WindowPlacementCommand(range, modifier, argument)
 
 /** see "h :botright" - the placement is the host's; see [WindowPlacementCommand]. */
-@ExCommand(command = "bo[tright]")
+@ExCommand(
+  command = "bo[tright]",
+  description = "Make the following command put its new window at the very bottom or far right.",
+)
 data class BotRightCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   WindowPlacementCommand(range, modifier, argument)
 
 /** see "h :aboveleft" - the placement is the host's; see [WindowPlacementCommand]. */
-@ExCommand(command = "abo[veleft],lefta[bove]")
+@ExCommand(
+  command = "abo[veleft],lefta[bove]",
+  description = "Make the following command put its new window above or left of the current one.",
+)
 data class AboveLeftCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   WindowPlacementCommand(range, modifier, argument)
 
 /** see "h :belowright" - the placement is the host's; see [WindowPlacementCommand]. */
-@ExCommand(command = "bel[owright],rightb[elow]")
+@ExCommand(
+  command = "bel[owright],rightb[elow]",
+  description = "Make the following command put its new window below or right of the current one.",
+)
 data class BelowRightCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   WindowPlacementCommand(range, modifier, argument)
 
@@ -110,6 +129,9 @@ data class BelowRightCommand(val range: Range, val modifier: CommandModifier, va
  * and one neither host takes as an instruction: a command that opens something opens it where the
  * host opens things. `:tabnew` and `:tabedit` are how you ask for a tab here.
  */
-@ExCommand(command = "tab")
+@ExCommand(
+  command = "tab",
+  description = "Make the following command open a new tab instead of a new window.",
+)
 data class TabModifierCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   WindowPlacementCommand(range, modifier, argument)

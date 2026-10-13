@@ -22,7 +22,11 @@ import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.toMotionOrError
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["]m"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["]m"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Go to the [count]'th next start of a method.",
+)
 class MotionMethodNextStartAction : MotionActionHandler.ForEachCaret() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 
@@ -39,7 +43,11 @@ class MotionMethodNextStartAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
 }
 
-@CommandOrMotion(keys = ["[m"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["[m"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Go to the [count]'th previous start of a method.",
+)
 class MotionMethodPreviousStartAction : MotionActionHandler.ForEachCaret() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 

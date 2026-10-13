@@ -38,7 +38,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :profile"
  */
-@ExCommand(command = "prof[ile]")
+@ExCommand(
+  command = "prof[ile]",
+  description = "Profile the Vimscript that runs, and write the report to {file}.",
+)
 data class ProfileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

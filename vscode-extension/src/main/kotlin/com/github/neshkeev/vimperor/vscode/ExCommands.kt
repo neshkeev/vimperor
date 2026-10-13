@@ -33,14 +33,18 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "vimtutor,tutor,vimperortutor" to LazyExCommandInstance(
       TutorCommand::class,
       { range, modifier, argument -> TutorCommand(range, modifier, argument) },
+      description = "Open the Vim tutor in a new buffer, the thirty-minute introduction to Vim.",
     ),
     // `actionl[ist]`, spelled the way IdeaVim spells it, so `:actionl` is enough and `:action`
     // stays the engine's. See [ActionListCommand].
     "actionl[ist]" to LazyExCommandInstance(
       ActionListCommand::class,
       { range, modifier, argument -> ActionListCommand(range, modifier, argument) },
+      description = "List the VS Code commands :action can run, filtered by [pattern].",
     ),
-    "setf[iletype]" to command { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
+    "setf[iletype]" to command(
+      "Set the language of this buffer, unless one has been set already.",
+    ) { range, modifier, argument -> SetFiletypeCommand(range, modifier, argument) },
 
     // The rest of what a `~/.vimrc` reaches for and VS Code answers for itself. Measured rather
     // than guessed at: every name the engine registers was typed at the prompt, and these are the
@@ -50,13 +54,18 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     // the engine's, so a name in both silently replaces the real command with an accepted no-op -
     // which is exactly what happened to eight of them, and what `ExCommandOverlapTest` now
     // prevents.
-    "menu" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
-    "unme[nu]" to command { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "menu" to command(
+      "Define a menu item. Accepted and does nothing: the menus are VS Code's.",
+    ) { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
+    "unme[nu]" to command(
+      "Remove a menu item. Accepted and does nothing, as :menu is.",
+    ) { range, modifier, argument -> AcceptedHostCommand(range, modifier, argument) },
   )
 
   private inline fun <reified T : Command> command(
+    description: String,
     noinline factory: (Range, CommandModifier, String) -> T,
-  ) = LazyExCommandInstance(T::class, factory)
+  ) = LazyExCommandInstance(T::class, factory, description = description)
 }
 
 /**

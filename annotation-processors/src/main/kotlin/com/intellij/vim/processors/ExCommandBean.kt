@@ -26,4 +26,6 @@ data class ExCommandBean(
   /** Both carried through from the annotation unchanged; see `ExCommand` and `CommandVisitor.splitOffNextCommand`. */
   val barSeparates: Boolean = true,
   val delimitedSections: Int = 0,
+  /** The line `:help` shows beside the command name. See `CommandBean.description`. */
+  val description: String = "",
 )

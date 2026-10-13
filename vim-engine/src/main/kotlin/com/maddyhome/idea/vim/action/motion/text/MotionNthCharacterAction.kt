@@ -23,7 +23,11 @@ import com.maddyhome.idea.vim.helper.enumSetOf
 import kotlin.math.max
 import kotlin.math.min
 
-@CommandOrMotion(keys = ["go"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["go"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Go to character [count] in the buffer (default: the first character).",
+)
 class MotionNthCharacterAction : MotionActionHandler.ForEachCaret() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 

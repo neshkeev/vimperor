@@ -22,7 +22,11 @@ import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.state.mode.SelectionType
 
-@CommandOrMotion(keys = ["<C-U>"], modes = [Mode.INSERT])
+@CommandOrMotion(
+  keys = ["<C-U>"],
+  modes = [Mode.INSERT],
+  description = "In Insert mode, delete all entered text before the cursor in the current line, or the indented text if none was entered.",
+)
 class InsertDeleteInsertedTextAction : ChangeEditorActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.INSERT
 

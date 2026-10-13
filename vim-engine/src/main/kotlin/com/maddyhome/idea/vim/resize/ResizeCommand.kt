@@ -36,7 +36,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :resize"
  */
-@ExCommand(command = "res[ize]")
+@ExCommand(
+  command = "res[ize]",
+  description = "Set the window height to N rows or change it by +N or -N; without an argument, maximize it.",
+)
 data class ResizeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

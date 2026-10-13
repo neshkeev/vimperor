@@ -84,7 +84,11 @@ open class SearchWindowGroupBase : SearchWindowGroup {
         }
       }
 
-      VirtualBufferKind.ControlCharsEditor, VirtualBufferKind.SubstitutePreview -> {}
+      // Neither is a command line, so `<CR>` in one executes nothing. Help is read-only.
+      VirtualBufferKind.ControlCharsEditor,
+      VirtualBufferKind.SubstitutePreview,
+      VirtualBufferKind.Help,
+      -> {}
     }
   }
 

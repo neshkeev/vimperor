@@ -27,7 +27,11 @@ import com.maddyhome.idea.vim.helper.enumSetOf
 M                       To Middle line of window, on the first non-blank
                         character |linewise|.  See also 'startofline' option.
  */
-@CommandOrMotion(keys = ["M"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["M"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Move to the middle line of the window, on the first non-blank character.",
+)
 class MotionMiddleScreenLineAction : MotionActionHandler.ForEachCaret() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 

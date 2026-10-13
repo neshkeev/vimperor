@@ -6,6 +6,15 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `:help` now answers out of Vimperor's own command list instead of opening Vim's website. Every
+  command describes itself in one line, and `:help` renders those into a help file in Vim's own
+  format - `:help dd`, `:help i_CTRL-W`, `:help v_d`, `:help :s` all jump to their tag, and `:help`
+  with nothing shows the start. 691 commands are described. An unknown subject is `E149`, as in Vim.
+  The trade is real: Vim's own prose is far richer than one line, but this answers the question a
+  Vimperor user actually asks - "does this extension have it?" - offline, instantly, and with no way
+  to drift from the code, because it is rendered from the commands rather than written by hand.
+  Ported from IdeaVim.
+
 - `keylog`, the twenty-seventh bundled extension: every key you type, in Vim's own notation,
   appended to a file. `set keylog` turns it on and `let g:keylog_file = '...'` says where. Only what
   you pressed is written - a mapping's right-hand side, a macro being played back and a `.` repeat

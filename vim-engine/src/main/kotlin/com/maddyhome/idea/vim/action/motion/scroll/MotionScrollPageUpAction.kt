@@ -21,7 +21,11 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["<C-B>", "<PageUp>"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["<C-B>", "<PageUp>"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Scroll the window [count] pages backwards (upwards) in the buffer.",
+)
 class MotionScrollPageUpAction : VimActionHandler.SingleExecution() {
 
   override val type: Command.Type = Command.Type.OTHER_READONLY
@@ -38,7 +42,11 @@ class MotionScrollPageUpAction : VimActionHandler.SingleExecution() {
   }
 }
 
-@CommandOrMotion(keys = ["<PageUp>"], modes = [Mode.INSERT])
+@CommandOrMotion(
+  keys = ["<PageUp>"],
+  modes = [Mode.INSERT],
+  description = "In Insert mode, scroll the window [count] pages backwards (upwards) in the buffer.",
+)
 class MotionScrollPageUpInsertModeAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

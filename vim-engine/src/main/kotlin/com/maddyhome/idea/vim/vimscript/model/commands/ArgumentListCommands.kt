@@ -31,7 +31,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * making once out loud: the alternative is one of each pair working and the other reporting E492,
  * which reads as an oversight rather than as a difference between Vim and an IDE.
  */
-@ExCommand(command = "ar[gs]")
+@ExCommand(
+  command = "ar[gs]",
+  description = "List the argument list, with the current file in square brackets.",
+)
 data class ArgsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -58,7 +61,10 @@ data class ArgsCommand(val range: Range, val modifier: CommandModifier, val argu
  * adding to it is opening the file - without taking the focus, which is the part of Vim's meaning
  * that survives.
  */
-@ExCommand(command = "arga[dd],bad[d]")
+@ExCommand(
+  command = "arga[dd],bad[d]",
+  description = "Add the files to the argument list after the current one.",
+)
 data class ArgAddCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -87,7 +93,10 @@ data class ArgAddCommand(val range: Range, val modifier: CommandModifier, val ar
  * Removes a file from the list, which here means closing it - see [ArgsCommand] for why the two are
  * the same thing. The name is matched the way `:buffer name` matches, on any part of it.
  */
-@ExCommand(command = "argd[elete]")
+@ExCommand(
+  command = "argd[elete]",
+  description = "Delete the files matching {pattern} from the argument list.",
+)
 data class ArgDeleteCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -118,7 +127,10 @@ data class ArgDeleteCommand(val range: Range, val modifier: CommandModifier, val
  * The next buffer with changes that are not on disk, wrapping round the end of the list as Vim's
  * does. `E84` when there are none, which is Vim's error for running off the buffer list.
  */
-@ExCommand(command = "bm[odified]")
+@ExCommand(
+  command = "bm[odified]",
+  description = "Go to the [count] next buffer with unwritten changes.",
+)
 data class BufferModifiedCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -154,7 +166,10 @@ data class BufferModifiedCommand(val range: Range, val modifier: CommandModifier
  * hosts - so every heading has one line under it, and the shape of the table is the only thing left
  * of Vim's nesting.
  */
-@ExCommand(command = "tabs")
+@ExCommand(
+  command = "tabs",
+  description = "List the tabs and the windows in each, with the current one marked.",
+)
 data class TabsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -183,7 +198,10 @@ data class TabsCommand(val range: Range, val modifier: CommandModifier, val argu
  * Here the list is the open files, so adding and opening are the same act and this is `:edit` with
  * one extra thing: Vim accepts several names and edits the first, so several are accepted.
  */
-@ExCommand(command = "arge[dit]")
+@ExCommand(
+  command = "arge[dit]",
+  description = "Add {name} to the argument list and edit it.",
+)
 data class ArgEditCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -263,11 +281,17 @@ internal sealed class ArgListScopeCommand(
 }
 
 /** see "h :argglobal" */
-@ExCommand(command = "argg[lobal]")
+@ExCommand(
+  command = "argg[lobal]",
+  description = "Define the global argument list, which every window shares.",
+)
 internal data class ArgGlobalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ArgListScopeCommand(range, modifier, argument)
 
 /** see "h :arglocal" */
-@ExCommand(command = "argl[ocal]")
+@ExCommand(
+  command = "argl[ocal]",
+  description = "Define a local argument list for this window.",
+)
 internal data class ArgLocalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ArgListScopeCommand(range, modifier, argument)

@@ -21,7 +21,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * @author vlan
  * see "h :source"
  */
-@ExCommand(command = "so[urce]")
+@ExCommand(
+  command = "so[urce]",
+  description = "Read and execute Ex commands from the file {file}.",
+)
 data class SourceCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

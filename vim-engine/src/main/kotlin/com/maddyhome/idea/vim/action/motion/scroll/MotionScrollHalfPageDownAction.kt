@@ -18,7 +18,11 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["<C-D>"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["<C-D>"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Scroll the window [count] lines downwards (default: half a screen), moving the cursor the same number of lines. [count] sets 'scroll'.",
+)
 class MotionScrollHalfPageDownAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

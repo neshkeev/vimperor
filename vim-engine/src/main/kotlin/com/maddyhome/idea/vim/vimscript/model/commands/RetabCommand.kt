@@ -37,7 +37,10 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimInt
  * spaces but a jump to the next multiple of the tabstop, so a run has to be measured from where it
  * starts on the line. Two runs of the same text on the same line can be different widths.
  */
-@ExCommand(command = "ret[ab]")
+@ExCommand(
+  command = "ret[ab]",
+  description = "Replace the indentation in [range] to suit a new 'tabstop', given as [new_tabstop].",
+)
 data class RetabCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

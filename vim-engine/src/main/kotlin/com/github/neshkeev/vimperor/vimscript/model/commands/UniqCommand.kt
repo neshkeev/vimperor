@@ -54,7 +54,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :uniq"
  */
-@ExCommand(command = "uni[q]")
+@ExCommand(
+  command = "uni[q]",
+  description = "Remove the repeated lines in [range]. Flags: i ignore case, u only report, r match /{pattern}/.",
+)
 data class UniqCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

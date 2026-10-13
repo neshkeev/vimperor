@@ -18,6 +18,8 @@ open class LazyVimCommand(
   val modes: Set<MappingMode>,
   className: String,
   factory: () -> EditorActionHandlerBase,
+  /** The line `:help` shows beside the keys, from `@CommandOrMotion`. Empty when nobody has written one. */
+  val description: String = "",
 ) : LazyInstance<EditorActionHandlerBase>(factory) {
   val actionId: String = EditorActionHandlerBase.getActionId(className)
 

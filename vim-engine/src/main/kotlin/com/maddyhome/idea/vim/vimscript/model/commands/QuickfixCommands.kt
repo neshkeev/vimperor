@@ -128,22 +128,34 @@ sealed class QuickfixExprCommand(
 }
 
 /** see "h :cexpr" */
-@ExCommand(command = "cex[pr]")
+@ExCommand(
+  command = "cex[pr]",
+  description = "Read errors from {expr} into the quickfix list and jump to the first.",
+)
 data class CExprCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixExprCommand(range, modifier, argument, isLocation = false, add = false)
 
 /** see "h :caddexpr" */
-@ExCommand(command = "cadde[xpr]")
+@ExCommand(
+  command = "cadde[xpr]",
+  description = "Read errors from {expr} and add them to the quickfix list without jumping.",
+)
 data class CAddExprCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixExprCommand(range, modifier, argument, isLocation = false, add = true)
 
 /** see "h :lexpr" */
-@ExCommand(command = "lex[pr]")
+@ExCommand(
+  command = "lex[pr]",
+  description = "Read errors from {expr} into the location list of the current window.",
+)
 data class LExprCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixExprCommand(range, modifier, argument, isLocation = true, add = false)
 
 /** see "h :laddexpr" */
-@ExCommand(command = "ladde[xpr]")
+@ExCommand(
+  command = "ladde[xpr]",
+  description = "Read errors from {expr} and add them to the location list without jumping.",
+)
 data class LAddExprCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixExprCommand(range, modifier, argument, isLocation = true, add = true)
 
@@ -177,12 +189,18 @@ sealed class QuickfixFileCommand(
 }
 
 /** see "h :cfile" */
-@ExCommand(command = "cf[ile]")
+@ExCommand(
+  command = "cf[ile]",
+  description = "Read the error file into the quickfix list and jump to the first error.",
+)
 data class CFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixFileCommand(range, modifier, argument, isLocation = false)
 
 /** see "h :lfile" */
-@ExCommand(command = "lf[ile]")
+@ExCommand(
+  command = "lf[ile]",
+  description = "Read the error file into the location list of the current window.",
+)
 data class LFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixFileCommand(range, modifier, argument, isLocation = true)
 
@@ -203,12 +221,18 @@ sealed class QuickfixBufferCommand(
 }
 
 /** see "h :cbuffer" */
-@ExCommand(command = "cb[uffer]")
+@ExCommand(
+  command = "cb[uffer]",
+  description = "Read the lines of a buffer into the quickfix list.",
+)
 data class CBufferCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixBufferCommand(range, modifier, argument, isLocation = false)
 
 /** see "h :lbuffer" */
-@ExCommand(command = "lb[uffer]")
+@ExCommand(
+  command = "lb[uffer]",
+  description = "Read the lines of a buffer into the location list of the current window.",
+)
 data class LBufferCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixBufferCommand(range, modifier, argument, isLocation = true)
 
@@ -256,22 +280,34 @@ sealed class QuickfixProgramCommand(
 }
 
 /** see "h :make" */
-@ExCommand(command = "mak[e]")
+@ExCommand(
+  command = "mak[e]",
+  description = "Run 'makeprg', read its errors into the quickfix list and jump to the first.",
+)
 data class MakeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixProgramCommand(range, modifier, argument, isLocation = false, isGrep = false)
 
 /** see "h :lmake" */
-@ExCommand(command = "lmak[e]")
+@ExCommand(
+  command = "lmak[e]",
+  description = "Run 'makeprg' and read its errors into the location list of the current window.",
+)
 data class LMakeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixProgramCommand(range, modifier, argument, isLocation = true, isGrep = false)
 
 /** see "h :grep" */
-@ExCommand(command = "gr[ep]")
+@ExCommand(
+  command = "gr[ep]",
+  description = "Run 'grepprg', read its matches into the quickfix list and jump to the first.",
+)
 data class GrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixProgramCommand(range, modifier, argument, isLocation = false, isGrep = true)
 
 /** see "h :lgrep" */
-@ExCommand(command = "lgr[ep]")
+@ExCommand(
+  command = "lgr[ep]",
+  description = "Run 'grepprg' and read its matches into the location list of the current window.",
+)
 data class LGrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixProgramCommand(range, modifier, argument, isLocation = true, isGrep = true)
 
@@ -316,12 +352,18 @@ sealed class QuickfixListCommand(
 }
 
 /** see "h :clist" - `:copen` and `:cwindow` print the same table; see [QuickfixListCommand]. */
-@ExCommand(command = "cl[ist],cope[n],cw[indow]")
+@ExCommand(
+  command = "cl[ist],cope[n],cw[indow]",
+  description = "Show the quickfix list.",
+)
 data class CListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixListCommand(range, modifier, argument, isLocation = false)
 
 /** see "h :llist" */
-@ExCommand(command = "lli[st],lop[en],lw[indow]")
+@ExCommand(
+  command = "lli[st],lop[en],lw[indow]",
+  description = "Show the location list of the current window.",
+)
 data class LListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixListCommand(range, modifier, argument, isLocation = true)
 
@@ -344,12 +386,18 @@ sealed class QuickfixCloseCommand(
 }
 
 /** see "h :cclose" */
-@ExCommand(command = "ccl[ose]")
+@ExCommand(
+  command = "ccl[ose]",
+  description = "Close the quickfix window.",
+)
 data class CCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixCloseCommand(range, modifier, argument, isLocation = false)
 
 /** see "h :lclose" */
-@ExCommand(command = "lcl[ose]")
+@ExCommand(
+  command = "lcl[ose]",
+  description = "Close the location list window.",
+)
 data class LCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixCloseCommand(range, modifier, argument, isLocation = true)
 
@@ -388,51 +436,81 @@ sealed class QuickfixStepCommand(
 }
 
 /** see "h :cnext" */
-@ExCommand(command = "cn[ext]")
+@ExCommand(
+  command = "cn[ext]",
+  description = "Go to the [count] next error in the quickfix list.",
+)
 data class CNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.NEXT)
 
 /** see "h :cprevious" */
-@ExCommand(command = "cp[revious],cN[ext]")
+@ExCommand(
+  command = "cp[revious],cN[ext]",
+  description = "Go to the [count] previous error in the quickfix list.",
+)
 data class CPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.PREVIOUS)
 
 /** see "h :cfirst" */
-@ExCommand(command = "cfir[st],crewind")
+@ExCommand(
+  command = "cfir[st],crewind",
+  description = "Go to error [count] in the quickfix list, the first by default.",
+)
 data class CFirstCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.FIRST)
 
 /** see "h :clast" */
-@ExCommand(command = "cla[st]")
+@ExCommand(
+  command = "cla[st]",
+  description = "Go to error [count] from the end of the quickfix list, the last by default.",
+)
 data class CLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.LAST)
 
 /** see "h :cc" */
-@ExCommand(command = "cc")
+@ExCommand(
+  command = "cc",
+  description = "Go to error [nr] in the quickfix list, or the current one again.",
+)
 data class CCCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.AT)
 
 /** see "h :lnext" */
-@ExCommand(command = "lne[xt]")
+@ExCommand(
+  command = "lne[xt]",
+  description = "Go to the [count] next error in the location list.",
+)
 data class LNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.NEXT)
 
 /** see "h :lprevious" */
-@ExCommand(command = "lp[revious],lN[ext]")
+@ExCommand(
+  command = "lp[revious],lN[ext]",
+  description = "Go to the [count] previous error in the location list.",
+)
 data class LPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.PREVIOUS)
 
 /** see "h :lfirst" */
-@ExCommand(command = "lfir[st],lrewind")
+@ExCommand(
+  command = "lfir[st],lrewind",
+  description = "Go to error [count] in the location list, the first by default.",
+)
 data class LFirstCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.FIRST)
 
 /** see "h :llast" */
-@ExCommand(command = "lla[st]")
+@ExCommand(
+  command = "lla[st]",
+  description = "Go to error [count] from the end of the location list, the last by default.",
+)
 data class LLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.LAST)
 
 /** see "h :ll" */
-@ExCommand(command = "ll")
+@ExCommand(
+  command = "ll",
+  description = "Go to error [nr] in the location list, or the current one again.",
+)
 data class LLCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.AT)

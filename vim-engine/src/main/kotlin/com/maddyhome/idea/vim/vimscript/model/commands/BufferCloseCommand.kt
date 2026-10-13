@@ -24,7 +24,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * entirely, along with its marks and its local options. Neither host keeps a buffer that is not
  * open: closing the editor is all three, so all three names close it.
  */
-@ExCommand(command = "bd[elete],bun[load],bw[ipeout]")
+@ExCommand(
+  command = "bd[elete],bun[load],bw[ipeout]",
+  description = "Close the buffer, or the buffers in [range].",
+)
 data class BufferCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -134,7 +134,10 @@ sealed class TagCommandBase(
  *
  * see "h :tag"
  */
-@ExCommand(command = "ta[g]")
+@ExCommand(
+  command = "ta[g]",
+  description = "Jump [count] entries forward (newer) in the tag stack.",
+)
 data class TagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagCommandBase(range, modifier, argument) {
 
@@ -177,7 +180,10 @@ data class TagCommand(val range: Range, val modifier: CommandModifier, val argum
  *
  * see "h :pop"
  */
-@ExCommand(command = "po[p]")
+@ExCommand(
+  command = "po[p]",
+  description = "Jump [count] entries back (older) in the tag stack, returning to where the tag jump was made.",
+)
 data class TagPopCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagCommandBase(range, modifier, argument) {
 
@@ -198,7 +204,10 @@ data class TagPopCommand(val range: Range, val modifier: CommandModifier, val ar
  *
  * see "h :tags"
  */
-@ExCommand(command = "tags")
+@ExCommand(
+  command = "tags",
+  description = "Show the contents of the tag stack. The current entry is marked with >.",
+)
 data class TagStackCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagCommandBase(range, modifier, argument) {
 
@@ -271,12 +280,18 @@ sealed class TagSelectCommandBase(
 }
 
 /** see "h :tselect" */
-@ExCommand(command = "ts[elect]")
+@ExCommand(
+  command = "ts[elect]",
+  description = "List the tags matching [name] and let one be chosen.",
+)
 data class TagSelectCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagSelectCommandBase(range, modifier, argument, jumpsWhenAlone = false)
 
 /** see "h :tjump" */
-@ExCommand(command = "tj[ump]")
+@ExCommand(
+  command = "tj[ump]",
+  description = "Jump to the tag [name], listing the matches when there is more than one.",
+)
 data class TagJumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagSelectCommandBase(range, modifier, argument, jumpsWhenAlone = true)
 
@@ -322,22 +337,34 @@ sealed class TagStepCommand(
 }
 
 /** see "h :tnext" */
-@ExCommand(command = "tn[ext]")
+@ExCommand(
+  command = "tn[ext]",
+  description = "Jump to the [count] next matching tag.",
+)
 data class TagNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagStepCommand(range, modifier, argument, Step.NEXT)
 
 /** see "h :tprevious" */
-@ExCommand(command = "tp[revious],tN[ext]")
+@ExCommand(
+  command = "tp[revious],tN[ext]",
+  description = "Jump to the [count] previous matching tag.",
+)
 data class TagPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagStepCommand(range, modifier, argument, Step.PREVIOUS)
 
 /** see "h :tfirst" */
-@ExCommand(command = "tf[irst],tr[ewind]")
+@ExCommand(
+  command = "tf[irst],tr[ewind]",
+  description = "Jump to tag [count] of the matches, the first by default.",
+)
 data class TagFirstCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagStepCommand(range, modifier, argument, Step.FIRST)
 
 /** see "h :tlast" */
-@ExCommand(command = "tl[ast]")
+@ExCommand(
+  command = "tl[ast]",
+  description = "Jump to the last of the matching tags.",
+)
 data class TagLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagStepCommand(range, modifier, argument, Step.LAST)
 
@@ -357,7 +384,10 @@ data class TagLastCommand(val range: Range, val modifier: CommandModifier, val a
  *
  * see "h :ltag"
  */
-@ExCommand(command = "lt[ag]")
+@ExCommand(
+  command = "lt[ag]",
+  description = "Jump to the tag [name] and fill the location list with the matches.",
+)
 data class LocationTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   TagCommandBase(range, modifier, argument) {
 

@@ -131,7 +131,10 @@ internal sealed class LineEntryCommand(
  * `:0append` puts it at the very top, which is Vim's rule for address zero everywhere it takes a
  * range: "before the first line" rather than a line that does not exist.
  */
-@ExCommand(command = "a[ppend]")
+@ExCommand(
+  command = "a[ppend]",
+  description = "Insert the lines typed after this command below [line].",
+)
 internal data class AppendLinesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   LineEntryCommand(range, modifier, argument) {
 
@@ -140,7 +143,10 @@ internal data class AppendLinesCommand(val range: Range, val modifier: CommandMo
 }
 
 /** `:insert` - the text goes *before* the range's line, which is the only difference from `:append`. */
-@ExCommand(command = "i[nsert]")
+@ExCommand(
+  command = "i[nsert]",
+  description = "Insert the lines typed after this command above [line].",
+)
 internal data class InsertLinesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   LineEntryCommand(range, modifier, argument) {
 
@@ -155,7 +161,10 @@ internal data class InsertLinesCommand(val range: Range, val modifier: CommandMo
  * `:%change` with an empty block a way of emptying a file. That is the one case where a block with
  * no lines still has work to do, and it is why this one does not return early on an empty block.
  */
-@ExCommand(command = "c[hange]")
+@ExCommand(
+  command = "c[hange]",
+  description = "Replace the lines in [range] with the lines typed after this command.",
+)
 internal data class ChangeLinesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   LineEntryCommand(range, modifier, argument) {
 

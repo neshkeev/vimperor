@@ -45,7 +45,10 @@ private fun Command.render(argument: String, editor: VimEditor, context: Executi
  * recording is explicit rather than inherited: `:echo` and `:echomsg` both print through the output
  * panel, so a history built from the panel would remember both and Vim remembers only this one.
  */
-@ExCommand(command = "echom[sg]")
+@ExCommand(
+  command = "echom[sg]",
+  description = "Echo the expressions and keep the result in the message history.",
+)
 data class EchoMessageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -71,7 +74,10 @@ data class EchoMessageCommand(val range: Range, val modifier: CommandModifier, v
  * throws rather than printing in red and carrying on. `:try` catches it, as it does in Vim, and
  * `:silent!` swallows it, which is what makes `silent! echoerr` a way of testing something.
  */
-@ExCommand(command = "echoe[rr]")
+@ExCommand(
+  command = "echoe[rr]",
+  description = "Echo the expressions as an error message and keep it in the message history.",
+)
 data class EchoErrorCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -93,7 +99,10 @@ data class EchoErrorCommand(val range: Range, val modifier: CommandModifier, val
  * what `:echon` actually buys is the missing break at the *end*. Registered because a config that
  * uses it should print something rather than report `E492`.
  */
-@ExCommand(command = "echon")
+@ExCommand(
+  command = "echon",
+  description = "Echo the expressions with no line break after them.",
+)
 data class EchoNoNewlineCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -117,7 +126,10 @@ data class EchoNoNewlineCommand(val range: Range, val modifier: CommandModifier,
  * what it does rather than for what it returns. `:call` only takes a function call; `:eval` takes
  * anything, which is what a method chain ending in `->add()` needs.
  */
-@ExCommand(command = "ev[al]")
+@ExCommand(
+  command = "ev[al]",
+  description = "Evaluate {expr} and throw the result away, for an expression called for its effect.",
+)
 data class EvalCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -142,7 +154,10 @@ data class EvalCommand(val range: Range, val modifier: CommandModifier, val argu
  * so there is nothing to set. Registered and silent, because a script that colours a warning should
  * still print the warning.
  */
-@ExCommand(command = "echoh[l]")
+@ExCommand(
+  command = "echoh[l]",
+  description = "Use the highlight group {name} for the echo commands that follow.",
+)
 data class EchoHighlightCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -164,7 +179,10 @@ data class EchoHighlightCommand(val range: Range, val modifier: CommandModifier,
  * from outside, so this is registered and does nothing: the mapping runs and takes two `u` to undo
  * rather than one, where refusing the line would have left it not running at all.
  */
-@ExCommand(command = "undoj[oin]")
+@ExCommand(
+  command = "undoj[oin]",
+  description = "Join the next change to the one before it, so one undo takes both back.",
+)
 data class UndoJoinCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

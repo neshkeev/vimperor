@@ -28,7 +28,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * `E187` when there is no folder at all, which is Vim's own error for a directory it cannot name.
  */
-@ExCommand(command = "pw[d]")
+@ExCommand(
+  command = "pw[d]",
+  description = "Print the working directory.",
+)
 data class PrintWorkingDirectoryCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

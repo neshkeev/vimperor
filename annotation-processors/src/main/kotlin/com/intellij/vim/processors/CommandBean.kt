@@ -10,5 +10,16 @@ package com.intellij.vim.processors
 
 import kotlinx.serialization.Serializable
 
+/**
+ * One key binding as the processor found it.
+ *
+ * [description] is the line `:help` shows beside the keys. It is defaulted, so the generated table only carries the
+ * commands that have one - which is also how the help file knows which are still undescribed.
+ */
 @Serializable
-data class CommandBean(val keys: String, val `class`: String, val modes: String)
+data class CommandBean(
+  val keys: String,
+  val `class`: String,
+  val modes: String,
+  val description: String = "",
+)

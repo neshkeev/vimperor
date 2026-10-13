@@ -81,7 +81,10 @@ sealed class ChangeDirectoryCommandBase(
 }
 
 /** see "h :cd" */
-@ExCommand(command = "cd,chd[ir]")
+@ExCommand(
+  command = "cd,chd[ir]",
+  description = "Change the working directory to [path], or to the home directory with no argument.",
+)
 data class ChangeDirectoryCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ChangeDirectoryCommandBase(range, modifier, argument, isLocal = false)
 
@@ -94,6 +97,9 @@ data class ChangeDirectoryCommand(val range: Range, val modifier: CommandModifie
  *
  * see "h :lcd"
  */
-@ExCommand(command = "lc[d],lch[dir],tcd,tch[dir]")
+@ExCommand(
+  command = "lc[d],lch[dir],tcd,tch[dir]",
+  description = "Change the working directory for this window or tab only.",
+)
 data class ChangeLocalDirectoryCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ChangeDirectoryCommandBase(range, modifier, argument, isLocal = true)

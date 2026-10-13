@@ -24,7 +24,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * `i` and `:startinsert!` like typing `A`, and both are what a mapping reaches for when it wants to
  * run an ex command and leave the user typing.
  */
-@ExCommand(command = "star[tinsert]")
+@ExCommand(
+  command = "star[tinsert]",
+  description = "Start Insert mode, as with i. With [!], append at the end of the line, as with A.",
+)
 data class StartInsertCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

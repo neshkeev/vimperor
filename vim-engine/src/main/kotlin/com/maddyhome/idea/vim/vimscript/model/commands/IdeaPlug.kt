@@ -20,7 +20,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 /**
  * Command that is used for enabling plugins. E.g. `IdeaPlug 'ReplaceWithRegister'`
  */
-@ExCommand(command = "IdeaPlug")
+@ExCommand(
+  command = "IdeaPlug",
+  description = "Enable the IdeaVim extension with the quoted {name}, similar to Plug in vim-plug.",
+)
 class IdeaPlug(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

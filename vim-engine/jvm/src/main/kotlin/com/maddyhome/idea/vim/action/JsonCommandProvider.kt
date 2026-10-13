@@ -37,7 +37,13 @@ interface JsonCommandProvider : CommandProvider {
       .map {
         val keys = it.value.map { bean -> injector.parser.parseKeys(bean.keys) }.toSet()
         val modes = it.value.first().modes.map { mode -> MappingMode.parseModeChar(mode) }.toSet()
-        LazyVimCommand(keys, modes, it.key, reflectiveFactory(it.key, classLoader))
+        LazyVimCommand(
+          keys,
+          modes,
+          it.key,
+          reflectiveFactory(it.key, classLoader),
+          it.value.first().description,
+        )
       }
   }
 
@@ -47,5 +53,11 @@ interface JsonCommandProvider : CommandProvider {
   }
 }
 
+/** [description] is the line `:help` shows beside the keys, defaulted as it is in the annotation. */
 @Serializable
-data class CommandBean(val keys: String, val `class`: String, val modes: String)
+data class CommandBean(
+  val keys: String,
+  val `class`: String,
+  val modes: String,
+  val description: String = "",
+)

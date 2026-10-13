@@ -71,21 +71,33 @@ sealed class AllBuffersCommandBase(
 }
 
 /** see "h :ball" */
-@ExCommand(command = "ba[ll]")
+@ExCommand(
+  command = "ba[ll]",
+  description = "Open a window for each buffer in the argument list.",
+)
 data class AllBuffersCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AllBuffersCommandBase(range, modifier, argument)
 
 /** see "h :unhide" */
-@ExCommand(command = "unh[ide]")
+@ExCommand(
+  command = "unh[ide]",
+  description = "Open a window for each loaded buffer.",
+)
 data class UnhideCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AllBuffersCommandBase(range, modifier, argument)
 
 /** see "h :sunhide" */
-@ExCommand(command = "sun[hide]")
+@ExCommand(
+  command = "sun[hide]",
+  description = "Open a split window for each loaded buffer.",
+)
 data class SplitUnhideCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AllBuffersCommandBase(range, modifier, argument)
 
 /** see "h :sball" */
-@ExCommand(command = "sba[ll]")
+@ExCommand(
+  command = "sba[ll]",
+  description = "Open a split window for each buffer in the argument list.",
+)
 data class SplitAllBuffersCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AllBuffersCommandBase(range, modifier, argument)

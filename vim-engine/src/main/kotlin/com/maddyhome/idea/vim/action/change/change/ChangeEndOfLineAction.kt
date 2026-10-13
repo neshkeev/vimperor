@@ -20,7 +20,11 @@ import com.maddyhome.idea.vim.command.CommandFlags.FLAG_NO_REPEAT_INSERT
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["C"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["C"],
+  modes = [Mode.NORMAL],
+  description = "Delete till the end of the line and [count]-1 more lines into register [x], then start Insert mode.",
+)
 class ChangeEndOfLineAction : ChangeInInsertSequenceAction() {
   override val type: Command.Type = Command.Type.CHANGE
 

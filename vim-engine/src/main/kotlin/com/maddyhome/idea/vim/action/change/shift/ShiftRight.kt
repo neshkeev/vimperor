@@ -24,7 +24,11 @@ import com.maddyhome.idea.vim.handler.ChangeEditorActionHandler
 import com.maddyhome.idea.vim.handler.VisualOperatorActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["<C-T>"], modes = [Mode.INSERT])
+@CommandOrMotion(
+  keys = ["<C-T>"],
+  modes = [Mode.INSERT],
+  description = "In Insert mode, insert one 'shiftwidth' of indent at the start of the current line.",
+)
 class ShiftRightLinesAction : ChangeEditorActionHandler.ForEachCaret() {
 
   override val type: Command.Type = Command.Type.INSERT
@@ -44,7 +48,11 @@ class ShiftRightLinesAction : ChangeEditorActionHandler.ForEachCaret() {
   }
 }
 
-@CommandOrMotion(keys = [">"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = [">"],
+  modes = [Mode.NORMAL],
+  description = "Shift the lines covered by {motion} one 'shiftwidth' rightwards.",
+)
 class ShiftRightMotionAction : ChangeEditorActionHandler.ForEachCaret(), DuplicableOperatorAction {
   override val type: Command.Type = Command.Type.CHANGE
 
@@ -66,7 +74,11 @@ class ShiftRightMotionAction : ChangeEditorActionHandler.ForEachCaret(), Duplica
   }
 }
 
-@CommandOrMotion(keys = [">"], modes = [Mode.VISUAL])
+@CommandOrMotion(
+  keys = [">"],
+  modes = [Mode.VISUAL],
+  description = "Shift the highlighted lines [count] 'shiftwidth' rightwards.",
+)
 class ShiftRightVisualAction : VisualOperatorActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.CHANGE
 

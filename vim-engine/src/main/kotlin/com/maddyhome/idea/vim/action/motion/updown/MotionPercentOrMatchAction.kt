@@ -23,7 +23,11 @@ import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.handler.toMotion
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["%"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["%"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Jump to the matching bracket, brace or parenthesis of the one under or after the cursor. With [count], go to [count] percent of the file (linewise).",
+)
 class MotionPercentOrMatchAction : MotionActionHandler.ForEachCaret() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_JUMP)
 

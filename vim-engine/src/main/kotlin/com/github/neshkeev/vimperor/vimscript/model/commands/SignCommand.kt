@@ -50,7 +50,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :sign"
  */
-@ExCommand(command = "sign")
+@ExCommand(
+  command = "sign",
+  description = "Place, list and remove the markers Vim calls signs, in the gutter.",
+)
 data class SignCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

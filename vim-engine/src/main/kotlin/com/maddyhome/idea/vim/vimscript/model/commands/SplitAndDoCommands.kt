@@ -67,31 +67,49 @@ sealed class SplitAndDoCommand(
 }
 
 /** see "h :sbuffer" */
-@ExCommand(command = "sb[uffer]")
+@ExCommand(
+  command = "sb[uffer]",
+  description = "Split the window and edit the buffer [N] in the new one.",
+)
 data class SplitBufferCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "buffer")
 
 /** see "h :snext" */
-@ExCommand(command = "sn[ext]")
+@ExCommand(
+  command = "sn[ext]",
+  description = "Split the window and edit the [count] next file in the argument list.",
+)
 data class SplitNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "next")
 
 /** see "h :sprevious" */
-@ExCommand(command = "spr[evious]")
+@ExCommand(
+  command = "spr[evious]",
+  description = "Split the window and edit the [count] previous file in the argument list.",
+)
 data class SplitPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "previous")
 
 /** see "h :sfind" */
-@ExCommand(command = "sf[ind]")
+@ExCommand(
+  command = "sf[ind]",
+  description = "Split the window and edit the file found along 'path'.",
+)
 data class SplitFindCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "find")
 
 /** see "h :sview" - `:view` in a split, which is `:edit` in a split here; see [EditFileCommand]. */
-@ExCommand(command = "sv[iew]")
+@ExCommand(
+  command = "sv[iew]",
+  description = "Split the window and edit [file] read-only in the new one.",
+)
 data class SplitViewCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "view")
 
 /** see "h :stag" - `:tag` in a split, which is how a definition is read without leaving the caller. */
-@ExCommand(command = "sta[g]")
+@ExCommand(
+  command = "sta[g]",
+  description = "Split the window and jump to the tag in the new one.",
+)
 data class SplitTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   SplitAndDoCommand(range, modifier, argument, "tag")

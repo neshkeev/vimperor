@@ -22,6 +22,7 @@ interface VirtualBufferGroup {
    * substitute preview is transient and does not participate in that restriction.
    *
    * @param focus when false, the buffer is shown without stealing focus (used by `inccommand=split`).
+   * @param caretLine the line to put the caret on, which is how `:help {subject}` reaches its tag.
    */
   fun open(
     context: ExecutionContext,
@@ -29,6 +30,7 @@ interface VirtualBufferGroup {
     kind: VirtualBufferKind,
     content: String,
     focus: Boolean = true,
+    caretLine: Int = 0,
   )
 
   /** Closes the virtual buffer hosted in [editor] (typically the cmdwin editor itself). */

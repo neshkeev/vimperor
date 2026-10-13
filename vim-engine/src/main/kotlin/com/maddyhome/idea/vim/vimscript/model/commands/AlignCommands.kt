@@ -77,7 +77,10 @@ private const val DEFAULT_MARGIN = 80
  *
  * `:left` with no argument moves the text to column zero; `:left 4` indents it by four.
  */
-@ExCommand(command = "le[ft]")
+@ExCommand(
+  command = "le[ft]",
+  description = "Left-align the lines in [range], with an indent of [indent] spaces.",
+)
 data class LeftAlignCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -102,7 +105,10 @@ data class LeftAlignCommand(val range: Range, val modifier: CommandModifier, val
  *
  * Pushes each line so that it ends at the margin - `'textwidth'`, or the argument, or 80.
  */
-@ExCommand(command = "ri[ght]")
+@ExCommand(
+  command = "ri[ght]",
+  description = "Right-align the lines in [range] within [width] columns, 'textwidth' by default.",
+)
 data class RightAlignCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -125,7 +131,10 @@ data class RightAlignCommand(val range: Range, val modifier: CommandModifier, va
  *
  * Puts half the leftover width in front of each line, rounding down, as Vim does.
  */
-@ExCommand(command = "ce[nter]")
+@ExCommand(
+  command = "ce[nter]",
+  description = "Centre the lines in [range] within [width] columns, 'textwidth' by default.",
+)
 data class CenterAlignCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -132,7 +132,11 @@ internal object GotoFile {
   }
 }
 
-@CommandOrMotion(keys = ["gf"], modes = [Mode.NORMAL, Mode.VISUAL])
+@CommandOrMotion(
+  keys = ["gf"],
+  modes = [Mode.NORMAL, Mode.VISUAL],
+  description = "Open the file whose name is under or after the cursor, looked up along 'path'.",
+)
 class GotoFileUnderCaretAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

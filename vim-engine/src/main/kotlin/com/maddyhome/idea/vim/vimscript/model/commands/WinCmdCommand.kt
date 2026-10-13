@@ -31,7 +31,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * The count is the ex range, which is how Vim spells it too: `:2wincmd l` is `2<C-W>l`.
  */
-@ExCommand(command = "winc[md]")
+@ExCommand(
+  command = "winc[md]",
+  description = "Run the window command {arg}, as if CTRL-W {arg} had been typed.",
+)
 data class WinCmdCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

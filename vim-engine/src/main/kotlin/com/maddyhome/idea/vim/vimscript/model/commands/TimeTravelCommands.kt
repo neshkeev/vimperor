@@ -54,7 +54,10 @@ private fun travel(
 }
 
 /** see "h :earlier" */
-@ExCommand(command = "ea[rlier]")
+@ExCommand(
+  command = "ea[rlier]",
+  description = "Go to an older state of the text: [count] changes back, or {N}s, {N}m, {N}h back in time, or {N}f file writes back.",
+)
 data class EarlierCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -69,7 +72,10 @@ data class EarlierCommand(val range: Range, val modifier: CommandModifier, val a
 }
 
 /** see "h :later" */
-@ExCommand(command = "lat[er]")
+@ExCommand(
+  command = "lat[er]",
+  description = "Go to a newer state of the text, undoing an :earlier. Takes the same counts and time arguments.",
+)
 data class LaterCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

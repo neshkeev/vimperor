@@ -22,7 +22,11 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.handler.MotionActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["w"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["w"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Move [count] words forward.",
+)
 class MotionWordRightAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
   override val clampToEndOfFileWhenOperatorPending: Boolean = true
@@ -38,7 +42,11 @@ class MotionWordRightAction : MotionActionHandler.ForEachCaret() {
   }
 }
 
-@CommandOrMotion(keys = ["<C-Right>", "<C-kRight>"], modes = [Mode.INSERT])
+@CommandOrMotion(
+  keys = ["<C-Right>", "<C-kRight>"],
+  modes = [Mode.INSERT],
+  description = "In Insert mode, move the cursor [count] words forward.",
+)
 class MotionWordRightInsertAction : MotionActionHandler.ForEachCaret() {
   override val motionType: MotionType = MotionType.EXCLUSIVE
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_SAVE_STROKE)

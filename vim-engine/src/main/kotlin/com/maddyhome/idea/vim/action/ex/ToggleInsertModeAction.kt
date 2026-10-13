@@ -14,7 +14,11 @@ import com.maddyhome.idea.vim.api.VimCommandLine
 import com.maddyhome.idea.vim.command.CommandFlags
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["<Insert>"], modes = [Mode.CMD_LINE])
+@CommandOrMotion(
+  keys = ["<Insert>"],
+  modes = [Mode.CMD_LINE],
+  description = "In Command-line mode, toggle between insert and overstrike.",
+)
 class ToggleInsertModeAction : CommandLineActionHandler() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_UNDO_AWARE)
 

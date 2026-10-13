@@ -22,7 +22,11 @@ import com.maddyhome.idea.vim.handler.VimActionHandler
  *
  * see "h CTRL-W_+"
  */
-@CommandOrMotion(keys = ["<C-W>+"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>+"],
+  modes = [Mode.NORMAL],
+  description = "Increase the current window height by [count] rows.",
+)
 class IncreaseWindowHeightAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -42,7 +46,11 @@ class IncreaseWindowHeightAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W_-"
  */
-@CommandOrMotion(keys = ["<C-W>-"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>-"],
+  modes = [Mode.NORMAL],
+  description = "Decrease the current window height by [count] rows.",
+)
 class DecreaseWindowHeightAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -63,7 +71,11 @@ class DecreaseWindowHeightAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W__"
  */
-@CommandOrMotion(keys = ["<C-W>_", "<C-W><C-_>"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>_", "<C-W><C-_>"],
+  modes = [Mode.NORMAL],
+  description = "Set the current window height to [count] rows; without [count], make it as high as possible.",
+)
 class MaximizeWindowHeightAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -84,7 +96,11 @@ class MaximizeWindowHeightAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W_>"
  */
-@CommandOrMotion(keys = ["<C-W>>"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>>"],
+  modes = [Mode.NORMAL],
+  description = "Increase the current window width by [count] columns.",
+)
 class IncreaseWindowWidthAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -104,7 +120,11 @@ class IncreaseWindowWidthAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W_<"
  */
-@CommandOrMotion(keys = ["<C-W><lt>"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W><lt>"],
+  modes = [Mode.NORMAL],
+  description = "Decrease the current window width by [count] columns.",
+)
 class DecreaseWindowWidthAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -125,7 +145,11 @@ class DecreaseWindowWidthAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W_bar"
  */
-@CommandOrMotion(keys = ["<C-W>|"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>|"],
+  modes = [Mode.NORMAL],
+  description = "Set the current window width to [count] columns; without [count], make it as wide as possible.",
+)
 class MaximizeWindowWidthAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -146,7 +170,11 @@ class MaximizeWindowWidthAction : VimActionHandler.SingleExecution() {
  *
  * see "h CTRL-W_="
  */
-@CommandOrMotion(keys = ["<C-W>="], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-W>="],
+  modes = [Mode.NORMAL],
+  description = "Make all windows (almost) equally high and wide.",
+)
 class EqualizeWindowsAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

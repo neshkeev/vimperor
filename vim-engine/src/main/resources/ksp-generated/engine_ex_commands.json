@@ -2,1626 +2,2029 @@
   "!": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdFilterCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Execute {cmd} in the shell and show its output; with [range], filter those lines through {cmd}."
   },
   "&": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Repeat the last :substitute in [range] lines. :& uses the same search pattern, :~ uses the last used search pattern. [&] keeps the flags."
   },
   "<": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftLeftCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Shift [range] lines one 'shiftwidth' left. Repeat the < to shift several times, e.g. :<<<."
   },
   "=": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintLineNumberCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the line number of the last line of [range] (default: the last line in the file). With the l, # or p flag, also show the line text."
   },
   ">": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShiftRightCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Shift [range] lines one 'shiftwidth' right. Repeat the > to shift several times, e.g. :>>>."
   },
   "@": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RepeatCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Execute the contents of {register} as an Ex command at [line]. :@: repeats the last command line and :@@ repeats the previous :@."
   },
   "IdeaPlug": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IdeaPlug",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Enable the IdeaVim extension with the quoted {name}, similar to Plug in vim-plug."
   },
   "N[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th previous editor tab, wrapping around at the first one."
   },
   "P[rint]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show [range] lines (default current line) in the output panel, prefixed with line numbers if 'number' is set."
   },
   "PlugDisable": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugDisable",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Disable the IdeaVim extension {name}."
   },
   "PlugEnable": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugEnable",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Enable the IdeaVim extension {name}."
   },
   "Plug[in]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PlugCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Enable the IdeaVim extension named in quotes, using vim-plug syntax, e.g. Plug 'tpope/vim-surround'."
   },
   "a[ppend]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.AppendLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Insert the lines typed after this command below [line]."
   },
   "ab[breviate]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "abc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all abbreviations for the mode of the command: Insert and Command-line, Insert only, or Command-line only. Use <buffer> for buffer-local ones."
   },
   "abo[veleft]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AboveLeftCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window above or left of the current one."
   },
   "action": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ActionCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Execute the IDE action with the given {action-id}."
   },
   "ar[gs]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the argument list, with the current file in square brackets."
   },
   "arga[dd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgAddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add the files to the argument list after the current one."
   },
   "argd[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgDeleteCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete the files matching {pattern} from the argument list."
   },
   "argdo": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgDoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} for every file in the argument list."
   },
   "arge[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgEditCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add {name} to the argument list and edit it."
   },
   "argg[lobal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgGlobalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Define the global argument list, which every window shares."
   },
   "argl[ocal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgLocalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Define a local argument list for this window."
   },
   "argu[ment]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th editor tab in the current window."
   },
   "as[cii]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AsciiCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the decimal, hexadecimal and octal value of the character under the cursor."
   },
   "au[tocmd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AutoCmdCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Register {cmd} to run when one of the comma-separated {event}s fires for a file matching {pat}. With [!], remove all registered autocommands."
   },
   "aug[roup]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AutogroupCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start the autocommand group {name} for the following :autocmd commands; END returns to the default group. With [!], clear group {name}."
   },
   "b[uffer]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Edit buffer [N], alternate buffer #, or the open file matching {name}; [!] ignores unsaved changes."
   },
   "ba[ll]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.AllBuffersCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open a window for each buffer in the argument list."
   },
   "bad[d]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ArgAddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add the files to the argument list after the current one."
   },
   "bd[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the buffer, or the buffers in [range]."
   },
   "be[have]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.BehaveCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set 'selectmode', 'mousemodel', 'keymodel' and 'selection' for mswin or xterm behaviour."
   },
   "bel[owright]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BelowRightCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window below or right of the current one."
   },
   "bf[irst]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "bl[ast]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the last file, buffer or tab."
   },
   "bm[odified]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferModifiedCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] next buffer with unwritten changes."
   },
   "bn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th next editor tab."
   },
   "bo[tright]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BotRightCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window at the very bottom or far right."
   },
   "bp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th previous editor tab, wrapping around at the first one."
   },
   "br[ewind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "breaka[dd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BreakAddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add a Vimscript breakpoint. Accepted and does nothing: there is no debugger."
   },
   "bro[wse]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in the current window."
   },
   "bufd[o]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufDoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} in every loaded buffer."
   },
   "buffers": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List all open buffers, optionally filtered by the flags +, =, a, % and #."
   },
   "bun[load]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the buffer, or the buffers in [range]."
   },
   "bw[ipeout]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the buffer, or the buffers in [range]."
   },
   "cN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] previous error in the quickfix list."
   },
   "c[hange]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Replace the lines in [range] with the lines typed after this command."
   },
   "ca[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "cabc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all abbreviations for the mode of the command: Insert and Command-line, Insert only, or Command-line only. Use <buffer> for buffer-local ones."
   },
   "cadde[xpr]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CAddExprCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read errors from {expr} and add them to the quickfix list without jumping."
   },
   "cal[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CallCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Call the function {name} with the given arguments and discard the result, optionally for a [range] of lines."
   },
   "cb[uffer]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CBufferCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read the lines of a buffer into the quickfix list."
   },
   "cc": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CCCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [nr] in the quickfix list, or the current one again."
   },
   "ccl[ose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the quickfix window."
   },
   "cd": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory to [path], or to the home directory with no argument."
   },
   "ce[nter]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CenterAlignCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Centre the lines in [range] within [width] columns, 'textwidth' by default."
   },
   "cex[pr]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CExprCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read errors from {expr} into the quickfix list and jump to the first."
   },
   "cf[ile]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read the error file into the quickfix list and jump to the first error."
   },
   "cfir[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] in the quickfix list, the first by default."
   },
   "changes": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ChangesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the change list, the places where the text was last changed."
   },
   "chd[ir]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory to [path], or to the home directory with no argument."
   },
   "checkt[ime]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CheckTimeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Check whether a file has changed on disk. Accepted and does nothing: VS Code watches the file itself."
   },
   "cl[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the quickfix list."
   },
   "cla[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CLastCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] from the end of the quickfix list, the last by default."
   },
   "cle[arjumps]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ClearJumpsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Clear the jump list of the current window."
   },
   "clo[se]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the current editor. :close and :hide behave the same way as :quit in IdeaVim."
   },
   "cm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "cmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "cn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CNextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] next error in the quickfix list."
   },
   "cno[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "cnorea[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "co[py]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Copy the lines in [range] to below line {address}."
   },
   "colo[rscheme]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ColorschemeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Load a colour scheme. Accepted and does nothing: the theme is VS Code's."
   },
   "com[mand]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Define the user command {cmd} that executes {rep}. Without arguments, list all user-defined commands."
   },
   "comc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CmdClearCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete all user-defined commands."
   },
   "comp[iler]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CompilerCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set the compiler plugin. Accepted and does nothing: there are no compiler plugins."
   },
   "conf[irm]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ConfirmCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} and ask rather than fail when it would lose a change."
   },
   "cope[n]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the quickfix list."
   },
   "cp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] previous error in the quickfix list."
   },
   "cq[uit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CQuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Quit with an error code. Accepted and does nothing: there is no exit code to give."
   },
   "crewind": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] in the quickfix list, the first by default."
   },
   "cu[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "cuna[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove abbreviation {lhs} for the mode of the command. Use <buffer> to remove a buffer-local abbreviation."
   },
   "cw[indow]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the quickfix list."
   },
   "d[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete the lines in [range] (default current line) into register [x]. A [count] deletes [count] lines starting with the last line in [range]."
   },
   "delc[ommand]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DelCmdCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete the user-defined command {cmd}."
   },
   "delf[unction]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DelfunctionCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Delete the user-defined function {name}. With [!], do not report an error if the function does not exist."
   },
   "delm[arks]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteMarksCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete the specified {marks}; ranges like a-d are allowed. With [!], delete all lowercase marks of the current file."
   },
   "diffg[et]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffGetCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Take a change from the other side of the diff. Accepted and does nothing: the diff is VS Code's."
   },
   "diffo[ff]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffOffCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Leave diff mode in this window, or with [!] in every window of this tab."
   },
   "diffp[atch]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffPatchCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Apply the patch in {patchfile} to the current buffer and diff the result."
   },
   "diffpu[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DiffPutCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Put a change to the other side of the diff. Accepted and does nothing, as :diffget is."
   },
   "diffs[plit]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffSplitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and diff it against {file}."
   },
   "difft[his]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffThisCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make this window part of the diff."
   },
   "diffu[pdate]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.DiffUpdateCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Work the differences out again."
   },
   "dig[raphs]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DigraphCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Without arguments, list the available digraphs; with [!], also show headers. With {char1}{char2} {number} pairs, define new digraphs."
   },
   "dis[play]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Display the type and contents of all registers, or only of the registers named in {arg}."
   },
   "do[autocmd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DoAutoCmdCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run the autocommands for {event} as if it had just happened, in the current buffer."
   },
   "doautoa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DoAutoAllCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run the autocommands for {event} as if it had just happened, in every loaded buffer."
   },
   "dr[op]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in the current window."
   },
   "e[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in the current window."
   },
   "ea[rlier]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EarlierCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to an older state of the text: [count] changes back, or {N}s, {N}m, {N}h back in time, or {N}f file writes back."
   },
   "ec[ho]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Evaluate each {expr} and display the results separated by spaces."
   },
   "echoe[rr]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoErrorCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Echo the expressions as an error message and keep it in the message history."
   },
   "echoh[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoHighlightCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Use the highlight group {name} for the echo commands that follow."
   },
   "echom[sg]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoMessageCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Echo the expressions and keep the result in the message history."
   },
   "echon": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EchoNoNewlineCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Echo the expressions with no line break after them."
   },
   "ene[w]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditNewFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open a new, empty buffer in the current window."
   },
   "ev[al]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EvalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Evaluate {expr} and throw the result away, for an expression called for its effect."
   },
   "exe[cute]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExecuteCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Evaluate each {expr} and execute the resulting string as an Ex command. Multiple arguments are joined with a space."
   },
   "exi[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and close its editor."
   },
   "exu[sage]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExUsageCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show Ex command help. Accepted and does nothing: :help lists the commands instead."
   },
   "f[ile]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Display the current file name, cursor position and file status."
   },
   "files": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List all open buffers, optionally filtered by the flags +, =, a, % and #."
   },
   "filet[ype]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FiletypeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Switch filetype detection on or off. Accepted and does nothing: VS Code detects the language itself."
   },
   "filt[er]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FilterCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} and show only the output lines matching /{pattern}/, or not matching it with [!]."
   },
   "fin[d]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FindFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Find {file} in the project and open it. Without an argument, open the IDE's Go to File popup."
   },
   "fir[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "fo[ld]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Fold the lines in [range]."
   },
   "foldc[lose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the folds in [range]. With [!] close them all the way up."
   },
   "foldd[oopen]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FoldDoOpenCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} on every line not in a closed fold."
   },
   "folddoc[losed]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.FoldDoClosedCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} on every line in a closed fold."
   },
   "foldo[pen]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FoldOpenCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open the folds in [range]. With [!] open them all the way down."
   },
   "fu[nction]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.FunctionCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "List all user-defined functions, the definition of the function {name}, or the functions matching /{pattern}."
   },
   "g[lobal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
     "standardConstructor": false,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Execute the Ex command [cmd] (default :p) on the lines in [range] (default whole file) that match {pattern}. With :g! or :v, use the lines that do not match."
   },
   "go[to]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GotoCharacterCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to byte [count] in the file, default the first character."
   },
   "gr[ep]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GrepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run 'grepprg', read its matches into the quickfix list and jump to the first."
   },
   "gu[i]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GuiCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start the GUI. Accepted and does nothing: this is already one."
   },
   "gv[im]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GvimCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start the GUI. Accepted and does nothing, as :gui is."
   },
   "h[elp]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Open Vimperor's help and jump to the subject, e.g. dd, v_d, i_CTRL-W or :s. Without a subject, show the start of the help."
   },
   "ha[rdcopy]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HardcopyCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the buffer. Accepted and does nothing: printing is VS Code's."
   },
   "helpg[rep]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HelpGrepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Search the help files. Accepted and does nothing: :help lists the commands instead."
   },
   "helpt[ags]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.HelpTagsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Generate help tags. Accepted and does nothing: the help is rendered rather than read from files."
   },
   "hi[ghlight]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.HighlightCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Define or clear a highlight group, which is what :match and the extensions paint with."
   },
   "hid[e]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the current editor. :close and :hide behave the same way as :quit in IdeaVim."
   },
   "his[tory]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HistoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Display the history of the given {name} type (cmd, search, expr, input or all), default command-line history. An optional {first},{last} limits the entries shown."
   },
   "hor[izontal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.HorizontalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command split horizontally."
   },
   "i[nsert]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.InsertLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Insert the lines typed after this command above [line]."
   },
   "ia[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "iabc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all abbreviations for the mode of the command: Insert and Command-line, Insert only, or Command-line only. Use <buffer> for buffer-local ones."
   },
   "ij[ump]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeJumpCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to a match in the included files. Accepted and does nothing, as :isearch is."
   },
   "il[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the matches in the included files. Accepted and does nothing, as :isearch is."
   },
   "im[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "imapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "ino[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "inorea[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "int[ro]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IntroCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the intro screen. Accepted and does nothing."
   },
   "is[earch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeSearchCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Search the included files. Accepted and does nothing: there is no include search."
   },
   "isp[lit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.IncludeSplitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split and jump to a match in the included files. Accepted and does nothing, as :isearch is."
   },
   "iu[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "iuna[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove abbreviation {lhs} for the mode of the command. Use <buffer> to remove a buffer-local abbreviation."
   },
   "j[oin]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.JoinLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Join the lines in [range], or [count] lines starting at the last line in [range]. With [!], do not insert or remove any spaces."
   },
   "ju[mps]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.JumpsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the jump list, marking the current position with >."
   },
   "k": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set mark {a-zA-Z'} at the last line of [range] (default current line), column 0."
   },
   "kee[pmarks]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepMarksCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} keeping the marks where they are, for a filter command."
   },
   "keepa[lt]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepAltCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without changing the alternate file."
   },
   "keepj[umps]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepJumpsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without changing the jump list or the change list."
   },
   "keepp[atterns]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.KeepPatternsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without changing the last search pattern."
   },
   "lN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] previous error in the location list."
   },
   "l[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the lines in [range] with unprintable characters shown as in 'list' mode."
   },
   "la[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the last file, buffer or tab."
   },
   "ladde[xpr]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LAddExprCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read errors from {expr} and add them to the location list without jumping."
   },
   "lan[guage]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LanguageCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set the language used for messages, time or collation. Accepted and does nothing here."
   },
   "lat[er]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LaterCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to a newer state of the text, undoing an :earlier. Takes the same counts and time arguments."
   },
   "lb[uffer]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LBufferCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read the lines of a buffer into the location list of the current window."
   },
   "lc[d]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory for this window or tab only."
   },
   "lch[dir]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory for this window or tab only."
   },
   "lcl[ose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the location list window."
   },
   "le[ft]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LeftAlignCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Left-align the lines in [range], with an indent of [indent] spaces."
   },
   "lefta[bove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.AboveLeftCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window above or left of the current one."
   },
   "let": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LetCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Assign the value of {expr} to the variable, option or register {var}. Operators like += and .= are supported."
   },
   "lex[pr]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LExprCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read errors from {expr} into the location list of the current window."
   },
   "lf[ile]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read the error file into the location list of the current window."
   },
   "lfir[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] in the location list, the first by default."
   },
   "lgr[ep]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LGrepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run 'grepprg' and read its matches into the location list of the current window."
   },
   "ll": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LLCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [nr] in the location list, or the current one again."
   },
   "lla[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LLastCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] from the end of the location list, the last by default."
   },
   "lli[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the location list of the current window."
   },
   "lm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "lmak[e]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LMakeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run 'makeprg' and read its errors into the location list of the current window."
   },
   "lmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "ln[oremap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "lne[xt]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LNextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] next error in the location list."
   },
   "loadk[eymap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
     "standardConstructor": false,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "In a sourced keymap file, start the list of {from} {to} key pairs used for language mappings (:lmap)."
   },
   "loadv[iew]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LoadViewCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Restore a view saved by :mkview. Accepted and does nothing, as :mkview is."
   },
   "lockm[arks]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockMarksCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without the marks following the lines it changes."
   },
   "lockv[ar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LockVarCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Lock the variable {name} so it can no longer be changed. A [depth] also locks nested List and Dictionary items."
   },
   "lop[en]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the location list of the current window."
   },
   "lp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count] previous error in the location list."
   },
   "lrewind": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to error [count] in the location list, the first by default."
   },
   "ls": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BufferListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List all open buffers, optionally filtered by the flags +, =, a, % and #."
   },
   "lt[ag]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationTagCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the tag [name] and fill the location list with the matches."
   },
   "lu[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "lua": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LuaCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Lua. Accepted and does nothing: there is no Lua interface."
   },
   "lv[imgrep]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationVimGrepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :vimgrep, filling the location list of the current window."
   },
   "lvimgrepa[dd]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.LocationVimGrepAddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :lvimgrep, adding to the location list rather than replacing it."
   },
   "lw[indow]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the location list of the current window."
   },
   "m[ove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MoveTextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Move the lines in [range] to below line {address}."
   },
   "ma[rk]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarkCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set mark {a-zA-Z'} at the last line of [range] (default current line), column 0."
   },
   "mak[e]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run 'makeprg', read its errors into the quickfix list and jump to the first."
   },
   "map": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "mapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "marks": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MarksCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List all marks, or only the marks named in {arg}."
   },
   "mat[ch]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MatchCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Highlight everything matching /{pattern}/ with {group}, until :match none."
   },
   "mes[sages]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MessagesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the message history. With [clear] empty it."
   },
   "mk[exrc]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkExrcCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write the current mappings and settings to [file], like :mkvimrc with an ex name."
   },
   "mks[ession]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeSessionCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write a session file. Accepted and does nothing: the layout is VS Code's."
   },
   "mksp[ell]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MakeSpellCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Compile a spell file. Accepted and does nothing, as :spelldump is."
   },
   "mkv[imrc]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MkVimrcCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write the current mappings and settings to [file], ~/.vimperorrc by default."
   },
   "mkvie[w]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.MakeViewCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the view of the window to a file. Accepted and does nothing: the layout is VS Code's."
   },
   "n[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th next editor tab."
   },
   "new": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewWindowCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and open a new, empty buffer in it."
   },
   "nm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "nmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "nn[oremap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "no[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "noa[utocmd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoAutoCmdCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without triggering any autocommand."
   },
   "noh[lsearch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoHLSearchCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Stop highlighting matches of the last search pattern until the next search."
   },
   "norea[bbrev]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.AbbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Define abbreviation {lhs} for {rhs} in Insert and/or Command-line mode; the norea forms are not remapped. Without {rhs}, list matching abbreviations."
   },
   "norm[al]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NormalCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Execute {commands} as Normal mode keys, once for each line in [range]. With [!], mappings are not used."
   },
   "noswapf[ile]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NoSwapFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without a swap file for the buffers it opens."
   },
   "nu[mber]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NumberCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the lines in [range] with their line numbers."
   },
   "nun[map]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "o[pen]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.OpenModeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start open mode. Accepted and does nothing: open mode is not implemented."
   },
   "ol[dfiles]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.OldFilesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the files edited recently."
   },
   "om[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "omapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "on[ly]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.OnlyCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor windows (splits) except the current one."
   },
   "ono[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "opt[ions]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.OptionsWindowCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open the option window. Accepted and does nothing: use :set to see an option."
   },
   "ou[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "ow[nsyntax]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.OwnSyntaxCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Give this window its own syntax. Accepted and does nothing: the language is VS Code's."
   },
   "p[rint]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show [range] lines (default current line) in the output panel, prefixed with line numbers if 'number' is set."
   },
   "pa[ckadd]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PackaddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Load the optional package {name}. Only matchit is supported, which enables the 'matchit' option."
   },
   "packl[oadall]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.PackLoadAllCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Load every package in 'packpath'. Accepted and does nothing: there is no package directory."
   },
   "pc[lose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the preview window. Accepted and does nothing: there is no preview window."
   },
   "pe[rl]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PerlCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Perl. Accepted and does nothing: there is no Perl interface."
   },
   "ped[it]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewEditCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Edit a file in the preview window. Accepted and does nothing, as :pclose is."
   },
   "po[p]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPopCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump [count] entries back (older) in the tag stack, returning to where the tag jump was made."
   },
   "prev[ious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the [count]th previous editor tab, wrapping around at the first one."
   },
   "prof[ile]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ProfileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Profile the Vimscript that runs, and write the report to {file}."
   },
   "ps[earch]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewSearchCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show a match in the preview window. Accepted and does nothing, as :ptag is."
   },
   "ptN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the previous matching tag in the preview window. Accepted and does nothing."
   },
   "pt[ag]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show a tag in the preview window. Accepted and does nothing: there is no preview window."
   },
   "ptf[irst]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the first matching tag in the preview window. Accepted and does nothing."
   },
   "ptj[ump]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagJumpCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to a tag in the preview window. Accepted and does nothing, as :ptag is."
   },
   "ptl[ast]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagLastCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the last matching tag in the preview window. Accepted and does nothing."
   },
   "ptn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagNextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the next matching tag in the preview window. Accepted and does nothing, as :ptag is."
   },
   "ptp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the previous matching tag in the preview window. Accepted and does nothing."
   },
   "ptr[ewind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the first matching tag in the preview window. Accepted and does nothing."
   },
   "pts[elect]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviewTagSelectCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List tags and show one in the preview window. Accepted and does nothing, as :ptag is."
   },
   "pu[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PutLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Put the text from register [x] linewise after [line] (default current line). Use line 0 to put above the first line."
   },
   "pw[d]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PrintWorkingDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print the working directory."
   },
   "py3": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.Python3Command",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Python 3. Accepted and does nothing, as :python is."
   },
   "py[thon]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PythonCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Python. Accepted and does nothing: there is no Python interface."
   },
   "q[uit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.QuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the current editor. :close and :hide behave the same way as :quit in IdeaVim."
   },
   "qa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor windows."
   },
   "quita[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor windows."
   },
   "r[ead]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Insert {file} below the cursor or line [range]; with :read !{cmd}, insert the output of {cmd} instead."
   },
   "rec[over]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RecoverCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Recover a file from a swap file. Accepted and does nothing: there are no swap files."
   },
   "red[o]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Redo one change that was undone."
   },
   "redi[r]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.RedirCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Send the messages that follow to a file, a register or a variable, until :redir END."
   },
   "redr[aw]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedrawCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Redraw the screen. Accepted and does nothing: VS Code paints when it needs to."
   },
   "redraws[tatus]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RedrawStatusCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Redraw the status line. Accepted and does nothing, as :redraw is."
   },
   "reg[isters]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RegistersCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Display the type and contents of all registers, or only of the registers named in {arg}."
   },
   "res[ize]": {
     "class": "com.maddyhome.idea.vim.resize.ResizeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set the window height to N rows or change it by +N or -N; without an argument, maximize it."
   },
   "ret[ab]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RetabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Replace the indentation in [range] to suit a new 'tabstop', given as [new_tabstop]."
   },
   "rew[ind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "ri[ght]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RightAlignCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Right-align the lines in [range] within [width] columns, 'textwidth' by default."
   },
   "rightb[elow]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.BelowRightCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window below or right of the current one."
   },
   "ru[ntime]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.RuntimeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Source {file} from the runtime path. Accepted and does nothing: there is no runtime path."
   },
   "rub[y]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.RubyCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Ruby. Accepted and does nothing: there is no Ruby interface."
   },
   "rund[o]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadUndoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read an undo file. Accepted and does nothing: undo is VS Code's and is not persisted."
   },
   "rv[iminfo]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ReadViminfoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read a viminfo file. Accepted and does nothing: there is no viminfo file."
   },
   "s[ubstitute]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
     "standardConstructor": false,
-    "delimitedSections": 2
+    "delimitedSections": 2,
+    "description": "Substitute {pattern} with {string} in [range] lines, using [flags] (e.g. g for all matches, i to ignore case, c to confirm)."
   },
   "san[dbox]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SandboxCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} in a sandbox, where it cannot change anything outside the text."
   },
   "sav[eas]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SaveAsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write the buffer to {file} and edit that file from now on."
   },
   "sb[uffer]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitBufferCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and edit the buffer [N] in the new one."
   },
   "sba[ll]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SplitAllBuffersCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open a split window for each buffer in the argument list."
   },
   "scr[iptnames]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ScriptNamesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the scripts that have been sourced, in the order they were."
   },
   "scripte[ncoding]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.ScriptEncodingCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Specify the character encoding used in the script. Accepted for compatibility; it does nothing in IdeaVim."
   },
   "se[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show or set options. Without arguments show all options that differ from their default value. See :set {option}, no{option}, {option}={value}."
   },
   "setg[lobal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetglobalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :set, but only show or set the global value of an option."
   },
   "sethandler": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetHandlerCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Choose whether Vim or the IDE handles a shortcut, per mode, e.g. :sethandler <C-V> n-v:vim i:ide. Without a shortcut, apply to all conflicting shortcuts."
   },
   "setl[ocal]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SetlocalCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :set, but only show or set the value of an option that is local to the current buffer or window."
   },
   "sf[ind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitFindCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and edit the file found along 'path'."
   },
   "sh[ell]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ShellCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open the IDE's Terminal tool window."
   },
   "sign": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SignCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Place, list and remove the markers Vim calls signs, in the gutter."
   },
   "sil[ent]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SilentCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} without its messages. With [!] errors are silenced too."
   },
   "sl[eep]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SleepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Do nothing for [count] seconds, or {N}m milliseconds."
   },
   "sm[agic]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteMagicCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :substitute, with 'magic' on for the pattern whatever the option says."
   },
   "smap": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "smapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "smile": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SmileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Display some ASCII art, chosen according to the type of the current file."
   },
   "sn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitNextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and edit the [count] next file in the argument list."
   },
   "sno[magic]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteNoMagicCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :substitute, with 'magic' off for the pattern whatever the option says."
   },
   "snor[emap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "so[urce]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SourceCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Read and execute Ex commands from the file {file}."
   },
   "sor[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SortCommand",
     "standardConstructor": true,
-    "delimitedSections": 1
+    "delimitedSections": 1,
+    "description": "Sort lines in [range] (default: the selected lines, or the whole file). [!] reverses the order; flags: i ignore case, n numeric, u unique, r sort on /{pattern}/ match."
   },
   "sp[lit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Split the current editor window in two, horizontally for :split and vertically for :vsplit. With [file], open it in the new split."
   },
   "spe[llgood]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellGoodCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add {word} to the list of correctly spelled words."
   },
   "spelld[ump]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellDumpCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Dump the word list into a buffer. Accepted and does nothing: the spell checker is VS Code's."
   },
   "spelli[nfo]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellInfoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show which spell files are used. Accepted and does nothing, as :spelldump is."
   },
   "spellr[epall]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellRepeatAllCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Repeat the last spelling correction everywhere. Accepted and does nothing."
   },
   "spellra[re]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SpellRareCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Mark a word as rare. Accepted and does nothing, as :spelldump is."
   },
   "spellu[ndo]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellUndoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Undo :spellgood or :spellwrong for {word}."
   },
   "spellw[rong]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SpellWrongCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Add {word} to the list of misspelled words."
   },
   "spr[evious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and edit the [count] previous file in the argument list."
   },
   "st[op]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Suspend the editor. Accepted and does nothing: there is no shell to return to."
   },
   "sta[g]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitTagCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and jump to the tag in the new one."
   },
   "star[tinsert]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StartInsertCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start Insert mode, as with i. With [!], append at the end of the line, as with A."
   },
   "startg[replace]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StartVirtualReplaceCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start Replace mode with the Visual selection, from where the cursor is."
   },
   "startr[eplace]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StartReplaceCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Start Replace mode, as with R. With [!], start at the end of the line."
   },
   "stopi[nsert]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.StopInsertCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Stop Insert or Replace mode and return to Normal mode."
   },
   "sun[hide]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SplitUnhideCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open a split window for each loaded buffer."
   },
   "sunm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "sus[pend]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SuspendCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Suspend the editor. Accepted and does nothing, as :stop is."
   },
   "sv[iew]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitViewCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window and edit [file] read-only in the new one."
   },
   "sy[ntax]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.SyntaxCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set the syntax of the buffer. VS Code decides the language; :set syntax={name} is the one that works."
   },
   "t": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CopyTextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Copy the lines in [range] to below line {address}."
   },
   "tN[ext]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the [count] previous matching tag."
   },
   "ta[g]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump [count] entries forward (newer) in the tag stack."
   },
   "tab": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabModifierCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command open a new tab instead of a new window."
   },
   "tabN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the previous editor tab, wrapping around at the first one. With [count], go [count] tabs back."
   },
   "tabc[lose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabCloseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close the current editor tab, or the tab given by {arg}: a tab number, +N or -N relative to the current tab, or the last tab."
   },
   "tabd[o]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabDoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} in every tab."
   },
   "tabe[dit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in a new tab, or an empty buffer when no file is given."
   },
   "tabf[ind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabFindFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Find {file} along 'path' and open it in a new tab."
   },
   "tabfir[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "tabl[ast]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectLastFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the last file, buffer or tab."
   },
   "tabm[ove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabMoveCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Move the current editor tab to after tab {N}, or +N/-N positions relative to its current place. Without {N}, move it to the end."
   },
   "tabn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NextTabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the next editor tab, wrapping around at the last one. With {N}, go to tab {N} (first tab is 1)."
   },
   "tabnew": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewTabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in a new tab, or an empty buffer when no file is given."
   },
   "tabo[nly]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabOnlyCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor tabs except the current one."
   },
   "tabp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.PreviousTabCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the previous editor tab, wrapping around at the first one. With [count], go [count] tabs back."
   },
   "tabr[ewind]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SelectFirstFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Go to the first file, buffer or tab."
   },
   "tabs": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TabsCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the tabs and the windows in each, with the current one marked."
   },
   "tags": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagStackCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show the contents of the tag stack. The current entry is marked with >."
   },
   "tc[l]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TclCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run Tcl. Accepted and does nothing: there is no Tcl interface."
   },
   "tcd": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory for this window or tab only."
   },
   "tch[dir]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLocalDirectoryCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Change the working directory for this window or tab only."
   },
   "tearo[ff]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TearOffCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Tear a menu off. Accepted and does nothing: there are no Vim menus here."
   },
   "tf[irst]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to tag [count] of the matches, the first by default."
   },
   "tj[ump]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagJumpCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the tag [name], listing the matches when there is more than one."
   },
   "tl[ast]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagLastCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the last of the matching tags."
   },
   "tm[enu]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TipMenuCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Set a menu tooltip. Accepted and does nothing, as the menu commands are."
   },
   "tn[ext]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagNextCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the [count] next matching tag."
   },
   "to[pleft]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TopLeftCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Make the following command put its new window at the very top or far left."
   },
   "tp[revious]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagPreviousCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to the [count] previous matching tag."
   },
   "tr[ewind]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagFirstCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Jump to tag [count] of the matches, the first by default."
   },
   "trus[t]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TrustCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Mark a script as trusted. Accepted and does nothing: there is no trust database."
   },
   "ts[elect]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.TagSelectCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the tags matching [name] and let one be chosen."
   },
   "tu[nmenu]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.TipUnmenuCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Remove a menu tooltip. Accepted and does nothing, as the menu commands are."
   },
   "u[ndo]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UndoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Undo one change."
   },
   "una[bbreviate]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnabbrevCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove abbreviation {lhs} for the mode of the command. Use <buffer> to remove a buffer-local abbreviation."
   },
   "undoj[oin]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UndoJoinCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Join the next change to the one before it, so one undo takes both back."
   },
   "undol[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UndoListCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "List the undo branches. Accepted and does nothing: undo is VS Code's."
   },
   "unh[ide]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.UnhideCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open a window for each loaded buffer."
   },
   "uni[q]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.UniqCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Remove the repeated lines in [range]. Flags: i ignore case, u only report, r match /{pattern}/."
   },
   "unl[et]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnletCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Delete the variables named. With [!] a variable that does not exist is not an error."
   },
   "unlo[ckvar]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnlockVarCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Unlock the variable {name}, so it can be changed again. A [depth] also unlocks nested items."
   },
   "unm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "uns[ilent]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UnsilentCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} with its messages shown, inside a :silent."
   },
   "up[date]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.UpdateCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file, but only if it has been modified."
   },
   "v[global]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.GlobalCommand",
     "standardConstructor": false,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Execute the Ex command [cmd] (default :p) on the lines in [range] (default whole file) that match {pattern}. With :g! or :v, use the lines that do not match."
   },
   "ve[rsion]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VersionCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show which Vimperor this is, and which editor it is running in."
   },
   "verb[ose]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.VerboseCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} with 'verbose' set to [count], 1 by default."
   },
   "vert[ical]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.VerticalCommand",
     "standardConstructor": true,
-    "barSeparates": false
+    "barSeparates": false,
+    "description": "Run :resize {cmd} on the window width instead of its height, e.g. :vertical resize +5."
   },
   "vi[sual]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in the current window."
   },
   "vie[w]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.EditFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Open [file] in the current window."
   },
   "vim[grep]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VimGrepCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Search for {pattern} in {file}... with Vim's own matcher and fill the quickfix list."
   },
   "vimgrepa[dd]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.VimGrepAddCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Like :vimgrep, adding to the quickfix list rather than replacing it."
   },
   "viu[sage]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ViUsageCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Show Normal mode help. Accepted and does nothing: :help lists the commands instead."
   },
   "vm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "vmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "vn[oremap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "vne[w]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.NewVerticalWindowCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Split the window vertically and open a new, empty buffer in it."
   },
   "vs[plit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SplitCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Split the current editor window in two, horizontally for :split and vertically for :vsplit. With [file], open it in the new split."
   },
   "vu[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "wN[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and go to the [count]th previous editor tab."
   },
   "w[rite]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file. With {file}, write [range] lines (default all lines) to {file}; use [!] to overwrite an existing file."
   },
   "wa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteAllCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save all modified files."
   },
   "win[size]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinSizeCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Resize the editor window. Accepted and does nothing, as :winpos is."
   },
   "winc[md]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinCmdCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run the window command {arg}, as if CTRL-W {arg} had been typed."
   },
   "windo": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinDoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Run {cmd} in every window."
   },
   "winp[os]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WinPosCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Move the editor window. Accepted and does nothing: the window is VS Code's."
   },
   "wn[ext]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteNextFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and go to the [count]th next editor tab."
   },
   "wp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WritePreviousFileCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and go to the [count]th previous editor tab."
   },
   "wq": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and close its editor."
   },
   "wqa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor windows."
   },
   "wu[ndo]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteUndoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write an undo file. Accepted and does nothing, as :rundo is."
   },
   "wv[iminfo]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteViminfoCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Write a viminfo file. Accepted and does nothing, as :rviminfo is."
   },
   "x[it]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.WriteQuitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Save the current file and close its editor."
   },
   "xa[ll]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ExitCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Close all editor windows."
   },
   "xm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "xmapc[lear]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapClearCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove all mappings for the modes of the command, e.g. :nmapclear for Normal mode. :mapclear! clears Insert and Command-line mode mappings."
   },
   "xn[oremap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Map key sequence {lhs} to {rhs} in the modes of the command. The nore forms are not remapped. With only {lhs}, or nothing, list matching mappings."
   },
   "xu[nmap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.UnMapCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Remove the mapping of {lhs} for the modes of the command. :unmap! removes it from Insert and Command-line modes."
   },
   "y[ank]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.YankLinesCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Yank [range] lines (default current line) into register [x]. A [count] yanks that many lines starting with the last line in [range]."
   },
   "z": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ZCommand",
-    "standardConstructor": true
+    "standardConstructor": true,
+    "description": "Print a window of text around the line in [range], the way :z does in ex."
   },
   "~": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.SubstituteCommand",
-    "standardConstructor": false
+    "standardConstructor": false,
+    "description": "Repeat the last :substitute in [range] lines. :& uses the same search pattern, :~ uses the last used search pattern. [&] keeps the flags."
   }
 }

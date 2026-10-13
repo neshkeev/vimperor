@@ -225,21 +225,33 @@ sealed class VimGrepCommandBase(
 }
 
 /** see "h :vimgrep" */
-@ExCommand(command = "vim[grep]")
+@ExCommand(
+  command = "vim[grep]",
+  description = "Search for {pattern} in {file}... with Vim's own matcher and fill the quickfix list.",
+)
 data class VimGrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   VimGrepCommandBase(range, modifier, argument, isLocation = false, adds = false)
 
 /** see "h :vimgrepadd" */
-@ExCommand(command = "vimgrepa[dd]")
+@ExCommand(
+  command = "vimgrepa[dd]",
+  description = "Like :vimgrep, adding to the quickfix list rather than replacing it.",
+)
 data class VimGrepAddCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   VimGrepCommandBase(range, modifier, argument, isLocation = false, adds = true)
 
 /** see "h :lvimgrep" */
-@ExCommand(command = "lv[imgrep]")
+@ExCommand(
+  command = "lv[imgrep]",
+  description = "Like :vimgrep, filling the location list of the current window.",
+)
 data class LocationVimGrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   VimGrepCommandBase(range, modifier, argument, isLocation = true, adds = false)
 
 /** see "h :lvimgrepadd" */
-@ExCommand(command = "lvimgrepa[dd]")
+@ExCommand(
+  command = "lvimgrepa[dd]",
+  description = "Like :lvimgrep, adding to the location list rather than replacing it.",
+)
 data class LocationVimGrepAddCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   VimGrepCommandBase(range, modifier, argument, isLocation = true, adds = true)

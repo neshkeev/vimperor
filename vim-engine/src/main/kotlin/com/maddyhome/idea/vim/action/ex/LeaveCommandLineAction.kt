@@ -21,7 +21,11 @@ import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 import com.maddyhome.idea.vim.history.VimHistory
 
-@CommandOrMotion(keys = ["<Esc>", "<C-[>", "<C-C>"], modes = [Mode.CMD_LINE])
+@CommandOrMotion(
+  keys = ["<Esc>", "<C-[>", "<C-C>"],
+  modes = [Mode.CMD_LINE],
+  description = "Abandon the command line without executing it and return to the previous mode.",
+)
 class LeaveCommandLineAction : VimActionHandler.SingleExecution() {
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_END_EX)
   override val type: Command.Type = Command.Type.MODE_CHANGE

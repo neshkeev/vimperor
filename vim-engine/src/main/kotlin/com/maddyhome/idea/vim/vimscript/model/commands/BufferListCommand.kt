@@ -34,7 +34,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * @author John Weigel
  */
-@ExCommand(command = "ls,files,buffers")
+@ExCommand(
+  command = "ls,files,buffers",
+  description = "List all open buffers, optionally filtered by the flags +, =, a, % and #.",
+)
 data class BufferListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier) {
 

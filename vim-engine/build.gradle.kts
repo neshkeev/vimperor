@@ -168,7 +168,10 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
     val commandEntries = grouped.entries.sortedBy { it.key }.joinToString("\n") { (className, rows) ->
       val keys = rows.map { quote(it.getValue("keys")) }.joinToString(", ")
       val modes = quote(rows.first().getValue("modes"))
-      "  entry(listOf($keys), $modes, ${quote(className)}) { ${escapeQualifiedName(className)}() },"
+      // The line `:help` shows. Defaulted in the JSON, so a command nobody has described reads back
+      // as empty here and is left out of the help - see `HelpText`.
+      val description = quote(rows.first()["description"] as? String ?: "")
+      "  entry(listOf($keys), $modes, ${quote(className)}, $description) { ${escapeQualifiedName(className)}() },"
     }
     val functionEntries = functions.entries.sortedBy { it.key }.joinToString("\n") { (name, className) ->
       "  LazyVimscriptFunction(${quote(name)}) { ${escapeQualifiedName(className)}() },"
@@ -193,7 +196,9 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
       // reads back as `true, 0` here. See `ExCommandBean`.
       val barSeparates = bean["barSeparates"] as? Boolean ?: true
       val delimitedSections = (bean["delimitedSections"] as? Number)?.toInt() ?: 0
-      "  ${quote(name)} to LazyExCommandInstance($className::class, $factory, $barSeparates, $delimitedSections),"
+      val description = quote(bean["description"] as? String ?: "")
+      "  ${quote(name)} to LazyExCommandInstance(" +
+        "$className::class, $factory, $barSeparates, $delimitedSections, $description),"
     }
 
     val out = outputDir.get().file("com/maddyhome/idea/vim/GeneratedEngineRegistry.kt").asFile
@@ -224,6 +229,7 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
         appendLine("  val keys: List<String>,")
         appendLine("  val modes: String,")
         appendLine("  val className: String,")
+        appendLine("  val description: String,")
         appendLine("  val factory: () -> EditorActionHandlerBase,")
         appendLine(")")
         appendLine()
@@ -231,8 +237,9 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
         appendLine("  keys: List<String>,")
         appendLine("  modes: String,")
         appendLine("  className: String,")
+        appendLine("  description: String,")
         appendLine("  factory: () -> EditorActionHandlerBase,")
-        appendLine(") = GeneratedCommandEntry(keys, modes, className, factory)")
+        appendLine(") = GeneratedCommandEntry(keys, modes, className, description, factory)")
         appendLine()
         appendLine("internal val GENERATED_ENGINE_COMMANDS: List<GeneratedCommandEntry> = listOf(")
         appendLine(commandEntries)
@@ -251,6 +258,7 @@ val generateJsCommandRegistry = tasks.register("generateJsCommandRegistry") {
         appendLine("        it.modes.map { mode -> MappingMode.parseModeChar(mode) }.toSet(),")
         appendLine("        it.className,")
         appendLine("        it.factory,")
+        appendLine("        it.description,")
         appendLine("      )")
         appendLine("    }")
         appendLine("}")

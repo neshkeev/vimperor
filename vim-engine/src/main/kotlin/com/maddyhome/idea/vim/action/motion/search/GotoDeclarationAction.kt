@@ -20,7 +20,11 @@ import com.maddyhome.idea.vim.helper.enumSetOf
 
 // `<C-]>` used to be here. It is a *tag* command - it pushes onto the tag stack so `<C-T>` can
 // walk back - which `gd` and `gD` are not. See TagJumpAction.
-@CommandOrMotion(keys = ["gD", "gd"], modes = [Mode.NORMAL, Mode.VISUAL])
+@CommandOrMotion(
+  keys = ["gD", "gd"],
+  modes = [Mode.NORMAL, Mode.VISUAL],
+  description = "Go to the declaration of the symbol under the cursor using the IDE's Go to Declaration action. Saves the jump position.",
+)
 class GotoDeclarationAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

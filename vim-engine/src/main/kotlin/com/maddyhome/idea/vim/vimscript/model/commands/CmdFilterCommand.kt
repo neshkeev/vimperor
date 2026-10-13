@@ -32,7 +32,11 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * in it is not a hole, it is an absence. Nothing here is IntelliJ-shaped: it is a range, a string,
  * and a process.
  */
-@ExCommand(command = "!", barSeparates = false)
+@ExCommand(
+  command = "!",
+  barSeparates = false,
+  description = "Execute {cmd} in the shell and show its output; with [range], filter those lines through {cmd}.",
+)
 data class CmdFilterCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier) {
 

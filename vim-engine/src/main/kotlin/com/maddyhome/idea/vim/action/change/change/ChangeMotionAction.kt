@@ -21,7 +21,11 @@ import com.maddyhome.idea.vim.command.DuplicableOperatorAction
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["c"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["c"],
+  modes = [Mode.NORMAL],
+  description = "Delete the text moved over by {motion} into register [x] and start Insert mode.",
+)
 class ChangeMotionAction : ChangeInInsertSequenceAction(), DuplicableOperatorAction {
   override val type: Command.Type = Command.Type.CHANGE
   override val flags: MutableSet<CommandFlags> = enumSetOf(FLAG_NO_REPEAT_INSERT)

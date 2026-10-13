@@ -2,2451 +2,2941 @@
   {
     "keys": "!",
     "class": "com.maddyhome.idea.vim.action.change.change.FilterMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Start a command line to filter the lines moved over by {motion} through an external {filter} program."
   },
   {
     "keys": "!",
     "class": "com.maddyhome.idea.vim.action.change.change.FilterVisualLinesAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Start a command line to filter the highlighted lines through an external {filter} program."
   },
   {
     "keys": "#",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchWholeWordBackwardAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Search backward for the [count]'th occurrence of the whole word under or after the cursor."
   },
   {
     "keys": "$",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastColumnAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move to the end of the line, [count] - 1 lines downward."
   },
   {
     "keys": "$",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastColumnOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move to the end of the line, [count] - 1 lines downward. The end-of-line character is not included."
   },
   {
     "keys": "%",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionPercentOrMatchAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Jump to the matching bracket, brace or parenthesis of the one under or after the cursor. With [count], go to [count] percent of the file (linewise)."
   },
   {
     "keys": "&",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeLastSearchReplaceAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Repeat the last :substitute on the current line, without its flags."
   },
   {
     "keys": "'",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoFileMarkLineAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Jump to the first non-blank character of the line containing mark {mark}."
   },
   {
     "keys": "'",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoMarkLineAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Jump to the first non-blank character of the line containing mark {mark}."
   },
   {
     "keys": "(",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSentencePreviousStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sentences backward."
   },
   {
     "keys": ")",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSentenceNextStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sentences forward."
   },
   {
     "keys": "*",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchWholeWordForwardAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Search forward for the [count]'th occurrence of the whole word under or after the cursor."
   },
   {
     "keys": "+",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownFirstNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, to the first non-blank character, linewise."
   },
   {
     "keys": ",",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastMatchCharReverseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Repeat the latest f, t, F or T [count] times in the opposite direction."
   },
   {
     "keys": "-",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionUpFirstNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines up, on the first non-blank character (linewise)."
   },
   {
     "keys": "/",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchEntryFwdAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Search forward for the [count]'th occurrence of {pattern}, entered on the command line."
   },
   {
     "keys": "0",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the first character of the line."
   },
   {
     "keys": ":",
     "class": "com.maddyhome.idea.vim.action.ex.ExEntryAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Start entering an Ex command. With [count] or from Visual mode, a matching line range is filled in."
   },
   {
     "keys": ";",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastMatchCharAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Repeat the latest f, t, F or T [count] times."
   },
   {
     "keys": "<",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftLeftMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Shift the lines covered by {motion} one 'shiftwidth' leftwards."
   },
   {
     "keys": "<",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftLeftVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Shift the highlighted lines [count] 'shiftwidth' leftwards."
   },
   {
     "keys": "<BS>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertBackspaceAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, delete the character before the cursor. In Replace mode, restore the original character."
   },
   {
     "keys": "<BS>",
     "class": "com.maddyhome.idea.vim.action.ex.DeletePreviousCharAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, delete the character before the cursor. Leave Command-line mode if the line is empty."
   },
   {
     "keys": "<BS>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionBackspaceAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the left. Wrap to the previous line if 'whichwrap' contains b."
   },
   {
     "keys": "<BS>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionBackspaceOpPendingModeAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the left. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<BS>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectBackspaceAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, delete the selected text and leave Select mode."
   },
   {
     "keys": "<C-2>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertPreviousInsertExitAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the previously inserted text and stop inserting."
   },
   {
     "keys": "<C-6>",
     "class": "com.maddyhome.idea.vim.action.file.FilePreviousAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Switch to the previously active editor tab (the alternate file)."
   },
   {
     "keys": "<C-@>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertPreviousInsertExitAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the previously inserted text and stop inserting."
   },
   {
     "keys": "<C-A>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeNumberIncAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Add [count] to the number or alphabetic character at or after the cursor."
   },
   {
     "keys": "<C-A>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeVisualNumberIncAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Add [count] to the numbers in the highlighted text."
   },
   {
     "keys": "<C-A>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertPreviousInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the previously inserted text."
   },
   {
     "keys": "<C-B>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToLineStart",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor to the start of the command line."
   },
   {
     "keys": "<C-B>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageUpAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] pages backwards (upwards) in the buffer."
   },
   {
     "keys": "<C-C>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertExitModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "Leave Insert mode and return to Normal mode."
   },
   {
     "keys": "<C-C>",
     "class": "com.maddyhome.idea.vim.action.ex.LeaveCommandLineAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "Abandon the command line without executing it and return to the previous mode."
   },
   {
     "keys": "<C-C>",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualExitModeAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Stop Visual mode and return to Normal mode."
   },
   {
     "keys": "<C-D>",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftLeftLinesAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, delete one 'shiftwidth' of indent at the start of the current line."
   },
   {
     "keys": "<C-D>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollHalfPageDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] lines downwards (default: half a screen), moving the cursor the same number of lines. [count] sets 'scroll'."
   },
   {
     "keys": "<C-Down>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.CtrlDownAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Run the IDE action bound to Ctrl+Down in the keymap, such as moving to the next method."
   },
   {
     "keys": "<C-E>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertCharacterBelowCursorAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the character found below the cursor."
   },
   {
     "keys": "<C-E>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToLineEnd",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor to the end of the command line."
   },
   {
     "keys": "<C-E>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLineDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] lines downwards in the buffer, revealing lines below the window."
   },
   {
     "keys": "<C-End>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineLastEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the end of line [count], default the last character of the file."
   },
   {
     "keys": "<C-End>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineLastEndInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor to the end of line [count], default the end of the last line."
   },
   {
     "keys": "<C-F>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertFilePathCompletionAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "After CTRL-X in Insert mode, complete the file name before the cursor using a completion popup."
   },
   {
     "keys": "<C-F>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] pages forwards (downwards) in the buffer."
   },
   {
     "keys": "<C-G>",
     "class": "com.maddyhome.idea.vim.action.ex.SearchAgainNextActionCommandLine",
-    "modes": "C"
+    "modes": "C",
+    "description": "While entering a search pattern with 'incsearch', move to the next match."
   },
   {
     "keys": "<C-G>",
     "class": "com.maddyhome.idea.vim.action.file.FileGetFileInfoAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Display the current file name, cursor position and file status. With a [count], show the full path of the file."
   },
   {
     "keys": "<C-G>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectToggleVisualMode",
-    "modes": "XS"
+    "modes": "XS",
+    "description": "Toggle between Visual mode and Select mode."
   },
   {
     "keys": "<C-G>u",
     "class": "com.maddyhome.idea.vim.action.change.BreakUndoSequenceAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, close the current undo step and start a new one."
   },
   {
     "keys": "<C-H>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertBackspaceAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, delete the character before the cursor. In Replace mode, restore the original character."
   },
   {
     "keys": "<C-H>",
     "class": "com.maddyhome.idea.vim.action.ex.DeletePreviousCharAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, delete the character before the cursor. Leave Command-line mode if the line is empty."
   },
   {
     "keys": "<C-H>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionBackspaceAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the left. Wrap to the previous line if 'whichwrap' contains b."
   },
   {
     "keys": "<C-H>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionBackspaceOpPendingModeAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the left. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<C-Home>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineFirstAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to line [count], default the first line. The cursor goes to the first non-blank character unless 'startofline' is off."
   },
   {
     "keys": "<C-Home>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineFirstInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor to the start of line [count], default the first line."
   },
   {
     "keys": "<C-I>",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionJumpNextAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Go to the [count]th newer position in the jump list."
   },
   {
     "keys": "<C-J>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertEnterAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, begin a new line."
   },
   {
     "keys": "<C-J>",
     "class": "com.maddyhome.idea.vim.action.ex.ProcessExEntryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, execute the entered Ex command or search for the entered pattern."
   },
   {
     "keys": "<C-J>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnterAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, replace the selected text with a line break."
   },
   {
     "keys": "<C-J>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, linewise."
   },
   {
     "keys": "<C-K>",
     "class": "com.maddyhome.idea.vim.action.change.insert.CmdLineCompletedDigraphAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, enter digraph {char1}{char2}."
   },
   {
     "keys": "<C-K>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertCompletedDigraphAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, enter digraph {char1}{char2}."
   },
   {
     "keys": "<C-L>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertLineCompletionAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "After CTRL-X in Insert mode, complete the whole line from matching lines in the buffer using a completion popup."
   },
   {
     "keys": "<C-Left>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToPreviousBigWordAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one WORD left."
   },
   {
     "keys": "<C-Left>",
     "class": "com.maddyhome.idea.vim.action.motion.select.motion.SelectMotionBigWordLeftAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, move [count] WORDS backward, extending the selection."
   },
   {
     "keys": "<C-Left>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] WORDS backward."
   },
   {
     "keys": "<C-Left>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordLeftInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor [count] words backward."
   },
   {
     "keys": "<C-M>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertEnterAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, begin a new line."
   },
   {
     "keys": "<C-M>",
     "class": "com.maddyhome.idea.vim.action.ex.ProcessExEntryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, execute the entered Ex command or search for the entered pattern."
   },
   {
     "keys": "<C-M>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnterAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, replace the selected text with a line break."
   },
   {
     "keys": "<C-M>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownFirstNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, to the first non-blank character, linewise."
   },
   {
     "keys": "<C-N>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectNewerHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the next (newer) command line from history."
   },
   {
     "keys": "<C-N>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownCtrlNAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, linewise. With a completion popup open, select the next item instead."
   },
   {
     "keys": "<C-N>",
     "class": "com.maddyhome.idea.vim.action.window.LookupDownAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, invoke the IDE action that <C-N> is bound to in the IDE keymap, e.g. to move down in a completion popup."
   },
   {
     "keys": "<C-O>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertSingleCommandAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, execute one Normal mode command and then return to Insert mode."
   },
   {
     "keys": "<C-O>",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionJumpPreviousAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Go to the [count]th older position in the jump list."
   },
   {
     "keys": "<C-O>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectToggleSingleVisualCommandAction",
-    "modes": "SX"
+    "modes": "SX",
+    "description": "In Select mode, switch to Visual mode for the duration of one command, then return to Select mode."
   },
   {
     "keys": "<C-P>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectOlderHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the previous (older) command line from history."
   },
   {
     "keys": "<C-P>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionUpCtrlPAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines up (linewise). With a completion popup open, select the previous item in the popup instead."
   },
   {
     "keys": "<C-P>",
     "class": "com.maddyhome.idea.vim.action.window.LookupUpAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, invoke the IDE action that <C-P> is bound to in the IDE keymap, e.g. to move up in a completion popup."
   },
   {
     "keys": "<C-PageDown>",
     "class": "com.maddyhome.idea.vim.action.window.tabs.InsertNextTabAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, go to the next editor tab, wrapping around from the last to the first, without leaving Insert mode."
   },
   {
     "keys": "<C-PageDown>",
     "class": "com.maddyhome.idea.vim.action.window.tabs.NextTabAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the next editor tab, wrapping around from the last to the first. With [count], go to tab page [count]."
   },
   {
     "keys": "<C-PageUp>",
     "class": "com.maddyhome.idea.vim.action.window.tabs.InsertPreviousTabAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, go to the previous editor tab, wrapping around from the first to the last, without leaving Insert mode."
   },
   {
     "keys": "<C-PageUp>",
     "class": "com.maddyhome.idea.vim.action.window.tabs.PreviousTabAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the previous editor tab, wrapping around from the first to the last. With [count], go [count] tabs back."
   },
   {
     "keys": "<C-Q>",
     "class": "com.maddyhome.idea.vim.action.change.insert.CmdLineCompletedLiteralAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the next non-digit character literally, or a character by its decimal, octal or hex code."
   },
   {
     "keys": "<C-Q>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertCompletedLiteralAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the next non-digit character literally, or a character by its decimal, octal or hex code."
   },
   {
     "keys": "<C-R>",
     "class": "com.maddyhome.idea.vim.action.change.RedoAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Redo [count] changes that were undone."
   },
   {
     "keys": "<C-R>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertRegisterAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the contents of {register}. With = as the register, evaluate an expression and insert the result."
   },
   {
     "keys": "<C-R>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertRegisterAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the contents of {register} as if typed."
   },
   {
     "keys": "<C-R><C-A>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertBigWordUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the WORD under the cursor in the editor."
   },
   {
     "keys": "<C-R><C-F>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertFilenameUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the file name under the cursor in the editor."
   },
   {
     "keys": "<C-R><C-L>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertCurrentLineAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the text of the current line in the editor."
   },
   {
     "keys": "<C-R><C-O>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertRegisterLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the contents of {register} literally, without interpreting special characters."
   },
   {
     "keys": "<C-R><C-O><C-A>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertBigWordUnderCaretLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the WORD under the cursor in the editor literally."
   },
   {
     "keys": "<C-R><C-O><C-F>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertFilenameUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the file name under the cursor in the editor."
   },
   {
     "keys": "<C-R><C-O><C-L>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertCurrentLineLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the text of the current line in the editor literally."
   },
   {
     "keys": "<C-R><C-O><C-W>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertWordUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the word under the cursor in the editor, skipping any part of it already typed."
   },
   {
     "keys": "<C-R><C-R>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertRegisterLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the contents of {register} literally, without interpreting special characters."
   },
   {
     "keys": "<C-R><C-R><C-A>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertBigWordUnderCaretLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the WORD under the cursor in the editor literally."
   },
   {
     "keys": "<C-R><C-R><C-F>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertFilenameUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the file name under the cursor in the editor."
   },
   {
     "keys": "<C-R><C-R><C-L>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertCurrentLineLiterallyAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the text of the current line in the editor literally."
   },
   {
     "keys": "<C-R><C-R><C-W>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertWordUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the word under the cursor in the editor, skipping any part of it already typed."
   },
   {
     "keys": "<C-R><C-W>",
     "class": "com.maddyhome.idea.vim.action.ex.InsertWordUnderCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the word under the cursor in the editor, skipping any part of it already typed."
   },
   {
     "keys": "<C-Right>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToNextBigWordAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one WORD right."
   },
   {
     "keys": "<C-Right>",
     "class": "com.maddyhome.idea.vim.action.motion.select.motion.SelectMotionBigWordRightAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, move [count] WORDS forward, extending the selection."
   },
   {
     "keys": "<C-Right>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] WORDS forward."
   },
   {
     "keys": "<C-Right>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordRightInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor [count] words forward."
   },
   {
     "keys": "<C-S-2>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertPreviousInsertExitAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the previously inserted text and stop inserting."
   },
   {
     "keys": "<C-S-6>",
     "class": "com.maddyhome.idea.vim.action.file.FilePreviousAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Switch to the previously active editor tab (the alternate file)."
   },
   {
     "keys": "<C-T>",
     "class": "com.github.neshkeev.vimperor.tags.TagPopStackAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Jump back to the [count]th older entry in the tag stack."
   },
   {
     "keys": "<C-T>",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftRightLinesAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert one 'shiftwidth' of indent at the start of the current line."
   },
   {
     "keys": "<C-T>",
     "class": "com.maddyhome.idea.vim.action.ex.SearchAgainPreviousActionCommandLine",
-    "modes": "C"
+    "modes": "C",
+    "description": "While entering a search pattern with 'incsearch', move to the previous match."
   },
   {
     "keys": "<C-U>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertDeleteInsertedTextAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, delete all entered text before the cursor in the current line, or the indented text if none was entered."
   },
   {
     "keys": "<C-U>",
     "class": "com.maddyhome.idea.vim.action.ex.DeleteToCaretAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, delete all text between the start of the line and the cursor."
   },
   {
     "keys": "<C-U>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollHalfPageUpAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] lines upwards (default: half a screen), moving the cursor the same number of lines. [count] sets 'scroll'."
   },
   {
     "keys": "<C-Up>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.CtrlUpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Run the IDE action bound to Ctrl+Up in the keymap, such as moving to the previous method."
   },
   {
     "keys": "<C-V>",
     "class": "com.maddyhome.idea.vim.action.change.insert.CmdLineCompletedLiteralAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, insert the next non-digit character literally, or a character by its decimal, octal or hex code."
   },
   {
     "keys": "<C-V>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertCompletedLiteralAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the next non-digit character literally, or a character by its decimal, octal or hex code."
   },
   {
     "keys": "<C-W>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertDeletePreviousWordAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, delete the word before the cursor."
   },
   {
     "keys": "<C-W>",
     "class": "com.maddyhome.idea.vim.action.ex.DeletePreviousWordAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, delete the word before the cursor."
   },
   {
     "keys": "<C-W>+",
     "class": "com.maddyhome.idea.vim.resize.IncreaseWindowHeightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Increase the current window height by [count] rows."
   },
   {
     "keys": "<C-W>-",
     "class": "com.maddyhome.idea.vim.resize.DecreaseWindowHeightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Decrease the current window height by [count] rows."
   },
   {
     "keys": "<C-W><C-H>",
     "class": "com.maddyhome.idea.vim.action.window.WindowLeftAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the left of the current one."
   },
   {
     "keys": "<C-W><C-J>",
     "class": "com.maddyhome.idea.vim.action.window.WindowDownAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows below the current one."
   },
   {
     "keys": "<C-W><C-K>",
     "class": "com.maddyhome.idea.vim.action.window.WindowUpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows above the current one."
   },
   {
     "keys": "<C-W><C-L>",
     "class": "com.maddyhome.idea.vim.action.window.WindowRightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the right of the current one."
   },
   {
     "keys": "<C-W><C-O>",
     "class": "com.maddyhome.idea.vim.action.window.WindowOnlyAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Close all windows (editor splits) except the current one."
   },
   {
     "keys": "<C-W><C-S>",
     "class": "com.maddyhome.idea.vim.action.window.HorizontalSplitAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Split the current window in two, one above the other, showing the same file."
   },
   {
     "keys": "<C-W><C-V>",
     "class": "com.maddyhome.idea.vim.action.window.VerticalSplitAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Split the current window in two side by side, showing the same file."
   },
   {
     "keys": "<C-W><C-W>",
     "class": "com.maddyhome.idea.vim.action.window.WindowNextAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the next window, wrapping around. With [count], go to window [count]."
   },
   {
     "keys": "<C-W><C-_>",
     "class": "com.maddyhome.idea.vim.resize.MaximizeWindowHeightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Set the current window height to [count] rows; without [count], make it as high as possible."
   },
   {
     "keys": "<C-W><Down>",
     "class": "com.maddyhome.idea.vim.action.window.WindowDownAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows below the current one."
   },
   {
     "keys": "<C-W><Left>",
     "class": "com.maddyhome.idea.vim.action.window.WindowLeftAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the left of the current one."
   },
   {
     "keys": "<C-W><Right>",
     "class": "com.maddyhome.idea.vim.action.window.WindowRightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the right of the current one."
   },
   {
     "keys": "<C-W><Up>",
     "class": "com.maddyhome.idea.vim.action.window.WindowUpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows above the current one."
   },
   {
     "keys": "<C-W><lt>",
     "class": "com.maddyhome.idea.vim.resize.DecreaseWindowWidthAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Decrease the current window width by [count] columns."
   },
   {
     "keys": "<C-W>=",
     "class": "com.maddyhome.idea.vim.resize.EqualizeWindowsAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Make all windows (almost) equally high and wide."
   },
   {
     "keys": "<C-W>>",
     "class": "com.maddyhome.idea.vim.resize.IncreaseWindowWidthAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Increase the current window width by [count] columns."
   },
   {
     "keys": "<C-W>S",
     "class": "com.maddyhome.idea.vim.action.window.HorizontalSplitAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Split the current window in two, one above the other, showing the same file."
   },
   {
     "keys": "<C-W>W",
     "class": "com.maddyhome.idea.vim.action.window.WindowPrevAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the previous window, wrapping around. With [count], go to window [count]."
   },
   {
     "keys": "<C-W>_",
     "class": "com.maddyhome.idea.vim.resize.MaximizeWindowHeightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Set the current window height to [count] rows; without [count], make it as high as possible."
   },
   {
     "keys": "<C-W>c",
     "class": "com.maddyhome.idea.vim.action.window.CloseWindowAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Close the current window (editor split)."
   },
   {
     "keys": "<C-W>h",
     "class": "com.maddyhome.idea.vim.action.window.WindowLeftAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the left of the current one."
   },
   {
     "keys": "<C-W>j",
     "class": "com.maddyhome.idea.vim.action.window.WindowDownAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows below the current one."
   },
   {
     "keys": "<C-W>k",
     "class": "com.maddyhome.idea.vim.action.window.WindowUpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows above the current one."
   },
   {
     "keys": "<C-W>l",
     "class": "com.maddyhome.idea.vim.action.window.WindowRightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the window [count] windows to the right of the current one."
   },
   {
     "keys": "<C-W>o",
     "class": "com.maddyhome.idea.vim.action.window.WindowOnlyAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Close all windows (editor splits) except the current one."
   },
   {
     "keys": "<C-W>q",
     "class": "com.maddyhome.idea.vim.action.window.CloseWindowAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Close the current window (editor split)."
   },
   {
     "keys": "<C-W>s",
     "class": "com.maddyhome.idea.vim.action.window.HorizontalSplitAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Split the current window in two, one above the other, showing the same file."
   },
   {
     "keys": "<C-W>v",
     "class": "com.maddyhome.idea.vim.action.window.VerticalSplitAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Split the current window in two side by side, showing the same file."
   },
   {
     "keys": "<C-W>w",
     "class": "com.maddyhome.idea.vim.action.window.WindowNextAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Move to the next window, wrapping around. With [count], go to window [count]."
   },
   {
     "keys": "<C-W>|",
     "class": "com.maddyhome.idea.vim.resize.MaximizeWindowWidthAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Set the current window width to [count] columns; without [count], make it as wide as possible."
   },
   {
     "keys": "<C-X>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeNumberDecAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Subtract [count] from the number or alphabetic character at or after the cursor."
   },
   {
     "keys": "<C-X>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeVisualNumberDecAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Subtract [count] from the numbers in the highlighted text."
   },
   {
     "keys": "<C-X>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertXCompletionAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, start CTRL-X completion; follow with CTRL-L for whole lines or CTRL-F for file names."
   },
   {
     "keys": "<C-Y>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertCharacterAboveCursorAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, insert the character found above the cursor."
   },
   {
     "keys": "<C-Y>",
     "class": "com.maddyhome.idea.vim.action.ex.CopyModelessSelectionAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, copy the modeless selection to the clipboard."
   },
   {
     "keys": "<C-Y>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLineUpAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] lines upwards in the buffer, revealing lines above the window."
   },
   {
     "keys": "<C-[>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertExitModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "Leave Insert mode and return to Normal mode."
   },
   {
     "keys": "<C-[>",
     "class": "com.maddyhome.idea.vim.action.ex.LeaveCommandLineAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "Abandon the command line without executing it and return to the previous mode."
   },
   {
     "keys": "<C-[>",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualExitModeAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Stop Visual mode and return to Normal mode."
   },
   {
     "keys": "<C-\\><C-N>",
     "class": "com.maddyhome.idea.vim.action.ResetModeAction",
-    "modes": "NXSOIC"
+    "modes": "NXSOIC",
+    "description": "Go to Normal mode from any mode, abandoning any pending command."
   },
   {
     "keys": "<C-]>",
     "class": "com.github.neshkeev.vimperor.tags.TagJumpAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Jump to the definition of the keyword under the cursor using the IDE's Go to Declaration action, pushing the position onto the tag stack."
   },
   {
     "keys": "<C-^>",
     "class": "com.maddyhome.idea.vim.action.file.FilePreviousAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Switch to the previously active editor tab (the alternate file)."
   },
   {
     "keys": "<C-^>",
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.ToggleLanguageInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, toggle the use of typed language mappings (:lmap) by switching 'iminsert' between 0 and 1."
   },
   {
     "keys": "<C-kLeft>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordLeftInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor [count] words backward."
   },
   {
     "keys": "<C-kRight>",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordRightInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor [count] words forward."
   },
   {
     "keys": "<C-q>",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualToggleBlockModeAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Start blockwise Visual mode, or switch an active Visual mode to blockwise; stop Visual mode if it is already blockwise. Starts Select mode instead if 'selectmode' contains cmd."
   },
   {
     "keys": "<C-v>",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualToggleBlockModeAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Start blockwise Visual mode, or switch an active Visual mode to blockwise; stop Visual mode if it is already blockwise. Starts Select mode instead if 'selectmode' contains cmd."
   },
   {
     "keys": "<CR>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertEnterAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, begin a new line."
   },
   {
     "keys": "<CR>",
     "class": "com.maddyhome.idea.vim.action.ex.ProcessExEntryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, execute the entered Ex command or search for the entered pattern."
   },
   {
     "keys": "<CR>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnterAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, replace the selected text with a line break."
   },
   {
     "keys": "<CR>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.EnterNormalAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, to the first non-blank character. In a live template, jump to the next template variable."
   },
   {
     "keys": "<DEL>",
     "class": "com.maddyhome.idea.vim.action.ex.DeleteNextCharAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, delete the character under the cursor (before it at the end of the line). Leave if the line is empty."
   },
   {
     "keys": "<DEL>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectDeleteAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, delete the selected text and leave Select mode."
   },
   {
     "keys": "<Del>",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteCharacterAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete the character under the cursor into register [x]."
   },
   {
     "keys": "<Del>",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted text into register [x]."
   },
   {
     "keys": "<Down>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectNewerHistoryFilteredAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the next (newer) command line from history that starts with the typed text."
   },
   {
     "keys": "<Down>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionArrowDownAction",
-    "modes": "NXSO"
+    "modes": "NXSO",
+    "description": "Move [count] lines downward, linewise. Leaves Select or Visual mode first if 'keymodel' contains \"stopsel\"."
   },
   {
     "keys": "<End>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToLineEnd",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor to the end of the command line."
   },
   {
     "keys": "<End>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionEndAction",
-    "modes": "NXSO"
+    "modes": "NXSO",
+    "description": "Move to the end of the line, [count] - 1 lines downward. In Visual and Select mode, 'keymodel' decides whether the selection is stopped."
   },
   {
     "keys": "<End>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastColumnInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor past the last character of the line."
   },
   {
     "keys": "<Esc>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertExitModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "Leave Insert mode and return to Normal mode."
   },
   {
     "keys": "<Esc>",
     "class": "com.maddyhome.idea.vim.action.ex.LeaveCommandLineAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "Abandon the command line without executing it and return to the previous mode."
   },
   {
     "keys": "<Esc>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEscapeAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "Leave Select mode."
   },
   {
     "keys": "<Esc>",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualExitModeAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Stop Visual mode and return to Normal mode."
   },
   {
     "keys": "<Home>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToLineStart",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor to the start of the command line."
   },
   {
     "keys": "<Home>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstColumnInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor to the first character of the line."
   },
   {
     "keys": "<Home>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionHomeAction",
-    "modes": "NXS"
+    "modes": "NXS",
+    "description": "Move to the first character of the line. In Visual and Select mode, 'keymodel' decides whether the selection is stopped."
   },
   {
     "keys": "<Insert>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertBeforeCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Insert text before the cursor [count] times."
   },
   {
     "keys": "<Insert>",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertInsertAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "Toggle between Insert and Replace mode."
   },
   {
     "keys": "<Insert>",
     "class": "com.maddyhome.idea.vim.action.ex.ToggleInsertModeAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, toggle between insert and overstrike."
   },
   {
     "keys": "<Left>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretLeftAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one character left. With 'wildmenu' completion active, select the previous match."
   },
   {
     "keys": "<Left>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the left. Wrap to the previous line if 'whichwrap' contains <."
   },
   {
     "keys": "<Left>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor one character to the left. Wrap to the previous line if 'whichwrap' contains [."
   },
   {
     "keys": "<Left>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the left. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<Left>",
     "class": "com.maddyhome.idea.vim.action.motion.select.motion.SelectMotionArrowLeftAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, move [count] characters left, extending the selection. If 'keymodel' contains \"stopsel\", leave Select mode first."
   },
   {
     "keys": "<PageDown>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectNewerHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the next (newer) command line from history."
   },
   {
     "keys": "<PageDown>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] pages forwards (downwards) in the buffer."
   },
   {
     "keys": "<PageDown>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageDownInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, scroll the window [count] pages forwards (downwards) in the buffer."
   },
   {
     "keys": "<PageUp>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectOlderHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the previous (older) command line from history."
   },
   {
     "keys": "<PageUp>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageUpAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] pages backwards (upwards) in the buffer."
   },
   {
     "keys": "<PageUp>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageUpInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, scroll the window [count] pages backwards (upwards) in the buffer."
   },
   {
     "keys": "<Right>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretRightAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one character right. With 'wildmenu' completion active, select the next match."
   },
   {
     "keys": "<Right>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the right. Wrap to the next line if 'whichwrap' contains >."
   },
   {
     "keys": "<Right>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor one character to the right. Wrap to the next line if 'whichwrap' contains ]."
   },
   {
     "keys": "<Right>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the right. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<Right>",
     "class": "com.maddyhome.idea.vim.action.motion.select.motion.SelectMotionArrowRightAction",
-    "modes": "S"
+    "modes": "S",
+    "description": "In Select mode, move [count] characters right, extending the selection. If 'keymodel' contains \"stopsel\", leave Select mode instead."
   },
   {
     "keys": "<S-Down>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectNewerHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the next (newer) command line from history."
   },
   {
     "keys": "<S-Down>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionShiftDownAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "If 'keymodel' contains startsel (or continues the current selection), start or extend a selection [count] lines down. Otherwise scroll [count] pages forward."
   },
   {
     "keys": "<S-End>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionShiftEndAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "Move to the end of the line, [count] - 1 lines downward. If 'keymodel' contains startsel, start or extend a selection."
   },
   {
     "keys": "<S-Enter>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollPageDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the window [count] pages forwards (downwards) in the buffer."
   },
   {
     "keys": "<S-Home>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionShiftHomeAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "Move to the first character of the line. If 'keymodel' contains startsel, start or extend a selection."
   },
   {
     "keys": "<S-Left>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToPreviousBigWordAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one WORD left."
   },
   {
     "keys": "<S-Left>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionShiftArrowLeftAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "Move [count] words backward. If 'keymodel' contains startsel, start or extend a selection [count] characters to the left instead."
   },
   {
     "keys": "<S-Right>",
     "class": "com.maddyhome.idea.vim.action.ex.MoveCaretToNextBigWordAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, move the cursor one WORD right."
   },
   {
     "keys": "<S-Right>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionShiftArrowRightAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "Move [count] words forward. If 'keymodel' contains startsel, start or extend a selection [count] characters to the right instead."
   },
   {
     "keys": "<S-Tab>",
     "class": "com.maddyhome.idea.vim.action.ex.CommandLineCompletionBackwardAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, complete the Ex command name or file name before the cursor, cycling through the matches backwards."
   },
   {
     "keys": "<S-Up>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectOlderHistoryAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the previous (older) command line from history."
   },
   {
     "keys": "<S-Up>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionShiftUpAction",
-    "modes": "INXS"
+    "modes": "INXS",
+    "description": "If 'keymodel' contains startsel (or continues the current selection), start or extend a selection [count] lines up. Otherwise scroll [count] pages backward."
   },
   {
     "keys": "<Space>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionSpaceAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the right. Wrap to the next line if 'whichwrap' contains s."
   },
   {
     "keys": "<Space>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionSpaceOpPendingModeAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the right. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<Tab>",
     "class": "com.maddyhome.idea.vim.action.ex.CommandLineCompletionAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, complete the Ex command name or file name before the cursor. Repeat to cycle through the matches."
   },
   {
     "keys": "<Tab>",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionJumpNextAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Go to the [count]th newer position in the jump list."
   },
   {
     "keys": "<Undo>",
     "class": "com.maddyhome.idea.vim.action.change.UndoAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Undo [count] changes."
   },
   {
     "keys": "<Up>",
     "class": "com.maddyhome.idea.vim.action.ex.SelectOlderHistoryFilteredAction",
-    "modes": "C"
+    "modes": "C",
+    "description": "In Command-line mode, recall the previous (older) command line from history that starts with the typed text."
   },
   {
     "keys": "<Up>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionArrowUpAction",
-    "modes": "NXSO"
+    "modes": "NXSO",
+    "description": "Move [count] lines upward, linewise. Leaves Select or Visual mode first if 'keymodel' contains \"stopsel\"."
   },
   {
     "keys": "<kDown>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionArrowDownAction",
-    "modes": "NXSO"
+    "modes": "NXSO",
+    "description": "Move [count] lines downward, linewise. Leaves Select or Visual mode first if 'keymodel' contains \"stopsel\"."
   },
   {
     "keys": "<kLeft>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the left. Wrap to the previous line if 'whichwrap' contains <."
   },
   {
     "keys": "<kLeft>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor one character to the left. Wrap to the previous line if 'whichwrap' contains [."
   },
   {
     "keys": "<kLeft>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowLeftOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the left. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<kRight>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the right. Wrap to the next line if 'whichwrap' contains >."
   },
   {
     "keys": "<kRight>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightInsertModeAction",
-    "modes": "I"
+    "modes": "I",
+    "description": "In Insert mode, move the cursor one character to the right. Wrap to the next line if 'whichwrap' contains ]."
   },
   {
     "keys": "<kRight>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionArrowRightOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the right. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "<kUp>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionArrowUpAction",
-    "modes": "NXSO"
+    "modes": "NXSO",
+    "description": "Move [count] lines upward, linewise. Leaves Select or Visual mode first if 'keymodel' contains \"stopsel\"."
   },
   {
     "keys": "=",
     "class": "com.maddyhome.idea.vim.action.change.change.AutoIndentLinesVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Re-indent the highlighted lines using the IDE's auto-indent."
   },
   {
     "keys": "=",
     "class": "com.maddyhome.idea.vim.action.change.shift.AutoIndentMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Re-indent the lines covered by {motion} using the IDE's indentation rules."
   },
   {
     "keys": ">",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftRightMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Shift the lines covered by {motion} one 'shiftwidth' rightwards."
   },
   {
     "keys": ">",
     "class": "com.maddyhome.idea.vim.action.change.shift.ShiftRightVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Shift the highlighted lines [count] 'shiftwidth' rightwards."
   },
   {
     "keys": "?",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchEntryRevAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Search backward for the [count]'th occurrence of {pattern}, entered on the command line."
   },
   {
     "keys": "@",
     "class": "com.maddyhome.idea.vim.action.macro.PlaybackRegisterAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Execute the contents of register {register} [count] times. @@ repeats the last executed register and @: repeats the last command-line."
   },
   {
     "keys": "A",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertAfterLineEndAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Append text at the end of the line [count] times."
   },
   {
     "keys": "A",
     "class": "com.maddyhome.idea.vim.action.change.insert.VisualBlockAppendAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "In Visual block mode, append the same text after the block on every line. Otherwise append at the end of the line."
   },
   {
     "keys": "B",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] WORDS backward."
   },
   {
     "keys": "C",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeEndOfLineAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete till the end of the line and [count]-1 more lines into register [x], then start Insert mode."
   },
   {
     "keys": "C",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualLinesEndAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Change the highlighted lines; in Visual block mode, change till the end of each line instead."
   },
   {
     "keys": "D",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteEndOfLineAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete from the cursor to the end of the line and [count]-1 more lines into register [x]."
   },
   {
     "keys": "D",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteVisualLinesEndAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted lines into register [x]. In Visual block mode, delete from the block start to the end of each line."
   },
   {
     "keys": "E",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordEndRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move forward to the end of the [count]'th WORD."
   },
   {
     "keys": "F",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLeftMatchCharAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]th occurrence of {char} to the left."
   },
   {
     "keys": "G",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineLastAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to line [count], default the last line. The cursor goes to the first non-blank character unless 'startofline' is off."
   },
   {
     "keys": "H",
     "class": "com.maddyhome.idea.vim.action.motion.screen.MotionFirstScreenLineAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move to line [count] from the top of the window, on the first non-blank character. The cursor is adjusted for 'scrolloff'."
   },
   {
     "keys": "H",
     "class": "com.maddyhome.idea.vim.action.motion.screen.MotionOpPendingFirstScreenLineAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move linewise to line [count] from the top of the window. 'scrolloff' is applied afterwards."
   },
   {
     "keys": "I",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertBeforeFirstNonBlankAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Insert text before the first non-blank character in the line [count] times."
   },
   {
     "keys": "I",
     "class": "com.maddyhome.idea.vim.action.change.insert.VisualInsertAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "In Visual block mode, insert the same text before the block on every line. Otherwise insert at the start of the selection."
   },
   {
     "keys": "L",
     "class": "com.maddyhome.idea.vim.action.motion.screen.MotionLastScreenLineAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move to line [count] from the bottom of the window, on the first non-blank character. The cursor is adjusted for 'scrolloff'."
   },
   {
     "keys": "L",
     "class": "com.maddyhome.idea.vim.action.motion.screen.MotionOpPendingLastScreenLineAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move linewise to line [count] from the bottom of the window. 'scrolloff' is applied afterwards."
   },
   {
     "keys": "M",
     "class": "com.maddyhome.idea.vim.action.motion.screen.MotionMiddleScreenLineAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the middle line of the window, on the first non-blank character."
   },
   {
     "keys": "N",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchAgainPreviousAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Repeat the last search [count] times in the opposite direction."
   },
   {
     "keys": "O",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertNewLineAboveAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Begin a new line above the cursor and enter Insert mode."
   },
   {
     "keys": "O",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualSwapEndsBlockAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Move the cursor to the other end of the selection. In Visual block mode, move to the other corner in the same line."
   },
   {
     "keys": "P",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextBeforeCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Put the text from register [x] before the cursor [count] times."
   },
   {
     "keys": "P",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextBeforeCursorAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x], without changing the unnamed register."
   },
   {
     "keys": "R",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeReplaceAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Enter Replace mode, where each typed character replaces an existing one."
   },
   {
     "keys": "R",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualLinesAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted lines into register [x] and start Insert mode."
   },
   {
     "keys": "S",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeLineAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete [count] lines into register [x] and start Insert mode."
   },
   {
     "keys": "S",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualLinesAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted lines into register [x] and start Insert mode."
   },
   {
     "keys": "T",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLeftTillMatchCharAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to just after the [count]th occurrence of {char} to the left."
   },
   {
     "keys": "U",
     "class": "com.maddyhome.idea.vim.action.change.LineUndoAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Undo all recent changes made on the last changed line."
   },
   {
     "keys": "U",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseUpperVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Make the highlighted text uppercase."
   },
   {
     "keys": "V",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualToggleLineModeAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Start linewise Visual mode, or switch an active Visual mode to linewise; stop Visual mode if it is already linewise. Starts Select mode instead if 'selectmode' contains cmd."
   },
   {
     "keys": "W",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] WORDS forward."
   },
   {
     "keys": "X",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteCharacterLeftAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete [count] characters before the cursor into register [x]."
   },
   {
     "keys": "X",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteVisualLinesAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted lines into register [x]. In Visual block mode, delete the highlighted block."
   },
   {
     "keys": "Y",
     "class": "com.maddyhome.idea.vim.action.copy.YankLineAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Yank [count] lines into register [x]."
   },
   {
     "keys": "Y",
     "class": "com.maddyhome.idea.vim.action.copy.YankVisualLinesAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Yank the highlighted lines into register [x]. In Visual block mode, yank the highlighted block."
   },
   {
     "keys": "ZQ",
     "class": "com.maddyhome.idea.vim.action.file.FileCloseAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Close the current editor tab, like :q!."
   },
   {
     "keys": "ZZ",
     "class": "com.maddyhome.idea.vim.action.file.FileSaveCloseAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Save the current file and close its editor."
   },
   {
     "keys": "[(",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionUnmatchedParenOpenAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th previous unmatched '('."
   },
   {
     "keys": "[M",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMethodPreviousEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th previous end of a method."
   },
   {
     "keys": "[P",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextBeforeCursorNoIndentAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Like P, but adjust the indent of the put text to the current line."
   },
   {
     "keys": "[P",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextBeforeCursorNoIndentAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x], adjusting the indent to the current line."
   },
   {
     "keys": "[[",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSectionBackwardStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sections backward, or to the previous '{' in the first column."
   },
   {
     "keys": "[]",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSectionBackwardEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sections backward, or to the previous '}' in the first column."
   },
   {
     "keys": "[`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoPreviousMarkAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]th previous lowercase mark."
   },
   {
     "keys": "[b",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionCamelLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move backward to the start of the [count]'th previous camelCase word part."
   },
   {
     "keys": "[m",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMethodPreviousStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th previous start of a method."
   },
   {
     "keys": "[p",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextBeforeCursorNoIndentAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Like P, but adjust the indent of the put text to the current line."
   },
   {
     "keys": "[p",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextAfterCursorNoIndentAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x], adjusting the indent to the current line."
   },
   {
     "keys": "[s",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMisspelledWordPreviousAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]'th previous misspelled word before the cursor."
   },
   {
     "keys": "[w",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionCamelRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move forward to the start of the [count]'th next camelCase word part."
   },
   {
     "keys": "[{",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionUnmatchedBraceOpenAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th previous unmatched '{'."
   },
   {
     "keys": "])",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionUnmatchedParenCloseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th next unmatched ')'."
   },
   {
     "keys": "]M",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMethodNextEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th next end of a method."
   },
   {
     "keys": "]P",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextBeforeCursorNoIndentAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Like P, but adjust the indent of the put text to the current line."
   },
   {
     "keys": "]P",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextBeforeCursorNoIndentAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x], adjusting the indent to the current line."
   },
   {
     "keys": "][",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSectionForwardEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sections forward, or to the next '}' in the first column."
   },
   {
     "keys": "]]",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSectionForwardStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] sections forward, or to the next '{' in the first column."
   },
   {
     "keys": "]`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoNextMarkAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]th next lowercase mark."
   },
   {
     "keys": "]b",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionCamelEndLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move backward to the end of the [count]'th previous camelCase word part."
   },
   {
     "keys": "]m",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMethodNextStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th next start of a method."
   },
   {
     "keys": "]p",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextAfterCursorNoIndentAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Like p, but adjust the indent of the put text to the current line."
   },
   {
     "keys": "]p",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextAfterCursorNoIndentAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x], adjusting the indent to the current line."
   },
   {
     "keys": "]s",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionMisspelledWordNextAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]'th next misspelled word after the cursor."
   },
   {
     "keys": "]w",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionCamelEndRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move forward to the end of the [count]'th next camelCase word part."
   },
   {
     "keys": "]}",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionUnmatchedBraceCloseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the [count]'th next unmatched '}'."
   },
   {
     "keys": "^",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the first non-blank character of the line."
   },
   {
     "keys": "_",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownLess1FirstNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] - 1 lines downward, to the first non-blank character, linewise."
   },
   {
     "keys": "`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoFileMarkAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Jump to the exact position (line and column) of mark {mark}."
   },
   {
     "keys": "`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoMarkAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Jump to the exact position (line and column) of mark {mark}."
   },
   {
     "keys": "a",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertAfterCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Append text after the cursor [count] times."
   },
   {
     "keys": "a\"",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockDoubleQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A double-quoted string: select the quoted text, including the quotes and trailing white space."
   },
   {
     "keys": "a'",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockSingleQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A single-quoted string: select the quoted text, including the quotes and trailing white space."
   },
   {
     "keys": "a(",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A block: select [count] () blocks, including the parentheses."
   },
   {
     "keys": "a)",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A block: select [count] () blocks, including the parentheses."
   },
   {
     "keys": "a<",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockAngleAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A <> block: select [count] <> blocks, including the angle brackets."
   },
   {
     "keys": "a>",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockAngleAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A <> block: select [count] <> blocks, including the angle brackets."
   },
   {
     "keys": "aB",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A Block: select [count] {} blocks, including the braces."
   },
   {
     "keys": "aW",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBigWordAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A WORD: select [count] WORDs, including trailing white space."
   },
   {
     "keys": "a[",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBracketAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A [] block: select [count] [] blocks, including the brackets."
   },
   {
     "keys": "a]",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBracketAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A [] block: select [count] [] blocks, including the brackets."
   },
   {
     "keys": "a`",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBackQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A backtick string: select the text between backticks, including the quotes and trailing white space."
   },
   {
     "keys": "ab",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A block: select [count] () blocks, including the parentheses."
   },
   {
     "keys": "ap",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterParagraphAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A paragraph: select [count] paragraphs, including the following blank lines."
   },
   {
     "keys": "as",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterSentenceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A sentence: select [count] sentences, including trailing white space."
   },
   {
     "keys": "at",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockTagAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A tag block: select [count] XML/HTML tag blocks, including the tags."
   },
   {
     "keys": "aw",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterWordAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A word: select [count] words, including trailing white space."
   },
   {
     "keys": "a{",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A Block: select [count] {} blocks, including the braces."
   },
   {
     "keys": "a}",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionOuterBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "A Block: select [count] {} blocks, including the braces."
   },
   {
     "keys": "b",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] words backward."
   },
   {
     "keys": "c",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete the text moved over by {motion} into register [x] and start Insert mode."
   },
   {
     "keys": "c",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted text into register [x] and start Insert mode."
   },
   {
     "keys": "d",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete the text moved over by {motion} into register [x]."
   },
   {
     "keys": "d",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted text into register [x]."
   },
   {
     "keys": "e",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordEndRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move forward to the end of the [count]'th word."
   },
   {
     "keys": "f",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionRightMatchCharAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the [count]th occurrence of {char} to the right."
   },
   {
     "keys": "g#",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchWordBackwardAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Like #, but also match the word under the cursor when it is part of a longer word."
   },
   {
     "keys": "g$",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the last character of the screen line. Differs from the end of the line when lines wrap."
   },
   {
     "keys": "g&",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeLastGlobalSearchReplaceAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Repeat the last :substitute on all lines with the same flags, using the last search pattern."
   },
   {
     "keys": "g'",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoFileMarkLineNoSaveJumpAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Jump to the first non-blank character of the line containing mark {mark} without changing the jump list."
   },
   {
     "keys": "g'",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoMarkLineNoSaveJumpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Jump to the first non-blank character of the line containing mark {mark} without changing the jump list."
   },
   {
     "keys": "g(",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSentencePreviousEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move backward to the end of the [count]'th previous sentence."
   },
   {
     "keys": "g)",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionSentenceNextEndAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move forward to the end of the [count]'th sentence."
   },
   {
     "keys": "g*",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchWordForwardAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Like *, but also match the word under the cursor when it is part of a longer word."
   },
   {
     "keys": "g,",
     "class": "com.maddyhome.idea.vim.action.motion.changelist.MotionGotoChangeNewerAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Go to the [count]th newer position in the change list."
   },
   {
     "keys": "g0",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the first character of the screen line. Differs from 0 when lines wrap."
   },
   {
     "keys": "g8",
     "class": "com.maddyhome.idea.vim.action.file.FileGetHexAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Display the UTF-8 byte sequence of the character under the cursor in hex."
   },
   {
     "keys": "g;",
     "class": "com.maddyhome.idea.vim.action.motion.changelist.MotionGotoChangeOlderAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Go to the [count]th older position in the change list."
   },
   {
     "keys": "g<",
     "class": "com.maddyhome.idea.vim.action.ShowLastOutputAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Show the output of the previous command again."
   },
   {
     "keys": "g<C-A>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeVisualNumberAvalancheIncAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Add [count] to the first highlighted number, 2 times [count] to the next, and so on."
   },
   {
     "keys": "g<C-G>",
     "class": "com.maddyhome.idea.vim.action.file.FileGetLocationInfoAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Display the current cursor position as column, line, word and byte counts. In Visual mode, show counts for the selection."
   },
   {
     "keys": "g<C-X>",
     "class": "com.maddyhome.idea.vim.action.change.change.number.ChangeVisualNumberAvalancheDecAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Subtract [count] from the first highlighted number, 2 times [count] from the next, and so on."
   },
   {
     "keys": "g<C-h>",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnableBlockModeAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Start Select mode blockwise, selecting the character under the cursor."
   },
   {
     "keys": "g<Down>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownNotLineWiseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] display lines downward, exclusive."
   },
   {
     "keys": "g<End>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the last character of the screen line. Differs from the end of the line when lines wrap."
   },
   {
     "keys": "g<Home>",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the first character of the screen line. Differs from 0 when lines wrap."
   },
   {
     "keys": "g<Up>",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionUpNotLineWiseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] display lines up (exclusive motion)."
   },
   {
     "keys": "g?",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeRot13MotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Rot13-encode the text moved over by {motion}."
   },
   {
     "keys": "g?",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeRot13VisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Rot13-encode the highlighted text."
   },
   {
     "keys": "gD",
     "class": "com.maddyhome.idea.vim.action.motion.search.GotoDeclarationAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Go to the declaration of the symbol under the cursor using the IDE's Go to Declaration action. Saves the jump position."
   },
   {
     "keys": "gE",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionBigWordEndLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move backward to the end of the [count]'th previous WORD."
   },
   {
     "keys": "gH",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnableLineModeAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Start Select mode linewise, selecting the current line."
   },
   {
     "keys": "gI",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertLineStartAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Insert text in column 1 of the line [count] times."
   },
   {
     "keys": "gN",
     "class": "com.maddyhome.idea.vim.action.motion.gn.GnPreviousTextObject",
-    "modes": "O"
+    "modes": "O",
+    "description": "Operate on the [count]th previous match of the last search pattern."
   },
   {
     "keys": "gN",
     "class": "com.maddyhome.idea.vim.action.motion.gn.VisualSelectPreviousSearch",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Search backward for the last search pattern and select the match in Visual mode. In Visual mode, extend the selection to the start of the match."
   },
   {
     "keys": "gP",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextBeforeCursorActionMoveCursor",
-    "modes": "N"
+    "modes": "N",
+    "description": "Put the text from register [x] before the cursor [count] times and leave the cursor just after the new text."
   },
   {
     "keys": "gP",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextBeforeCursorMoveCursorAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x] and leave the cursor just after the new text."
   },
   {
     "keys": "gT",
     "class": "com.maddyhome.idea.vim.action.window.tabs.PreviousTabAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the previous editor tab, wrapping around from the first to the last. With [count], go [count] tabs back."
   },
   {
     "keys": "gU",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseUpperMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Make the text moved over by {motion} uppercase."
   },
   {
     "keys": "gU",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseUpperVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Make the highlighted text uppercase."
   },
   {
     "keys": "g^",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionFirstScreenNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the first non-blank character of the screen line. Differs from ^ when lines wrap."
   },
   {
     "keys": "g_",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLastNonSpaceAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the last non-blank character of the line, [count] - 1 lines downward."
   },
   {
     "keys": "g`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoFileMarkNoSaveJumpAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Jump to the exact position (line and column) of mark {mark} without changing the jump list."
   },
   {
     "keys": "g`",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionGotoMarkNoSaveJumpAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Jump to the exact position (line and column) of mark {mark} without changing the jump list."
   },
   {
     "keys": "ga",
     "class": "com.maddyhome.idea.vim.action.file.FileGetAsciiAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Print the decimal, hex and octal value of the character under the cursor."
   },
   {
     "keys": "gd",
     "class": "com.maddyhome.idea.vim.action.motion.search.GotoDeclarationAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Go to the declaration of the symbol under the cursor using the IDE's Go to Declaration action. Saves the jump position."
   },
   {
     "keys": "ge",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordEndLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move backward to the end of the [count]'th previous word."
   },
   {
     "keys": "gf",
     "class": "com.github.neshkeev.vimperor.file.GotoFileUnderCaretAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Open the file whose name is under or after the cursor, looked up along 'path'."
   },
   {
     "keys": "gg",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionGotoLineFirstAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to line [count], default the first line. The cursor goes to the first non-blank character unless 'startofline' is off."
   },
   {
     "keys": "gh",
     "class": "com.maddyhome.idea.vim.action.motion.select.SelectEnableCharacterModeAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Start Select mode characterwise, selecting the character under the cursor."
   },
   {
     "keys": "gi",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertAtPreviousInsertAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Insert text at the position where Insert mode was last exited (the '^ mark)."
   },
   {
     "keys": "gj",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownNotLineWiseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] display lines downward, exclusive."
   },
   {
     "keys": "gk",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionUpNotLineWiseAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] display lines up (exclusive motion)."
   },
   {
     "keys": "gm",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionMiddleColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to the middle of the screen width in the current screen line."
   },
   {
     "keys": "gn",
     "class": "com.maddyhome.idea.vim.action.motion.gn.GnNextTextObject",
-    "modes": "O"
+    "modes": "O",
+    "description": "Operate on the [count]th next match of the last search pattern."
   },
   {
     "keys": "gn",
     "class": "com.maddyhome.idea.vim.action.motion.gn.VisualSelectNextSearch",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Search forward for the last search pattern and select the match in Visual mode. In Visual mode, extend the selection to the end of the match."
   },
   {
     "keys": "go",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionNthCharacterAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to character [count] in the buffer (default: the first character)."
   },
   {
     "keys": "gp",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextAfterCursorActionMoveCursor",
-    "modes": "N"
+    "modes": "N",
+    "description": "Put the text from register [x] after the cursor [count] times and leave the cursor just after the new text."
   },
   {
     "keys": "gp",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextAfterCursorMoveCursorAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x] and leave the cursor just after the new text."
   },
   {
     "keys": "gq",
     "class": "com.maddyhome.idea.vim.action.change.change.ReformatCodeMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Format the lines moved over by {motion} with the IDE's code formatter and wrap them at 'textwidth'."
   },
   {
     "keys": "gq",
     "class": "com.maddyhome.idea.vim.action.change.change.ReformatCodeVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Format the highlighted lines with the IDE's code formatter and wrap them at 'textwidth'."
   },
   {
     "keys": "gt",
     "class": "com.maddyhome.idea.vim.action.window.tabs.NextTabAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Go to the next editor tab, wrapping around from the last to the first. With [count], go to tab page [count]."
   },
   {
     "keys": "gu",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseLowerMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Make the text moved over by {motion} lowercase."
   },
   {
     "keys": "gu",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseLowerVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Make the highlighted text lowercase."
   },
   {
     "keys": "gv",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualSelectPreviousAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Start Visual mode with the same area and selection type as the previous Visual selection."
   },
   {
     "keys": "gv",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualSwapSelectionsAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Exchange the current and the previous Visual area."
   },
   {
     "keys": "gw",
     "class": "com.maddyhome.idea.vim.action.change.change.ReformatCodeMotionPreserveCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Like gq, format the lines moved over by {motion}, but keep the cursor at the same text position."
   },
   {
     "keys": "gw",
     "class": "com.maddyhome.idea.vim.action.change.change.ReformatCodeVisualPreserveCursorAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Like gq, format the highlighted lines, but put the cursor back at the start of the selection."
   },
   {
     "keys": "gx",
     "class": "com.maddyhome.idea.vim.action.motion.search.GotoUrlAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Open the URL under the cursor with the system's default handler, or with the program in g:netrw_browsex_viewer if it is set."
   },
   {
     "keys": "g~",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseToggleMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Switch the case of the text moved over by {motion}."
   },
   {
     "keys": "h",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLeftAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the left. Wrap to the previous line if 'whichwrap' contains h."
   },
   {
     "keys": "h",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionLeftOpPendingModeAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the left. The end-of-line character is included when wrapping via 'whichwrap'."
   },
   {
     "keys": "i",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertBeforeCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Insert text before the cursor [count] times."
   },
   {
     "keys": "i\"",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockDoubleQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner double-quoted string: select the text between double quotes, excluding the quotes."
   },
   {
     "keys": "i'",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockSingleQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner single-quoted string: select the text between single quotes, excluding the quotes."
   },
   {
     "keys": "i(",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner block: select [count] () blocks, excluding the parentheses."
   },
   {
     "keys": "i)",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner block: select [count] () blocks, excluding the parentheses."
   },
   {
     "keys": "i<lt>",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockAngleAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner <> block: select [count] <> blocks, excluding the angle brackets."
   },
   {
     "keys": "i>",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockAngleAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner <> block: select [count] <> blocks, excluding the angle brackets."
   },
   {
     "keys": "iB",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner Block: select [count] {} blocks, excluding the braces."
   },
   {
     "keys": "iW",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBigWordAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner WORD: select [count] WORDs, white space not included."
   },
   {
     "keys": "i[",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBracketAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner [] block: select [count] [] blocks, excluding the brackets."
   },
   {
     "keys": "i]",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBracketAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner [] block: select [count] [] blocks, excluding the brackets."
   },
   {
     "keys": "i`",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBackQuoteAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner backtick string: select the text between backticks, excluding the quotes."
   },
   {
     "keys": "ib",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockParenAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner block: select [count] () blocks, excluding the parentheses."
   },
   {
     "keys": "ip",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerParagraphAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner paragraph: select [count] paragraphs, where a run of blank lines also counts as a paragraph."
   },
   {
     "keys": "is",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerSentenceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner sentence: select [count] sentences, white space not included."
   },
   {
     "keys": "it",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockTagAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner tag block: select [count] XML/HTML tag blocks, excluding the tags."
   },
   {
     "keys": "iw",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerWordAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner word: select [count] words, white space not included."
   },
   {
     "keys": "i{",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner Block: select [count] {} blocks, excluding the braces."
   },
   {
     "keys": "i}",
     "class": "com.maddyhome.idea.vim.action.motion.object.MotionInnerBlockBraceAction",
-    "modes": "XO"
+    "modes": "XO",
+    "description": "Inner Block: select [count] {} blocks, excluding the braces."
   },
   {
     "keys": "j",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionDownAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines downward, linewise."
   },
   {
     "keys": "k",
     "class": "com.maddyhome.idea.vim.action.motion.updown.MotionUpAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] lines up (linewise)."
   },
   {
     "keys": "l",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionRightAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Move [count] characters to the right. Wrap to the next line if 'whichwrap' contains l."
   },
   {
     "keys": "l",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionRightOpPendingAction",
-    "modes": "O"
+    "modes": "O",
+    "description": "As an operator motion, move [count] characters to the right, so the operator can include the last character of the line."
   },
   {
     "keys": "m",
     "class": "com.maddyhome.idea.vim.action.motion.mark.MotionMarkAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Set mark {mark} at the cursor position."
   },
   {
     "keys": "n",
     "class": "com.maddyhome.idea.vim.action.motion.search.SearchAgainNextAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Repeat the last search [count] times in the same direction."
   },
   {
     "keys": "o",
     "class": "com.maddyhome.idea.vim.action.change.insert.InsertNewLineBelowAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Begin a new line below the cursor and enter Insert mode."
   },
   {
     "keys": "o",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualSwapEndsAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Move the cursor to the other end of the selection."
   },
   {
     "keys": "p",
     "class": "com.maddyhome.idea.vim.action.copy.PutTextAfterCursorAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Put the text from register [x] after the cursor [count] times."
   },
   {
     "keys": "p",
     "class": "com.maddyhome.idea.vim.action.copy.PutVisualTextAfterCursorAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace the highlighted text with the contents of register [x]. The replaced text is stored in the unnamed register."
   },
   {
     "keys": "q",
     "class": "com.maddyhome.idea.vim.action.macro.ToggleRecordingAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Start recording typed characters into register {register}. When already recording, stop recording."
   },
   {
     "keys": "q/",
     "class": "com.maddyhome.idea.vim.action.SearchHistoryForwardAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Open the command-line window over the search history; <CR> searches forward for the selected pattern."
   },
   {
     "keys": "q:",
     "class": "com.maddyhome.idea.vim.action.CommandHistoryAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Open the command-line window to edit and execute commands from the : history."
   },
   {
     "keys": "q?",
     "class": "com.maddyhome.idea.vim.action.SearchHistoryBackwardAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Open the command-line window over the search history; <CR> searches backward for the selected pattern."
   },
   {
     "keys": "r",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCharacterAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Replace [count] characters under and after the cursor with {char}."
   },
   {
     "keys": "r",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualCharacterAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Replace every highlighted character with {char}."
   },
   {
     "keys": "s",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCharactersAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete [count] characters into register [x] and start Insert mode."
   },
   {
     "keys": "s",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted text into register [x] and start Insert mode."
   },
   {
     "keys": "t",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionRightTillMatchCharAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to just before the [count]th occurrence of {char} to the right."
   },
   {
     "keys": "u",
     "class": "com.maddyhome.idea.vim.action.change.UndoAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Undo [count] changes."
   },
   {
     "keys": "u",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseLowerVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Make the highlighted text lowercase."
   },
   {
     "keys": "v",
     "class": "com.maddyhome.idea.vim.action.motion.visual.VisualToggleCharacterModeAction",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Start characterwise Visual mode, or switch an active Visual mode to characterwise; stop Visual mode if it is already characterwise. Starts Select mode instead if 'selectmode' contains cmd."
   },
   {
     "keys": "w",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionWordRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] words forward."
   },
   {
     "keys": "x",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteCharacterRightAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Delete [count] characters under and after the cursor into register [x]."
   },
   {
     "keys": "x",
     "class": "com.maddyhome.idea.vim.action.change.delete.DeleteVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Delete the highlighted text into register [x]."
   },
   {
     "keys": "y",
     "class": "com.maddyhome.idea.vim.action.copy.YankMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Yank the text covered by {motion} into register [x]."
   },
   {
     "keys": "y",
     "class": "com.maddyhome.idea.vim.action.copy.YankVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Yank the highlighted text into register [x]."
   },
   {
     "keys": "z+",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollFirstScreenLinePageStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Without [count], redraw with the line just below the window at the top, cursor on its first non-blank. With [count], act like z<CR>."
   },
   {
     "keys": "z-",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLastScreenLineStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Redraw with line [count] (default: cursor line) at the bottom of the window and put the cursor on its first non-blank."
   },
   {
     "keys": "z.",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollMiddleScreenLineStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Redraw with line [count] (default: cursor line) at the center of the window and put the cursor on its first non-blank."
   },
   {
     "keys": "z<CR>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollFirstScreenLineStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Redraw with line [count] (default: cursor line) at the top of the window and put the cursor on its first non-blank."
   },
   {
     "keys": "z<Left>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollColumnRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] characters to the right, moving the view to the left."
   },
   {
     "keys": "z<Right>",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollColumnLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] characters to the left, moving the view to the right."
   },
   {
     "keys": "z=",
     "class": "com.maddyhome.idea.vim.action.motion.text.SelectMisspelledWordSuggestionAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Show spelling suggestions for the word under the cursor and replace it with the chosen one."
   },
   {
     "keys": "zA",
     "class": "com.maddyhome.idea.vim.action.fold.VimToggleRegionRecursively",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Toggle the fold under the cursor recursively: close it and its nested folds when open, open them all when closed."
   },
   {
     "keys": "zC",
     "class": "com.maddyhome.idea.vim.action.fold.VimCollapseRegionRecursively",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Close the fold under the cursor recursively using the IDE's Collapse Recursively action."
   },
   {
     "keys": "zD",
     "class": "com.maddyhome.idea.vim.action.fold.VimDeleteFoldsRecursivelyAtCursor",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Delete the fold at the cursor and all folds nested inside it. The text itself is not changed."
   },
   {
     "keys": "zH",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollHalfWidthRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] half screen widths to the right, moving the view to the left. Only useful with 'nowrap'."
   },
   {
     "keys": "zL",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollHalfWidthLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] half screen widths to the left, moving the view to the right. Only useful with 'nowrap'."
   },
   {
     "keys": "zM",
     "class": "com.maddyhome.idea.vim.action.fold.VimCollapseAllRegions",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Close all folds in the file."
   },
   {
     "keys": "zO",
     "class": "com.maddyhome.idea.vim.action.fold.VimExpandRegionRecursively",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Open the fold under the cursor recursively using the IDE's Expand Recursively action."
   },
   {
     "keys": "zR",
     "class": "com.maddyhome.idea.vim.action.fold.VimExpandAllRegions",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Open all folds in the file."
   },
   {
     "keys": "z^",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLastScreenLinePageStartAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Without [count], redraw with the line just above the window at the bottom, cursor on its first non-blank. With [count], put line [count] at the bottom first, then do the same for the new top line."
   },
   {
     "keys": "za",
     "class": "com.maddyhome.idea.vim.action.fold.VimExpandCollapseToggleRegion",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Toggle the fold under the cursor using the IDE's Expand/Collapse toggle action."
   },
   {
     "keys": "zb",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLastScreenLineAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Redraw with line [count] (default: cursor line) at the bottom of the window, keeping the cursor column."
   },
   {
     "keys": "zc",
     "class": "com.maddyhome.idea.vim.action.fold.VimCollapseRegion",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Close the fold under the cursor using the IDE's Collapse action."
   },
   {
     "keys": "zd",
     "class": "com.maddyhome.idea.vim.action.fold.VimDeleteFoldAtCursor",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Delete the fold at the cursor. The text itself is not changed."
   },
   {
     "keys": "ze",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollLastScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text horizontally so the cursor column is at the right edge of the window."
   },
   {
     "keys": "zf",
     "class": "com.maddyhome.idea.vim.action.fold.VimCreateFoldMotionAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Create a closed fold over the text covered by {motion}."
   },
   {
     "keys": "zf",
     "class": "com.maddyhome.idea.vim.action.fold.VimCreateFoldVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Create a closed fold over the Visual selection."
   },
   {
     "keys": "zg",
     "class": "com.maddyhome.idea.vim.action.motion.text.AddMisspelledWordAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Add the word under the cursor to the IDE's spelling dictionary as a good word."
   },
   {
     "keys": "zh",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollColumnRightAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] characters to the right, moving the view to the left."
   },
   {
     "keys": "zj",
     "class": "com.maddyhome.idea.vim.action.fold.VimNextFold",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move down to the start of the [count]th next fold."
   },
   {
     "keys": "zk",
     "class": "com.maddyhome.idea.vim.action.fold.VimPreviousFold",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move up to the end of the [count]th previous fold."
   },
   {
     "keys": "zl",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollColumnLeftAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text [count] characters to the left, moving the view to the right."
   },
   {
     "keys": "zm",
     "class": "com.maddyhome.idea.vim.action.fold.VimDecrementFoldLevel",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Fold more: decrease the fold level by [count], closing more folds."
   },
   {
     "keys": "zo",
     "class": "com.maddyhome.idea.vim.action.fold.VimExpandRegion",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Open the fold under the cursor using the IDE's Expand action."
   },
   {
     "keys": "zr",
     "class": "com.maddyhome.idea.vim.action.fold.VimIncrementFoldLevel",
-    "modes": "NX"
+    "modes": "NX",
+    "description": "Reduce folding: increase the fold level by [count], opening more folds."
   },
   {
     "keys": "zs",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollFirstScreenColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll the text horizontally to put the cursor at the left edge of the window."
   },
   {
     "keys": "zt",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollFirstScreenLineAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Scroll line [count] (default: cursor line) to the top of the window, keeping the cursor column."
   },
   {
     "keys": "zw",
     "class": "com.maddyhome.idea.vim.action.motion.text.RemoveMisspelledWordAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Remove the word under the cursor from the IDE's spelling dictionary."
   },
   {
     "keys": "zz",
     "class": "com.maddyhome.idea.vim.action.motion.scroll.MotionScrollMiddleScreenLineAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Redraw with line [count] (default: cursor line) at the center of the window, keeping the cursor column."
   },
   {
     "keys": "{",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionParagraphPreviousAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] paragraphs backward."
   },
   {
     "keys": "|",
     "class": "com.maddyhome.idea.vim.action.motion.leftright.MotionColumnAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move to column [count] in the current line."
   },
   {
     "keys": "}",
     "class": "com.maddyhome.idea.vim.action.motion.text.MotionParagraphNextAction",
-    "modes": "NXO"
+    "modes": "NXO",
+    "description": "Move [count] paragraphs forward."
   },
   {
     "keys": "~",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseToggleCharacterAction",
-    "modes": "N"
+    "modes": "N",
+    "description": "Switch the case of [count] characters under and after the cursor and move the cursor past them."
   },
   {
     "keys": "~",
     "class": "com.maddyhome.idea.vim.action.change.change.ChangeCaseToggleVisualAction",
-    "modes": "X"
+    "modes": "X",
+    "description": "Switch the case of the highlighted text."
   }
 ]

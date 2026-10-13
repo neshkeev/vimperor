@@ -18,7 +18,11 @@ import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.handler.VimActionHandler
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["/"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["/"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Search forward for the [count]'th occurrence of {pattern}, entered on the command line.",
+)
 class SearchEntryFwdAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.MODE_CHANGE
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)
@@ -34,7 +38,11 @@ class SearchEntryFwdAction : VimActionHandler.SingleExecution() {
   }
 }
 
-@CommandOrMotion(keys = ["?"], modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING])
+@CommandOrMotion(
+  keys = ["?"],
+  modes = [Mode.NORMAL, Mode.VISUAL, Mode.OP_PENDING],
+  description = "Search backward for the [count]'th occurrence of {pattern}, entered on the command line.",
+)
 class SearchEntryRevAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.MODE_CHANGE
   override val flags: MutableSet<CommandFlags> = enumSetOf(CommandFlags.FLAG_START_EX, CommandFlags.FLAG_SAVE_JUMP)

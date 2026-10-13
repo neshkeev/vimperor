@@ -32,7 +32,10 @@ import kotlin.math.absoluteValue
  *
  * See "h :changes".
  */
-@ExCommand(command = "changes")
+@ExCommand(
+  command = "changes",
+  description = "List the change list, the places where the text was last changed.",
+)
 data class ChangesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

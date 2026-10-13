@@ -56,7 +56,10 @@ private fun runInEveryEditor(command: String, vimContext: VimLContext?): Executi
 }
 
 /** see "h :bufdo" */
-@ExCommand(command = "bufd[o]")
+@ExCommand(
+  command = "bufd[o]",
+  description = "Run {cmd} in every loaded buffer.",
+)
 data class BufDoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -71,7 +74,10 @@ data class BufDoCommand(val range: Range, val modifier: CommandModifier, val arg
 }
 
 /** see "h :windo" */
-@ExCommand(command = "windo")
+@ExCommand(
+  command = "windo",
+  description = "Run {cmd} in every window.",
+)
 data class WinDoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -86,7 +92,10 @@ data class WinDoCommand(val range: Range, val modifier: CommandModifier, val arg
 }
 
 /** see "h :tabdo" */
-@ExCommand(command = "tabd[o]")
+@ExCommand(
+  command = "tabd[o]",
+  description = "Run {cmd} in every tab.",
+)
 data class TabDoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -101,7 +110,10 @@ data class TabDoCommand(val range: Range, val modifier: CommandModifier, val arg
 }
 
 /** see "h :argdo" */
-@ExCommand(command = "argdo")
+@ExCommand(
+  command = "argdo",
+  description = "Run {cmd} for every file in the argument list.",
+)
 data class ArgDoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -35,7 +35,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  * up in the find colour rather than failing, which is the useful failure: the reader can see that
  * the pattern worked and only the colour was wrong.
  */
-@ExCommand(command = "mat[ch]")
+@ExCommand(
+  command = "mat[ch]",
+  description = "Highlight everything matching /{pattern}/ with {group}, until :match none.",
+)
 data class MatchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

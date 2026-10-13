@@ -35,7 +35,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * `:doautoall` is deliberately *not* a second name for this - see [DoAutoAllCommand], which fires
  * the same event for every buffer rather than for one.
  */
-@ExCommand(command = "do[autocmd]")
+@ExCommand(
+  command = "do[autocmd]",
+  description = "Run the autocommands for {event} as if it had just happened, in the current buffer.",
+)
 data class DoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -80,7 +83,10 @@ data class DoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val
  *
  * see "h :doautoall"
  */
-@ExCommand(command = "doautoa[ll]")
+@ExCommand(
+  command = "doautoa[ll]",
+  description = "Run the autocommands for {event} as if it had just happened, in every loaded buffer.",
+)
 data class DoAutoAllCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

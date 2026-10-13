@@ -23,7 +23,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * `:last` is the argument list, `:blast` the buffer list and `:tablast` the tab pages; see
  * [SelectFirstFileCommand] for why the three are one command here.
  */
-@ExCommand(command = "la[st],bl[ast],tabl[ast]")
+@ExCommand(
+  command = "la[st],bl[ast],tabl[ast]",
+  description = "Go to the last file, buffer or tab.",
+)
 data class SelectLastFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

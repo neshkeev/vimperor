@@ -21,7 +21,11 @@ import com.maddyhome.idea.vim.handler.MotionActionHandler
 
 // `<C-T>` used to be here, and it is a different stack: `<C-O>` and `<C-I>` walk the jump list,
 // `<C-T>` pops the *tag* stack. See TagPopStackAction.
-@CommandOrMotion(keys = ["<C-O>"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-O>"],
+  modes = [Mode.NORMAL],
+  description = "Go to the [count]th older position in the jump list.",
+)
 class MotionJumpPreviousAction : MotionActionHandler.ForEachCaret() {
   override fun getOffset(
     editor: VimEditor,

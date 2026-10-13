@@ -58,17 +58,21 @@ internal class VsCodeVirtualBuffers(
     kind: VirtualBufferKind,
     content: String,
     focus: Boolean,
+    caretLine: Int,
   ) {
-    // A preview is transient and never blocks; everything else refuses to nest, which is Vim's own
-    // rule - `:help cmdwin` - and the reason `q:` inside `q:` says E1292 rather than opening two.
+    // A preview is transient and the help is read-only, so neither blocks; the rest refuse to nest,
+    // which is Vim's own rule - `:help cmdwin` - and the reason `q:` inside `q:` says E1292 rather
+    // than opening two. The help is still *blocked* by one, as Vim blocks `:help` in the cmdwin.
     if (kind != VirtualBufferKind.SubstitutePreview && refuseIfAlreadyOpen(editor)) return
+    // `:help x` and then `:help y` is one window in Vim, so the one that is open gives way.
+    if (kind == VirtualBufferKind.Help) close(context, VirtualBufferKind.Help)
 
     val originalPath = editor.getPath()
     openDocument(content) { document ->
       open[identityOf(document)] = Buffer(kind, originalPath)
       // `focus` is false only for the substitute preview, which cannot reach this host - so this
       // always shows and focuses, and the parameter is honoured rather than assumed away.
-      if (focus) showDocument(document)
+      if (focus) showDocument(document, caretLine)
     }
   }
 
@@ -111,7 +115,7 @@ internal class VsCodeVirtualBuffers(
   }
 
   private fun refuseIfAlreadyOpen(editor: VimEditor): Boolean {
-    val alreadyOpen = open.values.firstOrNull { it.kind != VirtualBufferKind.SubstitutePreview } ?: return false
+    val alreadyOpen = open.values.firstOrNull { cannotNest(it.kind) } ?: return false
     injector.messages.showErrorMessage(editor, alreadyOpenMessage(alreadyOpen.kind))
     return true
   }
@@ -120,6 +124,18 @@ internal class VsCodeVirtualBuffers(
     VirtualBufferKind.Command, is VirtualBufferKind.Search -> "E1292: Command-line window is already open"
     VirtualBufferKind.ControlCharsEditor -> "A control characters editor is already open"
     VirtualBufferKind.SubstitutePreview -> "A substitute preview is already open"
+    VirtualBufferKind.Help -> "The help is already open"
+  }
+
+  /**
+   * Whether an open buffer of this kind stops another from opening.
+   *
+   * A search window is a `data class` rather than an object, because it carries its direction, so this is a `when`
+   * and not a set - a set would silently stop blocking on `q/`.
+   */
+  private fun cannotNest(kind: VirtualBufferKind): Boolean = when (kind) {
+    VirtualBufferKind.Command, is VirtualBufferKind.Search, VirtualBufferKind.ControlCharsEditor -> true
+    VirtualBufferKind.SubstitutePreview, VirtualBufferKind.Help -> false
   }
 }
 
@@ -138,6 +154,21 @@ internal fun openUntitledDocument(content: String, onOpen: (TextDocument) -> Uni
   )
 }
 
-private fun showDocument(document: TextDocument) {
-  window.showTextDocument(document).then({ _: TextEditor -> }, { _: Any? -> })
+/**
+ * Shows the document and puts the caret on [caretLine], which is how `:help {subject}` arrives at its tag.
+ *
+ * The caret is placed inside the promise's callback, because that is the first moment there is an editor to place it
+ * in - `showTextDocument` is what hands one over. Line zero is left alone, which is where a new editor already is.
+ */
+private fun showDocument(document: TextDocument, caretLine: Int = 0) {
+  window.showTextDocument(document).then(
+    { shown: TextEditor ->
+      if (caretLine > 0) {
+        val position = Position(caretLine.coerceAtMost((document.lineCount - 1).coerceAtLeast(0)), 0)
+        shown.selections = arrayOf(Selection(position, position))
+        shown.revealRange(Range(position, position), TextEditorRevealType.InCenterIfOutsideViewport)
+      }
+    },
+    { _: Any? -> },
+  )
 }

@@ -35,7 +35,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :language"
  */
-@ExCommand(command = "lan[guage]")
+@ExCommand(
+  command = "lan[guage]",
+  description = "Set the language used for messages, time or collation. Accepted and does nothing here.",
+)
 data class LanguageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -64,6 +64,7 @@ class ExCommandProcessor(private val environment: SymbolProcessorEnvironment) : 
           hasStandardConstructor(classDeclaration),
           exCommandAnnotation.barSeparates,
           exCommandAnnotation.delimitedSections,
+          exCommandAnnotation.description,
         )
         for (command in exCommandAnnotation.command.split(",")) {
           commandToClass[command] = bean

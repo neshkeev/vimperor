@@ -23,7 +23,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * abandons an unsaved buffer; neither host loses one that way, since both keep the editor it was in
  * open and would ask before closing it, so it is accepted and changes nothing.
  */
-@ExCommand(command = "ene[w]")
+@ExCommand(
+  command = "ene[w]",
+  description = "Open a new, empty buffer in the current window.",
+)
 data class EditNewFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -52,7 +55,10 @@ data class EditNewFileCommand(val range: Range, val modifier: CommandModifier, v
  * through the catch-all parser rule rather than through a token of its own is built from the
  * standard `(Range, CommandModifier, String)` constructor, and `:new` has no token.
  */
-@ExCommand(command = "new")
+@ExCommand(
+  command = "new",
+  description = "Split the window and open a new, empty buffer in it.",
+)
 data class NewWindowCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -70,7 +76,10 @@ data class NewWindowCommand(val range: Range, val modifier: CommandModifier, val
 }
 
 /** see "h :vnew" - [NewWindowCommand] the other way up. */
-@ExCommand(command = "vne[w]")
+@ExCommand(
+  command = "vne[w]",
+  description = "Split the window vertically and open a new, empty buffer in it.",
+)
 data class NewVerticalWindowCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -111,7 +120,10 @@ private fun openNewWindowContents(context: ExecutionContext, argument: String): 
  *
  * The same two commands in Vim, and the same one here.
  */
-@ExCommand(command = "tabnew,tabe[dit]")
+@ExCommand(
+  command = "tabnew,tabe[dit]",
+  description = "Open [file] in a new tab, or an empty buffer when no file is given.",
+)
 data class NewTabCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -50,7 +50,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :highlight"
  */
-@ExCommand(command = "hi[ghlight]")
+@ExCommand(
+  command = "hi[ghlight]",
+  description = "Define or clear a highlight group, which is what :match and the extensions paint with.",
+)
 data class HighlightCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

@@ -62,7 +62,10 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.VariableExpression
  *
  * see "h :redir"
  */
-@ExCommand(command = "redi[r]")
+@ExCommand(
+  command = "redi[r]",
+  description = "Send the messages that follow to a file, a register or a variable, until :redir END.",
+)
 data class RedirCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

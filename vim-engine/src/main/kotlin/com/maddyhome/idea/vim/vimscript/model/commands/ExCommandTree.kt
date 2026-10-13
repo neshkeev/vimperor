@@ -40,6 +40,23 @@ class ExCommandTree {
    * Results are sorted alphabetically; command-name Tab completion relies on this
    * order to cycle through matches deterministically (e.g. `:set` -> `set`, `setglobal`, `sethandler`, ...).
    */
+  /**
+   * Every registered command: its full name, the shortest abbreviation that reaches it, and its handler.
+   *
+   * `:help` is the only caller. It needs both names because Vim's help tags a command under both - `:h` and `:help` -
+   * and it needs the handler because that is where the description is. The pattern the command was declared with
+   * (`h[elp]`) is not kept, so the abbreviation is recovered from the table that was built out of it.
+   */
+  fun allCommands(): List<ExCommandNames> =
+    commandToInstance.entries.sortedBy { it.key }.map { (fullCommand, instance) ->
+      val abbreviation = abbrevToCommand.entries
+        .filter { it.value == fullCommand }
+        .minByOrNull { it.key.length }
+        ?.key
+        ?: fullCommand
+      ExCommandNames(fullCommand, abbreviation, instance)
+    }
+
   fun findFullCommandsByPrefix(prefix: String): List<String> {
     return commandToInstance.keys.filter { it.startsWith(prefix) }.sorted()
   }
@@ -69,3 +86,10 @@ class ExCommandTree {
     return result
   }
 }
+
+/** One registered ex command, under both of the names Vim's help gives it. See [ExCommandTree.allCommands]. */
+class ExCommandNames(
+  val fullCommand: String,
+  val abbreviation: String,
+  val instance: LazyExCommandInstance,
+)

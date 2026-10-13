@@ -31,7 +31,10 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  *
  * see "h :scriptnames"
  */
-@ExCommand(command = "scr[iptnames]")
+@ExCommand(
+  command = "scr[iptnames]",
+  description = "List the scripts that have been sourced, in the order they were.",
+)
 data class ScriptNamesCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

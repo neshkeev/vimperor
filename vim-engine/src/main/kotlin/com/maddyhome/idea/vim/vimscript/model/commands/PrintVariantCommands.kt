@@ -44,7 +44,10 @@ private fun printRange(
 }
 
 /** see "h :number" */
-@ExCommand(command = "nu[mber]")
+@ExCommand(
+  command = "nu[mber]",
+  description = "Print the lines in [range] with their line numbers.",
+)
 data class NumberCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -60,7 +63,10 @@ data class NumberCommand(val range: Range, val modifier: CommandModifier, val ar
 }
 
 /** see "h :list" */
-@ExCommand(command = "l[ist]")
+@ExCommand(
+  command = "l[ist]",
+  description = "Print the lines in [range] with unprintable characters shown as in 'list' mode.",
+)
 data class ListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -86,7 +92,10 @@ data class ListCommand(val range: Range, val modifier: CommandModifier, val argu
  * treated as the plain form, because a `:z-` that printed the lines *after* the address would be
  * showing the wrong half of the file.
  */
-@ExCommand(command = "z")
+@ExCommand(
+  command = "z",
+  description = "Print a window of text around the line in [range], the way :z does in ex.",
+)
 data class ZCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

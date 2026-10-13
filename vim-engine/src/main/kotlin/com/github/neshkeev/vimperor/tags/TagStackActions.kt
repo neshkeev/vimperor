@@ -41,7 +41,11 @@ import com.maddyhome.idea.vim.helper.enumSetOf
  * real difference from a `:tag` entry rather than a gap: `:tnext` on it says there is nothing to
  * step through, which is true. An entry that claimed matches it does not have would be worse.
  */
-@CommandOrMotion(keys = ["<C-]>"], modes = [Mode.NORMAL, Mode.VISUAL])
+@CommandOrMotion(
+  keys = ["<C-]>"],
+  modes = [Mode.NORMAL, Mode.VISUAL],
+  description = "Jump to the definition of the keyword under the cursor using the IDE's Go to Declaration action, pushing the position onto the tag stack.",
+)
 class TagJumpAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 
@@ -89,7 +93,11 @@ class TagJumpAction : VimActionHandler.SingleExecution() {
  * bound to the jump list until now, which meant `<C-]>` then `<C-T>` happened to look right - the
  * jump list had an entry too - and diverged the moment anything else moved the caret.
  */
-@CommandOrMotion(keys = ["<C-T>"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["<C-T>"],
+  modes = [Mode.NORMAL],
+  description = "Jump back to the [count]th older entry in the tag stack.",
+)
 class TagPopStackAction : VimActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

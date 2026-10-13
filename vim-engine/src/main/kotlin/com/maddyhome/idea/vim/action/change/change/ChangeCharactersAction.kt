@@ -20,7 +20,11 @@ import com.maddyhome.idea.vim.command.CommandFlags.FLAG_NO_REPEAT_INSERT
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.helper.enumSetOf
 
-@CommandOrMotion(keys = ["s"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["s"],
+  modes = [Mode.NORMAL],
+  description = "Delete [count] characters into register [x] and start Insert mode.",
+)
 class ChangeCharactersAction : ChangeInInsertSequenceAction() {
   override val type: Command.Type = Command.Type.CHANGE
 

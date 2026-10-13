@@ -22,6 +22,8 @@ package com.intellij.vim.annotations
 @Repeatable
 annotation class ExCommand(
   val command: String,
+  /** One line saying what the command does, as [CommandOrMotion.description] describes. */
+  val description: String = "",
   /** `false` when the command takes a `|` as part of its argument, so it can never be followed by another command */
   val barSeparates: Boolean = true,
   /** The number of delimiter-wrapped sections the argument holds, like the pattern and replacement of `:s/pat/sub/` */

@@ -35,7 +35,10 @@ import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
  *
  * see "h :behave"
  */
-@ExCommand(command = "be[have]")
+@ExCommand(
+  command = "be[have]",
+  description = "Set 'selectmode', 'mousemodel', 'keymodel' and 'selection' for mswin or xterm behaviour.",
+)
 data class BehaveCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

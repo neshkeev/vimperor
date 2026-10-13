@@ -49,32 +49,50 @@ sealed class UnavailableCommand(range: Range, modifier: CommandModifier, argumen
 // offers one to an extension - IntelliJ's scripting and VS Code's are for the IDE, not for a buffer.
 
 /** see "h :python" */
-@ExCommand(command = "py[thon]")
+@ExCommand(
+  command = "py[thon]",
+  description = "Run Python. Accepted and does nothing: there is no Python interface.",
+)
 data class PythonCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :python3" */
-@ExCommand(command = "py3")
+@ExCommand(
+  command = "py3",
+  description = "Run Python 3. Accepted and does nothing, as :python is.",
+)
 data class Python3Command(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :perl" */
-@ExCommand(command = "pe[rl]")
+@ExCommand(
+  command = "pe[rl]",
+  description = "Run Perl. Accepted and does nothing: there is no Perl interface.",
+)
 data class PerlCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ruby" */
-@ExCommand(command = "rub[y]")
+@ExCommand(
+  command = "rub[y]",
+  description = "Run Ruby. Accepted and does nothing: there is no Ruby interface.",
+)
 data class RubyCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :lua" */
-@ExCommand(command = "lua")
+@ExCommand(
+  command = "lua",
+  description = "Run Lua. Accepted and does nothing: there is no Lua interface.",
+)
 data class LuaCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :tcl" */
-@ExCommand(command = "tc[l]")
+@ExCommand(
+  command = "tc[l]",
+  description = "Run Tcl. Accepted and does nothing: there is no Tcl interface.",
+)
 data class TclCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -82,79 +100,124 @@ data class TclCommand(val range: Range, val modifier: CommandModifier, val argum
 // the window belongs to the IDE, and an extension is a guest in one of its editors.
 
 /** see "h :gui" */
-@ExCommand(command = "gu[i]")
+@ExCommand(
+  command = "gu[i]",
+  description = "Start the GUI. Accepted and does nothing: this is already one.",
+)
 data class GuiCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :gvim" */
-@ExCommand(command = "gv[im]")
+@ExCommand(
+  command = "gv[im]",
+  description = "Start the GUI. Accepted and does nothing, as :gui is.",
+)
 data class GvimCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :hardcopy" - Vim prints the buffer itself; neither host lets an extension reach a printer. */
-@ExCommand(command = "ha[rdcopy]")
+@ExCommand(
+  command = "ha[rdcopy]",
+  description = "Print the buffer. Accepted and does nothing: printing is VS Code's.",
+)
 data class HardcopyCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :tearoff" */
-@ExCommand(command = "tearo[ff]")
+@ExCommand(
+  command = "tearo[ff]",
+  description = "Tear a menu off. Accepted and does nothing: there are no Vim menus here.",
+)
 data class TearOffCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :tmenu" - a tooltip on a GUI menu item, of which there are none. */
-@ExCommand(command = "tm[enu]")
+@ExCommand(
+  command = "tm[enu]",
+  description = "Set a menu tooltip. Accepted and does nothing, as the menu commands are.",
+)
 data class TipMenuCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :tunmenu" */
-@ExCommand(command = "tu[nmenu]")
+@ExCommand(
+  command = "tu[nmenu]",
+  description = "Remove a menu tooltip. Accepted and does nothing, as the menu commands are.",
+)
 data class TipUnmenuCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :winpos" - the position of Vim's own window on the screen. */
-@ExCommand(command = "winp[os]")
+@ExCommand(
+  command = "winp[os]",
+  description = "Move the editor window. Accepted and does nothing: the window is VS Code's.",
+)
 data class WinPosCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :winsize" - the size of Vim's own window, in characters. */
-@ExCommand(command = "win[size]")
+@ExCommand(
+  command = "win[size]",
+  description = "Resize the editor window. Accepted and does nothing, as :winpos is.",
+)
 data class WinSizeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :options" - Vim's option window, which is a buffer full of Vim's own help. */
-@ExCommand(command = "opt[ions]")
+@ExCommand(
+  command = "opt[ions]",
+  description = "Open the option window. Accepted and does nothing: use :set to see an option.",
+)
 data class OptionsWindowCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :intro" - Vim's splash screen. */
-@ExCommand(command = "int[ro]")
+@ExCommand(
+  command = "int[ro]",
+  description = "Show the intro screen. Accepted and does nothing.",
+)
 data class IntroCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :exusage" - Vim's own summary of ex commands. */
-@ExCommand(command = "exu[sage]")
+@ExCommand(
+  command = "exu[sage]",
+  description = "Show Ex command help. Accepted and does nothing: :help lists the commands instead.",
+)
 data class ExUsageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :viusage" - Vim's own summary of normal-mode commands. */
-@ExCommand(command = "viu[sage]")
+@ExCommand(
+  command = "viu[sage]",
+  description = "Show Normal mode help. Accepted and does nothing: :help lists the commands instead.",
+)
 data class ViUsageCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 // The terminal. Vim is a process in a shell and can hand it back; an IDE plugin is not.
 
 /** see "h :stop" */
-@ExCommand(command = "st[op]")
+@ExCommand(
+  command = "st[op]",
+  description = "Suspend the editor. Accepted and does nothing: there is no shell to return to.",
+)
 data class StopCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :suspend" */
-@ExCommand(command = "sus[pend]")
+@ExCommand(
+  command = "sus[pend]",
+  description = "Suspend the editor. Accepted and does nothing, as :stop is.",
+)
 data class SuspendCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :open" - Vim's open mode, a one-line editor for terminals that cannot do better. */
-@ExCommand(command = "o[pen]")
+@ExCommand(
+  command = "o[pen]",
+  description = "Start open mode. Accepted and does nothing: open mode is not implemented.",
+)
 data class OpenModeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -162,27 +225,42 @@ data class OpenModeCommand(val range: Range, val modifier: CommandModifier, val 
 // no undo file, and no session - and no host API that could produce one that meant anything.
 
 /** see "h :recover" - recovers a buffer from its swap file, and there are no swap files. */
-@ExCommand(command = "rec[over]")
+@ExCommand(
+  command = "rec[over]",
+  description = "Recover a file from a swap file. Accepted and does nothing: there are no swap files.",
+)
 data class RecoverCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :rviminfo" */
-@ExCommand(command = "rv[iminfo]")
+@ExCommand(
+  command = "rv[iminfo]",
+  description = "Read a viminfo file. Accepted and does nothing: there is no viminfo file.",
+)
 data class ReadViminfoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :wviminfo" */
-@ExCommand(command = "wv[iminfo]")
+@ExCommand(
+  command = "wv[iminfo]",
+  description = "Write a viminfo file. Accepted and does nothing, as :rviminfo is.",
+)
 data class WriteViminfoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :rundo" */
-@ExCommand(command = "rund[o]")
+@ExCommand(
+  command = "rund[o]",
+  description = "Read an undo file. Accepted and does nothing: undo is VS Code's and is not persisted.",
+)
 data class ReadUndoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :wundo" */
-@ExCommand(command = "wu[ndo]")
+@ExCommand(
+  command = "wu[ndo]",
+  description = "Write an undo file. Accepted and does nothing, as :rundo is.",
+)
 data class WriteUndoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -194,7 +272,10 @@ data class WriteUndoCommand(val range: Range, val modifier: CommandModifier, val
  * nothing to print. `:earlier` and `:later` walk that line, which is the part of the feature a
  * linear history can carry.
  */
-@ExCommand(command = "undol[ist]")
+@ExCommand(
+  command = "undol[ist]",
+  description = "List the undo branches. Accepted and does nothing: undo is VS Code's.",
+)
 data class UndoListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -205,12 +286,18 @@ data class UndoListCommand(val range: Range, val modifier: CommandModifier, val 
  * read that layout, let alone rebuild it: `:wincmd` can move between editor groups and cannot ask
  * how they are arranged.
  */
-@ExCommand(command = "mks[ession]")
+@ExCommand(
+  command = "mks[ession]",
+  description = "Write a session file. Accepted and does nothing: the layout is VS Code's.",
+)
 data class MakeSessionCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :breakadd" - Vim's Vimscript debugger, which this engine does not have. */
-@ExCommand(command = "breaka[dd]")
+@ExCommand(
+  command = "breaka[dd]",
+  description = "Add a Vimscript breakpoint. Accepted and does nothing: there is no debugger.",
+)
 data class BreakAddCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -219,12 +306,18 @@ data class BreakAddCommand(val range: Range, val modifier: CommandModifier, val 
 // are the IDE's own, opened by the IDE, and not a window an extension can put a buffer in.
 
 /** see "h :pclose" */
-@ExCommand(command = "pc[lose]")
+@ExCommand(
+  command = "pc[lose]",
+  description = "Close the preview window. Accepted and does nothing: there is no preview window.",
+)
 data class PreviewCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :pedit" */
-@ExCommand(command = "ped[it]")
+@ExCommand(
+  command = "ped[it]",
+  description = "Edit a file in the preview window. Accepted and does nothing, as :pclose is.",
+)
 data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -252,27 +345,42 @@ data class PreviewEditCommand(val range: Range, val modifier: CommandModifier, v
  */
 
 /** see "h :spelldump" */
-@ExCommand(command = "spelld[ump]")
+@ExCommand(
+  command = "spelld[ump]",
+  description = "Dump the word list into a buffer. Accepted and does nothing: the spell checker is VS Code's.",
+)
 data class SpellDumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :spellinfo" */
-@ExCommand(command = "spelli[nfo]")
+@ExCommand(
+  command = "spelli[nfo]",
+  description = "Show which spell files are used. Accepted and does nothing, as :spelldump is.",
+)
 data class SpellInfoCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :spellrare" */
-@ExCommand(command = "spellra[re]")
+@ExCommand(
+  command = "spellra[re]",
+  description = "Mark a word as rare. Accepted and does nothing, as :spelldump is.",
+)
 data class SpellRareCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :spellrepall" */
-@ExCommand(command = "spellr[epall]")
+@ExCommand(
+  command = "spellr[epall]",
+  description = "Repeat the last spelling correction everywhere. Accepted and does nothing.",
+)
 data class SpellRepeatAllCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :mkspell" */
-@ExCommand(command = "mksp[ell]")
+@ExCommand(
+  command = "mksp[ell]",
+  description = "Compile a spell file. Accepted and does nothing, as :spelldump is.",
+)
 data class MakeSpellCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -290,53 +398,83 @@ data class MakeSpellCommand(val range: Range, val modifier: CommandModifier, val
  */
 
 /** see "h :diffget" */
-@ExCommand(command = "diffg[et]")
+@ExCommand(
+  command = "diffg[et]",
+  description = "Take a change from the other side of the diff. Accepted and does nothing: the diff is VS Code's.",
+)
 data class DiffGetCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :diffput" */
-@ExCommand(command = "diffpu[t]")
+@ExCommand(
+  command = "diffpu[t]",
+  description = "Put a change to the other side of the diff. Accepted and does nothing, as :diffget is.",
+)
 data class DiffPutCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 
 /** see "h :ptag" */
-@ExCommand(command = "pt[ag]")
+@ExCommand(
+  command = "pt[ag]",
+  description = "Show a tag in the preview window. Accepted and does nothing: there is no preview window.",
+)
 data class PreviewTagCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptselect" */
-@ExCommand(command = "pts[elect]")
+@ExCommand(
+  command = "pts[elect]",
+  description = "List tags and show one in the preview window. Accepted and does nothing, as :ptag is.",
+)
 data class PreviewTagSelectCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptjump" */
-@ExCommand(command = "ptj[ump]")
+@ExCommand(
+  command = "ptj[ump]",
+  description = "Jump to a tag in the preview window. Accepted and does nothing, as :ptag is.",
+)
 data class PreviewTagJumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptnext" */
-@ExCommand(command = "ptn[ext]")
+@ExCommand(
+  command = "ptn[ext]",
+  description = "Show the next matching tag in the preview window. Accepted and does nothing, as :ptag is.",
+)
 data class PreviewTagNextCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptprevious" */
-@ExCommand(command = "ptp[revious],ptN[ext]")
+@ExCommand(
+  command = "ptp[revious],ptN[ext]",
+  description = "Show the previous matching tag in the preview window. Accepted and does nothing.",
+)
 data class PreviewTagPreviousCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptfirst" */
-@ExCommand(command = "ptf[irst],ptr[ewind]")
+@ExCommand(
+  command = "ptf[irst],ptr[ewind]",
+  description = "Show the first matching tag in the preview window. Accepted and does nothing.",
+)
 data class PreviewTagFirstCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ptlast" */
-@ExCommand(command = "ptl[ast]")
+@ExCommand(
+  command = "ptl[ast]",
+  description = "Show the last matching tag in the preview window. Accepted and does nothing.",
+)
 data class PreviewTagLastCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :psearch" */
-@ExCommand(command = "ps[earch]")
+@ExCommand(
+  command = "ps[earch]",
+  description = "Show a match in the preview window. Accepted and does nothing, as :ptag is.",
+)
 data class PreviewSearchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -345,22 +483,34 @@ data class PreviewSearchCommand(val range: Range, val modifier: CommandModifier,
 // project themselves and answer "go to definition" from that.
 
 /** see "h :isearch" */
-@ExCommand(command = "is[earch]")
+@ExCommand(
+  command = "is[earch]",
+  description = "Search the included files. Accepted and does nothing: there is no include search.",
+)
 data class IncludeSearchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ijump" */
-@ExCommand(command = "ij[ump]")
+@ExCommand(
+  command = "ij[ump]",
+  description = "Jump to a match in the included files. Accepted and does nothing, as :isearch is.",
+)
 data class IncludeJumpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :ilist" */
-@ExCommand(command = "il[ist]")
+@ExCommand(
+  command = "il[ist]",
+  description = "List the matches in the included files. Accepted and does nothing, as :isearch is.",
+)
 data class IncludeListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
 /** see "h :isplit" */
-@ExCommand(command = "isp[lit]")
+@ExCommand(
+  command = "isp[lit]",
+  description = "Split and jump to a match in the included files. Accepted and does nothing, as :isearch is.",
+)
 data class IncludeSplitCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -373,7 +523,10 @@ data class IncludeSplitCommand(val range: Range, val modifier: CommandModifier, 
  * two ways at once. Both hosts hang the language off the document, and every view of a document
  * shows it the same way; `:setlocal syntax=` is the whole of what they can do.
  */
-@ExCommand(command = "ow[nsyntax]")
+@ExCommand(
+  command = "ow[nsyntax]",
+  description = "Give this window its own syntax. Accepted and does nothing: the language is VS Code's.",
+)
 data class OwnSyntaxCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -385,7 +538,10 @@ data class OwnSyntaxCommand(val range: Range, val modifier: CommandModifier, val
  * and the plugin files Vim ships with are not here to be read. `:set makeprg=` is what to write
  * instead, and `:make` reads it.
  */
-@ExCommand(command = "comp[iler]")
+@ExCommand(
+  command = "comp[iler]",
+  description = "Set the compiler plugin. Accepted and does nothing: there are no compiler plugins.",
+)
 data class CompilerCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -395,7 +551,10 @@ data class CompilerCommand(val range: Range, val modifier: CommandModifier, val 
  * Searches Vim's own help files, of which there are none here - `:help` opens the documentation in
  * a browser rather than in a buffer, so there is nothing on disk to grep.
  */
-@ExCommand(command = "helpg[rep]")
+@ExCommand(
+  command = "helpg[rep]",
+  description = "Search the help files. Accepted and does nothing: :help lists the commands instead.",
+)
 data class HelpGrepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -406,7 +565,10 @@ data class HelpGrepCommand(val range: Range, val modifier: CommandModifier, val 
  * Neither host is a process you leave with a status: closing an editor tells the IDE nothing, and
  * the IDE is not what launched you.
  */
-@ExCommand(command = "cq[uit]")
+@ExCommand(
+  command = "cq[uit]",
+  description = "Quit with an error code. Accepted and does nothing: there is no exit code to give.",
+)
 data class CQuitCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)
 
@@ -416,6 +578,9 @@ data class CQuitCommand(val range: Range, val modifier: CommandModifier, val arg
  * Vim 9's list of files it will source without asking, which is what makes a project-local `.vimrc`
  * safe. This fork reads one config, from one place the user chose; there is no list to add to.
  */
-@ExCommand(command = "trus[t]")
+@ExCommand(
+  command = "trus[t]",
+  description = "Mark a script as trusted. Accepted and does nothing: there is no trust database.",
+)
 data class TrustCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   UnavailableCommand(range, modifier, argument)

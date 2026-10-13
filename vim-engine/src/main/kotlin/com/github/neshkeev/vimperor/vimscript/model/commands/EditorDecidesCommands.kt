@@ -69,7 +69,10 @@ internal abstract class EditorDecidesCommand(
  *
  * see "h :syntax"
  */
-@ExCommand(command = "sy[ntax]")
+@ExCommand(
+  command = "sy[ntax]",
+  description = "Set the syntax of the buffer. VS Code decides the language; :set syntax={name} is the one that works.",
+)
 internal data class SyntaxCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument) {
   override fun contradiction(argument: String): String? =
@@ -89,7 +92,10 @@ internal data class SyntaxCommand(val range: Range, val modifier: CommandModifie
  *
  * see "h :filetype"
  */
-@ExCommand(command = "filet[ype]")
+@ExCommand(
+  command = "filet[ype]",
+  description = "Switch filetype detection on or off. Accepted and does nothing: VS Code detects the language itself.",
+)
 internal data class FiletypeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument) {
   override fun contradiction(argument: String): String? =
@@ -108,7 +114,10 @@ internal data class FiletypeCommand(val range: Range, val modifier: CommandModif
  *
  * see "h :colorscheme"
  */
-@ExCommand(command = "colo[rscheme]")
+@ExCommand(
+  command = "colo[rscheme]",
+  description = "Load a colour scheme. Accepted and does nothing: the theme is VS Code's.",
+)
 internal data class ColorschemeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument) {
   override fun contradiction(argument: String): String? =
@@ -130,7 +139,10 @@ internal data class ColorschemeCommand(val range: Range, val modifier: CommandMo
  *
  * see "h :runtime"
  */
-@ExCommand(command = "ru[ntime]")
+@ExCommand(
+  command = "ru[ntime]",
+  description = "Source {file} from the runtime path. Accepted and does nothing: there is no runtime path.",
+)
 internal data class RuntimeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument)
 
@@ -143,7 +155,10 @@ internal data class RuntimeCommand(val range: Range, val modifier: CommandModifi
  *
  * see "h :packloadall"
  */
-@ExCommand(command = "packl[oadall]")
+@ExCommand(
+  command = "packl[oadall]",
+  description = "Load every package in 'packpath'. Accepted and does nothing: there is no package directory.",
+)
 internal data class PackLoadAllCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument)
 
@@ -156,7 +171,10 @@ internal data class PackLoadAllCommand(val range: Range, val modifier: CommandMo
  *
  * see "h :helptags"
  */
-@ExCommand(command = "helpt[ags]")
+@ExCommand(
+  command = "helpt[ags]",
+  description = "Generate help tags. Accepted and does nothing: the help is rendered rather than read from files.",
+)
 internal data class HelpTagsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument)
 
@@ -170,12 +188,18 @@ internal data class HelpTagsCommand(val range: Range, val modifier: CommandModif
  *
  * see "h :mkview", "h :loadview"
  */
-@ExCommand(command = "mkvie[w]")
+@ExCommand(
+  command = "mkvie[w]",
+  description = "Save the view of the window to a file. Accepted and does nothing: the layout is VS Code's.",
+)
 internal data class MakeViewCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument)
 
 /** see "h :loadview" - the other half of [MakeViewCommand]. */
-@ExCommand(command = "loadv[iew]")
+@ExCommand(
+  command = "loadv[iew]",
+  description = "Restore a view saved by :mkview. Accepted and does nothing, as :mkview is.",
+)
 internal data class LoadViewCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   EditorDecidesCommand(range, modifier, argument)
 
@@ -191,7 +215,10 @@ internal data class LoadViewCommand(val range: Range, val modifier: CommandModif
  *
  * see "h :version"
  */
-@ExCommand(command = "ve[rsion]")
+@ExCommand(
+  command = "ve[rsion]",
+  description = "Show which Vimperor this is, and which editor it is running in.",
+)
 internal data class VersionCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

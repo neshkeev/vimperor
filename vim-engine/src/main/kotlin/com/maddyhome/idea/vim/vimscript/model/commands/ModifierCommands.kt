@@ -92,7 +92,10 @@ sealed class ModifierCommand(range: Range, modifier: CommandModifier, argument: 
  * writes to the output panel itself - `:registers` and the other tables - is not covered, which is
  * a smaller gap than it sounds: nobody silences a table, they silence a line that might fail.
  */
-@ExCommand(command = "sil[ent]")
+@ExCommand(
+  command = "sil[ent]",
+  description = "Run {cmd} without its messages. With [!] errors are silenced too.",
+)
 data class SilentCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -123,7 +126,10 @@ data class SilentCommand(val range: Range, val modifier: CommandModifier, val ar
  * the engine reads that option yet, so today this runs the command and puts the option back; when
  * something does start reading it, this is already the place that sets it.
  */
-@ExCommand(command = "verb[ose]")
+@ExCommand(
+  command = "verb[ose]",
+  description = "Run {cmd} with 'verbose' set to [count], 1 by default.",
+)
 data class VerboseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -149,7 +155,10 @@ data class VerboseCommand(val range: Range, val modifier: CommandModifier, val a
  * Runs the command with autocommands turned off, which is what a config needs when the command it
  * is about to run would otherwise fire the very handlers it is in the middle of installing.
  */
-@ExCommand(command = "noa[utocmd]")
+@ExCommand(
+  command = "noa[utocmd]",
+  description = "Run {cmd} without triggering any autocommand.",
+)
 data class NoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -175,7 +184,10 @@ data class NoAutoCmdCommand(val range: Range, val modifier: CommandModifier, val
  * it up or down leaves them where they were. A mark the command *sets* is still set: Vim says that
  * of `'[` and `']`, and there is nothing about the other marks that makes them different.
  */
-@ExCommand(command = "lockm[arks]")
+@ExCommand(
+  command = "lockm[arks]",
+  description = "Run {cmd} without the marks following the lines it changes.",
+)
 data class LockMarksCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -203,7 +215,10 @@ data class LockMarksCommand(val range: Range, val modifier: CommandModifier, val
  * narrower one is answered with the wider. It keeps what `:keepmarks` asks to keep and some more
  * besides, which is the failure worth having of the two.
  */
-@ExCommand(command = "kee[pmarks]")
+@ExCommand(
+  command = "kee[pmarks]",
+  description = "Run {cmd} keeping the marks where they are, for a filter command.",
+)
 data class KeepMarksCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -229,7 +244,10 @@ data class KeepMarksCommand(val range: Range, val modifier: CommandModifier, val
  * mapping wants when it moves the caret about to do its work and does not want `''` to lead back
  * into the middle of that.
  */
-@ExCommand(command = "keepj[umps]")
+@ExCommand(
+  command = "keepj[umps]",
+  description = "Run {cmd} without changing the jump list or the change list.",
+)
 data class KeepJumpsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -254,7 +272,10 @@ data class KeepJumpsCommand(val range: Range, val modifier: CommandModifier, val
  * The last search pattern, the `/` register and the search history all stay as they were, so a
  * mapping that searches to find something does not leave that search behind for `n` to repeat.
  */
-@ExCommand(command = "keepp[atterns]")
+@ExCommand(
+  command = "keepp[atterns]",
+  description = "Run {cmd} without changing the last search pattern.",
+)
 data class KeepPatternsCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -284,7 +305,10 @@ data class KeepPatternsCommand(val range: Range, val modifier: CommandModifier, 
  * alternative: without it, `:keepalt {cmd}` is parsed as `:k eepalt`, sets a mark named `e`, and
  * never runs the command at all - silently, which is how this was found.
  */
-@ExCommand(command = "keepa[lt]")
+@ExCommand(
+  command = "keepa[lt]",
+  description = "Run {cmd} without changing the alternate file.",
+)
 data class KeepAltCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -302,7 +326,10 @@ data class KeepAltCommand(val range: Range, val modifier: CommandModifier, val a
  * `:silent` can still say the one thing it needs to. So it clears the suppression rather than
  * setting one, and puts back whatever was there.
  */
-@ExCommand(command = "uns[ilent]")
+@ExCommand(
+  command = "uns[ilent]",
+  description = "Run {cmd} with its messages shown, inside a :silent.",
+)
 data class UnsilentCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -333,7 +360,10 @@ data class UnsilentCommand(val range: Range, val modifier: CommandModifier, val 
  * where the output panel is written, which is the one place every table and every `:echo` passes
  * through.
  */
-@ExCommand(command = "filt[er]")
+@ExCommand(
+  command = "filt[er]",
+  description = "Run {cmd} and show only the output lines matching /{pattern}/, or not matching it with [!].",
+)
 data class FilterCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   ModifierCommand(range, modifier, argument) {
 
@@ -397,16 +427,25 @@ sealed class AcceptedModifierCommand(range: Range, modifier: CommandModifier, ar
 }
 
 /** see "h :confirm" - the host asks its own question; see [AcceptedModifierCommand]. */
-@ExCommand(command = "conf[irm]")
+@ExCommand(
+  command = "conf[irm]",
+  description = "Run {cmd} and ask rather than fail when it would lose a change.",
+)
 data class ConfirmCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AcceptedModifierCommand(range, modifier, argument)
 
 /** see "h :sandbox" - nothing here evaluates an untrusted expression; see [AcceptedModifierCommand]. */
-@ExCommand(command = "san[dbox]")
+@ExCommand(
+  command = "san[dbox]",
+  description = "Run {cmd} in a sandbox, where it cannot change anything outside the text.",
+)
 data class SandboxCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AcceptedModifierCommand(range, modifier, argument)
 
 /** see "h :noswapfile" - there are no swap files; see [AcceptedModifierCommand]. */
-@ExCommand(command = "noswapf[ile]")
+@ExCommand(
+  command = "noswapf[ile]",
+  description = "Run {cmd} without a swap file for the buffers it opens.",
+)
 data class NoSwapFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   AcceptedModifierCommand(range, modifier, argument)

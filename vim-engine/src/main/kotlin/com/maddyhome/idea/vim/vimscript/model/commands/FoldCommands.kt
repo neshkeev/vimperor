@@ -48,7 +48,10 @@ private fun foldAt(
  * Makes a fold over the range and closes it, which is `zf` with the range written out rather than
  * moved over.
  */
-@ExCommand(command = "fo[ld]")
+@ExCommand(
+  command = "fo[ld]",
+  description = "Fold the lines in [range].",
+)
 data class FoldCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -70,7 +73,10 @@ data class FoldCommand(val range: Range, val modifier: CommandModifier, val argu
 }
 
 /** see "h :foldopen" - `zo`, and `:foldopen!` is `zO`. */
-@ExCommand(command = "foldo[pen]")
+@ExCommand(
+  command = "foldo[pen]",
+  description = "Open the folds in [range]. With [!] open them all the way down.",
+)
 data class FoldOpenCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -92,7 +98,10 @@ data class FoldOpenCommand(val range: Range, val modifier: CommandModifier, val 
 }
 
 /** see "h :foldclose" - `zc`, and `:foldclose!` is `zC`. */
-@ExCommand(command = "foldc[lose]")
+@ExCommand(
+  command = "foldc[lose]",
+  description = "Close the folds in [range]. With [!] close them all the way up.",
+)
 data class FoldCloseCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

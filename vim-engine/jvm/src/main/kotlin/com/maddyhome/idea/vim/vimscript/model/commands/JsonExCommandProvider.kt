@@ -29,6 +29,7 @@ interface JsonExCommandProvider : ExCommandProvider {
         classLoader,
         it.value.barSeparates,
         it.value.delimitedSections,
+        it.value.description,
       )
     }
   }
@@ -51,4 +52,6 @@ data class ExCommandBean(
   val standardConstructor: Boolean,
   val barSeparates: Boolean = true,
   val delimitedSections: Int = 0,
+  /** The line `:help` shows beside the command name, from `@ExCommand`. */
+  val description: String = "",
 )

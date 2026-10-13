@@ -24,7 +24,11 @@ import com.maddyhome.idea.vim.handler.VimActionHandler
  * `:help jump-motions`, and recording a jump at a position the caret never left would silently reset a `<C-O>` /
  * `<C-I>` traversal in progress.
  */
-@CommandOrMotion(keys = ["gx"], modes = [Mode.NORMAL])
+@CommandOrMotion(
+  keys = ["gx"],
+  modes = [Mode.NORMAL],
+  description = "Open the URL under the cursor with the system's default handler, or with the program in g:netrw_browsex_viewer if it is set.",
+)
 class GotoUrlAction : VimActionHandler.ForEachCaret() {
   override val type: Command.Type = Command.Type.OTHER_READONLY
 

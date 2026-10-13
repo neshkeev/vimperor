@@ -60,42 +60,21 @@ class ExternalOpenerTest {
     assertNull(session.opener.viewer, "with no netrw viewer set, the system handler opens it")
   }
 
+  /**
+   * `:help` no longer opens a browser, and these three tests went with it.
+   *
+   * It used to percent-encode the subject into a search on vimdoc.sourceforge.net, because "there is
+   * no help file to open in an IDE". That stopped being true when the commands learnt to describe
+   * themselves: `:help` renders Vimperor's own command list and opens it in a buffer - see `HelpTest`
+   * and `HelpText`. `gx` above is what still uses the external opener, and it is the reason that seam
+   * exists at all.
+   */
   @Test
-  fun `test help opens the online help`() {
+  fun `test help no longer reaches for a browser`() {
     val session = Session("one")
     session.type(":help")
     session.key("<CR>")
 
-    assertEquals("http://vimdoc.sourceforge.net/htmldoc/", session.opener.target)
-  }
-
-  /**
-   * A topic becomes a search, and a space becomes `+`.
-   *
-   * Form encoding rather than plain percent encoding, which is the one place the two differ - and
-   * it is the difference between `:help i_CTRL-W` and `:help i CTRL-W` reaching the same page.
-   */
-  @Test
-  fun `test a help topic is form encoded into the query`() {
-    val session = Session("one")
-    session.type(":help i_CTRL-W")
-    session.key("<CR>")
-
-    assertEquals(
-      "http://vimdoc.sourceforge.net/search.php?docs=help&search=i_CTRL-W",
-      session.opener.target,
-    )
-  }
-
-  @Test
-  fun `test a topic with characters a url cannot carry is escaped`() {
-    val session = Session("one")
-    session.type(":help c_%")
-    session.key("<CR>")
-
-    assertEquals(
-      "http://vimdoc.sourceforge.net/search.php?docs=help&search=c_%25",
-      session.opener.target,
-    )
+    assertNull(session.opener.target, "the help is a buffer now, not a web page")
   }
 }

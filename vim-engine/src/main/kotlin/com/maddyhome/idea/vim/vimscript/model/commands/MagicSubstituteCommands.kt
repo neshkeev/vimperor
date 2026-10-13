@@ -61,11 +61,17 @@ sealed class MagicSubstituteCommand(
 }
 
 /** see "h :smagic" */
-@ExCommand(command = "sm[agic]")
+@ExCommand(
+  command = "sm[agic]",
+  description = "Like :substitute, with 'magic' on for the pattern whatever the option says.",
+)
 data class SubstituteMagicCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   MagicSubstituteCommand(range, modifier, argument, "\\m")
 
 /** see "h :snomagic" */
-@ExCommand(command = "sno[magic]")
+@ExCommand(
+  command = "sno[magic]",
+  description = "Like :substitute, with 'magic' off for the pattern whatever the option says.",
+)
 data class SubstituteNoMagicCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   MagicSubstituteCommand(range, modifier, argument, "\\M")

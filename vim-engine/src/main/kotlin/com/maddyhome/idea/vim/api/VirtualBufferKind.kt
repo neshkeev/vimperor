@@ -11,7 +11,8 @@ import com.maddyhome.idea.vim.common.Direction
 
 /**
  * Identifies which kind of virtual buffer the editor is hosting: a command-line / search history
- * window (`q:`, `q/`, `q?`), the control-chars editor, or the `inccommand=split` substitute preview.
+ * window (`q:`, `q/`, `q?`), the control-chars editor, the `inccommand=split` substitute preview, or
+ * the help `:help` opens.
  */
 sealed class VirtualBufferKind {
   abstract val fileName: String
@@ -30,5 +31,10 @@ sealed class VirtualBufferKind {
 
   data object SubstitutePreview : VirtualBufferKind() {
     override val fileName: String = "[Preview Substitute]"
+  }
+
+  /** What `:help` opens: the command list, rendered by `HelpText`. */
+  data object Help : VirtualBufferKind() {
+    override val fileName: String = "[Help]"
   }
 }

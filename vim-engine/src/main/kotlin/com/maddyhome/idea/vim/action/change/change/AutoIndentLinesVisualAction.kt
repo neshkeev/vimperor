@@ -23,7 +23,11 @@ import com.maddyhome.idea.vim.helper.enumSetOf
 /**
  * @author vlan
  */
-@CommandOrMotion(keys = ["="], modes = [Mode.VISUAL])
+@CommandOrMotion(
+  keys = ["="],
+  modes = [Mode.VISUAL],
+  description = "Re-indent the highlighted lines using the IDE's auto-indent.",
+)
 class AutoIndentLinesVisualAction : VisualOperatorActionHandler.SingleExecution() {
   override val type: Command.Type = Command.Type.CHANGE
 

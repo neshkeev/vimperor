@@ -80,7 +80,10 @@ sealed class DiffCommandBase(
  *
  * see "h :diffthis"
  */
-@ExCommand(command = "difft[his]")
+@ExCommand(
+  command = "difft[his]",
+  description = "Make this window part of the diff.",
+)
 data class DiffThisCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   DiffCommandBase(range, modifier, argument) {
 
@@ -111,7 +114,10 @@ data class DiffThisCommand(val range: Range, val modifier: CommandModifier, val 
  *
  * see "h :diffsplit"
  */
-@ExCommand(command = "diffs[plit]")
+@ExCommand(
+  command = "diffs[plit]",
+  description = "Split the window and diff it against {file}.",
+)
 data class DiffSplitCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   DiffCommandBase(range, modifier, argument) {
 
@@ -136,7 +142,10 @@ data class DiffSplitCommand(val range: Range, val modifier: CommandModifier, val
  *
  * see "h :diffoff"
  */
-@ExCommand(command = "diffo[ff]")
+@ExCommand(
+  command = "diffo[ff]",
+  description = "Leave diff mode in this window, or with [!] in every window of this tab.",
+)
 data class DiffOffCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   DiffCommandBase(range, modifier, argument) {
 
@@ -160,7 +169,10 @@ data class DiffOffCommand(val range: Range, val modifier: CommandModifier, val a
  *
  * see "h :diffupdate"
  */
-@ExCommand(command = "diffu[pdate]")
+@ExCommand(
+  command = "diffu[pdate]",
+  description = "Work the differences out again.",
+)
 data class DiffUpdateCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   DiffCommandBase(range, modifier, argument) {
 
@@ -182,7 +194,10 @@ data class DiffUpdateCommand(val range: Range, val modifier: CommandModifier, va
  *
  * see "h :diffpatch"
  */
-@ExCommand(command = "diffp[atch]")
+@ExCommand(
+  command = "diffp[atch]",
+  description = "Apply the patch in {patchfile} to the current buffer and diff the result.",
+)
 data class DiffPatchCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   DiffCommandBase(range, modifier, argument) {
 

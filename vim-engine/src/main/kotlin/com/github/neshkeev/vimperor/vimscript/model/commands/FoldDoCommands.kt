@@ -94,11 +94,17 @@ internal sealed class FoldDoCommand(
 }
 
 /** see "h :folddoopen" */
-@ExCommand(command = "foldd[oopen]")
+@ExCommand(
+  command = "foldd[oopen]",
+  description = "Run {cmd} on every line not in a closed fold.",
+)
 internal data class FoldDoOpenCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   FoldDoCommand(range, modifier, argument, wantsClosed = false)
 
 /** see "h :folddoclosed" */
-@ExCommand(command = "folddoc[losed]")
+@ExCommand(
+  command = "folddoc[losed]",
+  description = "Run {cmd} on every line in a closed fold.",
+)
 internal data class FoldDoClosedCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   FoldDoCommand(range, modifier, argument, wantsClosed = true)

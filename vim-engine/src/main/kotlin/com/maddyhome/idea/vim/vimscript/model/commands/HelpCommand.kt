@@ -11,24 +11,34 @@ package com.maddyhome.idea.vim.vimscript.model.commands
 import com.intellij.vim.annotations.ExCommand
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.ex.exExceptionMessage
+import com.maddyhome.idea.vim.help.HelpText
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ranges.Range
 import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
 
 /**
- * @author vlan
- * see "h :help"
+ * `:help [subject]` - the list of commands Vimperor implements, opened in a read-only buffer.
  *
- * Vim opens its own help in a split; there is no help file to open in an IDE, so this opens the
- * online copy in a browser instead. Which browser is the host's question, and it is the same one
- * `gx` asks - `VimExternalOpener` was already there for it.
+ * It used to open Vim's own documentation in a browser, on the reasoning that "there is no help file to open in an
+ * IDE". That stopped being true when the commands learnt to describe themselves: [HelpText] renders a help file in
+ * Vim's own format from the descriptions in `@CommandOrMotion` and `@ExCommand`, and a `*tag*` in it is what `:help
+ * dd` jumps to. Ported from IdeaVim, which made the same trade.
  *
- * This lived in the IntelliJ module until now, for `BrowserUtil.browse` and `URLEncoder`. Neither
- * is a reason: the first is the host service above, and the second is a dozen lines of percent
- * encoding that the JDK happens to ship.
+ * What is gained is the question a user of *this* extension actually asks - "does Vimperor have this?" - answered
+ * from the source rather than from a website, offline and instantly, and with no way for the answer to drift from the
+ * code. What is lost is Vim's prose, which is far richer than one line per command. `:help` is the command Vim gives
+ * for its own documentation, so this is a real trade and not a free win.
+ *
+ * An unknown subject is `E149`, as in Vim, rather than a search of the website.
  */
-@ExCommand(command = "h[elp]", barSeparates = false)
+@ExCommand(
+  command = "h[elp]",
+  barSeparates = false,
+  description = "Open Vimperor's help and jump to the subject, e.g. dd, v_d, i_CTRL-W or :s. Without a subject, show the start of the help.",
+)
 data class HelpCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -39,42 +49,9 @@ data class HelpCommand(val range: Range, val modifier: CommandModifier, val argu
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    injector.externalOpener.open(helpTopicUrl(argument), null)
+    val subject = argument.trim()
+    val line = if (subject.isEmpty()) 0 else HelpText.findTag(subject) ?: throw exExceptionMessage("E149", subject)
+    injector.virtualBufferGroup.open(context, editor, VirtualBufferKind.Help, HelpText.text, caretLine = line)
     return ExecutionResult.Success
-  }
-
-  private fun helpTopicUrl(topic: String): String {
-    if (topic.isBlank()) return HELP_ROOT_URL
-    return "$HELP_QUERY_URL?docs=help&search=${percentEncode(topic)}"
-  }
-
-  /**
-   * `application/x-www-form-urlencoded`, which is what a query parameter needs.
-   *
-   * The unreserved set is RFC 3986's, plus the two that form encoding keeps - and a space becomes
-   * `+` rather than `%20`, which is the one place form encoding differs from percent encoding and
-   * the reason `:help i_CTRL-W` and `:help i CTRL-W` reach different pages.
-   */
-  private fun percentEncode(value: String): String = buildString {
-    for (byte in value.encodeToByteArray()) {
-      val character = byte.toInt().toChar()
-      when {
-        character.isLetterOrDigit() && byte.toInt() in 0..127 -> append(character)
-        character in "-_.*" -> append(character)
-        character == ' ' -> append('+')
-        else -> {
-          append('%')
-          append(HEX[(byte.toInt() shr 4) and 0xF])
-          append(HEX[byte.toInt() and 0xF])
-        }
-      }
-    }
-  }
-
-  companion object {
-    private const val HELP_BASE_URL = "http://vimdoc.sourceforge.net"
-    private const val HELP_ROOT_URL = "$HELP_BASE_URL/htmldoc/"
-    private const val HELP_QUERY_URL = "$HELP_BASE_URL/search.php"
-    private const val HEX = "0123456789ABCDEF"
   }
 }

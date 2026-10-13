@@ -25,7 +25,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  * engine already has a service for asking - the status line uses it - so this is that service, and
  * the bang, which in Vim clears the screen first, has nothing extra to do.
  */
-@ExCommand(command = "redr[aw]")
+@ExCommand(
+  command = "redr[aw]",
+  description = "Redraw the screen. Accepted and does nothing: VS Code paints when it needs to.",
+)
 data class RedrawCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -43,7 +46,10 @@ data class RedrawCommand(val range: Range, val modifier: CommandModifier, val ar
 }
 
 /** see "h :redrawstatus" - the status line alone, which is the half a script usually wants. */
-@ExCommand(command = "redraws[tatus]")
+@ExCommand(
+  command = "redraws[tatus]",
+  description = "Redraw the status line. Accepted and does nothing, as :redraw is.",
+)
 data class RedrawStatusCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -69,7 +75,10 @@ data class RedrawStatusCommand(val range: Range, val modifier: CommandModifier, 
  * a script. The command is registered and returns at once, and the argument is accepted so that
  * `:sleep 100m` in a mapping does not take the mapping down with it.
  */
-@ExCommand(command = "sl[eep]")
+@ExCommand(
+  command = "sl[eep]",
+  description = "Do nothing for [count] seconds, or {N}m milliseconds.",
+)
 data class SleepCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -90,7 +99,10 @@ data class SleepCommand(val range: Range, val modifier: CommandModifier, val arg
  * and reload or warn without being asked, which is the whole of what this command is for - so it is
  * registered, does nothing, and the doing-nothing is correct rather than a gap.
  */
-@ExCommand(command = "checkt[ime]")
+@ExCommand(
+  command = "checkt[ime]",
+  description = "Check whether a file has changed on disk. Accepted and does nothing: VS Code watches the file itself.",
+)
 data class CheckTimeCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -110,7 +122,10 @@ data class CheckTimeCommand(val range: Range, val modifier: CommandModifier, val
  * `:startinsert`'s twin: it leaves the user typing in Replace mode rather than Insert.
  * `:startreplace!` starts at the end of the line, as `:startinsert!` does.
  */
-@ExCommand(command = "startr[eplace]")
+@ExCommand(
+  command = "startr[eplace]",
+  description = "Start Replace mode, as with R. With [!], start at the end of the line.",
+)
 data class StartReplaceCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 
@@ -138,7 +153,10 @@ data class StartReplaceCommand(val range: Range, val modifier: CommandModifier, 
  * tab. The engine has Replace and not that, so this is `:startreplace` - which differs only in a
  * buffer that uses tabs, and differs the way `gR` would if it were implemented.
  */
-@ExCommand(command = "startg[replace]")
+@ExCommand(
+  command = "startg[replace]",
+  description = "Start Replace mode with the Visual selection, from where the cursor is.",
+)
 data class StartVirtualReplaceCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   Command.SingleExecution(range, modifier, argument) {
 

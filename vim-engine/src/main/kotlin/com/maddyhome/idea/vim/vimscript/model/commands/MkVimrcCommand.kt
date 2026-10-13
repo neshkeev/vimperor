@@ -160,14 +160,20 @@ sealed class MakeConfigCommand(
 }
 
 /** see "h :mkvimrc" */
-@ExCommand(command = "mkv[imrc]")
+@ExCommand(
+  command = "mkv[imrc]",
+  description = "Write the current mappings and settings to [file], ~/.vimperorrc by default.",
+)
 data class MkVimrcCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   MakeConfigCommand(range, modifier, argument, ".ideavimrc") {
   override val commandName: String get() = "mkvimrc"
 }
 
 /** see "h :mkexrc" */
-@ExCommand(command = "mk[exrc]")
+@ExCommand(
+  command = "mk[exrc]",
+  description = "Write the current mappings and settings to [file], like :mkvimrc with an ex name.",
+)
 data class MkExrcCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   MakeConfigCommand(range, modifier, argument, ".exrc") {
   override val commandName: String get() = "mkexrc"
