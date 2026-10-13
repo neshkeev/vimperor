@@ -11,6 +11,7 @@ package com.github.neshkeev.vimperor.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.VimSearchGroupBase
+import com.maddyhome.idea.vim.action.change.VimRedoBuffer
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.changelist.VimChangeList
 import com.maddyhome.idea.vim.key.KeySource
@@ -317,6 +318,10 @@ class VimFixtureReplayTest {
       injector.jumpService.resetJumps()
       injector.historyGroup.resetHistory()
       injector.changeGroup.resetRepeat()
+      // The keys `.` would replay, which are the same fact as `resetRepeat` one level down and are
+      // held by an object rather than by the injector. IdeaVim's own `setUp` clears it for the same
+      // reason; without it a fixture that types `.` repeats whatever its neighbour last changed.
+      VimRedoBuffer.resetAll()
       injector.vimState.reset()
       VimChangeList.reset()
     }

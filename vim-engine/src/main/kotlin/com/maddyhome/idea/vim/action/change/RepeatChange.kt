@@ -8,22 +8,37 @@
 
 package com.maddyhome.idea.vim.action.change
 
+import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Command
 import com.maddyhome.idea.vim.command.OperatorArguments
+import com.maddyhome.idea.vim.key.KeySource
 
 /**
- * `.` - do the last change again.
+ * `.` - do the last change again, by feeding its keys back through the key handler.
  *
- * Two kinds of last change, and the second is easy to leave out. Usually the engine kept the change
- * as a [Command] and repeating it means handing that command back to the action executor. But a
- * mapping installed by an extension is not a command: `ysiw)` is `surround`'s handler, and the way
- * to repeat it is to run **the handler** again, with the keys it read the first time played back to
- * it out of [Extension]. Both hosts had this written out separately and this host's copy had only
- * the first branch, so `ysiw)l.` surrounded once and the `.` did nothing at all - eleven of
- * IdeaVim's fixtures, from `surround` and `vim-exchange`.
+ * Two kinds of last change, and the second is easy to leave out. The usual one is remembered as the
+ * **keys that were typed for it** ([VimRedoBuffer]) and repeated by replaying them, the way `@`
+ * replays a macro. But a mapping installed by an extension is not keys: `ysiw)` is `surround`'s
+ * handler, and the way to repeat it is to run **the handler** again, with the keys it read the first
+ * time played back to it out of [Extension]. Both hosts had this written out separately and this
+ * host's copy had only the first branch, so `ysiw)l.` surrounded once and the `.` did nothing at all
+ * - eleven of IdeaVim's fixtures, from `surround` and `vim-exchange`.
+ *
+ * ## Keys rather than a command, which is the change ported from IdeaVim (VIM-1153)
+ *
+ * This used to keep the last change as a [Command] and repeat it by handing that command back to the
+ * action executor. The trouble with a command is that it is only *this* editor's half of the change:
+ * anything the host contributed - an auto-closed bracket, a reformat on type, a closing tag renamed
+ * to match - was not in it, so the repeat produced different text from the original. Replaying the
+ * keys asks the host to do its part again, where the repeat is happening.
+ *
+ * It also deletes a pile of special cases. A count on the `.` replacing the original, `2d3w`
+ * repeating as `6dw`, `"1p....` walking the numbered registers, `1v` reselecting an area the same
+ * size as the last Visual one: all of those are rendering rules on the recorded keys now
+ * ([VimRedoBuffer]), which is where Vim keeps them too (`prep_redo`).
  *
  * Everything around the choice is bookkeeping that has to be put back afterwards: the register the
  * change used, the last `f`/`t` search, and the flag several handlers read to know they are being
@@ -41,47 +56,40 @@ fun repeatLastChange(
   inOneUndoStep: (() -> Unit) -> Unit = { it() },
 ): Boolean {
   val state = injector.vimState
-  val lastCommand = VimRepeater.lastChangeCommand
   val lastHandler = Extension.lastExtensionHandler
-  if (lastCommand == null && lastHandler == null) return false
+  val repeatHandler = VimRepeater.repeatHandler
+  val handlerToRun = lastHandler.takeIf { repeatHandler }
+  if (handlerToRun == null && VimRedoBuffer.isEmpty) return false
 
   val save = state.executingCommand
   val lastFTCmd = injector.motion.lastFTCmd
   val lastFTChar = injector.motion.lastFTChar
   val register = injector.registerGroup.currentRegister
-  val repeatHandler = VimRepeater.repeatHandler
 
-  state.isDotRepeatInProgress = true
   try {
     inOneUndoStep {
-      // The redo-register feature: repeating a change that came from a numbered register walks to
-      // the next one, so `"1p....` pastes the last five deletes in turn. See `:h redo-register`.
-      if (VimRepeater.lastChangeRegister in '1'..'8') {
-        VimRepeater.lastChangeRegister = VimRepeater.lastChangeRegister.inc()
-      }
-      injector.registerGroup.selectRegister(VimRepeater.lastChangeRegister)
-
-      if (repeatHandler && lastHandler != null) {
-        injector.actionExecutor.executeCommand(
-          editor,
-          { lastHandler.execute(editor, context, operatorArguments) },
-          "Vim " + lastHandler.toString(),
-          null,
-        )
-      } else if (!repeatHandler && lastCommand != null) {
-        // A count on the `.` itself replaces the count the original change carried, rather than
-        // multiplying it: `3dw` then `2.` deletes two words, not six.
-        val repeated = if (cmd.rawCount > 0) lastCommand.copy(rawCount = cmd.rawCount) else lastCommand
-        state.executingCommand = repeated
-
-        val arguments = operatorArguments.copy(count0 = repeated.rawCount)
-        injector.actionExecutor.executeVimAction(editor, repeated.action, context, arguments)
-
-        VimRepeater.saveLastChange(repeated)
+      if (handlerToRun != null) {
+        // The flag is for the handler branch only. A handler is a Kotlin callback being run a second
+        // time, and several read this to know not to ask the user for input again. The keystroke
+        // branch must *not* set it: the keys are the keys, and an insert session that knows it is
+        // being repeated re-inserts its own text on top of the text the replayed keys just typed -
+        // `cwbar<Esc>w.` came out as `bar bbarar`, with the second `bar` inserted a second time.
+        state.isDotRepeatInProgress = true
+        try {
+          injector.actionExecutor.executeCommand(
+            editor,
+            { handlerToRun.execute(editor, context, operatorArguments) },
+            "Vim " + handlerToRun.toString(),
+            null,
+          )
+        } finally {
+          state.isDotRepeatInProgress = false
+        }
+      } else {
+        replayKeys(editor, context, cmd.rawCount)
       }
     }
   } finally {
-    state.isDotRepeatInProgress = false
     if (save != null) state.executingCommand = save
     injector.motion.setLastFTCmd(lastFTCmd, lastFTChar)
     // The handler survives its own repeat, so that `.` after `.` repeats it again rather than
@@ -93,4 +101,29 @@ fun repeatLastChange(
     injector.registerGroup.selectRegister(register)
   }
   return true
+}
+
+/**
+ * Feeds the keys of the last change back through the key handler.
+ *
+ * They go on the key stack and come off one at a time, which is what
+ * [com.maddyhome.idea.vim.key.MappingInfo] does for the right-hand side of a mapping, and they are
+ * fed as *typed* keys: what was recorded is what the user typed, so a change made through a mapping
+ * runs the mapping again. Recording is frozen for the duration, so that a second `.` repeats the
+ * same change rather than the replay of the first.
+ */
+private fun replayKeys(editor: VimEditor, context: ExecutionContext, rawCount: Int) {
+  val keys = VimRedoBuffer.keysForReplay(rawCount)
+  VimRedoBuffer.replaying {
+    val keyHandler = KeyHandler.getInstance()
+    keyHandler.keyStack.addKeys(keys)
+    try {
+      while (keyHandler.keyStack.hasStroke()) {
+        val key = keyHandler.keyStack.feedStroke()
+        keyHandler.handleKey(editor, key, KeySource.TYPED, context, keyHandler.keyHandlerState)
+      }
+    } finally {
+      keyHandler.keyStack.removeFirst()
+    }
+  }
 }

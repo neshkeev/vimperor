@@ -9,6 +9,7 @@
 package com.maddyhome.idea.vim.key.consumers
 
 import com.maddyhome.idea.vim.KeyProcessResult
+import com.maddyhome.idea.vim.action.change.VimRedoBuffer
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.CommandBuilder
@@ -47,6 +48,7 @@ internal class StartSelectRegisterConsumer : KeyConsumer {
     keyProcessResultBuilder: KeyProcessResult.KeyProcessResultBuilder,
   ): Boolean {
     logger.trace { "Entered StartSelectRegisterConsumer" }
+    VimRedoBuffer.markRegisterKey(key)
     keyProcessResultBuilder.addExecutionStep { ks, _, _ ->
       ks.commandBuilder.startWaitingForRegister(key)
     }

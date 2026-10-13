@@ -1087,6 +1087,43 @@ the `keylog` extension, Replace-mode paste, and VIM-1153 - which replaces `.` wi
 keystroke replay through a new `VimRedoBuffer`. That last one is the biggest and the best measured:
 `.` is what the replayed corpus covers most heavily, so the 2,427 fixtures are the gate on it.
 
+### `.` is a keystroke replay now, and it changed nothing here
+
+**VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth
+writing down, because the commit is ~400 lines of engine and the obvious assumption is that it fixed
+something.
+
+`.` used to keep the last change as a `Command` and repeat it by handing that command back to the
+action executor. It now keeps the **keys that were typed** (`VimRedoBuffer`, Vim's `redobuff`) and
+feeds them back through the key handler, the way `@` replays a macro. The rendering rules Vim keeps
+in `prep_redo` - a count on the `.` replacing the original, `2d3w` coming back as `6dw`, a numbered
+register walking on, `1v` reselecting an area the same size - live in one place instead of being
+special cases around the command.
+
+**Upstream's motivation does not reach this host, and that is the whole of why nothing moved.**
+IdeaVim wanted `.` to work when the *IDE* contributed part of a change: an auto-closed bracket, a
+reformat on type, the closing tag `XmlTagNameSynchronizer` renames. A `Command` is only the engine's
+half of that, so the repeat produced different text from the original; replaying keys asks the IDE to
+do its part again. Vimperor **intercepts `type`**, so VS Code's own typing features never fire during
+a change - there is no second contributor to ask again.
+
+Measured rather than assumed, both ways: the replayed corpus is unchanged at 2421 of 2427 with the
+same six failures, and eight hand-built `.` sequences - `vjd.`, `veUw.`, `viwUw.`, `2dw.`, `dd.`,
+`rz0.`, `"adw".`, and an `i<C-O>` insert - give byte-identical results with the change and with it
+reverted. Of the eight tests in `DotRepeatReplayTest`, **three discriminate and all three are about
+what gets recorded** rather than what the editor ends up holding.
+
+**One trap, and it is the reason the first attempt failed seven fixtures.** `isDotRepeatInProgress`
+must be set for the extension-handler branch and *not* for the keystroke replay. A handler is a
+Kotlin callback being run a second time and several read that flag to know not to ask the user for
+input again; an insert session that knows it is being repeated **re-inserts its own text**, on top of
+the text the replayed keys just typed. `cwbar<Esc>w.` came out as `bar bbarar`.
+
+**And the redo buffer is an object, so it outlives both a host and a test.** `VimHost.start` resets
+it beside `forgetWordWraps`, for the same reason - a new host is a new session - and the fixture
+replay resets it in `resetEngineState`, which is what IdeaVim's own `VimTestCase.setUp` does. Without
+that a fixture typing `.` repeats whatever its neighbour last changed.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.action.change.VimRedoBuffer
 import com.maddyhome.idea.vim.action.change.insert.replaceTextPastedInReplaceMode
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.github.neshkeev.vimperor.api.VimMatchHighlighter
@@ -127,6 +128,9 @@ class VimHost(
     // A new host is a new window, and the transient wraps this remembers belonged to the last one's
     // models. See [WordWrapSettingMapper].
     forgetWordWraps()
+    // And the keys `.` would replay, for the same reason: `VimRedoBuffer` is an object, so it
+    // outlives a host, and a new session has no last change.
+    VimRedoBuffer.resetAll()
   }
 
   /**

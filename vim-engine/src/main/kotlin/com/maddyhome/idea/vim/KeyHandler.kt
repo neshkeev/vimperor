@@ -9,6 +9,7 @@ package com.maddyhome.idea.vim
 
 import com.github.neshkeev.vimperor.match.Matches
 import com.github.neshkeev.vimperor.sign.Signs
+import com.maddyhome.idea.vim.action.change.VimRedoBuffer
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.getLineEndOffset
@@ -231,6 +232,10 @@ class KeyHandler {
       // We only record unmapped keystrokes. If we've recursed to handle mapping, don't record anything.
       val shouldRecord = handleKeyRecursionCount == 0 && injector.registerGroup.isRecording
 
+      // The redo buffer records the same keys - unmapped ones, as a macro does - but always, because
+      // whether they add up to a change is not known until the command runs. See [VimRedoBuffer].
+      val shouldRecordForRedo = handleKeyRecursionCount == 0
+
       // Langmap mapping does not affect recursion depth. However, we can still hit infinite recursion with 'langremap',
       // which applies 'langmap' to the output of a mapping, because the output of 'langmap' can be mapped again,
       // recursively.
@@ -240,6 +245,8 @@ class KeyHandler {
       }
 
       try {
+        // Before the consumers run, so that they can mark which keys were the count and the register
+        if (shouldRecordForRedo) VimRedoBuffer.recordKey(key)
         val isProcessed = processConsumer(key, editor, keySource, keyProcessResultBuilder)
         if (isProcessed) {
           logger.trace { "Key was successfully caught by consumer" }
@@ -304,6 +311,7 @@ class KeyHandler {
     if (commandBuilder.isReady) {
       logger.trace("Ready command builder. Execute command.")
       executeCommand(editor, context, injector.vimState, keyState)
+      VimRedoBuffer.commandFinished(editor)
     }
 
     // Don't record the keystroke that stops the recording (unmapped this is `q`)
@@ -319,6 +327,7 @@ class KeyHandler {
   }
 
   private fun onUnknownKey(editor: VimEditor, keyState: KeyHandlerState) {
+    VimRedoBuffer.commandAborted(editor)
     editor.resetOpPending()
     editor.isReplaceCharacter = false
     // Note that this will also reset the CommandBuilder to NEW_COMMAND
