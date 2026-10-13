@@ -110,6 +110,36 @@ class VsCodeTextObjectTest {
     assertEquals(4, session.editor.primaryCaret().offset)
   }
 
+  /**
+   * `%` on a line with nothing on it, which answers no match - by intent now rather than by luck.
+   *
+   * The scan read the character at the caret before checking that the line had one, which on the
+   * JVM is an `IndexOutOfBoundsException`: IdeaVim crashed on `%` in an empty document. **Neither
+   * of these tests fails without the fix**, and the reason is worth more than the fix is.
+   * Kotlin/JS does not bounds-check string indexing - `""[0]` is `undefined` and `charCodeAt(0)` is
+   * `NaN`, measured, not assumed - so the out-of-bounds read here produced a character that matches
+   * no pair, the scan fell through, and this host answered "no match" by accident. The guard makes
+   * that the answer on purpose, and takes an out-of-bounds read out of code that also compiles for
+   * the JVM.
+   *
+   * So these two are behaviour guards, not a reproduction. The second says the rule is about a blank
+   * *line* rather than an empty document: a blank line in a file full of brackets takes the same
+   * path. Ported from IdeaVim.
+   */
+  @Test
+  fun `test percent on an empty document does nothing rather than throwing`() {
+    val session = Session("", caretOffset = 0)
+    session.type("%")
+    assertEquals(0, session.editor.primaryCaret().offset)
+  }
+
+  @Test
+  fun `test percent on a blank line in a file that has brackets does nothing`() {
+    val session = Session("call(one)\n\ncall(two)", caretOffset = 10)
+    session.type("%")
+    assertEquals(10, session.editor.primaryCaret().offset)
+  }
+
   // Quotes. These never went through the psi service, and are here to say so: if they ever break,
   // it will not be for the same reason.
 
