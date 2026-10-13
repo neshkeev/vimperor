@@ -1032,6 +1032,57 @@ not, and `default:type` was never dispatched. The three tests in `VimHostTest` c
 the field owes it: it survives a null, it is set by the first keystroke, and it goes with its
 document - on a real close only, which is the distinction `forgetDocument` already turns on.
 
+### Reading IdeaVim's commits for fixes worth taking, and the four reasons most are not
+
+`upstream` is read-only and is kept to read from, and the engine is shared, so upstream's bug fixes
+are free money. The useful filter is `git log upstream-master..upstream/master -- vim-engine/`: of
+106 commits in that range, **32 touched the engine and 8 were worth taking**. Everything below is
+what the other 24 turned out to be, because the shape of the refusals repeats and re-deriving it
+costs an afternoon.
+
+**Apply with `git apply --3way`, not `cherry-pick`.** The Maven rename lined the paths up again, so
+an engine-only patch applies straight: `git show --format= <sha> -- vim-engine/src/main/kotlin | git
+apply --3way -`. Restricting the pathspec to `vim-engine/` is the point - upstream's own tests live
+in `src/test`, which is frozen fixture data here, and its plugin half does not exist.
+
+**Four reasons to refuse one, and the first two are the ones that look like wins.**
+
+- **The fork is ahead.** `CommandLineCompletionType` here has `ACTION` and `OPTION`; upstream's two
+  commits adding `:action` completion arrive at less than this fork already had. Check the file
+  before reading the diff.
+- **The fork has rewritten it.** `:tags` is `com.github.neshkeev.vimperor`'s own command and prints a
+  path where upstream prints line text, so upstream's out-of-range `getLineText` fix has nothing to
+  land on. And `VimMarkServiceBase` still has `adjustPositionForDelete(delStartOffset, ...)` where
+  upstream has restructured to `adjustVisualMark(changeOffset, oldLength, newFragment)` - so
+  VIM-4318's column refinement needs the restructure first, and that lives in a different range.
+- **The seam exists and this host cannot fill it.** VIM-1894 extends a line-wise selection over
+  closed folds, and `VsCodeEditor.getCollapsedFoldRegionAtOffset` answers null because VS Code will
+  not say which folds are collapsed. VIM-2524 and VIM-4331 reindent through the language's
+  formatter, which here would be a command and a promise. VIM-720 filters `:sethandler`, whose
+  conflicts are `package.json`'s here. Porting any of these adds a `= null` default nothing
+  overrides.
+- **The runtime cannot.** VIM-4341 moves the search count onto a background thread. Kotlin/JS has
+  one.
+
+**And one trap that is the reverse of the import-list one already recorded here.** `%` in an empty
+document is an `IndexOutOfBoundsException` upstream and *nothing at all* here, because **Kotlin/JS
+does not bounds-check string indexing**: `""[0]` is `undefined` and `charCodeAt(0)` is `NaN`. An
+out-of-bounds read in `commonMain` is a crash on the JVM and a silent wrong character on JS, so a
+test written on this host cannot fail. Take those fixes anyway - `:vim-engine:jvmTest` is half the
+engine's coverage - and say in the commit that the test does not discriminate.
+
+**The thin API is not a JetBrains-only surface here**, which is easy to assume and costs real bugs:
+every bundled `@VimPlugin` is written against `com.intellij.vim.api`, and `ReplaceWithRegisterNew`
+goes through `CaretTransactionImpl.replaceText`. Two of the eight taken were in `thinapi`, and one
+of them was deleting text.
+
+**What is left is features rather than fixes**, and each is a decision: `|` to chain ex commands
+(VIM-748 - ANTLR grammar, an `@ExCommand` field, and `engine_ex_commands.json` regenerated), the
+`:function` command, `:help` generated from command annotations with descriptions on 349 commands,
+the `keylog` extension, Replace-mode paste, and VIM-1153 - which replaces `.` with a recorded
+keystroke replay through a new `VimRedoBuffer`. That last one is the biggest and the best measured:
+`.` is what the replayed corpus covers most heavily, so the 2,427 fixtures are the gate on it.
+
 ### How an extension reaches VS Code
 
 This section used to say the host half was missing and that writing it was "the

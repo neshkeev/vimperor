@@ -6,6 +6,28 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `:for x in [1, 2]` with a `:continue` in it never finished. In a config that is an editor that
+  never finishes starting. The range form, `for x in range(3)`, was never affected.
+
+- `slice()` read an end index of zero as the whole collection: `slice([1, 2, 3], 0, 0)` answered
+  `[1, 2, 3]` where Vim answers `[]`. The sublist form `expr[a : b]`, whose end is inclusive, is
+  unchanged.
+
+- A search used as a range no longer throws when its pattern is empty. `:/`, `://d` and `:/,+2d`
+  failed with an index error; an empty pattern now means the last search pattern, as in Vim, and
+  `E35` when there has not been one.
+
+- `histadd('?', ...)`, `histdel('?')`, `histget('?')` and `histnr('?')` reach the search history.
+  Vim names it with both of the keys that open it and only `/` was recognised, so all four quietly
+  did nothing.
+
+- `gr` over a selection that crosses a line break keeps the rest of both lines. It was treating any
+  multi-line range as line-wise, so the text before the start of the range on its first line and
+  after the end of it on its last one was deleted too.
+
+- `%` on a line with nothing on it answers no match deliberately rather than by accident, and no
+  longer reads past the end of the line.
+
 - A keystroke is no longer written into the file as text. VS Code answers `null` for its own active
   editor while focus flickers out of the editor area and back, and at startup before a restored
   editor has been focused; Vimperor read that answer and, finding no editor, handed the character to
