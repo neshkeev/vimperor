@@ -470,9 +470,24 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // `cmd+v` in Replace mode. VS Code's own paste inserts; Vim's Replace mode overwrites, so the
+  // editor's binding is taken over for that one mode. See `VimHost.pasteInReplaceMode`.
+  val pasteInReplaceMode = commands.registerCommand("vimperor.pasteInReplaceMode") {
+    val editor = window.activeTextEditor ?: vim.editorForKey()
+    if (editor != null) {
+      reporting(output, "pasting in replace mode") {
+        vim.pasteInReplaceMode(editor) {
+          refreshMode()
+          trace(output, vim, editor, "paste")
+        }
+      }
+    }
+  }
+
   val subscriptions = context.subscriptions
   for (registration in listOf<Disposable>(
     output, status, commandLine, matches, messageItem, typing, namedKey, tutor, pasteInCommandLine,
+    pasteInReplaceMode,
     wordWrapToggle,
     activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
     documentSaved,

@@ -58,6 +58,21 @@ class VimEditorReplaceMask(private val editor: VimEditor) {
   }
 
   /**
+   * Record an overwrite, and an insert, at an offset the caller already knows.
+   *
+   * The usual path records as it types; these two are for text that is already in the document and
+   * has to be *turned into* a replacement afterwards - an external paste. See
+   * `replaceTextPastedInReplaceMode`.
+   */
+  fun recordOverwriteAt(offset: Int, original: Char) {
+    record(offset, ReplaceModeEdit.Overwrote(original))
+  }
+
+  fun recordInsertAt(offset: Int) {
+    record(offset, ReplaceModeEdit.Inserted)
+  }
+
+  /**
    * The edit recorded at [offset], removed.
    *
    * Searched for rather than looked up, which is not a pessimisation: building a key means asking

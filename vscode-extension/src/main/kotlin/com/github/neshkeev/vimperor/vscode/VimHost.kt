@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.action.change.insert.replaceTextPastedInReplaceMode
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.github.neshkeev.vimperor.api.VimMatchHighlighter
 import com.github.neshkeev.vimperor.sign.VimSignDisplay
@@ -776,6 +777,38 @@ class VimHost(
       // time it fires the mode is already CMD_LINE. Checked again because a stale context key would
       // otherwise turn a paste into `<C-R>` in Normal mode, which is redo.
       if (injector.vimState.mode is Mode.CMD_LINE) key(textEditor, "<C-R>+")
+      onDone()
+    }
+  }
+
+  /**
+   * `cmd+v` in Replace mode, which has to overwrite rather than insert.
+   *
+   * Vim's Replace mode replaces what you type over, and a paste is no exception: `R` then a paste of
+   * `abc` puts those three characters *on top of* the next three. VS Code's own paste only inserts,
+   * so the editor's keybinding is taken over here for that one mode and the paste is done through
+   * the engine instead.
+   *
+   * It is one edit and not one per character, which is the whole reason the engine has
+   * [replaceTextPastedInReplaceMode]: `<C-R>+` inserts the register in a single write, and that
+   * function then turns the inserted span into a replacement and fills in the replace mask, so
+   * backspace puts the original text back. Typing the clipboard character by character would be the
+   * obvious alternative and is one document write per character.
+   *
+   * The mode is checked again rather than trusted from the `when` clause, for the reason
+   * [pasteIntoCommandLine] gives: a stale context key would otherwise make this fire in a mode where
+   * `<C-R>` means something else.
+   */
+  fun pasteInReplaceMode(textEditor: TextEditor, onDone: () -> Unit = {}) {
+    clipboard.refresh {
+      val editor = editorFor(textEditor)
+      if (editor.mode is Mode.REPLACE) {
+        val start = editor.primaryCaret().offset
+        key(textEditor, "<C-R>+")
+        val end = editor.primaryCaret().offset
+        replaceTextPastedInReplaceMode(editor, start, end)
+        editor.flush()
+      }
       onDone()
     }
   }

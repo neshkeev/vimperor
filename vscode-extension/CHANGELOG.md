@@ -6,6 +6,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- Pasting in Replace mode replaces, as Vim does. `R` and then `Cmd+V` (`Ctrl+V` elsewhere) used to
+  insert the clipboard and push the rest of the line along, where Vim puts the pasted characters on
+  top of the ones that follow the caret. Replacing stops at the end of the line rather than eating
+  the break, a newline in the pasted text splits the line and carries on replacing after it, and
+  backspace puts the original text back - the paste is recorded in the replace mask one character at
+  a time even though it is a single edit. The chord is claimed for Replace mode only; pasting in
+  Insert mode is still VS Code's own. Ported from IdeaVim (VIM-1314).
+
 - `:function` lists what a config has defined, which is the command you reach for when a
   `.vimperorrc` has quietly not worked: it runs with errors suppressed, so a `function!` that failed
   to parse left no trace and there was no way to ask. `:function` lists the user-defined functions,

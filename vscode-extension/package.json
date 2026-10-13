@@ -479,6 +479,12 @@
         "when": "editorTextFocus && vimperor.mode == 'COMMAND'"
       },
       {
+        "key": "ctrl+v",
+        "mac": "cmd+v",
+        "command": "vimperor.pasteInReplaceMode",
+        "when": "editorTextFocus && vimperor.mode == 'REPLACE'"
+      },
+      {
         "key": "o",
         "command": "list.select",
         "when": "explorerViewletFocus && !inputFocus && vimperor.nerdtree"
