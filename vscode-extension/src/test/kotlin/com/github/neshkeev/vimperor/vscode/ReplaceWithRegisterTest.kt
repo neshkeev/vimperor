@@ -109,6 +109,49 @@ class ReplaceWithRegisterTest {
    * Pasting over a selection puts the replaced text into the unnamed register, so a second paste
    * pastes what was just overwritten. `gr` does not, which is what makes it usable repeatedly.
    */
+  /**
+   * A replacement that crosses a line break without taking either line whole.
+   *
+   * The thin API decides between a character-wise and a line-wise replace by looking at the range,
+   * and it called *any* range spanning more than one line line-wise. A line-wise replace expands to
+   * whole lines, so everything before the start of the range on the first line and everything after
+   * the end of it on the last one was thrown away: a `gr` over two half-lines deleted the halves it
+   * was not asked about. Ported from IdeaVim.
+   *
+   * `ReplaceWithRegisterNew` is the one bundled extension written against the thin API, which is
+   * what makes this reachable here at all - and `2grr` below is the case the old rule was written
+   * for, so it is asserted beside this one rather than left to be rediscovered.
+   */
+  @Test
+  fun `test gr over a selection crossing a line break keeps the rest of both lines`() {
+    val session = Session("one two three\nfour five six\nseven eight")
+
+    session.type("yiw")
+    session.type("wwvjgr")
+
+    assertEquals("one two one six\nseven eight", session.content)
+  }
+
+  @Test
+  fun `test grr still replaces a whole line`() {
+    val session = Session("one two three\nfour five six\nseven eight")
+
+    session.type("yiw")
+    session.type("jgrr")
+
+    assertEquals("one two three\none\nseven eight", session.content)
+  }
+
+  @Test
+  fun `test grr with a count still replaces whole lines`() {
+    val session = Session("one two three\nfour five six\nseven eight")
+
+    session.type("yiw")
+    session.type("2grr")
+
+    assertEquals("one\nseven eight", session.content)
+  }
+
   @Test
   fun `test the register survives being used`() {
     val session = Session("aaa bbb ccc")
