@@ -102,8 +102,15 @@ internal object VsCodeCommands {
    * focus where a `focus*` command opens the area *and* puts the cursor in it. That was a trade
    * made against the wrong risk. A toggle is only right if the area is in the state you last left
    * it in, and it is not: close the panel, open it again by hand, and the restore closed it. These
-   * mean one thing whatever the layout, and the focus they take is given straight back with
-   * [FOCUS_EDITOR] - which is one more command and no ambiguity at all.
+   * mean one thing whatever the layout.
+   *
+   * **And a toggle would not have saved the focus anyway, which took reading the editor to find
+   * out.** `workbench.action.togglePanel` is nothing but `setPartHidden`, with no `focus` call in
+   * it - but `setPanelHidden(false)` ends in `openViewContainer(panel, id, /* focus */ true)`, and
+   * it reaches that branch exactly when the panel has no active composite, which is the state
+   * hiding it leaves behind. So **every** way of showing a closed panel focuses it, and the
+   * difference between these and the toggles is only that `focusPanel` then focuses it a second
+   * time. See [WorkbenchToggle] for what is done about it.
    *
    * All three are in VS Code 1.138.0 and every one of them is checked against the real window at
    * activation, so an id typed from memory cannot survive here in any case.
@@ -631,6 +638,17 @@ internal fun workbenchLayoutOf(sideBar: Boolean?, panel: Boolean?, auxiliaryBar:
 }
 
 /**
+ * What one press of a workbench toggle does.
+ *
+ * Two lists because one of them cannot be sent yet. [afterSettling] is for a command that has to
+ * follow something VS Code does on its own account, a turn or more after the command that started
+ * it returned - see [WorkbenchToggle.restore], which is the only thing that uses it. Keeping the
+ * decision here rather than in the executor is what makes it testable: the executor's half is one
+ * line that schedules, and nothing can drive a timer in a unit test.
+ */
+internal data class WorkbenchPress(val now: List<String>, val afterSettling: List<String> = emptyList())
+
+/**
  * `HideAllWindows`: hide whatever is open, then put back exactly that much.
  *
  * IntelliJ's `HideAllToolWindowsAction` asks its tool window manager which windows are visible,
@@ -681,7 +699,7 @@ internal class WorkbenchToggle {
    * name exists before running it, and answering that question by spending the reading or moving
    * the latch would make every press a no-op pair.
    */
-  fun press(): List<String> {
+  fun press(): WorkbenchPress {
     val visible = reading
     reading = null
     if (visible == null) return pressBlind()
@@ -691,21 +709,45 @@ internal class WorkbenchToggle {
     hidden = visible.isNotEmpty()
     if (visible.isNotEmpty()) {
       remembered = visible
-      return visible.map { it.close }
+      return WorkbenchPress(visible.map { it.close })
     }
     // Nothing is open, so this is the restore half. An empty memory means this host has not hidden
     // anything yet - a window that starts with all three closed, or a restore that already ran - and
     // opening everything is the more useful of the two things it could do with no information.
-    val back = remembered.ifEmpty { WorkbenchArea.entries.toSet() }
-    return back.map { it.open } + VsCodeCommands.FOCUS_EDITOR
+    return restore()
   }
 
   /** No reading: alternate, which is what this did before a reading was possible. */
-  private fun pressBlind(): List<String> {
+  private fun pressBlind(): WorkbenchPress {
     hidden = !hidden
-    if (hidden) return WorkbenchArea.entries.map { it.close }
+    if (hidden) return WorkbenchPress(WorkbenchArea.entries.map { it.close })
+    return restore()
+  }
+
+  /**
+   * Putting the areas back, and taking the focus back off them - twice, which is the whole of the
+   * fix for the caret landing in the Output panel.
+   *
+   * **Showing a closed panel focuses it, however it is shown**, and the focus is not taken while the
+   * command that showed it is running: `setPanelHidden(false)` calls `openViewContainer(panel, id,
+   * true)`, that function is `async`, and nothing awaits it. So the panel's focus lands a turn or
+   * more later - after every command dispatched beside it, [FOCUS_EDITOR] included. Which is why
+   * the one sent here was reported as not working: it ran, and then the panel took the focus from
+   * it.
+   *
+   * So the editor is given the focus now *and* once the workbench has settled. The first covers the
+   * sidebar and the auxiliary bar, which focus while their command runs, and leaves no flicker at
+   * all when the panel is not among what is being restored; the second is the only thing that can
+   * answer the panel. Asking twice is cheap - focusing an editor that already has the focus does
+   * nothing - and there is no event to wait for instead, because VS Code tells an extension nothing
+   * about what has the focus.
+   */
+  private fun restore(): WorkbenchPress {
     val back = remembered.ifEmpty { WorkbenchArea.entries.toSet() }
-    return back.map { it.open } + VsCodeCommands.FOCUS_EDITOR
+    return WorkbenchPress(
+      now = back.map { it.open } + VsCodeCommands.FOCUS_EDITOR,
+      afterSettling = listOf(VsCodeCommands.FOCUS_EDITOR),
+    )
   }
 
   /** Back to "showing" and remembering nothing, which is what a host that has just started knows. */

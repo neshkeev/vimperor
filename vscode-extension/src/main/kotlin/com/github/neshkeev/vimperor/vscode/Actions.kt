@@ -143,7 +143,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
       return true
     }
     if (action is WorkbenchToggleAction) {
-      action.toggle.press().forEach { host.run(it) }
+      send(action.toggle.press())
       return true
     }
     if (action is IntelliJOnlyAction) {
@@ -172,6 +172,19 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
   }
 
   /**
+   * One press of a workbench toggle: what it asks for now, and what has to follow a turn later.
+   *
+   * Both of this file's executors go through here, because `:action HideAllWindows` reaches one or
+   * the other depending on whether the name resolved through the alias table or was run directly,
+   * and a press means the same thing either way. See [WorkbenchToggle.restore] for why there is a
+   * later at all.
+   */
+  private fun send(press: WorkbenchPress) {
+    press.now.forEach { host.run(it) }
+    if (press.afterSettling.isNotEmpty()) host.runAfterTheWorkbenchSettles(press.afterSettling)
+  }
+
+  /**
    * A VS Code command, by name.
    *
    * The engine reaches this for the folds - `za`, `zo`, `zc`, `zR`, `zM` - for `gd` and `<C-]>`,
@@ -196,7 +209,7 @@ internal class VsCodeActionExecutor(private val host: HostCommandRunner) : VimAc
     // id list could silently disable a mapping that works.
     when (resolved) {
       is ResolvedAction.Command -> resolved.ids.forEach { host.run(it) }
-      is ResolvedAction.Toggle -> resolved.toggle.press().forEach { host.run(it) }
+      is ResolvedAction.Toggle -> send(resolved.toggle.press())
       else -> host.run(name.trim())
     }
     return true

@@ -648,6 +648,23 @@ class VimHost(
     }
   }
 
+  /**
+   * Runs commands once VS Code has finished rearranging the workbench.
+   *
+   * Not [afterHostCatchesUp], which waits for the commands *this host* dispatched: the thing being
+   * waited for here is work VS Code started on its own account and does not await either - the
+   * `async openViewContainer` that focuses a panel being shown. Its promise is not ours to hold, so
+   * there is nothing to chain onto and no event that reports it. A delay is the only lever.
+   *
+   * Three frames, which is long enough for a view to be created and laid out and short enough that
+   * a focus taken back after it reads as the key doing one thing. It is the one number in this that
+   * is a guess rather than a reading, and it is deliberately the only one: whether the editor is
+   * focused twice is decided in [WorkbenchToggle], where a test can see it.
+   */
+  override fun runAfterTheWorkbenchSettles(ids: List<String>) {
+    injector.application.schedule(WORKBENCH_SETTLE_MILLIS) { ids.forEach { run(it) } }
+  }
+
   /** What to do once the document is back in step - see [run]. */
   private val landed: MutableList<() -> Unit> = mutableListOf()
 
@@ -955,6 +972,11 @@ class VimHost(
     SelectionType.CHARACTER_WISE -> ""
     SelectionType.LINE_WISE -> " LINE"
     SelectionType.BLOCK_WISE -> " BLOCK"
+  }
+
+  private companion object {
+    /** See [runAfterTheWorkbenchSettles]. Three frames. */
+    const val WORKBENCH_SETTLE_MILLIS = 50
   }
 }
 

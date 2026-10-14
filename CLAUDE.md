@@ -1115,11 +1115,32 @@ kept in step by the readings, so the two do not disagree about which half of the
 it self-correcting: open something by hand and the next press hides it rather than treating the
 press as a restore. Nothing is remembered about *why* an area is open.
 
-**The restore now opens absolutely.** It used to send the three `toggle*` commands, on the
+**The restore opens absolutely.** It used to send the three `toggle*` commands, on the
 reasoning that a toggle does not steal focus where `focus*` opens the area *and* puts the cursor in
 it. That traded away the wrong risk - a toggle is only right if the area is in the state you left
-it in, so opening the panel by hand while everything was hidden meant the next press *closed* it -
-and the focus a `focus*` takes is given straight back with `workbench.action.focusActiveEditorGroup`.
+it in, so opening the panel by hand while everything was hidden meant the next press *closed* it.
+
+**And the toggle would not have saved the focus either, which is the half of that sentence that was
+wrong.** It said the focus a `focus*` takes "is given straight back with
+`workbench.action.focusActiveEditorGroup`", and it is not: `:action HideAllWindows` with the Output
+panel among what it had hidden put the cursor in the panel, every time. Two readings of VS Code's
+own source say why, and the second is the one that matters. `workbench.action.togglePanel` really is
+nothing but `setPartHidden`, with no focus call in it - but `setPanelHidden(false)` ends in
+`openViewContainer(panel, id, /* focus */ true)`, reached exactly when the panel has no active
+composite, which is the state hiding it leaves behind. **So every way of showing a closed panel
+focuses it**, and `focusPanel` differs from the toggle only in focusing it a second time. And
+`openViewContainer` is `async` and *nothing awaits it*, so that focus lands a turn or more after the
+command that started it returned - after every command dispatched beside it, the
+`focusActiveEditorGroup` included. It ran, and then the panel took the focus off it.
+
+So the restore asks for the editor twice: once now, which is all the sidebar and the auxiliary bar
+need because they focus while their command runs and which leaves no flicker when the panel is not
+among what is being restored, and once after the workbench has settled. Asking twice is free -
+focusing an editor that already has the focus does nothing - and there is nothing to wait for
+instead, because **VS Code tells an extension nothing about what has the focus**: no event, no
+reader, not even for its own parts. The delay is the one number in this that is a guess rather than
+a reading, which is why `WorkbenchPress` carries the two lists and the executor's half is one line:
+the decision is where a test can see it, and the `setTimeout` is not.
 
 **Zen Mode was looked at and is the wrong tool.** It does remember and restore the layout, which is
 the feature, but its defaults are full screen, centred layout, hidden line numbers and a hidden

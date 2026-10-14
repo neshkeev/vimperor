@@ -1840,6 +1840,16 @@ interface HostCommandRunner {
    */
   fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean = true, afterwards: () -> Unit = {})
 
+  /**
+   * Commands to send once VS Code has finished rearranging the workbench, which is work it starts
+   * on its own account and does not await - see `WorkbenchToggle.restore`.
+   *
+   * The default sends them at once, because a runner with nothing to schedule with has no later to
+   * wait for and dropping them would be worse than being early. [VimHost] overrides it with the
+   * delay that is the whole point.
+   */
+  fun runAfterTheWorkbenchSettles(ids: List<String>) = ids.forEach { run(it) }
+
   /** For a host that has no VS Code to run commands in. Nothing happens, and nothing pretends to. */
   object None : HostCommandRunner {
     override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {}

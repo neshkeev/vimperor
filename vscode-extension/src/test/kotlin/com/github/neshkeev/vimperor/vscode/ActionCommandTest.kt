@@ -300,6 +300,83 @@ class ActionCommandTest {
   }
 
   /**
+   * The caret stays in the editor when the panel comes back.
+   *
+   * Reported: `:action HideAllWindows` with the Output panel among what it had hidden put the cursor
+   * into the panel. **Showing a closed panel focuses it, whichever command shows it** -
+   * `setPanelHidden(false)` ends in `openViewContainer(panel, id, true)` - and that function is
+   * `async` and nothing awaits it, so the focus lands a turn *after* every command sent beside it.
+   * The [VsCodeCommands.FOCUS_EDITOR] in the restore was running and then being overtaken.
+   *
+   * So the editor is asked for twice: once now, which is all the sidebar and the auxiliary bar need
+   * because they focus while their command runs, and once after the workbench has settled, which is
+   * the only thing that can answer the panel.
+   */
+  @Test
+  fun `test the restore asks for the editor focus again once the workbench has settled`() {
+    val toggle = WorkbenchToggle()
+
+    toggle.report(setOf(WorkbenchArea.PANEL))
+    val hide = toggle.press()
+    assertEquals(listOf(VsCodeCommands.CLOSE_PANEL), hide.now)
+    assertEquals(emptyList(), hide.afterSettling, "hiding takes no focus, so there is none to give back")
+
+    toggle.report(emptySet())
+    val restore = toggle.press()
+
+    assertEquals(listOf(VsCodeCommands.FOCUS_PANEL, VsCodeCommands.FOCUS_EDITOR), restore.now)
+    assertEquals(
+      listOf(VsCodeCommands.FOCUS_EDITOR),
+      restore.afterSettling,
+      "the panel focuses itself a turn later, and this is what takes it back",
+    )
+  }
+
+  /** The same for a press with no reading - a mapping, or `<Action>(HideAllWindows)`. */
+  @Test
+  fun `test the blind restore asks for the editor focus again too`() {
+    val toggle = WorkbenchToggle()
+    toggle.press()
+
+    val restore = toggle.press()
+
+    assertEquals(VsCodeCommands.FOCUS_EDITOR, restore.now.last())
+    assertEquals(listOf(VsCodeCommands.FOCUS_EDITOR), restore.afterSettling)
+  }
+
+  /**
+   * ...and that the deferred half actually reaches the host, which is the wiring rather than the
+   * decision. The delay itself has no test: it is `setTimeout`, and nothing here can drive one.
+   */
+  @Test
+  fun `test the deferred focus is handed to the host separately`() {
+    val session = Session(known = null)
+    val editor = session.host.editorFor(session.fake)
+    val now = mutableListOf<String>()
+    val later = mutableListOf<String>()
+    val runner = object : HostCommandRunner {
+      override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {
+        now += command
+      }
+
+      override fun runAfterTheWorkbenchSettles(ids: List<String>) {
+        later += ids
+      }
+    }
+    val executor = VsCodeActionExecutor(runner)
+
+    session.host.layoutReported(setOf(WorkbenchArea.PANEL))
+    executor.executeAction(editor, "HideAllWindows", VsCodeExecutionContext)
+    assertEquals(emptyList(), later, "nothing is waiting on a hide")
+
+    session.host.layoutReported(emptySet())
+    executor.executeAction(editor, "HideAllWindows", VsCodeExecutionContext)
+
+    assertEquals(listOf(VsCodeCommands.FOCUS_EDITOR), later)
+    assertEquals(VsCodeCommands.FOCUS_EDITOR, now.last(), "and the immediate one is still sent")
+  }
+
+  /**
    * ...and only what is open, which is the whole point of reading the layout.
    *
    * IntelliJ's `HideAllToolWindowsAction` hides the visible tool windows and remembers their ids.
