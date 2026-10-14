@@ -59,9 +59,22 @@ follows one level of inheritance, which is all any suite here uses, and all 18 o
 fixtures pass. The lesson is the one this file keeps recording: a fixture that fails is as
 likely to be the harness looking at less than it thinks as it is to be the host.
 
-The six that fail all name an IntelliJ action with no VS Code command behind it -
+The six that fail all run an IntelliJ action and then assert what it did -
 `ideajoin`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorRight`,
-`EditorDown`. They are not portable and are not waiting on anything.
+`EditorDown`. This file used to say they had no VS Code command behind them, and
+that is wrong for four of the five: `cursorRight`, `cursorDown`,
+`editor.action.insertCursorBelow` and `editor.action.smartSelect.expand` are all
+real, and the last is **already** in `IdeaActionAliases` with its fixture failing
+anyway. Which is what names the real obstacle - **a VS Code command needs a VS Code
+to run in**, and the replay drives the real host against a stub that records a
+dispatch and executes nothing. Teaching the stub to implement those commands would
+make the fixture assert the stub, which is the mirror the `'wrap'` section warns
+about. `EditorToggleCase` genuinely has no equivalent - there is no toggle beside
+`transformToUppercase` and `transformToLowercase` - and `'ideajoin'` is an option
+asking `J` for a language-aware join VS Code does not have. The three ids missing
+from `IdeaActionAliases` are worth adding for their own sake, because an
+`.ideavimrc` mapping them reports an error today; it will not move this list. See
+`known-fixture-failures.txt`.
 
 ## What is left
 

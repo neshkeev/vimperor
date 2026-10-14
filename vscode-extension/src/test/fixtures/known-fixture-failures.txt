@@ -58,9 +58,30 @@
 # The two `<C-U>` fixtures were the host re-reading its carets only when a command had changed the
 # text. `u` there restores an identical document and a different caret, so nothing was read back.
 #
-# What is left is six, and all six name an IntelliJ action with no VS Code command behind it:
-# `ideajoin`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorRight`, `EditorDown`. They are not
-# portable and are not waiting on anything.
+# What is left is six, and all six run an IntelliJ action and then assert what it did.
+#
+# This used to say "no VS Code command behind it", and that is wrong for four of the five ids.
+# `cursorRight`, `cursorDown`, `editor.action.insertCursorBelow` and
+# `editor.action.smartSelect.expand` are all real commands, and the last of those is *already* in
+# `IdeaActionAliases` - `EditorSelectWord` has been wired the whole time and its fixture fails
+# anyway. That is the proof of what the obstacle actually is: **a VS Code command needs a VS Code to
+# run in.** The replay drives the real host against the `vscode` stub, which records a dispatch and
+# executes nothing, so the command lands nowhere and the assertion that follows it sees an unchanged
+# editor.
+#
+# Making these pass would mean teaching the stub to implement `cursorRight`, `smartSelect.expand`,
+# `insertCursorBelow` and a line join - at which point the fixture asserts the stub rather than the
+# host, which is the mirror this file's own `'wrap'` lesson warns about. So they stay here.
+#
+# Two of the five are a different matter and are not about the harness at all. `EditorToggleCase`
+# has no VS Code equivalent - there is `transformToUppercase` and `transformToLowercase` and no
+# toggle - and `ideajoin` is an *option*, not an action: it asks `J` to use the IDE's language-aware
+# join, and VS Code's `editor.action.joinLines` is a plain one and asynchronous besides.
+#
+# The three ids that are missing from `IdeaActionAliases` - `EditorRight`, `EditorDown`,
+# `EditorCloneCaretBelow` - are worth adding for their own sake, because an `.ideavimrc` that maps
+# them reports an error today. That is a feature rather than a fixture: adding them will not move
+# this list.
 
 src/test/java/org/jetbrains/plugins/ideavim/action/MacroActionTest.kt:testMacroWithIdeAction
 src/test/java/org/jetbrains/plugins/ideavim/action/change/delete/DeleteJoinVisualLinesSpacesActionTest.kt:test join via idea
