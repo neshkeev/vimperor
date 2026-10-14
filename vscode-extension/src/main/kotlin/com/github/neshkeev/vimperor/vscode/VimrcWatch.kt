@@ -132,10 +132,12 @@ internal class VimrcWatch(
    * says - see [VimHost.reloadVimRc].
    */
   private fun askAbout(path: String?) {
+    // The verb is the button's, in all three: a question that says "Load" over a button that says
+    // "Reload" makes the reader check whether they are the same thing.
     val message = when {
       path == null -> "Your Vimperor config is gone. Reload to go back to the defaults?"
-      path != loadedPath -> "$path is now your Vimperor config. Load it?"
-      else -> "$path changed. Load it?"
+      path != loadedPath -> "$path is now your Vimperor config. Reload it?"
+      else -> "$path changed. Reload it?"
     }
     val answers = VimrcAnswer.entries.map { it.label }
     ask(message, answers) { pressed ->
