@@ -116,11 +116,12 @@ internal class VimrcWatch(
   }
 
   private fun askAbout(path: String?) {
-    val message = when {
-      path == null -> "Your Vimperor config is gone. Reload to go back to the defaults?"
-      path != loadedPath -> "$path is now your Vimperor config. Load it?"
-      else -> "$path changed. Load it?"
+    val situation = when {
+      path == null -> "Your Vimperor config is gone."
+      path != loadedPath -> "$path is now your Vimperor config."
+      else -> "$path changed."
     }
+    val message = "$situation $DIFFERENCE"
     val answers = VimrcAnswer.entries.map { it.label }
     ask(message, answers) { pressed ->
       when (VimrcAnswer.entries.firstOrNull { it.label == pressed }) {
@@ -153,6 +154,18 @@ internal class VimrcWatch(
   }
 
   private companion object {
+    /**
+     * What the two buttons do differently, in the message because it cannot be anywhere else.
+     *
+     * A notification button carries a `title` and nothing more - `MessageItem` has two fields and
+     * neither is a tooltip, and `MessageOptions.detail` is documented as shown only for a *modal*
+     * message, which this must not be. So the one place a comparison can go is the sentence, and
+     * the thing worth comparing is the one asymmetry between the two: re-running a file applies
+     * what it says and is silent about what it no longer says. See [VimHost.reloadVimRc].
+     */
+    const val DIFFERENCE =
+      "Reload re-runs the file; Restart Extensions also resets options the file no longer sets."
+
     /**
      * Long enough that one save is one question.
      *

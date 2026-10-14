@@ -162,6 +162,38 @@ class VimrcWatchTest {
     assertEquals(emptyList(), questions.asked)
   }
 
+  /**
+   * The question says what the two buttons do differently, because nothing else can say it.
+   *
+   * A notification button has a `title` and no tooltip - `MessageItem` is two fields - and
+   * `MessageOptions.detail` is only rendered for a modal message, which this is deliberately not.
+   * So the sentence is the only place a comparison fits, and without one the two buttons look like
+   * a slow way and a fast way to do the same thing.
+   */
+  @Test
+  fun `test the question compares the two buttons`() {
+    val session = Session()
+    val questions = Questions()
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      questions.ask, {}, { VimrcReload.PROMPT },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+
+    val asked = questions.asked.single()
+    assertTrue(asked.contains("Reload re-runs"), asked)
+    assertTrue(asked.contains("Restart Extensions"), asked)
+    assertTrue(asked.contains("options"), "the asymmetry is about options: $asked")
+    assertTrue(
+      VimrcAnswer.entries.all { it.label == VimrcAnswer.DISMISS.label || asked.contains(it.label) },
+      "each button it compares should be a button that exists: $asked",
+    )
+  }
+
   /** A different file winning is a change, and the message says which file it is. */
   @Test
   fun `test a higher-priority config appearing is offered by name`() {

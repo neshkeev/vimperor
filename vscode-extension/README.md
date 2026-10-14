@@ -75,7 +75,8 @@ set vimrcreload=auto     " load it without asking
 set vimrcreload=none     " leave me alone while I edit
 ```
 
-The question has two ways to say yes:
+The question itself spells out the difference, because a notification button has a title and no
+tooltip. It has two ways to say yes:
 
 - **Reload** re-runs the file. Instant, and your editors, undo history and unsaved changes are
   untouched. It replaces the mappings the old config made and leaves any you typed by hand alone.
