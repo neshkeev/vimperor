@@ -67,7 +67,14 @@ external object window {
    */
   val tabGroups: TabGroups
   fun createOutputChannel(name: String): OutputChannel
-  fun showInformationMessage(message: String): dynamic
+  /**
+   * A notification with buttons, which answers with the one that was pressed or null.
+   *
+   * The only modal-ish thing this host shows, and it is for one question: the config changed on
+   * disk, do you want it loaded. Asynchronous, which is fine here and nowhere near a keystroke -
+   * the user is being asked, so there is nothing waiting on the answer. See [VimrcWatch].
+   */
+  fun showInformationMessage(message: String, vararg items: String): Thenable<String?>
   fun createStatusBarItem(alignment: Int = definedExternally, priority: Int = definedExternally): StatusBarItem
   fun createTextEditorDecorationType(options: dynamic): TextEditorDecorationType
 
@@ -219,6 +226,20 @@ external object workspace {
 
   /** A document written to disk, which is Vim's `BufWritePost`. */
   val onDidSaveTextDocument: (listener: (TextDocument) -> Unit) -> Disposable
+
+  /**
+   * Watches a path for changes, which is how the config files are followed.
+   *
+   * VS Code's own watcher rather than Node's `fs.watch`, and it reaches **outside the workspace**:
+   * a [RelativePattern] with a base directory may name any absolute path, which a bare glob may
+   * not. That is the whole reason this is possible without writing a platform watcher per OS -
+   * VS Code is already running one, and the events arrive on the extension host's queue like every
+   * other event here.
+   *
+   * Non-recursive, because the pattern names one file. A recursive watch of a home directory would
+   * be an expensive way to ask a cheap question.
+   */
+  fun createFileSystemWatcher(globPattern: RelativePattern): FileSystemWatcher
 
   /**
    * The user's settings, which is where `vimperor.trace` lives.
@@ -587,6 +608,21 @@ external interface TextEditorDecorationType : Disposable
  * Used rather than a literal so that search highlights match what the editor's own find does, in
  * whatever theme the user has - a hardcoded yellow is unreadable in half of them.
  */
+/**
+ * A glob with a base, which is what lets [workspace.createFileSystemWatcher] leave the workspace.
+ *
+ * The base may be a `WorkspaceFolder`, a `Uri` or a path; a path is what this host has, since the
+ * config files are found by name through Node and never become documents.
+ */
+external class RelativePattern(base: String, pattern: String)
+
+/** What [workspace.createFileSystemWatcher] answers with. Disposed with the extension. */
+external interface FileSystemWatcher : Disposable {
+  val onDidCreate: (listener: (Uri) -> Unit) -> Disposable
+  val onDidChange: (listener: (Uri) -> Unit) -> Disposable
+  val onDidDelete: (listener: (Uri) -> Unit) -> Disposable
+}
+
 external class ThemeColor(id: String)
 
 /**

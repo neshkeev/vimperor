@@ -1015,6 +1015,42 @@ into an item, so a `$(` typed at a `:` or `/` prompt still renders as an icon. S
 not applied there because the bug was reported against the message and that item has tests of its
 own.
 
+### The config is watched by VS Code's own watcher, which does leave the workspace
+
+**`workspace.createFileSystemWatcher` is usually described as a workspace thing and is not.** A
+`RelativePattern` carrying a base directory may name any absolute path - that has been true since
+1.64, and `engines.vscode` here is `^1.85.0` - so `~/.vimperorrc` is watched by the same mechanism
+VS Code already runs for the workspace, with no polling, no `fs.watch` and nothing per-platform.
+A non-recursive pattern naming one file is the cheap case; a recursive watch of a home directory
+would have been an expensive way to ask the same question.
+
+**What is watched is every path a config could arrive at, not the file that loaded.** `findVimRc`
+takes the first of three families that exists, so *creating* `~/.vimperorrc` while only `~/.vimrc`
+is in force changes which config wins - and deleting the one that won hands the session to the next
+family down. `vimRcPaths` is that list, and whether a change actually happened is settled by
+re-running `findVimRc` and comparing the path *and* the text.
+
+**`'vimrcreload'` is read fresh every time, which is the only way it could work**: the option is set
+by the file it governs. `none` is answered by `pathsToWatch` returning nothing, so the watchers are
+never created rather than created and ignored.
+
+**Reload is IdeaVim's `reloadIdeaVimRc`, and the one line that matters is the one that is not
+`loadVimRc`.** Mappings made while the config runs are owned by `MappingOwner.IdeaVim.InitScript` -
+`MapCommand` decides that from `executingIdeaVimRcConfiguration` - and the first mapping registered
+for a key wins, so without dropping them a reload *accumulates* and a changed right-hand side never
+takes effect. A `:nmap` typed by hand is `IdeaVim.Other` and must survive; the two tests are a pair
+and the second is what stops the easy wrong implementation of dropping everything.
+
+**What a reload cannot do is revert an option**, which is Vim's `:source` and not a gap here - the
+file says what it sets and says nothing about what it no longer sets. That is why the dialog offers
+`workbench.action.restartExtensionHost` as well, and why the README says so rather than leaving it
+to be discovered.
+
+**The policy is in `VimrcWatch` and only the three lines that create watchers are in
+`Extension.kt`**, because that file is the one nothing but `activate-in-a-stub-host.js` loads. The
+debounce is there too: one save is two or three events, and the text is compared against what was
+last loaded so that a format-on-save which rewrote the file identically asks nothing.
+
 ### `HideAllWindows` reads the layout from a `when` clause, because nothing else will say
 
 **VS Code answers no API about its own workbench.** Whether the sidebar, the panel or the auxiliary

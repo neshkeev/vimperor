@@ -173,14 +173,33 @@ fun findVimRc(files: NodeFileSystem, environment: (String) -> String?): String? 
   }
 
   val home = environment("HOME") ?: environment("USERPROFILE") ?: return null
+  return vimRcCandidates(home, xdgConfigHome(home, environment)).firstOrNull { files.exists(it) }
+}
 
-  val xdgConfigHome = environment("XDG_CONFIG_HOME")
+/**
+ * Every path a config could arrive at, whether or not one is there now.
+ *
+ * What a file watcher needs, and it is deliberately not "the file that loaded". [findVimRc] takes
+ * the first of three families that exists, so *creating* `~/.vimperorrc` while only `~/.vimrc` is
+ * there changes which config wins - a change the watcher has to see, and one that watching the
+ * loaded file alone would miss entirely. The same goes the other way: deleting the one that won
+ * hands the session over to the next family down.
+ *
+ * `IDEA_VIM_CUSTOM_VIMRC` comes first when it is set, as it does in [findVimRc], and is included
+ * even when the file is not there yet for the same reason as the rest.
+ */
+fun vimRcPaths(environment: (String) -> String?): List<String> {
+  val custom = environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }
+  val home = environment("HOME") ?: environment("USERPROFILE") ?: return listOfNotNull(custom)
+  return listOfNotNull(custom) + vimRcCandidates(home, xdgConfigHome(home, environment))
+}
+
+/** `$XDG_CONFIG_HOME`, with Vim's own default and the `~/` a shell would have expanded. */
+private fun xdgConfigHome(home: String, environment: (String) -> String?): String =
+  environment("XDG_CONFIG_HOME")
     ?.takeIf { it.isNotEmpty() }
     ?.let { if (it.startsWith("~/")) home + it.substring(1) else it }
     ?: "$home/.config"
-
-  return vimRcCandidates(home, xdgConfigHome).firstOrNull { files.exists(it) }
-}
 
 /** `fs` is a Node module rather than a global, so it has to be required by name. */
 private val fs: dynamic = require("fs")

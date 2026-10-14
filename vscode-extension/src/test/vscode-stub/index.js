@@ -144,7 +144,9 @@ const window = {
     show() {},
     dispose() {},
   }),
-  showInformationMessage: () => undefined,
+  // A notification with buttons answers with a promise of the pressed label. Nothing is pressed
+  // here, which is a real state - a notification the user ignores resolves undefined.
+  showInformationMessage: () => ({ then: (onFulfilled) => { onFulfilled(undefined); return this } }),
 }
 
 /*
@@ -217,6 +219,24 @@ const extensions = { all: [] }
 
 const workspace = {
   onDidChangeTextDocument: () => ({ dispose() {} }),
+  /**
+   * Every watcher this stub was asked for, and nothing fires.
+   *
+   * Which is the right default: a unit test that wants a change drives `VimrcWatch` directly. What
+   * this records is that the watchers were asked for at all, and for which paths.
+   */
+  fileSystemWatchers: [],
+  createFileSystemWatcher: (pattern) => {
+    const watcher = {
+      pattern,
+      onDidCreate: () => ({ dispose() {} }),
+      onDidChange: () => ({ dispose() {} }),
+      onDidDelete: () => ({ dispose() {} }),
+      dispose() {},
+    }
+    workspace.fileSystemWatchers.push(watcher)
+    return watcher
+  },
   /* Answers for a URI as well as for options; the default keybindings arrive as the former. */
   documentsByUri: {},
   openTextDocument: (options) => {
@@ -349,6 +369,14 @@ class ThemeColor {
   }
 }
 
+// A glob with a base directory, which is what lets a watcher leave the workspace.
+class RelativePattern {
+  constructor(base, pattern) {
+    this.base = base
+    this.pattern = pattern
+  }
+}
+
 const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 }
 
-module.exports = { ConfigurationTarget, extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }
+module.exports = { ConfigurationTarget, RelativePattern, extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }

@@ -251,6 +251,15 @@ internal object VsCodeCommands {
   const val MOVE_EDITOR_LEFT_IN_GROUP = "workbench.action.moveEditorLeftInGroup"
   const val MOVE_EDITOR_RIGHT_IN_GROUP = "workbench.action.moveEditorRightInGroup"
 
+  /**
+   * Deactivate and activate every extension, which is what VS Code itself offers after one changes.
+   *
+   * The heavy half of the config-changed dialog. Re-sourcing is instant and keeps the session, but
+   * it cannot put back an option the old config set - this can, because it is a real start. See
+   * [VsCodeOptions.vimrcreload].
+   */
+  const val RESTART_EXTENSION_HOST = "workbench.action.restartExtensionHost"
+
   const val FOCUS_ABOVE_GROUP = "workbench.action.focusAboveGroup"
   const val FOCUS_BELOW_GROUP = "workbench.action.focusBelowGroup"
   const val FOCUS_LEFT_GROUP = "workbench.action.focusLeftGroup"
@@ -329,7 +338,7 @@ internal object VsCodeCommands {
     SELECT_NEXT_SUGGESTION, SELECT_PREV_SUGGESTION,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS, REVERT_AND_CLOSE,
     NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
-    MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP,
+    MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP, RESTART_EXTENSION_HOST,
     FOCUS_ABOVE_GROUP, FOCUS_BELOW_GROUP, FOCUS_LEFT_GROUP, FOCUS_RIGHT_GROUP,
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,
     INCREASE_VIEW_HEIGHT, DECREASE_VIEW_HEIGHT, INCREASE_VIEW_WIDTH, DECREASE_VIEW_WIDTH,

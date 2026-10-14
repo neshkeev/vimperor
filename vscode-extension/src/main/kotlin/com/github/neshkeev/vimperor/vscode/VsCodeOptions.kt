@@ -124,6 +124,31 @@ internal object VsCodeOptions {
   )
 
   /**
+   * `'vimrcreload'` - what to do when the config changes on disk. This fork's own option.
+   *
+   * Vim has nothing like it, because Vim has no reason to: a `:source`d file is read when you ask
+   * and an editor you restart twice a day re-reads it anyway. An editor that stays open for weeks
+   * is the case this is for, and the thing it replaces is noticing an hour later that the mapping
+   * you just wrote is not loaded.
+   *
+   * `prompt` is the default rather than `auto` because a reload is not free of consequence - see
+   * [VimHost.reloadVimRc], which drops the mappings the old run made and cannot put back an option
+   * it set. Being asked is cheap; having a half-written config applied under you on every keystroke
+   * of `:w` is not. `none` stops the watching altogether, which is the setting for anyone who edits
+   * their config with the extension running and does not want to be interrupted.
+   *
+   * Read fresh on every change, so setting it *in* the config takes effect on the next one - which
+   * is the only way it could, the option being set by the file it governs.
+   */
+  val vimrcreload: StringOption = StringOption(
+    "vimrcreload",
+    GLOBAL,
+    "vrr",
+    "prompt",
+    boundedValues = setOf("none", "prompt", "auto"),
+  )
+
+  /**
    * `'wrap'`, against VS Code's own word wrap. See [WordWrapSettingMapper], which is where the
    * value lives - no window stores one.
    *
@@ -341,6 +366,7 @@ internal object VsCodeOptions {
     ide,
     ideastatusicon,
     ideawrite,
+    vimrcreload,
     relativenumber,
     filetype,
     syntax,
@@ -1056,5 +1082,14 @@ internal fun statusIcon(): StatusIcon =
   }
 
 /** Whether `:w` saves every open file, which is `set ideawrite=all` - not the default here. */
+/** `'vimrcreload'`, as the three things it can mean. See [VsCodeOptions.vimrcreload]. */
+internal fun vimrcReloadMode(): VimrcReload =
+  when (injector.optionGroup.getOptionValue(VsCodeOptions.vimrcreload, OptionAccessScope.GLOBAL(null))
+    .toVimString().value) {
+    "none" -> VimrcReload.NONE
+    "auto" -> VimrcReload.AUTO
+    else -> VimrcReload.PROMPT
+  }
+
 internal fun writesEveryFile(): Boolean =
   injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).toVimString().value == "all"

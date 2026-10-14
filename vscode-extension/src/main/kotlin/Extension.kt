@@ -17,6 +17,7 @@ import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
 import com.github.neshkeev.vimperor.vscode.MessageLine
 import com.github.neshkeev.vimperor.vscode.NodeFileSystem
 import com.github.neshkeev.vimperor.vscode.OutputChannel
+import com.github.neshkeev.vimperor.vscode.RelativePattern
 import com.github.neshkeev.vimperor.vscode.OutputChannelPanelService
 import com.github.neshkeev.vimperor.vscode.StatusBarAlignment
 import com.github.neshkeev.vimperor.vscode.StatusBarItem
@@ -26,6 +27,7 @@ import com.github.neshkeev.vimperor.vscode.TextEditor
 import com.github.neshkeev.vimperor.vscode.TextEditorSelectionChangeKind
 import com.github.neshkeev.vimperor.vscode.ThemeColor
 import com.github.neshkeev.vimperor.vscode.VimHost
+import com.github.neshkeev.vimperor.vscode.VimrcWatch
 import com.github.neshkeev.vimperor.vscode.workbenchLayoutOf
 import com.github.neshkeev.vimperor.vscode.VsCodeClipboard
 import com.github.neshkeev.vimperor.vscode.VsCodeCommands
@@ -484,7 +486,36 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // Following the config files, which is three lines because VS Code is already watching the disk:
+  // a `RelativePattern` with a base directory may name a path outside the workspace, and the
+  // events arrive on this host's own queue. Everything decidable is in [VimrcWatch] - the modes,
+  // the debounce, what counts as a change - because this file is the one no unit test loads.
+  //
+  // After the config has run, so that `set vimrcreload=none` in it is honoured without a watcher
+  // ever being created, and so that `remember` has the text a change will be measured against.
+  val vimrcWatch = VimrcWatch(vim, announce = { output.appendLine(it) })
+  vimrcWatch.remember(loaded)
+  val vimrcWatchers = vimrcWatch.pathsToWatch().map { path ->
+    val watcher = workspace.createFileSystemWatcher(
+      RelativePattern(path.substringBeforeLast('/', "/"), path.substringAfterLast('/')),
+    )
+    // All three, because a config can change by being written, by appearing where there was none,
+    // and by being deleted - and the third hands the session to the next family down.
+    watcher.onDidChange { vimrcWatch.noticed() }
+    watcher.onDidCreate { vimrcWatch.noticed() }
+    watcher.onDidDelete { vimrcWatch.noticed() }
+    watcher
+  }
+  if (vimrcWatchers.isEmpty()) {
+    output.appendLine("Not watching the config for changes (vimrcreload=none).")
+  } else {
+    output.appendLine("Watching ${vimrcWatchers.size} config path(s) for changes.")
+  }
+
   val subscriptions = context.subscriptions
+  for (registration in vimrcWatchers) {
+    subscriptions.push(registration)
+  }
   for (registration in listOf<Disposable>(
     output, status, commandLine, matches, messageItem, typing, namedKey, tutor, pasteInCommandLine,
     pasteInReplaceMode,

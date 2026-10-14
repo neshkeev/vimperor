@@ -63,6 +63,29 @@ nnoremap <leader>f <Action>(workbench.action.quickOpen)
 `<Action>(id)` runs any VS Code command from a mapping — `:actionlist` lists them all, with the
 shortcut each already has. Each config name is also looked for as `_name` and in its XDG directory.
 
+### Editing it while Vimperor is running
+
+Save your config and Vimperor offers to load it, right away — no reload, no restart. It watches
+every path in the table above, not just the one that loaded, so creating a `~/.vimperorrc` when
+you only had a `~/.vimrc` counts as well.
+
+```vim
+set vimrcreload=prompt   " ask, which is the default
+set vimrcreload=auto     " load it without asking
+set vimrcreload=none     " leave me alone while I edit
+```
+
+The question has two ways to say yes:
+
+- **Reload** re-runs the file. Instant, and your editors, undo history and unsaved changes are
+  untouched. It replaces the mappings the old config made and leaves any you typed by hand alone.
+- **Restart Extensions** restarts the extension host, so the config is read exactly as it is at
+  startup.
+
+The difference is worth knowing, and it is Vim's: **re-running a config cannot undo an option it no
+longer sets.** Delete `set nonumber` from your file and a reload will not bring the numbers back,
+because `:source` only applies what the file says. That is what the restart is there for.
+
 A borrowed `~/.vimrc` is read as it is, **but expect part of it not to apply**: there are no Vim
 plugins here, so a plugin manager does nothing, and neither do autocommands, `syntax` or
 `colorscheme`. Those lines are stepped over and the rest takes effect. The Vimperor output channel

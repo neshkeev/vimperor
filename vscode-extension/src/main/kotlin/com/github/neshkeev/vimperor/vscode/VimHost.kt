@@ -21,6 +21,7 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimOutputPanelService
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.key.MappingOwner
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.common.ModeChangeListener
@@ -161,6 +162,27 @@ class VimHost(
     // pressed, so nothing else would apply them until one was.
     editors.values.forEach { applyEditorOptions(it) }
     return path
+  }
+
+  /**
+   * Runs the config again, after dropping what the last run of it mapped.
+   *
+   * IdeaVim's `reloadIdeaVimRc`, in this host's terms. The one line that is not just [loadVimRc] is
+   * the one that matters: mappings made while the config was running are owned by
+   * `MappingOwner.IdeaVim.InitScript`, and without removing them a reload *accumulates* - a `nmap`
+   * whose right-hand side you changed would leave both, and the first one registered wins.
+   *
+   * **What a reload cannot do is revert an option**, and that is Vim's own behaviour rather than a
+   * gap here: `:source` sets what the file says and says nothing about what it no longer says, so
+   * deleting `set nonumber` from a config and reloading leaves the gutter empty. The dialog offers
+   * a restart of the extension host for exactly that case - see [VimrcWatch].
+   *
+   * Against the editor on screen, or the fallback window when there is none, which is the same
+   * choice startup makes for the same reason.
+   */
+  fun reloadVimRc(environment: (String) -> String? = ::environmentVariable): String? {
+    injector.keyGroup.removeKeyMapping(MappingOwner.IdeaVim.InitScript)
+    return loadVimRc(startupEditor(keyedEditor ?: window.activeTextEditor), environment)
   }
 
   /**

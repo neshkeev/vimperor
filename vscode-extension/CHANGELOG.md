@@ -2,6 +2,24 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Added
+
+- Vimperor notices when your config changes on disk and offers to load it. Save `~/.vimperorrc` and
+  a notification appears with **Reload** and **Restart Extensions**; Reload re-runs the file in
+  place, which is instant and keeps every editor, undo history and unsaved change, while Restart
+  restarts the extension host so the config is read exactly as at startup. The difference matters
+  and it is Vim's own: re-running a config applies what the file says and cannot undo an option it
+  no longer sets, so deleting `set nonumber` needs the restart. `set vimrcreload=auto` loads it
+  without asking, `set vimrcreload=none` stops the watching, and `prompt` is the default.
+
+  Every path in the config order is watched, not just the file that loaded - creating a
+  `~/.vimperorrc` while only `~/.vimrc` is there changes which config wins, and so does deleting
+  the one that won. A save that rewrote the file without changing a byte asks nothing, which is
+  what format-on-save does. It is VS Code's own file watcher, which reaches outside the workspace
+  when its pattern carries a base directory, so there is no polling and nothing per-platform.
+
 ## [0.0.10] - 2026-10-14
 
 ### Added

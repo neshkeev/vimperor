@@ -37,6 +37,7 @@ const contextsSet = []
 /** What `Extension.kt` registered for a document closing and for one being saved. */
 const documentClosedListeners = []
 const documentSavedListeners = []
+const watchedConfigPatterns = []
 
 /** Whether `vimperor.trace` is on. Flipped on for the stretch of this script that checks it. */
 let tracing = false
@@ -275,6 +276,13 @@ const vscode = {
   },
   TabInputText,
   Selection,
+  // Constructed with `new`, like ThemeColor above and for the same reason.
+  RelativePattern: class RelativePattern {
+    constructor(base, pattern) {
+      this.base = base
+      this.pattern = pattern
+    }
+  },
   EndOfLine: { LF: 1, CRLF: 2 },
   TextEditorSelectionChangeKind: { Keyboard: 1, Mouse: 2, Command: 3 },
   TextEditorCursorStyle: { Line: 1, Block: 2, Underline: 3, LineThin: 4, BlockOutline: 5, UnderlineThin: 6 },
@@ -321,7 +329,9 @@ const vscode = {
       return item
     },
     createTextEditorDecorationType: (options) => ({ ...disposable(), options }),
-    showInformationMessage: () => undefined,
+    // Answers with a promise of the pressed button. Nothing is pressed here, which is the state a
+    // notification the user ignores is in, and the one `VimrcWatch` has to survive.
+    showInformationMessage: () => ({ then: (onFulfilled) => { onFulfilled(undefined); return undefined } }),
     // Captured rather than dropped: `:autocmd BufEnter` is wired here, in `Extension.kt`, and a
     // unit test that calls the host directly would not see that wiring at all.
     onDidChangeActiveTextEditor: (callback) => {
@@ -426,6 +436,12 @@ const vscode = {
     onDidSaveTextDocument: (callback) => {
       documentSavedListeners.push(callback)
       return disposable()
+    },
+    // Every config path the extension asked to watch, recorded so that the assertions below can
+    // say it asked - and, under `vimrcreload=none`, that it did not.
+    createFileSystemWatcher: (pattern) => {
+      watchedConfigPatterns.push(pattern)
+      return { ...disposable(), onDidCreate: () => disposable(), onDidChange: () => disposable(), onDidDelete: () => disposable() }
     },
     // The extension's own settings, as opposed to Vim's - `vimperor.trace` is the only one. Turned
     // on for a few keystrokes below rather than for the whole run, so that the wiring is exercised
@@ -1148,6 +1164,23 @@ assert.strictEqual(
 
 assert.ok(documentClosedListeners.length > 0, 'the extension registered no close listener')
 for (const listener of documentClosedListeners) listener(editor.document)
+
+// The config watchers, which only this script can see: `Extension.kt` is where they are created
+// and no unit test loads it. What is asserted is that they were asked for, that each names one
+// file rather than a glob over a home directory, and that they are disposable - the policy behind
+// them is `VimrcWatchTest`'s.
+assert.ok(watchedConfigPatterns.length > 0, 'the extension watched no config path')
+for (const pattern of watchedConfigPatterns) {
+  assert.ok(pattern.base, `a config watcher had no base directory: ${JSON.stringify(pattern)}`)
+  assert.ok(
+    pattern.pattern && !pattern.pattern.includes('*'),
+    `a config watcher asked for a glob rather than a file: ${pattern.pattern}`,
+  )
+}
+assert.ok(
+  watchedConfigPatterns.some((it) => it.pattern === '.vimperorrc'),
+  `the extension did not watch .vimperorrc. Watched: ${watchedConfigPatterns.map((it) => it.pattern).join(', ')}`,
+)
 
 assert.ok(subscriptions.length >= 4, 'the extension registered too little for VS Code to dispose')
 
