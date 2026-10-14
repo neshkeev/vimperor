@@ -86,6 +86,11 @@ The difference is worth knowing, and it is Vim's: **re-running a config cannot u
 longer sets.** Delete `set nonumber` from your file and a reload will not bring the numbers back,
 because `:source` only applies what the file says. That is what the restart is there for.
 
+You can reload whenever you like without waiting to be asked: **Vimperor: Reload Config** in the
+Command Palette, or `:action vimperor.reloadConfig` — `:actionlist` lists it like any other. Doing
+that while the question is on screen settles it, so its buttons stop doing anything; VS Code gives
+an extension no way to take its own notification down, so you may still have to close it.
+
 A borrowed `~/.vimrc` is read as it is, **but expect part of it not to apply**: there are no Vim
 plugins here, so a plugin manager does nothing, and neither do autocommands, `syntax` or
 `colorscheme`. Those lines are stepped over and the rest takes effect. The Vimperor output channel

@@ -81,6 +81,23 @@ internal class VimrcWatch(
 
   /** True while a reload of this host's own doing is in flight, so it cannot ask about itself. */
   private var reloading = false
+
+  /**
+   * Bumped whenever the situation is resolved, which is how a question that has been overtaken
+   * comes to do nothing.
+   *
+   * **A notification cannot be closed by the extension that showed it.** There is no handle:
+   * `showInformationMessage` answers with a `Thenable` and nothing else, and "dismissed" in VS
+   * Code's own words means the *user* dismissed it. The nearest thing that does disappear on its
+   * own is `withProgress` at `ProgressLocation.Notification`, which carries a Cancel button and no
+   * other, so it cannot ask a question.
+   *
+   * So the question stays on screen after `Vimperor: Reload Config` has already answered it, and
+   * the part that can be fixed is what happens when it is pressed: nothing. Which matters most for
+   * the answer nobody would want twice - a Restart arriving after the config was reloaded by hand
+   * would look like the editor restarting itself for no reason.
+   */
+  private var generation = 0
   /** Every path to watch. Empty under [VimrcReload.NONE], which is how the watchers come to not exist. */
   fun pathsToWatch(): List<String> = if (mode() == VimrcReload.NONE) emptyList() else vimRcPaths(environment)
 
@@ -93,6 +110,9 @@ internal class VimrcWatch(
    * ignoring: the interesting change then is a file *appearing*.
    */
   fun remember(path: String?) {
+    // Every route that settles the matter comes through here - a reload, a dismissal, and the
+    // `Vimperor: Reload Config` command - so this is the one place the generation has to move.
+    generation++
     loadedPath = path
     loadedText = path?.let(readText)
   }
@@ -150,7 +170,13 @@ internal class VimrcWatch(
       else -> "$path changed. Reload it?"
     }
     val answers = VimrcAnswer.entries.map { it.label }
+    val asOf = generation
     ask(message, answers) { pressed ->
+      if (asOf != generation) {
+        // Overtaken while it was on screen. See [generation] for why it is still on screen at all.
+        announce("The config has been reloaded since that question, so the answer was ignored.")
+        return@ask
+      }
       when (VimrcAnswer.entries.firstOrNull { it.label == pressed }) {
         VimrcAnswer.RELOAD -> reload()
         VimrcAnswer.RESTART -> restart()

@@ -73,6 +73,24 @@ class VimrcWatchTest {
     }
   }
 
+  /**
+   * A question whose answer is given later, which is what a notification on screen really is.
+   *
+   * [Questions] answers inside `ask`, which is the easy shape for most of these and the wrong one
+   * for anything about a question that is still up while something else happens.
+   */
+  private class PendingQuestion {
+    val asked = mutableListOf<String>()
+    private var answer: ((String?) -> Unit)? = null
+    val ask: (String, List<String>, (String?) -> Unit) -> Unit = { message, _, onAnswer ->
+      asked += message
+      answer = onAnswer
+    }
+
+    /** The user pressing a button, whenever that happens to be. */
+    fun press(button: VimrcAnswer) = answer?.invoke(button.label)
+  }
+
   private fun watch(
     session: Session,
     questions: Questions = Questions(),
@@ -284,6 +302,56 @@ class VimrcWatchTest {
     watch.settle()
 
     assertEquals(1, questions.asked.size, "asked twice about one edit: ${questions.asked}")
+  }
+
+  /**
+   * A question answered after something else has settled the matter does nothing.
+   *
+   * **The notification cannot be taken off the screen** - `showInformationMessage` hands back a
+   * `Thenable` and no handle, so there is nothing to close. What can be fixed is the press: running
+   * `Vimperor: Reload Config` while the question is up resolves it, and the stale buttons then do
+   * nothing. Restart is the one that matters, since a restart arriving after a hand reload looks
+   * like the editor restarting itself for no reason.
+   */
+  @Test
+  fun `test a question overtaken by a reload does nothing when pressed`() {
+    val session = Session()
+    val question = PendingQuestion()
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      question.ask, {}, { VimrcReload.PROMPT },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+    assertEquals(1, question.asked.size, "the question should be up")
+
+    // `Vimperor: Reload Config` from the palette, which tells the watch what it loaded.
+    watch.remember("/home/someone/.vimperorrc")
+    question.press(VimrcAnswer.RESTART)
+
+    assertEquals(emptyList(), session.dispatched, "the stale Restart must not restart anything")
+  }
+
+  /** And a question nothing has overtaken still works, which is what makes the other one mean something. */
+  @Test
+  fun `test a question that has not been overtaken is answered`() {
+    val session = Session()
+    val question = PendingQuestion()
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      question.ask, {}, { VimrcReload.PROMPT },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+    question.press(VimrcAnswer.RESTART)
+
+    assertEquals(listOf(VsCodeCommands.RESTART_EXTENSION_HOST), session.dispatched)
   }
 
   @Test

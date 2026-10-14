@@ -1041,12 +1041,33 @@ adding another: **no option value in this engine contains a separator of any kin
 not kebab, snake or camel.
 
 **A notification cannot carry a checkbox either**, which is the same limit as the tooltip and the
-same `MessageItem` with its two fields. So "remember this" is a button - **Always Reload** - and
-what it sets is a field on `VimrcWatch` that dies with the extension host, because a preference
-nobody wrote in their config should not quietly become permanent. It only ever lifts `prompt` to
-`autoreload`, which is what makes a later `:set vimrcreload=...` win with no listener to write.
-There is deliberately no **Always Restart**: remembering lasts for the session and a restart *ends*
-the session, so it would be stored, used once and discarded by the thing it asked for.
+same `MessageItem` with its two fields. An **Always Reload** button was built in place of one and
+**taken out again**, which is worth recording so it is not built a second time: a label that says
+"always" is read as a preference that persists, and this one could only last as long as the
+extension host - so it promised something the mechanism could not keep. The honest version of "stop
+asking me" is in the config, where it does persist, and it was already there:
+`set vimrcreload=autoreload`.
+
+**And a notification cannot be taken down by the extension that showed it**, which is the third
+thing in this family and has the same cause: a notification is a message and buttons. There is no
+handle - `showInformationMessage` answers with a `Thenable`, and "dismissed" in VS Code's own words
+means the *user* dismissed it. `withProgress` at `ProgressLocation.Notification` is the one
+notification that goes away by itself, and it carries a Cancel button and no other, so it cannot
+ask anything.
+
+So a question still on screen when `Vimperor: Reload Config` runs stays there, and what is fixed is
+the press rather than the notification: `VimrcWatch.generation` moves whenever the matter is settled
+- every route goes through `remember` - and an answer from an older generation does nothing but say
+so. The one that makes it worth having is Restart, which arriving after a reload by hand would look
+like the editor restarting itself for no reason.
+
+**`vimperor.reloadConfig` is one declaration answering two surfaces**, which is the economy worth
+knowing before writing a second mechanism for either. A `contributes.commands` entry puts it in the
+Command Palette under its title; and because `:actionlist` reads `commands.getCommands`, a command
+this extension *registers* is in that list too - so `:action vimperor.reloadConfig` works with
+nothing else written. The command tells `VimrcWatch` what it loaded, or a reload done by hand would
+leave the watch's baseline behind and the next unrelated save would ask about an edit already
+applied.
 
 **Reload is IdeaVim's `reloadIdeaVimRc`, and the one line that matters is the one that is not
 `loadVimRc`.** Mappings made while the config runs are owned by `MappingOwner.IdeaVim.InitScript` -
