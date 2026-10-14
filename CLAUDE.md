@@ -512,6 +512,27 @@ when `DocumentSymbols` cached the Outline tree; or the honest answer is *no*, an
 saying no is an implementation - `[s` and `]s` answer -1, the engine's "no such
 motion", and beep.
 
+**And a host seam can be filled with the wrong engine function, which looks like the
+second kind of answer and is a bug.** `VimPsiService.getSingleQuotedString` asks "is this
+offset inside a string", because a bracket written inside one is text and `%` must not
+count it. This host answered it with `findBlockQuoteInLineRange`, under a comment arguing
+that reusing what `i"` already does beats answering roughly - and `i"` answers something
+else. With the cursor *between* two strings on a line, Vim's `i"` reaches from the previous
+quote to the next one, across a gap that is not a string;
+`testDeleteDoubleQuotedStringBetweenEvenNumberOfQuotes` asserts it, so it is Vim. Asked the
+containment question it says yes for every bracket between two strings, and the scan skipped
+them: `%` on a bracket above `select x->>'a' from f('b.csv')` stopped at that line's own `)`.
+
+The engine already had the right function and nothing here used it -
+`getSingleQuotesRangeNoPSI`, which walks the line tracking whether it is inside a string and
+answers null when the offset is not, and which `IjVimPsiService` calls before confirming
+against PSI. **The first attempt at a fix changed `findBlockQuoteInLineRange` instead, and
+three of IdeaVim's own fixtures said no** - that function was right and the caller was
+wrong. Two lessons, and the second is the one that cost the time: a seam's *contract* is the
+question it asks, not the nearest function that returns the same type; and **when a fix makes
+the corpus worse, the corpus is usually right**. None of the 2,478 fixtures covered the bug
+itself, so it was only the regression that spoke.
+
 `q:`, `q/` and `q?` were the last, and they went the second way with a twist worth
 keeping. The feature is history in a buffer you can edit, and `IjSearchWindowGroup` -
 in `src/main/java`, named `Ij` - had **no `com.intellij` import in it at all**. It is

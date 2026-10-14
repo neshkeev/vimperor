@@ -13,6 +13,8 @@ import com.maddyhome.idea.vim.api.VimEditor
 import com.maddyhome.idea.vim.api.VimPsiService
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.TextRange
+import com.maddyhome.idea.vim.group.getDoubleQuotesRangeNoPSI
+import com.maddyhome.idea.vim.group.getSingleQuotesRangeNoPSI
 
 /**
  * What this host can say about the shape of a file: something about strings, nothing about
@@ -28,11 +30,24 @@ import com.maddyhome.idea.vim.common.TextRange
  * language server for semantic tokens, but only over a promise, and these questions are asked once
  * per character in the middle of a keystroke. So this answers from the text itself.
  *
- * For strings that is less of a compromise than it sounds, because it is what the engine already
- * does for `i"` and `i'` - [VimSearchHelper.findBlockQuoteInLineRange] counts quotes along the
- * line - and answering the two questions differently would be worse than answering both roughly.
- * It gets `f("(", x)` right, which is the case that matters. It will be wrong about an apostrophe
- * in prose, as Vim itself is.
+ * For strings that is less of a compromise than it sounds, because the engine has a text scan for
+ * exactly this question: `getSingleQuotesRangeNoPSI` and its double-quoted twin walk the line from
+ * its start tracking whether they are inside a string, and answer null when the offset is not in
+ * one. IdeaVim calls the same two and then confirms the answer against PSI; without a syntax tree
+ * there is nothing to confirm with, which is also what IdeaVim does for a plain-text file. It gets
+ * `f("(", x)` right, which is the case that matters, and it will be wrong about an apostrophe in
+ * prose, as Vim itself is.
+ *
+ * **It is deliberately not `findBlockQuoteInLineRange`, which is what this used to use.** That one
+ * implements `i"`, and `i"` answers a different question: with the cursor *between* two strings on
+ * a line, Vim's `i"` selects from the previous quote to the next one - across the gap, which is not
+ * a string at all. IdeaVim's own `testDeleteDoubleQuotedStringBetweenEvenNumberOfQuotes` asserts
+ * that, so it is Vim's behaviour and not a bug. Asking it "is this offset inside a string" gets a
+ * yes for every bracket between two strings, so a bracket scan skipped those brackets: `%` on the
+ * `(` of a line above
+ * `select x->>'a', y->>'b' from f('c.csv', n=['d'])`
+ * stopped at that line's own `)`, because the `(` before `'c.csv'` had been read as quoted and
+ * never counted.
  *
  * For comments there is no equivalent: a comment is a `//` in one language, a `#` in another and a
  * `%` in a third, and guessing from the file extension would be a table of lies that grows forever.
@@ -56,36 +71,14 @@ internal class VsCodePsiService(private val symbols: DocumentSymbols = DocumentS
 
   override fun getCommentAtPos(editor: VimEditor, pos: Int): Pair<TextRange, Pair<String, String>?>? = null
 
+  // `isInner` here is not `i"` versus `a"`: it decides whether the quote characters themselves count
+  // as part of the range, not whether trailing whitespace does. Both of these take it through.
+
   override fun getDoubleQuotedString(editor: VimEditor, pos: Int, isInner: Boolean): TextRange? =
-    quotedString(editor, pos, '"', isInner)
+    getDoubleQuotesRangeNoPSI(editor.text(), pos, isInner)
 
   override fun getSingleQuotedString(editor: VimEditor, pos: Int, isInner: Boolean): TextRange? =
-    quotedString(editor, pos, '\'', isInner)
-
-  /**
-   * `isInner` here is not `i"` versus `a"`: it decides whether the quote characters themselves count
-   * as part of the string, not whether trailing whitespace does. So the search is always an inner
-   * one, and the flag only chooses whether the quotes are trimmed off the ends.
-   */
-  private fun quotedString(editor: VimEditor, pos: Int, quote: Char, isInner: Boolean): TextRange? {
-    val quoted = injector.searchHelper.findBlockQuoteInLineRange(
-      editor,
-      pos,
-      quote,
-      isOuter = false,
-      includeQuotes = true,
-    ) ?: return null
-
-    // findBlockQuoteInLineRange answers "the string at or after this offset", because that is what
-    // `i"` wants: Vim's `i"` reaches forward to the next string on the line rather than failing.
-    // It is the wrong answer to the question being asked here, which is whether *this* offset is
-    // inside a string - and not merely a wrong answer. The bracket scan in `findBlock` skips a
-    // string by jumping to the far end of the range it is given, so a range that begins after the
-    // offset sends a backwards scan forwards, to the same bracket, for ever.
-    if (pos < quoted.startOffset || pos >= quoted.endOffset) return null
-
-    return if (isInner) TextRange(quoted.startOffset + 1, quoted.endOffset - 1) else quoted
-  }
+    getSingleQuotesRangeNoPSI(editor.text(), pos, isInner)
   // ---- Where a function or a class is, from the symbol cache. See [DocumentSymbols].
 
   override fun getMethodRanges(editor: VimEditor, offset: Int): MethodRanges? {

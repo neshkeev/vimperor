@@ -77,6 +77,16 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- `%` jumped to the nearest bracket instead of the matching one, on any line holding two strings.
+  A bracket inside a string is text rather than a bracket, so the scan asks whether each one is
+  quoted - and it was asking with the code that implements `i"`, which answers a different
+  question: with the cursor *between* two strings, Vim's `i"` reaches from the previous quote to
+  the next one, across a gap that is no string at all. So every bracket between two strings on a
+  line was taken for quoted and never counted. Reported against SQL, where
+  `select x->>'a' from f('b.csv')` puts a bracket between two strings on every line; it was never
+  about SQL. Block text objects - `di(`, `ci{`, `ya[` - counted the same brackets and are fixed
+  with it.
+
 - The third `<C-n>` of `multiple-cursors` added nothing. The search for the next occurrence asks
   the current cursor what it is selecting, and no cursor could be made the current one, so after
   the second it kept searching from the first occurrence and reported "no more matches".
