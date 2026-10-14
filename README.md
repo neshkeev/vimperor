@@ -106,12 +106,13 @@ left out so the Latin layout keeps `.`, `:` and `;`. See `vscode-extension/READM
 Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
-What does not: 2 of IdeaVim's 27 bundled extensions — matchit and VimEverywhere.
-The other twenty-five are ported:
+What does not: 2 of IdeaVim's 30 bundled extensions — matchit and VimEverywhere.
+The other twenty-eight are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `textobj-line`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `exchange`, `sneak`, `surround`, `multiple-cursors`, `yankring`,
+`highlightedyank`, `keylog`, `exchange`, `sneak`, `clever-f`, `surround`, `multiple-cursors`,
+`visual-multi`, `yankring`,
 `functextobj`, `classtextobj`, `visual-star-search`, `signature`, `NERDTree` and
 `youcompleteme`.
 
@@ -179,8 +180,8 @@ still compiles for both targets and its tests run on both, which is how a JVM-is
 in shared code gets caught.
 
 `src/test` is the odd one, and the reason the IntelliJ plugin could go. It is not
-compiled by anything: it holds IdeaVim's tests as IdeaVim wrote them - 636 files and
-10,712 `@Test` methods - and the VS Code host mines **2,445 replayed fixtures** out of
+compiled by anything: it holds IdeaVim's tests as IdeaVim wrote them - 663 files and
+10,774 `@Test` methods - and the VS Code host mines **2,478 replayed fixtures** out of
 them as *text*, playing the keys against this host and comparing the result. That corpus
 is the largest outside check on the port, and it never needed to be code.
 
@@ -208,7 +209,7 @@ of them, name and kind, against `@types/vscode`. Every command id the extension
 sends is compared against a real window by `checkVsCodeCommandIds`.
 
 Beyond its own tests, the extension replays IdeaVim's test fixtures against the
-VS Code host: **2,439 of 2,445 pass**. The six that do not each name an IntelliJ
+VS Code host: **2,472 of 2,478 pass**. The six that do not each name an IntelliJ
 action with no VS Code command behind it, and are listed in
 [`known-fixture-failures.txt`](vscode-extension/src/test/fixtures/known-fixture-failures.txt).
 

@@ -52,21 +52,29 @@ import kotlin.test.assertEquals
  *
  * ## What is actually true
  *
- * Both halves of that were wrong, and `ToHandlerMappingInfo` says so rather than the extension.
- * `myFun` - the caret-delta route - is guarded by
- * `!keyState.commandBuilder.hasCurrentCommandPartArgument()`, which is exactly how `clever-f`'s own
- * `addAction` suppresses it; and `WithCallback` already defers both `myFun` and the
- * `finishedCommandPreparation` after it into `_backingFunction`. So a handler that calls `addAction`
- * from inside its `readKeys` callback and *then* `continueVimExecution()` skips the caret-delta
- * branch and has the command run with its own motion.
+ * Both halves of that were wrong, and the mechanism is smaller than the first explanation written
+ * for it. **A `readKeys` callback runs inside the keystroke that delivered the character, and that
+ * keystroke has its own `finishedCommandPreparation` still to come** - which runs any command
+ * builder that has just become ready. So `addAction` from the callback is the whole of it.
  *
- * Measured here: the command builder still holds `d` a keystroke later, and
- * `keyHandlerState.commandBuilder` is the same object at callback time. Those were the two things
- * that had to be settled, and both hold. `clever-f` needs no engine change for operator-pending
- * mode - only the caret-moved and document-changed listeners `SearchFinalizer` wants.
+ * Measured here, in this order:
  *
- * The third test is the control and is the one that makes the other two mean anything: the same
- * handler without `addAction` is exclusive, so the difference is the mechanism and not the arithmetic.
+ *  1. `addAction` from the callback makes `dfa` inclusive and `dta` stop in front. The command
+ *     builder still holds `d` a keystroke later, and `keyHandlerState.commandBuilder` is the same
+ *     object at callback time - the two things that had to be settled.
+ *  2. The control: the same handler moving only the caret is *exclusive*. So the difference is the
+ *     mechanism and not the arithmetic.
+ *  3. `continueVimExecution()` is not what makes it work. It reaches the same
+ *     `finishedCommandPreparation`, which only executes a builder that is still `isReady`.
+ *  4. Nor is `WithCallback`. A plain handler works too: `myFun` - the caret-delta route - is guarded
+ *     by `!commandBuilder.hasCurrentCommandPartArgument()` *and* runs before anything has moved the
+ *     caret, so all of its branches are skipped either way.
+ *
+ * Tests 3 and 4 are here because the first version of this file claimed both were the reason, and a
+ * mechanism nothing depends on is the kind of explanation that survives for years.
+ *
+ * `clever-f` needs no engine change for operator-pending mode - only the caret-moved listener
+ * `SearchFinalizer` wants, the document one already existing.
  */
 class DeferredExtensionMotionTest {
 
@@ -130,6 +138,36 @@ class DeferredExtensionMotionTest {
     }
   }
 
+  /** The same, without [ExtensionHandler.WithCallback.continueVimExecution]. */
+  private inner class NoContinueHandler : ExtensionHandler.WithCallback() {
+    override fun execute(editor: VimEditor, context: ExecutionContext, operatorArguments: OperatorArguments) {
+      val underOperator = editor.mode is Mode.OP_PENDING
+      readCharacter(editor, context) { char ->
+        val match = find(editor, editor.primaryCaret().offset, char) ?: return@readCharacter
+        if (underOperator) {
+          KeyHandler.getInstance().keyHandlerState.commandBuilder.addAction(ProbeMotion(match, true))
+        } else {
+          editor.primaryCaret().moveToOffset(match)
+        }
+      }
+    }
+  }
+
+  /** The same again, as a plain handler - so `myFun` runs synchronously, before there is an argument. */
+  private inner class PlainHandler : ExtensionHandler {
+    override fun execute(editor: VimEditor, context: ExecutionContext, operatorArguments: OperatorArguments) {
+      val underOperator = editor.mode is Mode.OP_PENDING
+      readCharacter(editor, context) { char ->
+        val match = find(editor, editor.primaryCaret().offset, char) ?: return@readCharacter
+        if (underOperator) {
+          KeyHandler.getInstance().keyHandlerState.commandBuilder.addAction(ProbeMotion(match, true))
+        } else {
+          editor.primaryCaret().moveToOffset(match)
+        }
+      }
+    }
+  }
+
   /** The caret-delta route easymotion takes, for the comparison: the operator sees only the offset. */
   private inner class CaretMoveHandler : ExtensionHandler.WithCallback() {
     override fun execute(editor: VimEditor, context: ExecutionContext, operatorArguments: OperatorArguments) {
@@ -174,6 +212,45 @@ class DeferredExtensionMotionTest {
     session.type("a")
 
     assertEquals("a two a\n", session.content, "the operator sees only where the caret went")
+  }
+
+  /**
+   * And [ExtensionHandler.WithCallback.continueVimExecution] is not what makes it work.
+   *
+   * The callback runs *inside* the keystroke that delivered the character, and that keystroke has its own
+   * `finishedCommandPreparation` still to come - which runs a builder that has just become ready. So continuing
+   * explicitly is a second call to the same thing, guarded by `isReady` and therefore a no-op. It is kept in
+   * `clever-f` because it is `WithCallback`'s documented contract and costs nothing, not because anything depends
+   * on it.
+   */
+  @Test
+  fun `test it works without continuing the Vim execution`() {
+    val session = Session("one a two a\n")
+    map("f", NoContinueHandler())
+
+    session.type("df")
+    session.type("a")
+
+    assertEquals(" two a\n", session.content)
+  }
+
+  /**
+   * What `WithCallback` *is* for here: `myFun` runs synchronously for a plain handler, before the argument exists.
+   *
+   * Whether that costs anything is a question about `myFun`'s body rather than about the shape of the handler, and
+   * the answer measured here is that it does not - nothing has moved the caret yet, so every branch is skipped and
+   * `offsets` is empty. `WithCallback` is still the honest declaration for a handler that finishes later, and it is
+   * what stops `myFun` guessing from a caret that has not moved for a reason it cannot see.
+   */
+  @Test
+  fun `test a plain handler reaches the operator too`() {
+    val session = Session("one a two a\n")
+    map("f", PlainHandler())
+
+    session.type("df")
+    session.type("a")
+
+    assertEquals(" two a\n", session.content)
   }
 
   @Test

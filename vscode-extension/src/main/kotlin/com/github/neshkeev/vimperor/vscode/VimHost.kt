@@ -540,8 +540,16 @@ class VimHost(
       // On a move only, which is what a caret listener would fire on. `noteCaretMoveInInsertSession`
       // decides which kind of move it was by whether the document changed with it, so calling it
       // when nothing moved would report a pure caret move on every keystroke.
-      if (editor.mode is Mode.INSERT && editor.primaryCaret().offset != caretBefore) {
+      val caretAfter = editor.primaryCaret().offset
+      if (editor.mode is Mode.INSERT && caretAfter != caretBefore) {
         noteCaretMoveInInsertSession(editor, editor.documentStamp())
+      }
+      // And Vim's `CursorMoved`, which is the same comparison asked by anything that is not an
+      // insert session - `clever-f` ends a search on it. Vim checks the cursor against its last
+      // known position when it gets back to its main loop rather than hooking whatever moved it,
+      // which is what this is; see `VimCaretMovedListener`.
+      if (caretAfter != caretBefore) {
+        injector.listenersNotifier.notifyCaretMoved(editor, caretBefore, caretAfter)
       }
       // A key the engine asked to have handled after this one. Ahead of anything still untyped,
       // because Vim replays it immediately.
@@ -715,7 +723,15 @@ class VimHost(
     // made, and following it into Visual mode reset the key handler and closed the prompt under the
     // next key. `syncCaretsFromEditor` recognises its own echo; what it adopted is the only thing
     // that can say the user did something.
+    val caretBefore = editor.primaryCaret().offset
     if (!editor.syncCaretsFromEditor()) return "echo of what was pushed"
+    // The second door a cursor move comes through, and the one a keystroke cannot see: a click or a
+    // drag. Reported here rather than from the engine for the reason on `VimCaretMovedListener` -
+    // what moved the caret is not the question, only that it is somewhere else now.
+    val caretAfter = editor.primaryCaret().offset
+    if (caretAfter != caretBefore) {
+      injector.listenersNotifier.notifyCaretMoved(editor, caretBefore, caretAfter)
+    }
     // A click in another editor's text, in Visual mode. VS Code may report it before it reports that
     // editor as active, and following the collapsed selection into Normal mode below would then leave
     // the other editor's selection on screen with nothing able to clear it.

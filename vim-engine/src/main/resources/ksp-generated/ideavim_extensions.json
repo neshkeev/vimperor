@@ -30,6 +30,11 @@
     "className": "com.maddyhome.idea.vim.extension.classtextobj.ClassTextObjectKt"
   },
   {
+    "extensionName": "clever-f",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.cleverf.CleverFKt"
+  },
+  {
     "extensionName": "commentary",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.commentary.CommentaryKt"

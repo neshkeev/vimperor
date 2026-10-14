@@ -33,13 +33,14 @@ the fastest answer to "why is this code like this".
 The IntelliJ plugin is gone - 408 files, deleted once the port no longer needed
 it. `src/test` stayed. It holds IdeaVim's tests, which cannot run without the
 plugin - 636 files and 10,492 `@Test` methods - and **the VS Code host mines
-2,445 replayed fixtures out of them as text**: `VimFixtures.load` reads the `.kt`
-files and `VimFixtureReplayTest` plays the keys against this host. 2,439 pass.
+2,478 replayed fixtures out of them as text**: `VimFixtures.load` reads the `.kt`
+files and `VimFixtureReplayTest` plays the keys against this host. 2,472 pass.
 
 This file said 11,727 tests for a long time and the number cannot be reproduced:
-counting `@Test` today gives 10,712 across 661 files, and `src/test` is otherwise
-frozen data here - the one addition since is IdeaVim's own `visual-multi` suite,
-copied in when that extension was ported so the corpus could check it. Derive
+counting `@Test` today gives 10,774 across 663 `.kt` files, and `src/test` is otherwise
+frozen data here - the only additions since are IdeaVim's own `visual-multi` and
+`clever-f` suites, copied in when those extensions were ported so the corpus could
+check them. Derive
 these from the tree rather than from this paragraph - the fixture counts are the
 first line of `vscode-extension/build/fixture-failures.txt` after any run.
 
@@ -66,8 +67,8 @@ The six that fail all name an IntelliJ action with no VS Code command behind it 
 
 Nothing structural. Every key the engine registers reaches something this host
 has built or a refusal that is itself an answer, and `VsCodeUnimplementedTest`
-asserts the empty list; ex commands are at parity in both directions. 22 of
-IdeaVim's 30 extensions are bundled. One injector seam is still `TODO` -
+asserts the empty list; ex commands are at parity in both directions. 28 of
+IdeaVim's 30 extensions are bundled, and the two that are not are a decision. One injector seam is still `TODO` -
 `pluginActivator` - and nothing in the engine calls it.
 
 What remains is a backlog of small things.
@@ -171,7 +172,7 @@ source was read in the review that decided this, so it is not a clean room in th
 grouping follows vim-easymotion's algorithm, which is a different method from AceJump's.
 
 It is not one of IdeaVim's thirty, so it is not part of that count. Vimperor bundles
-twenty-eight: twenty-seven of upstream's and this one.
+twenty-nine: twenty-eight of upstream's and this one.
 
 **Three small things, and the biggest had been here all along.** IdeaVim built `ExternalActionHandler`
 for IdeaVim-EasyMotion, the one extension it never shipped, and nothing in this fork had used it:
@@ -305,7 +306,7 @@ extension's toggle option, which is what `:set surround` does. So `set <name>` b
 here until the extension options were registered was the other half of it: these fixtures
 could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
 
-2,778 `doTest` calls exist under `src/test` and 2,445 fixtures are harvested - more than that
+2,825 `doTest` calls exist under `src/test` and 2,478 fixtures are harvested - more than that
 number, because the `configureByText`/`typeText`/`assertState` shape is not a `doTest` call at
 all. What is refused is
 counted and printed with every run, and the largest buckets now are tests that set something
@@ -539,25 +540,27 @@ added `keylog`, `clever-f` and `visual-multi` since. **Count it from the XML rat
 from this paragraph** - `git show upstream/master:ideavim-frontend/src/main/resources/IdeaVIM.ideavim-frontend.xml
 | grep -c '<vimExtension'` is the whole check, and the number has now been wrong here
 three times. Diff the names against `VsCodeExtensions.BUNDLED` rather than trusting the
-list below for the same reason.
+list below for the same reason - and read the *names* with something that spans lines,
+because upstream has since reordered the attributes and broken most of the declarations
+across two: `grep -o 'name="[^"]*"'` finds 10 of the 30.
 
-**Twenty-seven are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+**Twenty-eight are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `textobj-line`, `visual-star-search`, `signature`, `mini-ai`,
 `CamelCaseMotion`, `indentwise`,
 `textobj-user`, `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `keylog`, `exchange`, `sneak`, `surround`, `multiple-cursors`,
-`visual-multi`, `yankring`, `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`.
+`visual-multi`, `clever-f`, `yankring`, `functextobj`, `classtextobj`, `NERDTree` and
+`youcompleteme`.
 Each lives in
 `vim-engine/src/main/kotlin/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
 unaffected. The adapter goes when the plugin does.
 
-The four that are left are not one group. `matchit` and `VimEverywhere` **are not being
-ported, and that is a decision rather than a backlog entry** - neither is waiting on a
-seam and neither should be proposed again. `clever-f` and `visual-multi` are open, and
-both have now been read; what follows is what reading them found, so that the next pass
-starts from it rather than from their size.
+**The two that are left are `matchit` and `VimEverywhere`, and they are not a backlog
+entry** - neither is waiting on a seam, both were decided against, and neither should be
+proposed again. What follows is the record of the last two, `visual-multi` and `clever-f`,
+because the triage written for them was wrong in ways worth keeping.
 
 **`visual-multi` is the bigger and the easier, which is the opposite of how they look.**
 19 source files and 127KB against `clever-f`'s 15 and 39KB - the largest extension
@@ -575,67 +578,100 @@ the blocking `inputKeyStroke`/`inputString` - `CaseConversionHandler`, `RunMacro
 answers, because none of them has to return a value. **Nothing in it needs a new seam.**
 It is a large mechanical port, not a blocked one.
 
-**`clever-f` is small and has one real obstacle, in operator-pending mode.** Most of it
-ports directly: `WeakReference` is `VimWeakReference`, `System.currentTimeMillis` is the
-engine's own, and `CandidateHighlighter` draws `RangeHighlighter`s that are
-`VimHighlightingService` here - the `easymotion` precedent, down to the red that had to
-become theme colours. Two things it needs that do not exist. `SearchFinalizer` ends a
-search when the caret moves or the text changes, and `VimListenersNotifier` has
-**neither a caret-moved nor a document-changed listener** - ten kinds, and not those two;
-both hosts see both signals, so this is a seam to write rather than a refusal. And
-`CharReader` reads the character to search for through `inputKeyStroke`, which blocks.
-That is the one that is not merely work: `SearchExecutor` hands the command builder a
-`MotionActionHandler` *within the keystroke*, and `readKeys` returns before the character
-arrives.
+**`clever-f` is ported, and the triage written for it here was wrong three times over.** It
+is kept below because each of the three is a shape that will come round again.
 
-**Upstream decides nothing at runtime, and this file said it did.** The sentence here used
-to call the faithful alternative "the command builder deciding at runtime whether an
-argument is needed", and `clever-f` does not go through the engine's argument machinery at
-all. `CleverFMotionAction` leaves `argumentType` at its `null` default; the character is
-closed over inside the `CharSearch` the handler built, and `motionType` is a per-instance
-`val` - `CharSearch.isInclusive` is `isForward`, so **inclusivity comes from which key was
-pressed and never from the character**. `f` and `t` are inclusive, `F` and `T` are not, and
-`dfa` is inclusive because `addAction` put an already-inclusive motion into the slot `d`
-was waiting on. `addAction` with an action already present and a `MOTION` expected wraps it
-as `Argument.Motion(action, null, forcedMotion)` - a motion argument whose own argument is
-`null`. Upstream's own tests assert it: `dfa`, `dta` and `dFa`, one each.
+Most of it did port directly, as the first reading said: `System.currentTimeMillis` became
+the engine's own, and `CandidateHighlighter` draws `RangeHighlighter`s that are
+`injector.highlightingService` here - the `easymotion` precedent, down to the red that had
+to stop being red. `WeakReference<Editor>` became a *path*, which is better than the
+`VimWeakReference` that was predicted: `getPath()` is the editor's identity, a string needs
+no weak reference, and it survives the thing a reference cannot - this host hands out a new
+`VimEditor` wrapper whenever a hidden tab is shown, so identity would have said "a
+different editor" about the same buffer.
 
-So the obstacle is narrower than "an engine change". Everything happens inside one
-keystroke because `inputKeyStroke` pumps a nested AWT loop - `ModalEntry.activate` calls
-`systemEventQueue.createSecondaryLoop()` and `loop.enter()` - which a single-threaded
-runtime cannot do. What is actually needed is to reach `addAction` *after* the character
-arrives and while `d` is still pending.
+**First: "the command builder deciding at runtime whether an argument is needed."** Upstream
+decides nothing at runtime. `CleverFMotionAction` leaves `argumentType` at its `null`
+default; the character is closed over inside the `CharSearch` the handler built, and
+`motionType` is a per-instance `val` - `CharSearch.isInclusive` is `isForward`, so
+**inclusivity comes from which key was pressed and never from the character**. `f` and `t`
+are inclusive, `F` and `T` are not, and `dfa` is inclusive because `addAction` put an
+already-inclusive motion into the slot `d` was waiting on: with an action present and a
+`MOTION` expected, `addAction` wraps it as `Argument.Motion(action, null, forcedMotion)` - a
+motion argument whose own argument is `null`. Upstream's own tests assert the three cases,
+one each.
 
-**And there is no engine change, which was found by reading `ToHandlerMappingInfo` rather
-than the extension and then measured.** `myFun` - the caret-delta route that makes
-easymotion's jump an operator's motion, and the reason the recorded verdict was that `dfa`
-would behave as `dta` - is guarded by
-`!keyState.commandBuilder.hasCurrentCommandPartArgument()`. That guard is precisely how
-`clever-f`'s `addAction` suppresses it today. And `ExtensionHandler.WithCallback` already
-defers `myFun` *and* the following `finishedCommandPreparation` into `_backingFunction`. So
-a `WithCallback` handler that calls `addAction` from inside its `readKeys` callback and
-*then* `continueVimExecution()` skips the caret-delta branch and has the command run with
-its own motion, inclusivity and all.
+What is actually unportable is only that all of it happens inside one keystroke, because
+`inputKeyStroke` pumps a nested AWT loop - `ModalEntry.activate` calls
+`systemEventQueue.createSecondaryLoop()` and `loop.enter()`. `readKeys` returns first.
 
-`DeferredExtensionMotionTest` is that probe and it passes: **the command builder still holds
-`d` a keystroke later, and `keyHandlerState.commandBuilder` is the same object at callback
-time.** Those were the two unknowns. Its third test is the control and is what makes the
-other two mean anything - the same handler without `addAction` is exclusive, so the
-difference is the mechanism rather than the arithmetic.
+**Second: that a deferred read could not reach the operator, so `dfa` would behave as
+`dta`.** It reaches it, and the mechanism is smaller than any of the three explanations
+written for it. **A `readKeys` callback runs inside the keystroke that delivered the
+character, and that keystroke has its own `finishedCommandPreparation` still to come** -
+which runs any command builder that has just become ready. `addAction` from the callback is
+the whole of it.
 
-So `clever-f` is no longer behind a decision. What it still needs is the caret-moved and
-document-changed listeners `SearchFinalizer` wants, and a straight port of the rest.
+`DeferredExtensionMotionTest` is the probe, and two of its four tests are there because the
+first explanation was wrong in a way that would have survived for years.
+`continueVimExecution()` is a no-op here - it reaches the same
+`finishedCommandPreparation`, which only executes a builder that is still `isReady`. And
+`ExtensionHandler.WithCallback` is not required either: `myFun`, the caret-delta route that
+gives easymotion's jump to an operator as an *exclusive* offset, is skipped twice over - it
+is guarded by `!commandBuilder.hasCurrentCommandPartArgument()`, and it runs before anything
+has moved the caret, so all of its branches are skipped anyway. `clever-f` declares
+`WithCallback` because that is the honest shape for a handler that finishes later, not
+because anything depends on it. **A mechanism nothing depends on is the kind of explanation
+that outlives the thing it explains**; the way to tell is to take it out.
 
-**One trap the probe walked into, and it is about Vim rather than about this host.** `t` is
-inclusive too. `:h t` places the caret on the character left of the match, *inclusive*, and
-upstream spells it `isInclusive = isForward` - lowercase `f` and `t` inclusive, `F` and `T`
-not. The probe's first version read `!till` and `dta` came out one character short.
+**Third: "neither a caret-moved nor a document-changed listener - a seam to write."** Half
+of that was a seam and half of it was already there, one level down from where anybody
+looked. `ChangesListener` has been in the engine all along, attached per document through
+`VimDocument.addChangeListener` - which is exactly where IntelliJ's `DocumentListener` is
+too - and the VS Code host implements it in `DocumentBuffer`. Only the cursor needed
+writing, as `VimCaretMovedListener`.
 
-`visual-multi` is ported now, and the estimate above held: no new seam, one large
-mechanical pass. What it did find is in its own commit - `VimEditor.makePrimaryCaret`,
-which the search for occurrences had needed all along, and a `readLine` that is modal
-input rather than a command line. Treat 27 of 30 as complete and `clever-f` as the one
-left - unblocked now, and two listeners plus a mechanical port rather than a decision.
+**And that one is a comparison rather than a hook, which is Vim's own design.** IdeaVim
+takes it off IntelliJ's `CaretListener`, which fires from inside whatever moved the caret.
+Hooking the engine's `VimCaret.moveToOffset` would have been a half-answer - a caret also
+moves through `moveToBufferPosition`, through a block selection replacing every caret at
+once, and through the host adopting a mouse selection. Vim hooks nothing: it compares the
+cursor against its last known position when it gets back to the main loop, which is why
+`:h CursorMoved` says "not triggered when there is typeahead". So the host compares, once
+per keystroke and once per selection it adopts - and `VimHost.handle` was already computing
+`caretBefore` for Vim's `arrow_used`, under a comment saying "this host has none, so the
+keystroke loop is where a caret move is visible".
+
+**What the port found that no amount of reading would have: the session outlives the
+extension.** Upstream constructs a `CleverFSession` per `CleverFExtension`, and IdeaVim's
+tests get a new one per test; here it is a file-level `val` in a `@VimPlugin` file and
+survives being turned off and on. Two of IdeaVim's own fixtures said so, and the second is
+the instructive one: `f<CR>` with nothing to repeat found the *previous fixture's*
+character, and `falfb` repeated a search that should not have existed - which left the `a`
+meant for the prompt to be read as an append, and typed `lfb` into the buffer. Same shape
+as `VimRedoBuffer` and `VimSearchGroupBase`'s companion object, both already recorded here.
+`registerCleverF` resets, which is also the right behaviour: turning an extension on should
+not resume what it was doing last time.
+
+**Two small deliberate divergences.** The timeout is measured with the engine's monotonic
+`nanoTime` rather than `currentTimeMillis`, because `g:clever_f_timeout_ms` is an elapsed
+interval and `Time.kt` says in so many words which of the two that needs - a clock change
+under IdeaVim's version makes a search that has just happened look hours old. And the
+candidate marks take `:highlight CleverFDefaultLabel` when the user has defined it and the
+host's own search-match colours otherwise, rather than the plugin's literal red.
+
+**It will not take `f` from `sneak`**, which also remaps `f`, `F`, `t` and `T` to track the
+direction `;` repeats in. Both use `putKeyMappingIfMissing`, so whichever is enabled first
+keeps the keys; that is IdeaVim's behaviour too, and anyone who wants both maps the `<Plug>`
+names by hand.
+
+`visual-multi` was ported the commit before, and the estimate for *it* held: no new seam,
+one large mechanical pass. What it found is in its own commit - `VimEditor.makePrimaryCaret`,
+which the search for occurrences had needed all along, and a `readLine` that is modal input
+rather than a command line.
+
+**All 28 of upstream's portable extensions are done.** `matchit` and `VimEverywhere` are the
+two that are not being ported, and that is settled.
 
 `signature` is worth a note as the one port that did not follow upstream's
 implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on
@@ -1253,7 +1289,7 @@ An extension is a function annotated `@VimPlugin`, written against
 `com.intellij.vim.api.VimInitApi`, found by the KSP `ExtensionsProcessor` and
 emitted as JSON. `VsCodeJsonExtensionProvider` reads it, `VsCodeExtensionLoader`
 loads it, `VsCodeExtensionRegistrator` is what `:Plug` calls, and
-`VsCodeExtensions.BUNDLED` lists the twenty-two that ship. The engine's own
+`VsCodeExtensions.BUNDLED` lists the twenty-nine that ship. The engine's own
 machinery - `ExtensionHandler.kt`, `ExtensionLoader.kt`, `ExtensionBean.kt`,
 `JsonExtensionProvider.kt` - is what both ends were built on.
 

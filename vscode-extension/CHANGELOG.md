@@ -6,6 +6,21 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `clever-f`, the twenty-ninth bundled extension and the last of IdeaVim's thirty. `f` pressed again
+  repeats its own search, so `;` and `,` are not needed: `fa` goes to the next `a`, another `f` goes
+  to the one after, and `F` turns round. A search ends as soon as the cursor moves somewhere else,
+  the text changes or an insert starts, after which `f` asks for a character again. Searches cross
+  line boundaries, unlike Vim's own `f`, and the characters the search can reach on the cursor line
+  are highlighted - in `:highlight CleverFDefaultLabel` if you have defined it, and otherwise in the
+  colours your theme gives a search match. `<CR>` at the prompt repeats the last character searched
+  for. It works under an operator with Vim's own rules, which is the part that is easy to get wrong:
+  `dfa` takes the `a` with it, `dta` stops in front of it, `dFa` searches back. `g:clever_f_*` are
+  read - `across_no_line`, `ignore_case`, `smart_case`, `fix_key_direction`, `mark_char`,
+  `timeout_ms`, `chars_match_any_signs`, `repeat_last_char_inputs` and
+  `not_overwrites_standard_mappings` - and `<Plug>(clever-f-f)`, `<Plug>(clever-f-repeat-forward)`,
+  `<Plug>(clever-f-repeat-back)` and `<Plug>(clever-f-reset)` can be mapped by hand. If `sneak` is
+  already on it keeps `f`, as in IdeaVim. Ported from IdeaVim.
+
 - `vim-visual-multi`, the twenty-eighth bundled extension and the largest one IdeaVim has. It is
   multiple cursors with a *session* around them, which is what makes the keys inside one worth
   having: `<C-n>` starts a session on the word under the caret, then `n` and `N` add the next and

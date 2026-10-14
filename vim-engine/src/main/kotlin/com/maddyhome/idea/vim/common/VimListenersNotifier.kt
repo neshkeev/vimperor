@@ -15,6 +15,7 @@ import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.key.VimKeyStroke
 import com.maddyhome.idea.vim.state.mode.SelectionType
 import com.maddyhome.idea.vim.annotations.Internal
+import com.github.neshkeev.vimperor.common.VimCaretMovedListener
 
 @Internal // please do not use this class in your plugins, API is not final and will be changed in future releases
 class VimListenersNotifier {
@@ -28,6 +29,7 @@ class VimListenersNotifier {
   val registerListeners: MutableCollection<VimRegisterListener> = concurrentCollectionOf()
   val markListeners: MutableCollection<VimMarkListener> = concurrentCollectionOf()
   val keyTypedListeners: MutableCollection<VimKeyTypedListener> = concurrentCollectionOf()
+  val caretMovedListeners: MutableCollection<VimCaretMovedListener> = concurrentCollectionOf()
 
   fun notifyModeWillChange(editor: VimEditor, oldMode: Mode, newMode: Mode) {
     if (!injector.enabler.isEnabled()) return
@@ -107,6 +109,15 @@ class VimListenersNotifier {
     keyTypedListeners.forEach { it.keyTyped(editor, key) }
   }
 
+  /**
+   * The cursor has moved - Vim's `CursorMoved`. See [VimCaretMovedListener] for why a host reports
+   * this by comparing rather than by hooking, and for what a listener may do inside a keystroke.
+   */
+  fun notifyCaretMoved(editor: VimEditor, oldOffset: Int, newOffset: Int) {
+    if (!injector.enabler.isEnabled()) return
+    caretMovedListeners.forEach { it.caretMoved(editor, oldOffset, newOffset) }
+  }
+
   fun notifyRegisterStored(register: Char, copiedText: VimCopiedText, type: SelectionType, isDelete: Boolean) {
     if (!injector.enabler.isEnabled()) return // we remove all the listeners when turning the plugin off, but let's do it just in case
     registerListeners.forEach { it.registerStored(register, copiedText, type, isDelete) }
@@ -128,7 +139,10 @@ class VimListenersNotifier {
       vimPluginListeners,
       isReplaceCharListeners,
       yankListeners,
-      registerListeners
+      registerListeners,
+      markListeners,
+      keyTypedListeners,
+      caretMovedListeners,
     ).forEach { unloadListeners(listenerOwner, it) }
   }
 
@@ -141,5 +155,8 @@ class VimListenersNotifier {
     isReplaceCharListeners.clear()
     yankListeners.clear()
     registerListeners.clear()
+    markListeners.clear()
+    keyTypedListeners.clear()
+    caretMovedListeners.clear()
   }
 }

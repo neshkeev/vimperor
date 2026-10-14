@@ -25,6 +25,8 @@ import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.keylog.disposeKeyLog
 import com.maddyhome.idea.vim.extension.keylog.init as keyLogInit
+import com.maddyhome.idea.vim.extension.cleverf.disposeCleverF
+import com.maddyhome.idea.vim.extension.cleverf.init as cleverFInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.multiplecursors.disposeMultipleCursors
@@ -192,6 +194,11 @@ internal object VsCodeExtensions {
     // could act, and the whole reason `readKeys` exists.
     "surround" to { api -> api.surroundInit() },
 
+    // `clever-f.vim`: `f` pressed again repeats its own search, so `;` and `,` are not needed, and
+    // the characters it can reach on the line are highlighted. Its searches cross lines by default
+    // and end as soon as the cursor moves, the text changes or an insert starts.
+    "clever-f" to { api -> api.cleverFInit() },
+
     // `vim-multiple-cursors`: `<C-n>` puts a caret on the next occurrence of the word under the
     // caret, `<C-x>` skips one, `<C-p>` takes the last one back.
     "multiple-cursors" to { api -> api.multipleCursorsInit() },
@@ -277,6 +284,10 @@ internal object VsCodeExtensions {
     "easymotion" to { disposeEasyMotion() },
 
     // What the last cursor was added from, per buffer.
+    // Its caret-moved and mode-change listeners, neither of which is held by an owner, plus the
+    // document listener and the highlights a live search is holding.
+    "clever-f" to { disposeCleverF() },
+
     "multiple-cursors" to { disposeMultipleCursors() },
 
     // Its session flag and remembered regions, per buffer, plus the focus and mode listeners that
@@ -547,6 +558,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "IdeaVim-EasyMotion" to "easymotion",
       "vim-exchange" to "exchange",
       "vim-textobj-function" to "functextobj",
+      "clever-f.vim" to "clever-f",
       "vim-highlightedyank" to "highlightedyank",
       "vim-indentwise" to "indentwise",
       "matchit" to "matchit",
