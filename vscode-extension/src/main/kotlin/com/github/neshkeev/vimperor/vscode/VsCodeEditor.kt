@@ -731,6 +731,23 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * attributes to the user, and [VimHost.selectionChanged] takes those. This only decides what to
    * believe in the moment before anything has said otherwise.
    */
+  /**
+   * Takes over what the wrapper this one replaces had learnt about the window's height.
+   *
+   * The height belongs to the window, not to the `TextEditor` object: a tab shown again is the same
+   * editor group, the same number of rows. And it has to be carried, because the report a fresh
+   * wrapper can read is the one [adoptCaretsFrom] describes - taken before VS Code has restored the
+   * tab's view state - so a wrapper that started from nothing would learn the height from exactly
+   * the report that cannot measure it. See `screenHeight` and `reportDescribesTheCaret`.
+   *
+   * Where the view *is* is not carried. That really is the new wrapper's to find out, and what VS
+   * Code reports is the honest answer to it once the tab has been restored; `screenTopLine` adopts a
+   * reported top that differs from the last one seen, which is this case.
+   */
+  internal fun adoptViewportFrom(previous: VsCodeEditor) {
+    knownScreenHeight = previous.knownScreenHeight
+  }
+
   internal fun adoptCaretsFrom(previous: VsCodeEditor) {
     if (previous.vimCarets.isEmpty()) return
     val limit = text().length

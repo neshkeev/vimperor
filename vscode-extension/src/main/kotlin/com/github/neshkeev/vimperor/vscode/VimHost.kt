@@ -216,6 +216,8 @@ class VimHost(
     val editor = VsCodeEditor(textEditor)
     // The carets belong to the document, not to the wrapper. See [VsCodeEditor.adoptCaretsFrom].
     existing?.let { editor.adoptCaretsFrom(it) }
+    // ...and the window's height belongs to the window. See [VsCodeEditor.adoptViewportFrom].
+    existing?.let { editor.adoptViewportFrom(it) }
     editors[identity] = editor
     // Registered before the old one is retired, not after. The new editor takes its window-local
     // options from whichever editor was active - and retiring the old one first made that the

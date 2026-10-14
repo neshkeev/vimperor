@@ -120,10 +120,18 @@ internal val VsCodeEditor.screenTopLine: Int
  *
  * So a clipped report is only a floor under the height: it can raise what is remembered, never lower
  * it. So is a stale one, which describes the document from before an edit and so cannot say whether
- * it was clipped. A fresh report that ends before the last line *is* the height, and replaces what
- * was remembered - which is how a window made shorter by opening a panel is believed. The cost runs
- * the other way: a window shortened while scrolled past the end keeps its old height until VS Code
- * next reports a range that is not clipped.
+ * it was clipped.
+ *
+ * A fresh report that ends before the last line looks like the height and is not always one. It is
+ * believed outright while it is as tall as anything seen before; a *shorter* one has to contain the
+ * caret as well, because the two things that produce one are a window laid out smaller and a window
+ * VS Code has not painted yet, and only the second can leave the caret outside what it reports. See
+ * [reportDescribesTheCaret], which is where the measurement is.
+ *
+ * The cost runs the way it should. Too small is silent and permanent - once the view sits past the
+ * end of the file every later report is clipped, so nothing can raise a floor back up - while too
+ * large corrects itself on the next honest report and is a floor until then, which sends a downward
+ * scroll to a reveal rather than to this number.
  *
  * At least one, so that arithmetic dividing by it is safe.
  */
@@ -131,7 +139,19 @@ internal val VsCodeEditor.screenHeight: Int
   get() {
     val reported = max(1, reportedBottomLine - reportedTopLine + 1)
     val onlyAFloor = reportedBottomLine >= paintedLastLine || viewportIsStale
-    val height = if (onlyAFloor) max(reported, knownScreenHeight ?: 0) else reported
+    val remembered = knownScreenHeight ?: 0
+    val height = when {
+      // Clipped to the text, or describing a document that has moved on: a floor, never the height.
+      onlyAFloor -> max(reported, remembered)
+      // As tall as anything seen before, so it is the height - and this is also the ordinary case of
+      // a caret that has just stepped off the bottom row, where the report describes the view the
+      // caret has left and measured this window perfectly well on the way.
+      reported >= remembered -> reported
+      // Shorter than this window has been, and the caret is in it: the window was laid out smaller.
+      reportDescribesTheCaret -> reported
+      // Shorter, and the caret is nowhere in it, which is not a window VS Code was showing.
+      else -> remembered
+    }
     knownScreenHeight = height
     // Whether that number is the window's height or merely a floor under it, which is what
     // [VsCodeScrollGroup.scrollCaretIntoView] cannot decide a downward scroll without.
@@ -141,8 +161,44 @@ internal val VsCodeEditor.screenHeight: Int
     // shortened by opening a panel while the view sat at the end of the file goes on reporting
     // clipped ranges, so nothing ever lowers it. Where the remembered height *is* right, the caret
     // is inside the window and `scrollCaretIntoView` has returned before asking this.
-    screenHeightIsFloor = onlyAFloor
+    //
+    // A height kept over a shorter report is a floor for the same reason, and that is the whole of
+    // what the branch above costs: the report is the only fresh measurement there is, and this is
+    // not it, so a scroll that would need the number exactly goes to VS Code instead.
+    screenHeightIsFloor = onlyAFloor || height != reported
     return height
+  }
+
+/**
+ * Whether the window VS Code is describing is one the caret could be sitting in.
+ *
+ * The one thing that separates a window laid out smaller from a report taken before the editor has
+ * painted, and nothing else does: both arrive as an unclipped range narrower than the window was a
+ * moment ago, which is indistinguishable from a measurement.
+ *
+ * **Measured, in a trace of the bug.** The view sat at `2405..2431` of a 2432-line file - 27 rows,
+ * caret on 2419. Activating another editor and coming back reported `2405..2414`: the *same top*, a
+ * span of ten, nothing scrolled and nothing resized. [adoptCaretsFrom] already records why - VS Code
+ * restores a tab's view state *after* it reports the editor as active - and the caret being five
+ * lines below the bottom of that range is what gives it away, because a window VS Code is showing
+ * has the caret in it. It reveals the caret, and Vim never leaves the cursor off screen either.
+ *
+ * Believing that report set the remembered height to ten. Every report afterwards was clipped to the
+ * last line, which can only raise a floor, so ten was permanent - and `zb` on the last line asked
+ * for a top of `2431 - 10 + 1`, which is where the view already was, so it did nothing at all. The
+ * window had seventeen blank rows under the last line at the time.
+ *
+ * Only consulted for a report *shorter* than the remembered height, which is what keeps the ordinary
+ * case out of it: a caret that has just stepped off the bottom row is outside the report too, and
+ * that report is a good measurement of a window that did not change.
+ *
+ * VS Code's caret rather than the engine's, because the question is about VS Code's report: the
+ * engine's buffer runs a keystroke ahead of the document the ranges were measured against.
+ */
+private val VsCodeEditor.reportDescribesTheCaret: Boolean
+  get() {
+    val line = nativeEditor.selection.active.line
+    return line >= reportedTopLine && line <= reportedBottomLine
   }
 
 /**

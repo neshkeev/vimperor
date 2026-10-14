@@ -162,6 +162,19 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   var topLine: Int = 0
 
   /**
+   * How many lines the fake *reports*, when that is not how many it shows.
+   *
+   * A real window does this, and it is the one thing a fake that always answered consistently could
+   * not have caught: VS Code restores a tab's view state after it reports the editor as active, so
+   * `visibleRanges` on a freshly activated editor describes a window it has not painted. The range
+   * comes back narrower than the window while still ending before the last line - so it looks like a
+   * measurement of the height and is not one. See `reportDescribesTheCaret`.
+   *
+   * Null reports the window, which is what an editor that has been laid out does.
+   */
+  var reportedHeight: Int? = null
+
+  /**
    * Whether a scroll moves the reported view at once.
    *
    * VS Code's does not. A scroll is scheduled and `visibleRanges` goes on describing the old view
@@ -339,7 +352,7 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   override val visibleRanges: Array<Range>
     get() {
       val top = topLine.coerceIn(0, lastLine)
-      val bottom = (top + viewportHeight - 1).coerceIn(0, lastLine)
+      val bottom = (top + (reportedHeight ?: viewportHeight) - 1).coerceIn(0, lastLine)
       return arrayOf(Range(Position(top, 0), Position(bottom, 0)))
     }
 

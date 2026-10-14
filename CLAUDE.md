@@ -1337,6 +1337,46 @@ the `keylog` extension, Replace-mode paste, and VIM-1153 - which replaces `.` wi
 keystroke replay through a new `VimRedoBuffer`. That last one is the biggest and the best measured:
 `.` is what the replayed corpus covers most heavily, so the fixtures are the gate on it.
 
+### The window's height is inferred, and VS Code will answer about a window it has not painted
+
+**`zb` on the last line did nothing**, with seventeen blank rows under that line. VS Code tells an
+extension which lines it painted and never how many rows it has, so the height every scroll command
+is computed from is inferred from `visibleRanges` and remembered in `knownScreenHeight`. Two kinds of
+report cannot measure it, and only the first was known: one **clipped** to the text, when the view
+sits past the end of the file, which is a floor under the height rather than the height; and one
+**narrower than the window**, which ends before the last line and so looks exactly like a
+measurement.
+
+**The second was already written down in this repository, one file away and about something else.**
+`adoptCaretsFrom`'s comment says VS Code restores a tab's view state - the scroll position and the
+selection - *after* it reports the editor as active, which is why the carets are adopted rather than
+read off the new editor. The viewport is the same story and was not carried: an activated editor
+answers `visibleRanges` from a window it has not laid out. In the trace the view sat at `2405..2431`
+of a 2432-line file, 27 rows, and coming back to the tab reported `2405..2414` - the same top, a span
+of ten, nothing scrolled and nothing resized.
+
+**The caret is what tells them apart.** A window VS Code is showing has the caret in it - it reveals
+the caret, and Vim never leaves the cursor off screen either - so a report the caret is outside is
+not a window that was on screen. A shorter report is believed only when it contains the caret, which
+keeps the genuine case (a panel opening under the editor) working and is deliberately not consulted
+for a report as tall as the remembered height, because **a caret that has just stepped off the bottom
+row is outside the report too** and that report measured the window correctly on its way past.
+
+**Why it was permanent rather than a flicker, and the asymmetry that decides the rule.** Once the
+believed height was ten, the user's view sat at the end of the file, where every report is clipped
+and can only raise a floor - so nothing could ever put it back, and `zb` asked for a top of
+`2431 - 10 + 1`, which is where the view already was. Too small is silent and unrecoverable; too
+large corrects itself on the next honest report and is marked a floor until then, which sends a
+downward scroll to a reveal instead of to the number. So the rule leans the second way on purpose.
+And the height is carried across the wrapper swap - it belongs to the window, not to the
+`TextEditor` object - or a replaced wrapper learns it from exactly the report that cannot measure it.
+
+**One test of the four does not discriminate**, and it is the guard: a shorter report *with* the
+caret in it still lowers the height, which is what stops the easy wrong fix of a `max` that only ever
+grows. `FakeEditor.reportedHeight` had to be added for any of this to be testable - a fake that
+always answered consistently with its own window could not produce the report, which is the lesson
+`'wrap'` already records.
+
 ### `.` is a keystroke replay now, and it changed nothing here
 
 **VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth
