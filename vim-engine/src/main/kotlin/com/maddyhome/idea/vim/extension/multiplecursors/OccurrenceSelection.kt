@@ -72,6 +72,31 @@ internal fun VimEditor.isSelectedByAnyCaret(offset: Int): Boolean =
 private fun VimEditor.selectionStartingAt(offset: Int): TextRange? =
   carets().firstOrNull { it.selectionStart == offset }?.selectedRange
 
+/**
+ * Replaces the carets with characterwise selections of [regions], the last of them current.
+ *
+ * "Current" is the primary caret, which is what the occurrence search continues from and what `[`
+ * and `]` walk between. IdeaVim gets it for nothing - each `addCaret(position, true)` makes the new
+ * caret primary, so the last added one ends up being it - where this host adds a caret that is not
+ * primary and has to say so.
+ */
+internal fun VimEditor.selectRegions(regions: List<TextRange>) {
+  if (regions.isEmpty()) return
+
+  leaveVisualMode(this)
+  removeSecondaryCarets()
+  enterCharacterwiseVisualMode(this)
+
+  selectRange(this, primaryCaret(), regions.first())
+  var last = primaryCaret()
+  for (region in regions.drop(1)) {
+    val caret = addCaret(region.startOffset) ?: continue
+    selectRange(this, caret, region)
+    last = carets().firstOrNull { it.selectionStart == region.startOffset } ?: caret
+  }
+  makePrimaryCaret(last)
+}
+
 internal fun enterCharacterwiseVisualMode(editor: VimEditor) {
   injector.visualMotionGroup.enterVisualMode(editor, SelectionType.CHARACTER_WISE)
   // The key handler has to know about the mode before the next key arrives.

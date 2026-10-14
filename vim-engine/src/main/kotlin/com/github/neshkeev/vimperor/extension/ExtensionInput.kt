@@ -135,6 +135,55 @@ public fun readCharacters(
   )
 }
 
+/**
+ * A whole line, finished with `<CR>` - `input()` as an extension wants it.
+ *
+ * **Not `injector.commandLine.readInputAndProcess`**, which is the obvious answer and does not work
+ * from inside a mapping's handler: the command line it opens is gone by the time the next key
+ * arrives, so the keys go to the editor instead. Measured - `visual-multi`'s Run Normal asked for a
+ * command, and the `x` that was meant for it deleted the regions. Modal input is the path that
+ * survives a keystroke boundary, because `ModalInputConsumer` asks before *every* key whether a
+ * prompt is open; it is what [readKeys] and [readCharacter] are built on and what this is built on
+ * too.
+ *
+ * **The echo is on the message line rather than in the prompt**, and that is forced:
+ * `VimModalInput.label` is a `val`, so a prompt cannot grow as the user types. Vim's bottom row is a
+ * status bar item here - see `MessageLine` - so writing the line there as each key arrives puts it
+ * where Vim would have put it anyway.
+ *
+ * Backspace is applied to the text rather than to the keys, because [readKeys] only ever accumulates:
+ * the keys are the record `.` replays, and a line edited down is still the same keys typed.
+ */
+public fun readLine(
+  editor: VimEditor,
+  context: ExecutionContext,
+  label: String = "",
+  onCancel: () -> Unit = {},
+  onInput: (String) -> Unit,
+) {
+  readKeys(
+    editor,
+    context,
+    label,
+    isComplete = { keys -> keys.last().keyCode == VimKeyCodes.VK_ENTER },
+    onProgress = { keys -> injector.messages.showStatusBarMessage(editor, label + lineOf(keys)) },
+    onCancel = onCancel,
+    onInput = { keys -> onInput(lineOf(keys.dropLast(1))) },
+  )
+}
+
+/** The typed keys as text, with backspace taking a character off rather than adding one. */
+private fun lineOf(keys: List<VimKeyStroke>): String {
+  val text = StringBuilder()
+  for (key in keys) {
+    when {
+      key.keyCode == VimKeyCodes.VK_BACK_SPACE -> if (text.isNotEmpty()) text.setLength(text.length - 1)
+      key.keyChar != VimKeyCodes.CHAR_UNDEFINED -> text.append(key.keyChar)
+    }
+  }
+  return text.toString()
+}
+
 /** [readCharacters] for the common case of one. */
 public fun readCharacter(
   editor: VimEditor,

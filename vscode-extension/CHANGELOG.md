@@ -6,6 +6,19 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `vim-visual-multi`, the twenty-eighth bundled extension and the largest one IdeaVim has. It is
+  multiple cursors with a *session* around them, which is what makes the keys inside one worth
+  having: `<C-n>` starts a session on the word under the caret, then `n` and `N` add the next and
+  the previous occurrence, `q` and `Q` skip and remove a region, `[` and `]` walk between them,
+  `<Tab>` switches the regions to plain cursors and back, `i`/`a`/`I`/`A` start Insert mode at every
+  region, and `<Esc>` exits - after which `\\gS` brings the regions back. `<C-Down>` and `<C-Up>`
+  add a cursor a line at a time, a Visual selection becomes regions with `\\a` or cursors with
+  `\\c`, and inside a session `\\z` runs a `:normal` command at every cursor, `\\@` a macro,
+  `\\C` a case conversion and `\\a` an align. Outside a session every one of those keys still
+  means what Vim means by it. `g:VM_maps`, `g:VM_leader`, `g:VM_case_setting`,
+  `g:VM_skip_shorter_lines` and `g:VM_default_mappings` are read, and a changed `g:VM_maps` is
+  picked up when an editor next takes the focus. Ported from IdeaVim (VIM-2293).
+
 - `:help` now answers out of Vimperor's own command list instead of opening Vim's website. Every
   command describes itself in one line, and `:help` renders those into a help file in Vim's own
   format - `:help dd`, `:help i_CTRL-W`, `:help v_d`, `:help :s` all jump to their tag, and `:help`
@@ -48,6 +61,10 @@ The Marketplace renders this file on the extension's page, under Changelog.
   A failure abandons the rest of the line, as in Vim. Ported from IdeaVim (VIM-748).
 
 ### Fixed
+
+- The third `<C-n>` of `multiple-cursors` added nothing. The search for the next occurrence asks
+  the current cursor what it is selecting, and no cursor could be made the current one, so after
+  the second it kept searching from the first occurrence and reported "no more matches".
 
 - A paste over a line-wise Visual selection that reached the last line of a file with no trailing
   newline put the text on the end of the line *above* it. `jVjp` on a three-line file turned

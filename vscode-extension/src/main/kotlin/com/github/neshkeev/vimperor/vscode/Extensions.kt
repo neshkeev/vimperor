@@ -28,9 +28,11 @@ import com.maddyhome.idea.vim.extension.keylog.init as keyLogInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
 import com.maddyhome.idea.vim.extension.miniai.init as miniAiInit
 import com.maddyhome.idea.vim.extension.multiplecursors.disposeMultipleCursors
+import com.maddyhome.idea.vim.extension.visualmulti.disposeVisualMulti
 import com.maddyhome.idea.vim.extension.nerdtree.disposeNerdTree
 import com.maddyhome.idea.vim.extension.nerdtree.init as nerdTreeInit
 import com.maddyhome.idea.vim.extension.multiplecursors.init as multipleCursorsInit
+import com.maddyhome.idea.vim.extension.visualmulti.init as visualMultiInit
 import com.maddyhome.idea.vim.extension.paragraphmotion.init as paragraphMotionInit
 import com.maddyhome.idea.vim.extension.replacewithregister.init as replaceWithRegisterInit
 import com.maddyhome.idea.vim.extension.sneak.disposeSneak
@@ -194,6 +196,11 @@ internal object VsCodeExtensions {
     // caret, `<C-x>` skips one, `<C-p>` takes the last one back.
     "multiple-cursors" to { api -> api.multipleCursorsInit() },
 
+    // `vim-visual-multi`: the same cursors with a session around them, so that inside one `n`, `N`,
+    // `q`, `Q`, `[`, `]` and `<Tab>` are about the regions and outside it they are still Vim's.
+    // Upstream's largest extension, and it shares every occurrence handler with the one above.
+    "visual-multi" to { api -> api.visualMultiInit() },
+
     // `YankRing.vim`: every yank, delete and change goes into a ring, and `<C-P>` / `<C-N>` walk
     // the text of the last paste back and forth through it. The walk undoes the paste and repeats
     // it with another entry, so it needs the host's undo to have landed before the re-paste - see
@@ -271,6 +278,10 @@ internal object VsCodeExtensions {
 
     // What the last cursor was added from, per buffer.
     "multiple-cursors" to { disposeMultipleCursors() },
+
+    // Its session flag and remembered regions, per buffer, plus the focus and mode listeners that
+    // reload `g:VM_maps` and end a session - neither of which is held by an owner.
+    "visual-multi" to { disposeVisualMulti() },
 
     // `:YRShow`, `:YRClear` and `:YRReplace`, held by the command group, plus the register listener
     // that fills the ring, which goes onto `listenersNotifier` under no owner at all.
@@ -542,6 +553,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "vim-matchit" to "matchit",
       "mini.ai" to "mini-ai",
       "vim-multiple-cursors" to "multiple-cursors",
+      "vim-visual-multi" to "visual-multi",
       "nerdtree" to "NERDTree",
       "ReplaceWithRegister" to "ReplaceWithRegisterNew",
       "script.php?script_id=2703" to "ReplaceWithRegisterNew",

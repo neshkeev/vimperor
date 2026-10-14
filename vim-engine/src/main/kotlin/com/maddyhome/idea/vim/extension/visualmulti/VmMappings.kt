@@ -1,0 +1,120 @@
+/*
+ * Copyright 2003-2026 The IdeaVim authors
+ *
+ * Use of this source code is governed by an MIT-style
+ * license that can be found in the LICENSE.txt file or at
+ * https://opensource.org/licenses/MIT.
+ */
+
+package com.maddyhome.idea.vim.extension.visualmulti
+
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.command.MappingMode
+import com.maddyhome.idea.vim.common.Direction
+import com.maddyhome.idea.vim.extension.ExtensionHandler
+import com.maddyhome.idea.vim.extension.multiplecursors.AllOccurrencesHandler
+import com.maddyhome.idea.vim.extension.multiplecursors.NewSelection
+import com.maddyhome.idea.vim.extension.multiplecursors.NextOccurrenceHandler
+import com.maddyhome.idea.vim.extension.multiplecursors.RemoveOccurrenceHandler
+import com.maddyhome.idea.vim.extension.multiplecursors.SkipOccurrenceHandler
+import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
+
+/** The default `g:VM_leader`. */
+private const val LEADER = "<Bslash><Bslash>"
+
+/**
+ * One mapping of vim-visual-multi.
+ *
+ * @param name the name in `g:VM_maps`
+ * @param plug the `<Plug>` mapping, which is the name in `<Plug>(VM-Name-With-Dashes)` form
+ * @param alwaysMapped whether the default keys are mapped even when `g:VM_default_mappings` is `0`
+ */
+internal class VmMapping(
+  val name: String,
+  val modes: Set<MappingMode>,
+  val defaultKeys: String,
+  val alwaysMapped: Boolean = false,
+  val createHandler: () -> ExtensionHandler,
+) {
+  val plug: String = "<Plug>(VM-${name.replace(' ', '-')})"
+}
+
+/** The mappings available before a session starts. They are what starts one. */
+internal fun getPermanentMappings(): List<VmMapping> {
+  val leader = getLeader()
+  return listOf(
+    VmMapping("Find Under", MappingMode.N, "<C-n>", alwaysMapped = true) {
+      NextOccurrenceHandler(wholeWord = true, VmCaseSetting, acceptsCount = true)
+    },
+    VmMapping("Find Subword Under", MappingMode.X, "<C-n>", alwaysMapped = true) {
+      NextOccurrenceHandler(wholeWord = false, VmCaseSetting, acceptsCount = true, NewSelection.START_SEARCH)
+    },
+    VmMapping("Add Cursor Down", MappingMode.N, "<C-Down>") {
+      NextLineHandler(NextLineHandler.Direction.DOWN)
+    },
+    VmMapping("Add Cursor Up", MappingMode.N, "<C-Up>") {
+      NextLineHandler(NextLineHandler.Direction.UP)
+    },
+    VmMapping("Select All", MappingMode.N, "${leader}A") {
+      AllOccurrencesHandler(wholeWord = true, VmCaseSetting)
+    },
+    VmMapping("Visual All", MappingMode.X, "${leader}A") {
+      AllOccurrencesHandler(wholeWord = false, VmCaseSetting)
+    },
+    VmMapping("Reselect Last", MappingMode.N, "${leader}gS") { ReselectLastHandler() },
+    VmMapping("Visual Cursors", MappingMode.X, "${leader}c") { VisualCursorsHandler() },
+    VmMapping("Visual Add", MappingMode.X, "${leader}a") { VisualAddHandler(VmCaseSetting) },
+  )
+}
+
+/**
+ * The mappings that are live only inside a session. Outside it the keys keep their Vim meaning.
+ *
+ * vim-visual-multi maps them whatever `g:VM_default_mappings` says, and in Normal mode, because it
+ * stays in Normal mode and draws its selections itself. These selections are the host's own, so they
+ * are mapped in Visual mode.
+ */
+internal fun getSessionMappings(): List<VmMapping> {
+  val leader = getLeader()
+  return listOf(
+    VmMapping("Find Next", MappingMode.X, "n", alwaysMapped = true) {
+      NextOccurrenceHandler(wholeWord = false, VmCaseSetting, acceptsCount = true, NewSelection.ADD_NEXT)
+    },
+    VmMapping("Find Prev", MappingMode.X, "N", alwaysMapped = true) {
+      NextOccurrenceHandler(
+        wholeWord = false,
+        VmCaseSetting,
+        acceptsCount = true,
+        NewSelection.ADD_NEXT,
+        Direction.BACKWARDS,
+      )
+    },
+    VmMapping("Switch Mode", MappingMode.N + MappingMode.X, "<Tab>", alwaysMapped = true) { SwitchModeHandler() },
+    VmMapping("Goto Next", MappingMode.X, "]", alwaysMapped = true) { GotoRegionHandler(Direction.FORWARDS) },
+    VmMapping("Goto Prev", MappingMode.X, "[", alwaysMapped = true) { GotoRegionHandler(Direction.BACKWARDS) },
+    VmMapping("Skip Region", MappingMode.X, "q", alwaysMapped = true) { SkipOccurrenceHandler(VmCaseSetting) },
+    VmMapping("Remove Region", MappingMode.X, "Q", alwaysMapped = true) { RemoveOccurrenceHandler() },
+    VmMapping("i", MappingMode.X, "i", alwaysMapped = true) { InsertHandler("i") },
+    VmMapping("a", MappingMode.X, "a", alwaysMapped = true) { InsertHandler("a") },
+    VmMapping("I", MappingMode.X, "I", alwaysMapped = true) { InsertHandler("I") },
+    VmMapping("A", MappingMode.X, "A", alwaysMapped = true) { InsertHandler("A") },
+    VmMapping("Run Normal", MappingMode.N + MappingMode.X, "${leader}z", alwaysMapped = true) {
+      RunNormalHandler(repeatLast = false)
+    },
+    VmMapping("Run Last Normal", MappingMode.N + MappingMode.X, "${leader}Z", alwaysMapped = true) {
+      RunNormalHandler(repeatLast = true)
+    },
+    VmMapping("Case Conversion Menu", MappingMode.N + MappingMode.X, "${leader}C", alwaysMapped = true) {
+      CaseConversionHandler()
+    },
+    VmMapping("Align", MappingMode.N + MappingMode.X, "${leader}a", alwaysMapped = true) { AlignHandler() },
+    VmMapping("Run Macro", MappingMode.N + MappingMode.X, "${leader}@", alwaysMapped = true) { RunMacroHandler() },
+    // In Normal mode `<Esc>` is partly the host's, which this must not break.
+    VmMapping("Exit", MappingMode.X, "<Esc>", alwaysMapped = true) { ExitHandler() },
+  )
+}
+
+internal fun getLeader(): String {
+  val leader = injector.variableService.getGlobalVariableValue("VM_leader") ?: return LEADER
+  return (leader as? VimString)?.value?.replace("\\", "<Bslash>") ?: LEADER
+}

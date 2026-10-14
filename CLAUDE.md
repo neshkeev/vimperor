@@ -160,7 +160,7 @@ source was read in the review that decided this, so it is not a clean room in th
 grouping follows vim-easymotion's algorithm, which is a different method from AceJump's.
 
 It is not one of IdeaVim's thirty, so it is not part of that count. Vimperor bundles
-twenty-seven: twenty-six of upstream's and this one.
+twenty-eight: twenty-seven of upstream's and this one.
 
 **Three small things, and the biggest had been here all along.** IdeaVim built `ExternalActionHandler`
 for IdeaVim-EasyMotion, the one extension it never shipped, and nothing in this fork had used it:
@@ -530,12 +530,13 @@ from this paragraph** - `git show upstream/master:ideavim-frontend/src/main/reso
 three times. Diff the names against `VsCodeExtensions.BUNDLED` rather than trusting the
 list below for the same reason.
 
-**Twenty-six are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
+**Twenty-seven are ported and bundled** - `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `textobj-line`, `visual-star-search`, `signature`, `mini-ai`,
 `CamelCaseMotion`, `indentwise`,
 `textobj-user`, `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
 `highlightedyank`, `keylog`, `exchange`, `sneak`, `surround`, `multiple-cursors`,
-`yankring`, `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`. Each lives in
+`visual-multi`, `yankring`, `functextobj`, `classtextobj`, `NERDTree` and `youcompleteme`.
+Each lives in
 `vim-engine/src/main/kotlin/.../extension/<name>/` as a `@VimPlugin` function, the
 VS Code host lists it in `VsCodeExtensions.BUNDLED`, and the plugin keeps a
 two-line `VimExtension` adapter that calls the same function so IntelliJ is
@@ -582,8 +583,11 @@ and let the engine's own character argument carry it, which means the command bu
 deciding at runtime whether an argument is needed. **That is an engine change, not an
 extension port**, and it should be decided as one.
 
-Treat 26 of 30 as complete, `visual-multi` as open and sized, and `clever-f` as open
-behind a decision.
+`visual-multi` is ported now, and the estimate above held: no new seam, one large
+mechanical pass. What it did find is in its own commit - `VimEditor.makePrimaryCaret`,
+which the search for occurrences had needed all along, and a `readLine` that is modal
+input rather than a command line. Treat 27 of 30 as complete and `clever-f` as the one
+left, open behind a decision.
 
 `signature` is worth a note as the one port that did not follow upstream's
 implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on

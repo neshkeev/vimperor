@@ -120,6 +120,11 @@
     "className": "com.maddyhome.idea.vim.extension.paragraphmotion.ParagraphMotionNewApiKt"
   },
   {
+    "extensionName": "visual-multi",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.visualmulti.VisualMultiKt"
+  },
+  {
     "extensionName": "visual-star-search",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.visualstarsearch.VisualStarSearchKt"
