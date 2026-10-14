@@ -585,14 +585,40 @@ search when the caret moves or the text changes, and `VimListenersNotifier` has
 both hosts see both signals, so this is a seam to write rather than a refusal. And
 `CharReader` reads the character to search for through `inputKeyStroke`, which blocks.
 That is the one that is not merely work: `SearchExecutor` hands the command builder a
-`MotionActionHandler` *within the keystroke* so that `dfa` is inclusive and `dta` is not,
-and `readKeys` returns before the character arrives. `easymotion`'s
-`ExtensionHandler.WithCallback` gets an operator its motion, but as "where the caret
-went", which is exclusive - so it would make `dfa` behave as `dta`, and that difference
-is what `f` is. The faithful alternative is to stop remapping `f` to a `<Plug>` handler
-and let the engine's own character argument carry it, which means the command builder
-deciding at runtime whether an argument is needed. **That is an engine change, not an
-extension port**, and it should be decided as one.
+`MotionActionHandler` *within the keystroke*, and `readKeys` returns before the character
+arrives.
+
+**Upstream decides nothing at runtime, and this file said it did.** The sentence here used
+to call the faithful alternative "the command builder deciding at runtime whether an
+argument is needed", and `clever-f` does not go through the engine's argument machinery at
+all. `CleverFMotionAction` leaves `argumentType` at its `null` default; the character is
+closed over inside the `CharSearch` the handler built, and `motionType` is a per-instance
+`val` - `CharSearch.isInclusive` is `isForward`, so **inclusivity comes from which key was
+pressed and never from the character**. `f` and `t` are inclusive, `F` and `T` are not, and
+`dfa` is inclusive because `addAction` put an already-inclusive motion into the slot `d`
+was waiting on. `addAction` with an action already present and a `MOTION` expected wraps it
+as `Argument.Motion(action, null, forcedMotion)` - a motion argument whose own argument is
+`null`. Upstream's own tests assert it: `dfa`, `dta` and `dFa`, one each.
+
+So the obstacle is narrower than "an engine change". Everything happens inside one
+keystroke because `inputKeyStroke` pumps a nested AWT loop - `ModalEntry.activate` calls
+`systemEventQueue.createSecondaryLoop()` and `loop.enter()` - which a single-threaded
+runtime cannot do. What is actually needed is to reach `addAction` *after* the character
+arrives and while `d` is still pending.
+
+**And there is a lead that would cost no engine change, found by reading
+`ToHandlerMappingInfo` rather than the extension.** `myFun` - the caret-delta route that
+makes easymotion's jump an operator's motion, and the reason the recorded verdict was that
+`dfa` would behave as `dta` - is guarded by `!keyState.commandBuilder.hasCurrentCommandPartArgument()`.
+That guard is precisely how `clever-f`'s `addAction` suppresses it today. And
+`ExtensionHandler.WithCallback` already defers `myFun` *and* the following
+`finishedCommandPreparation` into `_backingFunction`. A `WithCallback` handler that called
+`addAction` from inside its `readKeys` callback and then `continueVimExecution()` would
+therefore skip the caret-delta branch and have the command run with its own inclusive
+motion. **Unverified** - whether the command builder still holds `d` by then, and whether
+`keyState.commandBuilder` is the same object at callback time, are the two things a probe
+has to answer before this is believed. If it holds, `clever-f` needs the two listeners and
+nothing else.
 
 `visual-multi` is ported now, and the estimate above held: no new seam, one large
 mechanical pass. What it did find is in its own commit - `VimEditor.makePrimaryCaret`,
