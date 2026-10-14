@@ -351,6 +351,32 @@ fun activate(context: ExtensionContext) {
     }
   }
 
+  // Following the config files, which is three lines because VS Code is already watching the disk:
+  // a `RelativePattern` with a base directory may name a path outside the workspace, and the
+  // events arrive on this host's own queue. Everything decidable is in [VimrcWatch] - the modes,
+  // the debounce, what counts as a change - because this file is the one no unit test loads.
+  //
+  // After the config has run, so that `set vimrcreload=none` in it is honoured without a watcher
+  // ever being created, and so that `remember` has the text a change will be measured against.
+  val vimrcWatch = VimrcWatch(vim, announce = { output.appendLine(it) })
+  vimrcWatch.remember(loaded)
+  val vimrcWatchers = vimrcWatch.pathsToWatch().map { path ->
+    val watcher = workspace.createFileSystemWatcher(
+      RelativePattern(path.substringBeforeLast('/', "/"), path.substringAfterLast('/')),
+    )
+    // All three, because a config can change by being written, by appearing where there was none,
+    // and by being deleted - and the third hands the session to the next family down.
+    watcher.onDidChange { vimrcWatch.noticed() }
+    watcher.onDidCreate { vimrcWatch.noticed() }
+    watcher.onDidDelete { vimrcWatch.noticed() }
+    watcher
+  }
+  if (vimrcWatchers.isEmpty()) {
+    output.appendLine("Not watching the config for changes (vimrcreload=none).")
+  } else {
+    output.appendLine("Watching ${vimrcWatchers.size} config path(s) for changes.")
+  }
+
   // After the config, because `set NERDTree` in it is the whole point: the first `refreshMode` ran
   // before the config was read, so without this the tree keys would stay off until the first key.
   refreshExtensionContexts()
@@ -430,6 +456,23 @@ fun activate(context: ExtensionContext) {
     output.appendLine("Vimperor could not read this window's keybindings, so `:actionlist` will not show them - ${e.message}")
   }
 
+  // Reloading the config on demand, which is the dialog's Reload button reachable without the
+  // dialog - from the Command Palette, and from `:action vimperor.reloadConfig` because a command
+  // this extension contributes is in `commands.getCommands`, which is what `:actionlist` reads.
+  //
+  // It tells the watch what it loaded. Without that, editing the config and reloading it by hand
+  // would leave the watch's idea of the file behind, and the next unrelated save would ask about an
+  // edit the user had already applied.
+  val reloadConfig = commands.registerCommand("vimperor.reloadConfig") {
+    reporting(output, "reloading the config") {
+      val path = vim.reloadVimRc()
+      vimrcWatch.remember(path)
+      output.appendLine(if (path == null) "No config to reload." else "Reloaded " + path)
+      refreshExtensionContexts()
+      refreshMode()
+    }
+  }
+
   // Vim's `vimtutor`, as a Command Palette entry. It opens an untitled document the reader is
   // meant to edit to pieces, which is what `vimtutor` does with a copy of Vim's own tutor file.
   val tutor = commands.registerCommand("vimperor.tutor") {
@@ -486,32 +529,6 @@ fun activate(context: ExtensionContext) {
     }
   }
 
-  // Following the config files, which is three lines because VS Code is already watching the disk:
-  // a `RelativePattern` with a base directory may name a path outside the workspace, and the
-  // events arrive on this host's own queue. Everything decidable is in [VimrcWatch] - the modes,
-  // the debounce, what counts as a change - because this file is the one no unit test loads.
-  //
-  // After the config has run, so that `set vimrcreload=none` in it is honoured without a watcher
-  // ever being created, and so that `remember` has the text a change will be measured against.
-  val vimrcWatch = VimrcWatch(vim, announce = { output.appendLine(it) })
-  vimrcWatch.remember(loaded)
-  val vimrcWatchers = vimrcWatch.pathsToWatch().map { path ->
-    val watcher = workspace.createFileSystemWatcher(
-      RelativePattern(path.substringBeforeLast('/', "/"), path.substringAfterLast('/')),
-    )
-    // All three, because a config can change by being written, by appearing where there was none,
-    // and by being deleted - and the third hands the session to the next family down.
-    watcher.onDidChange { vimrcWatch.noticed() }
-    watcher.onDidCreate { vimrcWatch.noticed() }
-    watcher.onDidDelete { vimrcWatch.noticed() }
-    watcher
-  }
-  if (vimrcWatchers.isEmpty()) {
-    output.appendLine("Not watching the config for changes (vimrcreload=none).")
-  } else {
-    output.appendLine("Watching ${vimrcWatchers.size} config path(s) for changes.")
-  }
-
   val subscriptions = context.subscriptions
   for (registration in vimrcWatchers) {
     subscriptions.push(registration)
@@ -522,6 +539,7 @@ fun activate(context: ExtensionContext) {
     wordWrapToggle,
     activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
     documentSaved,
+    reloadConfig,
   )) {
     subscriptions.push(registration)
   }

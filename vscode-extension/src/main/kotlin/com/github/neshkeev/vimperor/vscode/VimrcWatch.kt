@@ -31,18 +31,9 @@ internal enum class VimrcReload(val setting: String) {
   AUTORESTART("autorestart"),
 }
 
-/**
- * The answer to the question, and the four things the user can press.
- *
- * **There is no "Always restart" and there cannot usefully be one**, which is worth saying because
- * its absence looks like an oversight beside [ALWAYS_RELOAD]. Remembering is for this session, and
- * a restart *ends* this session - so the preference would be stored, acted on once, and thrown
- * away by the thing it asked for. Anyone who wants that on every change says so in the config,
- * where it outlives a restart: `set vimrcreload=autorestart`.
- */
+/** The answer to the question, and the three things the user can press. */
 internal enum class VimrcAnswer(val label: String) {
   RELOAD("Reload"),
-  ALWAYS_RELOAD("Always Reload"),
   RESTART("Restart Extensions"),
   DISMISS("Not now"),
 }
@@ -90,34 +81,10 @@ internal class VimrcWatch(
 
   /** True while a reload of this host's own doing is in flight, so it cannot ask about itself. */
   private var reloading = false
-
-  /**
-   * Set by **Always Reload**, which is this session's answer and is not written anywhere.
-   *
-   * A notification cannot carry a checkbox - `MessageItem` is a title and nothing else, the same
-   * limit recorded on [askAbout] - so remembering is a button rather than a tick, and the thing it
-   * remembers lives here for as long as the extension host does. The next session asks again, which
-   * is the point: a preference nobody wrote down should not quietly become permanent.
-   *
-   * It only ever upgrades [VimrcReload.PROMPT], which is what makes `:set vimrcreload=...` still
-   * win without needing a listener - someone who sets the option after pressing the button has
-   * spoken more recently, and more deliberately.
-   */
-  private var alwaysReloadThisSession = false
-
   /** Every path to watch. Empty under [VimrcReload.NONE], which is how the watchers come to not exist. */
   fun pathsToWatch(): List<String> = if (mode() == VimrcReload.NONE) emptyList() else vimRcPaths(environment)
 
-  /**
-   * The option, with this session's remembered answer applied.
-   *
-   * The override only lifts `prompt` to `autoreload`, so every other value of the option is itself
-   * - including a `:set vimrcreload=prompt` that means "start asking me again".
-   */
-  private fun effectiveMode(): VimrcReload {
-    val option = mode()
-    return if (option == VimrcReload.PROMPT && alwaysReloadThisSession) VimrcReload.AUTORELOAD else option
-  }
+
 
   /**
    * Remembers what is in force. Called after the config is run, by startup and by a reload alike.
@@ -143,7 +110,7 @@ internal class VimrcWatch(
   /** The debounce elapsed: work out whether anything actually changed, and act on it. */
   internal fun settle() {
     pending = ScheduledTask.NONE
-    val mode = effectiveMode()
+    val mode = mode()
     if (mode == VimrcReload.NONE) return
 
     val path = locate(environment)
@@ -186,10 +153,6 @@ internal class VimrcWatch(
     ask(message, answers) { pressed ->
       when (VimrcAnswer.entries.firstOrNull { it.label == pressed }) {
         VimrcAnswer.RELOAD -> reload()
-        VimrcAnswer.ALWAYS_RELOAD -> {
-          alwaysReloadThisSession = true
-          reload()
-        }
         VimrcAnswer.RESTART -> restart()
         // Dismissed, or the notification closed itself. Either way the new text becomes the
         // baseline: being asked once about an edit is help, and being asked again about the same

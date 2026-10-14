@@ -25,6 +25,9 @@ import kotlin.test.assertTrue
  */
 class VimrcWatchTest {
 
+  /** `package.json`, read as text, because nothing compiles it. */
+  private fun manifest(): String = readText("${repositoryRoot()}/vscode-extension/package.json")
+
   /** A home directory with nothing XDG about it, which is the common case. */
   private val environment: (String) -> String? = { name ->
     when (name) {
@@ -283,67 +286,6 @@ class VimrcWatchTest {
     assertEquals(1, questions.asked.size, "asked twice about one edit: ${questions.asked}")
   }
 
-  /**
-   * **Always Reload** stops the asking for the rest of the session, and only for that.
-   *
-   * A notification cannot carry a checkbox, so remembering is a button. What it must not be is
-   * sticky beyond the session - a preference nobody wrote in their config should not quietly become
-   * permanent, and the next extension host asks again.
-   */
-  @Test
-  fun `test always reload stops the asking for the rest of the session`() {
-    val session = Session()
-    val questions = Questions(answer = VimrcAnswer.ALWAYS_RELOAD.label)
-    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
-    val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
-      questions.ask, {}, { VimrcReload.PROMPT },
-    )
-    watch.remember("/home/someone/.vimperorrc")
-
-    texts["/home/someone/.vimperorrc"] = "set relativenumber"
-    watch.settle()
-    assertEquals(1, questions.asked.size, "the first change is still a question")
-
-    texts["/home/someone/.vimperorrc"] = "set nonumber"
-    watch.settle()
-    texts["/home/someone/.vimperorrc"] = "set number"
-    watch.settle()
-
-    assertEquals(1, questions.asked.size, "asked again after Always Reload: ${questions.asked}")
-  }
-
-  /**
-   * And an explicit `:set` after it wins, which costs no listener.
-   *
-   * The remembered answer only lifts `prompt` to `autoreload`, so any other value of the option is
-   * itself. Someone who sets the option after pressing the button has spoken more recently.
-   */
-  @Test
-  fun `test setting the option after Always Reload takes it back`() {
-    val session = Session()
-    val questions = Questions(answer = VimrcAnswer.ALWAYS_RELOAD.label)
-    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
-    var option = VimrcReload.PROMPT
-    val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
-      questions.ask, {}, { option },
-    )
-    watch.remember("/home/someone/.vimperorrc")
-
-    texts["/home/someone/.vimperorrc"] = "set relativenumber"
-    watch.settle()
-    assertEquals(1, questions.asked.size)
-
-    // `:set vimrcreload=none` - and the remembered answer must not override it.
-    option = VimrcReload.NONE
-    texts["/home/someone/.vimperorrc"] = "set nonumber"
-    watch.settle()
-
-    assertEquals(1, questions.asked.size, "none must still mean none")
-    assertEquals("set nonumber", texts["/home/someone/.vimperorrc"], "and nothing reloaded")
-  }
-
   @Test
   fun `test the restart answer asks VS Code to restart the extensions`() {
     val session = Session()
@@ -386,6 +328,26 @@ class VimrcWatchTest {
   }
 
   // ---- what a reload does ----------------------------------------------------------------------
+
+  // ---- the Command Palette entry ---------------------------------------------------------------
+
+  /**
+   * `Vimperor: Reload Config` is contributed, which is what puts it in two places at once.
+   *
+   * The Command Palette shows a `contributes.commands` entry with its title; and `:actionlist`
+   * reads `commands.getCommands`, which includes a command this extension registered - so one
+   * declaration answers both without a second mechanism. Asserted against the real manifest
+   * because that file is not compiled and nothing else would notice it going.
+   */
+  @Test
+  fun `test the reload command is contributed with a title`() {
+    val commands = JSON.parse<dynamic>(manifest()).contributes.commands as Array<dynamic>
+    val reload = commands.firstOrNull { it.command == "vimperor.reloadConfig" }
+
+    assertTrue(reload != null, "vimperor.reloadConfig is not in contributes.commands")
+    assertEquals("Reload Config", reload.title as String)
+    assertEquals("Vimperor", reload.category as String, "the category is what prefixes it in the palette")
+  }
 
   /**
    * A reload replaces the config's own mappings rather than adding to them.

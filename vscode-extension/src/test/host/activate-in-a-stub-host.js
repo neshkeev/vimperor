@@ -1165,6 +1165,15 @@ assert.strictEqual(
 assert.ok(documentClosedListeners.length > 0, 'the extension registered no close listener')
 for (const listener of documentClosedListeners) listener(editor.document)
 
+// `Vimperor: Reload Config`, which is wired in `Extension.kt` and so is only reachable here. What
+// is asserted is that it was registered and that running it does not throw - the reload itself is
+// `VimrcWatchTest`'s, and what this covers is the three lines of wiring around it.
+assert.ok(
+  registeredCommands.has('vimperor.reloadConfig'),
+  `the reload command was not registered. Registered: ${[...registeredCommands.keys()].join(', ')}`,
+)
+registeredCommands.get('vimperor.reloadConfig')()
+
 // The config watchers, which only this script can see: `Extension.kt` is where they are created
 // and no unit test loads it. What is asserted is that they were asked for, that each names one
 // file rather than a glob over a home directory, and that they are disposable - the policy behind

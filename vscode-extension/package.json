@@ -45,6 +45,11 @@
         "command": "vimperor.tutor",
         "title": "Open Vim Tutor",
         "category": "Vimperor"
+      },
+      {
+        "command": "vimperor.reloadConfig",
+        "title": "Reload Config",
+        "category": "Vimperor"
       }
     ],
     "keybindings": [
