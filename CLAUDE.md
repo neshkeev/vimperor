@@ -543,10 +543,47 @@ unaffected. The adapter goes when the plugin does.
 
 The four that are left are not one group. `matchit` and `VimEverywhere` **are not being
 ported, and that is a decision rather than a backlog entry** - neither is waiting on a
-seam and neither should be proposed again. `clever-f` and `visual-multi` are upstream
-additions nobody here has looked at yet, and they are not refusals: they are simply
-newer than the last pass over this list. Treat 26 of 30 as complete and those two as
-open.
+seam and neither should be proposed again. `clever-f` and `visual-multi` are open, and
+both have now been read; what follows is what reading them found, so that the next pass
+starts from it rather than from their size.
+
+**`visual-multi` is the bigger and the easier, which is the opposite of how they look.**
+19 source files and 127KB against `clever-f`'s 15 and 39KB - the largest extension
+upstream has - and its IntelliJ debt is the shape this file has already recorded twice:
+`ApplicationManager` is `injector.application`, `NlsSafe` is the fork's own `NonNls`,
+`javax.swing.KeyStroke` is `VimKeyStroke`, and four files hold state keyed by an
+IntelliJ `Editor`, which is `editor.getPath()` here as it is in `exchange` and
+`multiple-cursors`. `VimMultipleCursorsExtensionBase`, which it extends and which this
+fork does not have, is three one-line wrappers over `VimExtensionFacade` - already in
+the engine - plus an `isGlobalFlagEnabled` that is `injector.variableService`.
+`EditorFocusListener` watches a Swing focus change to pick up a changed `g:VM_maps`, and
+`myEditorListeners.focusGained` is the same signal. Three handlers read a key through
+the blocking `inputKeyStroke`/`inputString` - `CaseConversionHandler`, `RunMacroHandler`,
+`RunNormalHandler` - and all three are the `surround`/`sneak` shape that `readKeys`
+answers, because none of them has to return a value. **Nothing in it needs a new seam.**
+It is a large mechanical port, not a blocked one.
+
+**`clever-f` is small and has one real obstacle, in operator-pending mode.** Most of it
+ports directly: `WeakReference` is `VimWeakReference`, `System.currentTimeMillis` is the
+engine's own, and `CandidateHighlighter` draws `RangeHighlighter`s that are
+`VimHighlightingService` here - the `easymotion` precedent, down to the red that had to
+become theme colours. Two things it needs that do not exist. `SearchFinalizer` ends a
+search when the caret moves or the text changes, and `VimListenersNotifier` has
+**neither a caret-moved nor a document-changed listener** - ten kinds, and not those two;
+both hosts see both signals, so this is a seam to write rather than a refusal. And
+`CharReader` reads the character to search for through `inputKeyStroke`, which blocks.
+That is the one that is not merely work: `SearchExecutor` hands the command builder a
+`MotionActionHandler` *within the keystroke* so that `dfa` is inclusive and `dta` is not,
+and `readKeys` returns before the character arrives. `easymotion`'s
+`ExtensionHandler.WithCallback` gets an operator its motion, but as "where the caret
+went", which is exclusive - so it would make `dfa` behave as `dta`, and that difference
+is what `f` is. The faithful alternative is to stop remapping `f` to a `<Plug>` handler
+and let the engine's own character argument carry it, which means the command builder
+deciding at runtime whether an argument is needed. **That is an engine change, not an
+extension port**, and it should be decided as one.
+
+Treat 26 of 30 as complete, `visual-multi` as open and sized, and `clever-f` as open
+behind a decision.
 
 `signature` is worth a note as the one port that did not follow upstream's
 implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on
