@@ -1358,6 +1358,36 @@ the `keylog` extension, Replace-mode paste, and VIM-1153 - which replaces `.` wi
 keystroke replay through a new `VimRedoBuffer`. That last one is the biggest and the best measured:
 `.` is what the replayed corpus covers most heavily, so the fixtures are the gate on it.
 
+### `G` and `zz` both centre a line, and Vim tells them apart with one flag
+
+**`G` on the last line left it halfway up the window with blank rows under it.** The cause is a rule
+that is right and a port of it that took half: `scrollCaretIntoView` sends a jump of a whole window
+or more to the middle rather than to an edge, because arriving somewhere with your line pinned to
+the bottom row is a bad place to read from. That is Vim's `scroll_cursor_bot`, comment and all -
+"Scroll up if the cursor is off the bottom of the screen a bit. Otherwise put it at 1/2 of the
+screen."
+
+**What was missed is `scroll_cursor_halfway(atend, prefer_above)`'s first argument.** `zz` and `z.`
+pass `TRUE`; `scroll_cursor_bot` passes `FALSE`. With the flag clear Vim counts a `~` line as
+context below the cursor and **does not charge it a screen row** - `++below; if (atend) ++used;` -
+so the loop goes on adding real lines above until the window is full. Near the end of a file that
+is not a centring at all: it is "fill the window with the lines above", and the cursor lands on the
+bottom row. So `G` in Vim leaves the last line at the bottom and `zz` on the last line centres it
+with `~` below, and **both are the same function**.
+
+`scrollLineToMiddleOfTheText` is the `atend = FALSE` half, which comes out as one clamp: centre the
+line, never show past the last one. `scrollLineToMiddle` is unchanged and is what `zz` keeps.
+
+**The two numbers are what named it.** On a 2433-line file in a 27-row window, `G` left the view at
+2419 where Vim leaves it at 2406 - and the `zb` the user kept pressing afterwards was asking for
+2406. The same number from the other end, which is why this arrived as a `zb` report twice before it
+was a `G` report.
+
+The incsearch preview's `scrollLineIntoView` takes the same half, because bringing a match into view
+is a cursor move and not a `zz`. **One of the three tests does not discriminate** and is the guard:
+`zz` on the last line still centres, which is what stops the easy wrong fix of clamping the pair of
+them.
+
 ### The window's height is inferred, and VS Code will answer about a window it has not painted
 
 **`zb` on the last line did nothing**, with seventeen blank rows under that line. VS Code tells an

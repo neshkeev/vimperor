@@ -285,7 +285,9 @@ internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
   val top = screenTopLine
   val height = screenHeight
   if (target >= top && target <= top + height - 1) return
-  scrollLineToMiddle(target)
+  // Bringing a match into view, not `zz`: Vim pads past the end of the file for one and not the
+  // other. See [scrollLineToMiddleOfTheText].
+  scrollLineToMiddleOfTheText(target)
 }
 
 /**
@@ -364,6 +366,33 @@ private fun VsCodeEditor.revealLineAtBottom(line: Int, correction: Int) {
 
 /** Scrolls so that [line] is in the middle, which is where Vim's `zz` puts it. */
 internal fun VsCodeEditor.scrollLineToMiddle(line: Int) = scrollViewTo(line - (screenHeight - 1) / 2)
+
+/**
+ * The same, except that the empty rows past the last line do not count towards the half.
+ *
+ * **Vim has both of these, and the difference is one flag.** `scroll_cursor_halfway(atend,
+ * prefer_above)` is the function; `zz` and `z.` pass `atend = TRUE` and are [scrollLineToMiddle] -
+ * the line goes to the middle of the *window*, with `~` filler below it where the file has run out,
+ * which is the whole point of `zz` on the last line. Everything that merely brings the cursor into
+ * view passes `FALSE`, `scroll_cursor_bot` included, and that is the path `G` takes.
+ *
+ * With the flag clear Vim counts a `~` line as context below the cursor but **does not charge it a
+ * screen row** - `++below; if (atend) ++used;` - so the loop goes on adding real lines above until
+ * the window is full. That is the clamp below: centre the line, and never show past the last one.
+ * Near the end of a file it stops being a centring at all, which is why `G` in Vim leaves the last
+ * line on the bottom row.
+ *
+ * This host centred both, so `G` on the last line of a 2433-line file left the view at 2419 with
+ * thirteen blank rows under it where Vim leaves it at 2406. It was reported as `zb` being needed
+ * after every `G` - and `zb` was asking for 2406, which is the same number reached from the other
+ * end.
+ */
+internal fun VsCodeEditor.scrollLineToMiddleOfTheText(line: Int) {
+  val height = screenHeight
+  // As far down as the view may go: the top that puts the last line on the bottom row.
+  val lastTop = max(0, lineCount() - height)
+  scrollViewTo(min(line - (height - 1) / 2, lastTop))
+}
 
 /** `'scrolloff'`, capped so that a large value on a small window cannot pin the caret off screen. */
 private fun VsCodeEditor.scrollOffset(): Int =
@@ -497,7 +526,10 @@ internal object VsCodeScrollGroup : VimScrollGroup {
 
     val minimal = if (position.line < top) position.line else position.line - height + 1
     if (abs(minimal - top) >= height) {
-      vsCode.scrollLineToMiddle(position.line)
+      // Arriving somewhere rather than scrolling, so the line goes to the middle - but not past the
+      // end of the file, which is `scroll_cursor_bot` passing `atend` false. See
+      // [scrollLineToMiddleOfTheText].
+      vsCode.scrollLineToMiddleOfTheText(position.line)
     } else {
       vsCode.scrollViewTo(minimal)
     }

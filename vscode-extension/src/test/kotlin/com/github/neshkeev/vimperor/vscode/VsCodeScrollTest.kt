@@ -266,6 +266,53 @@ class VsCodeScrollTest {
     assertEquals(103, session.caretLine)
   }
 
+  /**
+   * `G` leaves the last line on the bottom row, not in the middle.
+   *
+   * A jump of a whole window or more goes to the middle rather than to an edge - Vim's
+   * `scroll_cursor_bot` - and that call passes `atend = FALSE`, under which the rows past the last
+   * line are context but not screen rows. So near the end of a file the centring collapses into
+   * "fill the window with the lines above", and the cursor lands on the bottom row.
+   *
+   * Reported as `zb` being needed after every `G`, which is what it was: `zb` asked for the top
+   * this now arrives at.
+   */
+  @Test
+  fun `test G puts the last line on the bottom row rather than in the middle`() {
+    val session = Session(caretLine = 0)
+    session.type("G")
+
+    assertEquals(30, session.top, "a ten-row window over forty lines ends at the last line")
+    assertEquals(39, session.caretLine)
+  }
+
+  /**
+   * ...and `zz` on the last line still centres it, with the empty rows below.
+   *
+   * The other half of the same flag: `zz` and `z.` are `scroll_cursor_halfway(TRUE, FALSE)`, where
+   * the rows past the end *do* count towards the half. Both Vim and IdeaVim put the last line in
+   * the middle for this, and it is the whole point of pressing it there. Does not discriminate -
+   * it is the guard against clamping the pair of them.
+   */
+  @Test
+  fun `test zz on the last line centres it with blank rows below`() {
+    val session = Session(caretLine = 39)
+    session.type("zz")
+
+    assertEquals(35, session.top, "the last line in the middle of a ten-row window")
+    assertEquals(39, session.caretLine)
+  }
+
+  /** And a `G` that does not jump a whole window still scrolls by the least it can. */
+  @Test
+  fun `test G from near the end scrolls the minimum`() {
+    val session = Session(caretLine = 0)
+    session.scrollTo(33)
+    session.type("G")
+
+    assertEquals(33, session.top, "the last line was already on the bottom row")
+  }
+
   @Test
   fun `test zz centres the caret line`() {
     val session = Session(caretLine = 20)
