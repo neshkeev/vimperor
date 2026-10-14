@@ -288,8 +288,79 @@ internal fun VsCodeEditor.scrollLineIntoView(line: Int) {
   scrollLineToMiddle(target)
 }
 
-/** Scrolls so that [line] is the last line on screen. */
-internal fun VsCodeEditor.scrollLineToBottom(line: Int) = scrollViewTo(line - screenHeight + 1)
+/**
+ * Scrolls so that [line] is the last line on screen.
+ *
+ * Arithmetic where the height is known, and VS Code's own reveal where it is not - which is the one
+ * place in this file that asks for a reveal at all, and it is here because **this is the one command
+ * whose answer the host cannot compute.**
+ *
+ * While the view reaches the end of the document every report is clipped to the text, and a clipped
+ * report's span is `lastLine - top + 1`: a function of the scroll position, carrying no information
+ * about the window's height whatever. So a window that changed size while the view sat there - the
+ * output panel being opened or closed, which an extension is told nothing about either - can never
+ * be learnt, and `zb` goes on asking for `lastLine - staleHeight + 1`. When the window grew, that is
+ * where the view already is, so `scrollViewTo` returns on a delta of zero and nothing happens at
+ * all. Reported twice: the last line stays halfway up the window with blank rows under it.
+ *
+ * [VsCodeCommands.REVEAL_LINE] is the only API that names a position *relative to the window*, so it
+ * is the only way to place a line without knowing how tall the window is. What it costs is the
+ * padding: VS Code puts the line `max(margin, 1)` rows above the bottom rather than on it, by
+ * [VsCodeEditor.revealMargin] - the "five lines out" this file has recorded since the first
+ * `revealRange` measurement, now read out of `_computeScrollTopToRevealRange` and computed from the
+ * settings it comes from. One `editorScroll` of exactly that many lines puts it right, and neither
+ * step needs a height.
+ *
+ * Two guards, and a floor is enough for both because each is monotone in the height. The margin is
+ * capped at half the window, which cannot be read, so this only asks where the window is known to be
+ * at least twice the margin. And VS Code top-aligns instead when the padded line does not fit, which
+ * takes one line plus the margin above plus the correction below.
+ */
+internal fun VsCodeEditor.scrollLineToBottom(line: Int) {
+  val height = screenHeight
+  if (screenHeightIsFloor) {
+    val margin = revealMargin()
+    val correction = max(margin, 1)
+    if (height >= 2 * margin && height > 1 + margin + correction) {
+      revealLineAtBottom(line, correction)
+      return
+    }
+  }
+  scrollViewTo(line - height + 1)
+}
+
+/**
+ * Hands the placing of [line] to VS Code and takes its padding back off.
+ *
+ * Nothing is believed about where this leaves the view: the answer is `line + 1 - height` and the
+ * height is exactly what is not known. The next report is the only thing that knows - and it is a
+ * good one, because once the last line really is on the bottom row the clipped span *is* the
+ * height, so one of these teaches [VsCodeEditor.knownScreenHeight] the number and the next `zb` is
+ * arithmetic again.
+ */
+private fun VsCodeEditor.revealLineAtBottom(line: Int, correction: Int) {
+  // As in `scrollViewTo`: a scroll that moves nothing is still a request to see the caret.
+  scrollRequestedSinceFlush = true
+  if (scrollLog.size < 12) scrollLog += "${screenTopLine}->reveal($line at bottom, then up $correction)"
+  commands.executeCommand(
+    VsCodeCommands.REVEAL_LINE,
+    json(
+      "lineNumber" to line,
+      "at" to "bottom",
+    ),
+  )
+  commands.executeCommand(
+    VsCodeCommands.EDITOR_SCROLL,
+    json(
+      "to" to "up",
+      "by" to "line",
+      "value" to correction,
+      "revealCursor" to false,
+    ),
+  )
+  believedTopLine = null
+  lastReportedTopLine = null
+}
 
 /** Scrolls so that [line] is in the middle, which is where Vim's `zz` puts it. */
 internal fun VsCodeEditor.scrollLineToMiddle(line: Int) = scrollViewTo(line - (screenHeight - 1) / 2)

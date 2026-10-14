@@ -897,6 +897,28 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val top = ranges.firstOrNull()?.start?.line ?: return false
     val bottom = ranges.last().end.line
     if (ranges.size > 1) return false
+    val margin = revealMargin()
+    val clearOfTop = top == 0 || line - margin > top
+    val clearOfBottom = line + maxOf(margin, 1) < bottom
+    return clearOfTop && clearOfBottom
+  }
+
+  /**
+   * How many lines VS Code pads a reveal by, above and below the line it was given.
+   *
+   * Read out of `_computeScrollTopToRevealRange` in the installed editor, and it is the number this
+   * file has carried as "five lines" since the first `revealRange` measurement:
+   * `max(editor.cursorSurroundingLines, if (editor.stickyScroll.enabled) editor.stickyScroll.maxLineCount else 0)`,
+   * whose defaults are 0 and 5. Below the line VS Code uses `max(margin, 1)` - one line even with no
+   * margin at all - and the whole thing is capped at half the window's height, which cannot be read.
+   *
+   * Two callers want it for opposite reasons. [revealCannotScrollVertically] wants to know when a
+   * reveal is guaranteed *not* to scroll vertically, and the uncapped value is the safe side of the
+   * cap for it - it can only narrow the band. `scrollLineToBottom` wants the value exactly, so it
+   * asks only where the window is known to be at least twice the margin, which is where the cap
+   * cannot be the smaller of the two.
+   */
+  internal fun revealMargin(): Int {
     val settings = workspace.getConfiguration(VsCodeSettings.EDITOR, nativeEditor.document)
     val surrounding = settings.get(VsCodeSettings.CURSOR_SURROUNDING_LINES) as? Int ?: 0
     val sticky = if (settings.get(VsCodeSettings.STICKY_SCROLL_ENABLED) == false) {
@@ -904,10 +926,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     } else {
       settings.get(VsCodeSettings.STICKY_SCROLL_MAX_LINE_COUNT) as? Int ?: 5
     }
-    val margin = maxOf(surrounding, sticky)
-    val clearOfTop = top == 0 || line - margin > top
-    val clearOfBottom = line + maxOf(margin, 1) < bottom
-    return clearOfTop && clearOfBottom
+    return maxOf(surrounding, sticky)
   }
 
   /**

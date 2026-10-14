@@ -218,6 +218,18 @@ internal object VsCodeCommands {
   const val EDITOR_SCROLL = "editorScroll"
 
   /**
+   * Puts a line at the top, the middle or the bottom of the window - `{lineNumber, at}`, the line
+   * 0-based.
+   *
+   * The one reveal this file's viewport code does use, and only where it has to: it is the only way
+   * to ask for a position *relative to the window*, so it is the only way to place a line when the
+   * window's height is not known. See `scrollLineToBottom`, which corrects the padding a reveal
+   * adds - `VsCodeEditor.revealMargin` - and `VsCodeCommands.EDITOR_SCROLL` above for why the rest
+   * of Vim's vertical scrolling does not go anywhere near a reveal.
+   */
+  const val REVEAL_LINE = "revealLine"
+
+  /**
    * What a click in the text runs: the cursor to `{position}`, then the minimal reveal of it. Internal
    * to VS Code - the underscore - and in its core commands since 2017. See
    * `VsCodeEditor.revealLikeAClick` for why a Vim caret is revealed with it.
@@ -326,7 +338,7 @@ internal object VsCodeCommands {
     UNDO, REDO,
     FOLD, FOLD_ALL, FOLD_RECURSIVELY, UNFOLD, UNFOLD_ALL, UNFOLD_RECURSIVELY, TOGGLE_FOLD,
     TOGGLE_WORD_WRAP,
-    REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, OPEN,
+    REVEAL_DEFINITION, DOCUMENT_SYMBOLS, SHOW_HOVER, REINDENT_SELECTED_LINES, EDITOR_SCROLL, REVEAL_LINE, OPEN,
     FORMAT_SELECTION,
     COMMENT_LINE, BLOCK_COMMENT,
     FOCUS_EXPLORER, TOGGLE_SIDEBAR, CLOSE_SIDEBAR, CLOSE_PANEL, CLOSE_AUXILIARY_BAR,

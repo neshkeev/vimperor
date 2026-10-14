@@ -194,6 +194,7 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
     // to intercept - so this makes itself the focused one. See the stub's `commands.handlers`.
     val handlers = js("require('vscode').commands.handlers")
     handlers["editorScroll"] = { args: dynamic -> editorScroll(args) }
+    handlers["revealLine"] = { args: dynamic -> revealLine(args) }
     handlers["_moveTo"] = { args: dynamic -> moveCursor("_moveTo", args) }
     handlers["_moveToSelect"] = { args: dynamic -> moveCursor("_moveToSelect", args) }
   }
@@ -212,6 +213,51 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
 
   /** The column counts of every sideways `editorScroll`, negative for left. */
   val horizontalScrolls: MutableList<Int> = mutableListOf()
+
+  /** One `revealLine`: the 0-based line, and the `at` it was given. */
+  data class RevealedLine(val line: Int, val at: String?)
+
+  /** Every `revealLine`, in order. */
+  val revealedLines: MutableList<RevealedLine> = mutableListOf()
+
+  /**
+   * What the editor would pad a reveal by, which is `VsCodeEditor.revealMargin`'s answer.
+   *
+   * Five, because that is `editor.stickyScroll.maxLineCount`'s default and sticky scroll is on by
+   * default - and because the stub answers nothing for either setting, so the host computes the
+   * same five from its own fallbacks. Change both together.
+   */
+  var revealMargin: Int = 5
+
+  /**
+   * VS Code's `revealLine`, as `_computeScrollTopToRevealRange` computes it in the installed editor.
+   *
+   * **A model of someone else's arithmetic, which is the one thing a fake here is not supposed to
+   * be** - see the `'wrap'` note in CLAUDE.md. It is written out because `scrollLineToBottom` uses
+   * the reveal for the case where this host cannot compute the answer itself, so there is nothing
+   * else to check the correction against; the test that matters without it is the one asserting
+   * which commands were dispatched, which is a fact about this host. Only a real window can confirm
+   * the rest.
+   *
+   * The line is padded by [revealMargin] above and `max(margin, 1)` below - the extra line is what
+   * VS Code adds for the `Top` and `Bottom` reveal types - and the margin is capped at half the
+   * window. `at: "bottom"` then puts the padded bottom on the window's last row, and a padded line
+   * too tall for the window is top-aligned instead.
+   */
+  private fun revealLine(args: dynamic) {
+    val line = args.lineNumber as Int
+    val at = args.at as String?
+    revealedLines += RevealedLine(line, at)
+    val margin = minOf(viewportHeight / 2, revealMargin)
+    val below = maxOf(margin, if (at == "top" || at == "bottom") 1 else 0)
+    val newTop = when {
+      1 + margin + below > viewportHeight - 1 -> line - margin
+      at == "bottom" -> line + 1 + below - viewportHeight
+      at == "top" -> line - margin
+      else -> return
+    }.coerceIn(0, lastLine)
+    if (revealsTakeEffectImmediately) topLine = newTop else pendingTopLine = newTop
+  }
 
   /**
    * VS Code's `_moveTo`, as far as the view goes: the minimal reveal of the line, with no padding.

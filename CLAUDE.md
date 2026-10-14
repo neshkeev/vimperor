@@ -1371,11 +1371,44 @@ downward scroll to a reveal instead of to the number. So the rule leans the seco
 And the height is carried across the wrapper swap - it belongs to the window, not to the
 `TextEditor` object - or a replaced wrapper learns it from exactly the report that cannot measure it.
 
-**One test of the four does not discriminate**, and it is the guard: a shorter report *with* the
+**One of those tests does not discriminate**, and it is the guard: a shorter report *with* the
 caret in it still lowers the height, which is what stops the easy wrong fix of a `max` that only ever
 grows. `FakeEditor.reportedHeight` had to be added for any of this to be testable - a fake that
 always answered consistently with its own window could not produce the report, which is the lesson
 `'wrap'` already records.
+
+**And the other direction cannot be read at all, which is why `zb` is the one command here that asks
+for a reveal.** A clipped report's span is `lastLine - top + 1`: the scroll position and nothing
+else. So while the view reaches the end of the file *no* report carries the window's height, and a
+window that changed size while the view sat there - the output panel opening or closing, which an
+extension is told nothing about either - can never be learnt. Reported as `zb` doing nothing: the
+height was the one from when the panel was open, `lastLine - staleHeight + 1` was where the view
+already was, and `scrollViewTo` returns on a delta of zero.
+
+`revealLine` is the only API that names a position *relative to the window*, so it is the only way
+to place a line without knowing how tall the window is. The objection this file has carried since
+the first measurement - that a reveal put every `AtTop` request five lines above the line it named -
+is now **explained rather than worked around**, out of `_computeScrollTopToRevealRange` in the
+installed editor: the padding is
+`max(editor.cursorSurroundingLines, if (editor.stickyScroll.enabled) editor.stickyScroll.maxLineCount else 0)`,
+whose defaults are 0 and 5, with `max(margin, 1)` below for the `Top` and `Bottom` types and the
+whole thing capped at half the window. **Five lines, with sticky scroll on by default.** So one
+`editorScroll` of exactly that many lines takes it back off, and neither step needs a height.
+`VsCodeEditor.revealMargin` was already computing that number for the horizontal reveal, under a
+comment deriving it the same way - worth checking for before writing a second copy of a formula.
+
+Two guards, and a floor is enough for both because each is monotone in the height: the window must
+be at least twice the margin, so the cap cannot be the smaller of the two, and more than
+`1 + margin + correction` rows, because VS Code top-aligns instead when the padded line does not
+fit. Below that - a window of eleven rows or fewer with the default margin - this falls back to the
+arithmetic and the stale height, which is the residual. And the fix teaches: once the last line
+really is on the bottom row the clipped span *is* the height, so one `zb` puts
+`knownScreenHeight` right and the next is arithmetic again.
+
+`zz`, `H`, `M`, `L` and `<C-F>` read the same number and have the same blind spot. They are not
+fixed, because a reveal cannot place a line anywhere Vim wants except the bottom: `at: "center"`
+lands half a line off Vim's `(height - 1) / 2` and `at: "top"` needs no help, since `zt` names a top
+line and `editorScroll` can go there without a height.
 
 ### `.` is a keystroke replay now, and it changed nothing here
 

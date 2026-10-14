@@ -113,6 +113,78 @@ class ScreenHeightTest {
   }
 
   /**
+   * The output panel being closed, which is what was reported second.
+   *
+   * A clipped report's span is `lastLine - top + 1` - the scroll position and nothing else - so
+   * while the view reaches the end of the file no report can say the window got taller. The height
+   * stays at what it was when the panel was open, and `zb` asks for a top the view is already at.
+   */
+  @Test
+  fun `test zb reaches the bottom row after the window grew behind a clipped report`() {
+    val fake = FakeEditor(text, path = "/test/a.txt")
+    fake.viewportHeight = 14
+    val host = host()
+    val editor = host.editorFor(fake)
+    KeyHandler.getInstance().fullReset(editor)
+
+    host.keys(fake, "G")
+    host.keys(fake, "zb")
+    assertEquals(26, fake.topLine, "the last line on the bottom row of a fourteen-row window")
+
+    // The panel is closed and the window is 27 rows. Nothing says so: the view is at the end of the
+    // file, so the report is the same clipped `26..39` it was before.
+    fake.viewportHeight = 27
+    assertEquals(14, editor.screenHeight, "nothing can raise it, which is the whole problem")
+
+    host.keys(fake, "zb")
+
+    assertEquals(13, fake.topLine, "the last line on the bottom row of a twenty-seven-row window")
+    assertEquals(39, editor.primaryCaret().getBufferPosition().line)
+  }
+
+  /**
+   * What the fix actually asks for, which is the half of it a test here can be sure of.
+   *
+   * The placing is VS Code's, because the height is what this host does not have; the correction is
+   * the padding a reveal adds, which `revealMargin` computes from the settings it comes from. The
+   * net position in the test above is checked against `FakeEditor`'s model of VS Code's arithmetic
+   * and is only as good as that model - this is the part that is a fact about this host.
+   */
+  @Test
+  fun `test the placing is handed to VS Code when the height is only a floor`() {
+    val fake = FakeEditor(text, path = "/test/a.txt")
+    fake.viewportHeight = 14
+    val host = host()
+    KeyHandler.getInstance().fullReset(host.editorFor(fake))
+
+    host.keys(fake, "G")
+    host.keys(fake, "zb")
+
+    assertEquals(listOf(FakeEditor.RevealedLine(39, "bottom")), fake.revealedLines)
+  }
+
+  /**
+   * And a height that was measured is still used, which is what keeps the reveal out of the way.
+   *
+   * Everything in `VsCodeScrollTest` goes down this path: a reveal is a request to be interpreted,
+   * and the arithmetic composes with the believed top where a reveal cannot.
+   */
+  @Test
+  fun `test a measured height still does the arithmetic`() {
+    val fake = FakeEditor(text, path = "/test/a.txt")
+    fake.viewportHeight = 14
+    val host = host()
+    val editor = host.editorFor(fake)
+    KeyHandler.getInstance().fullReset(editor)
+    editor.primaryCaret().moveToOffsetNative(editor.getLineStartOffset(20))
+
+    host.keys(fake, "zb")
+
+    assertEquals(7, fake.topLine)
+    assertEquals(emptyList(), fake.revealedLines, "the report measured the window, so nothing was asked")
+  }
+
+  /**
    * The height belongs to the window, not to the `TextEditor` object.
    *
    * VS Code hands out a new one every time a hidden tab is shown, so without carrying this over a
