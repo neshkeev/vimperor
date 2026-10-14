@@ -724,6 +724,9 @@ class VimRegex(pattern: String) {
 
     override fun addCaret(offset: Int): VimCaret? = null
 
+    /** It has no carets at all - this wrapper is a string a pattern is matched against. */
+    override fun makePrimaryCaret(caret: VimCaret): VimCaret = primaryCaret()
+
     override fun removeSecondaryCarets() {
     }
 

@@ -255,6 +255,21 @@ interface VimEditor {
   fun removeCaret(caret: VimCaret)
   fun addCaret(offset: Int): VimCaret?
   fun removeSecondaryCarets()
+
+  /**
+   * Makes [caret] the primary one, and answers whichever caret is primary afterwards.
+   *
+   * [VimCaret.isPrimary] is read-only, so nothing in the engine could ask for this before, and the
+   * multiple-cursor extensions need it twice over: a search that adds a cursor at a time asks the
+   * primary one what it is selecting, and `visual-multi`'s `[` and `]` walk the primary between
+   * regions without adding any.
+   *
+   * A caret that is not this editor's is ignored, and the current primary is answered instead. There
+   * is no default: IntelliJ makes a caret primary by removing it and adding it again, which is a
+   * different implementation rather than an absent one, and a seam nothing overrides is how a host
+   * comes to look as though it answered.
+   */
+  fun makePrimaryCaret(caret: VimCaret): VimCaret
   fun vimSetSystemBlockSelectionSilently(start: BufferPosition, end: BufferPosition)
 
   /**

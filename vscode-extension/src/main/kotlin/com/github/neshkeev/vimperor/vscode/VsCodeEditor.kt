@@ -1367,6 +1367,19 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   /**
+   * The primary flag moves, which on this host is one field rather than IntelliJ's remove-and-add.
+   *
+   * The list stays in document order and only the flag moves, because everything that walks the
+   * carets to make an edit depends on that order - see `setCarets`, where the same rule is why the
+   * flag follows index zero rather than the list following the flag.
+   */
+  override fun makePrimaryCaret(caret: VimCaret): VimCaret {
+    val target = vimCarets.firstOrNull { it === caret } ?: return primaryCaret()
+    vimCarets.forEach { it.isPrimary = it === target }
+    return target
+  }
+
+  /**
    * Back to one caret, keeping the primary - which is the one carrying the block's anchor.
    *
    * The engine calls this before rebuilding a block and again on the way out of Visual mode, and

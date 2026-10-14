@@ -263,6 +263,8 @@ class TestVimEditor(
   override fun getScrollingModel(): VimScrollingModel = TODO("TestVimEditor.getScrollingModel is not implemented yet")
   override fun removeCaret(caret: VimCaret): Unit = TODO("TestVimEditor.removeCaret is not implemented yet")
   override fun addCaret(offset: Int): VimCaret? = TODO("TestVimEditor.addCaret is not implemented yet")
+  override fun makePrimaryCaret(caret: VimCaret): VimCaret =
+    TODO("TestVimEditor.makePrimaryCaret is not implemented yet")
   /**
    * Nothing to remove: a headless editor is built with the carets it is given and never grows one.
    *

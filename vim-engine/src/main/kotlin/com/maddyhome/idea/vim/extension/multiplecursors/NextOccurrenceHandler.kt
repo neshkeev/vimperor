@@ -92,9 +92,15 @@ internal class NextOccurrenceHandler(
     }
 
     val caret = editor.addCaret(nextOffset) ?: return false
-    editor.occurrenceSearch = search.copy(
-      lastOccurrence = selectOccurrence(editor, caret, nextOffset, pattern) ?: return false,
-    )
+    val occurrence = selectOccurrence(editor, caret, nextOffset, pattern) ?: return false
+    // The cursor just added is the current one, and the next search has to continue from *it*.
+    // IntelliJ gets this from `addCaret(position, true)`; this host has to ask, and the asking is
+    // what `makePrimaryCaret` is for. Without it the primary stayed on the first occurrence, the
+    // check below saw the recorded occurrence and the primary's selection disagree, started a fresh
+    // search from the first occurrence, found the second - already selected - and reported no more
+    // matches. `foo bar foo baz foo` stopped at two cursors however many times `<C-n>` was pressed.
+    editor.makePrimaryCaret(editor.carets().firstOrNull { it.selectionStart == nextOffset } ?: caret)
+    editor.occurrenceSearch = search.copy(lastOccurrence = occurrence)
     return true
   }
 

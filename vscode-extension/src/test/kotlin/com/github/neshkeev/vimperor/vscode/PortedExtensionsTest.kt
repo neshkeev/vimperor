@@ -714,6 +714,41 @@ class PortedExtensionsTest {
     assertEquals(1, session.host.editorFor(session.fake).carets().size)
   }
 
+  /**
+   * The third `<C-n>`, which used to add nothing.
+   *
+   * The search continues from the cursor just added, and this host asks the primary one what it is
+   * selecting. `VimEditor.addCaret` makes the new caret *not* primary - IntelliJ's `addCaret(pos,
+   * true)` does the opposite - so the primary stayed on the first occurrence, the recorded occurrence
+   * and the primary's selection disagreed, a fresh search started from the first occurrence, found
+   * the second, saw it already selected and reported no more matches. Two cursors however many times
+   * the key was pressed.
+   *
+   * `VimEditor.makePrimaryCaret` is the seam that fixes it. `VimCaret.isPrimary` is read-only, so
+   * nothing in the engine could ask before.
+   */
+  @Test
+  fun `test ctrl-n keeps adding cursors past the second`() {
+    val session = Session("foo bar foo baz foo\n", "multiple-cursors")
+
+    repeat(3) { session.host.key(session.fake, "<C-n>") }
+
+    assertEquals(3, session.host.editorFor(session.fake).carets().size)
+  }
+
+  /** And the edit still lands in all three. */
+  @Test
+  fun `test typing changes all three occurrences`() {
+    val session = Session("foo bar foo baz foo\n", "multiple-cursors")
+
+    repeat(3) { session.host.key(session.fake, "<C-n>") }
+    session.type("c")
+    session.type("X")
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals("X bar X baz X\n", session.content)
+  }
+
   /** `g<A-n>` - every occurrence at once, rather than one at a time. */
   @Test
   fun `test all occurrences can be selected at once`() {
