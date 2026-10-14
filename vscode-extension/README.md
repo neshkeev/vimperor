@@ -134,7 +134,7 @@ twenty-eight in all, enabled with `set <name>` or a `Plug` line:
   one file share a wrap, because VS Code attaches it to the document.
 - **Vim plugins.** There is no `pack/` directory. 3 of IdeaVim's 30 bundled extensions are absent —
   `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like, and `clever-f`
-  needs `f` to read its character without blocking, which is a decision rather than a day's work.
+  is not written yet.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups, so `<C-w>`
   movements go where VS Code's do. No preview window, so `:pedit` has nothing to open into.
 - **A terminal, channels and jobs.** No `:terminal`, no `job_start()`, no `timer_start()`.

@@ -606,25 +606,36 @@ keystroke because `inputKeyStroke` pumps a nested AWT loop - `ModalEntry.activat
 runtime cannot do. What is actually needed is to reach `addAction` *after* the character
 arrives and while `d` is still pending.
 
-**And there is a lead that would cost no engine change, found by reading
-`ToHandlerMappingInfo` rather than the extension.** `myFun` - the caret-delta route that
-makes easymotion's jump an operator's motion, and the reason the recorded verdict was that
-`dfa` would behave as `dta` - is guarded by `!keyState.commandBuilder.hasCurrentCommandPartArgument()`.
-That guard is precisely how `clever-f`'s `addAction` suppresses it today. And
-`ExtensionHandler.WithCallback` already defers `myFun` *and* the following
-`finishedCommandPreparation` into `_backingFunction`. A `WithCallback` handler that called
-`addAction` from inside its `readKeys` callback and then `continueVimExecution()` would
-therefore skip the caret-delta branch and have the command run with its own inclusive
-motion. **Unverified** - whether the command builder still holds `d` by then, and whether
-`keyState.commandBuilder` is the same object at callback time, are the two things a probe
-has to answer before this is believed. If it holds, `clever-f` needs the two listeners and
-nothing else.
+**And there is no engine change, which was found by reading `ToHandlerMappingInfo` rather
+than the extension and then measured.** `myFun` - the caret-delta route that makes
+easymotion's jump an operator's motion, and the reason the recorded verdict was that `dfa`
+would behave as `dta` - is guarded by
+`!keyState.commandBuilder.hasCurrentCommandPartArgument()`. That guard is precisely how
+`clever-f`'s `addAction` suppresses it today. And `ExtensionHandler.WithCallback` already
+defers `myFun` *and* the following `finishedCommandPreparation` into `_backingFunction`. So
+a `WithCallback` handler that calls `addAction` from inside its `readKeys` callback and
+*then* `continueVimExecution()` skips the caret-delta branch and has the command run with
+its own motion, inclusivity and all.
+
+`DeferredExtensionMotionTest` is that probe and it passes: **the command builder still holds
+`d` a keystroke later, and `keyHandlerState.commandBuilder` is the same object at callback
+time.** Those were the two unknowns. Its third test is the control and is what makes the
+other two mean anything - the same handler without `addAction` is exclusive, so the
+difference is the mechanism rather than the arithmetic.
+
+So `clever-f` is no longer behind a decision. What it still needs is the caret-moved and
+document-changed listeners `SearchFinalizer` wants, and a straight port of the rest.
+
+**One trap the probe walked into, and it is about Vim rather than about this host.** `t` is
+inclusive too. `:h t` places the caret on the character left of the match, *inclusive*, and
+upstream spells it `isInclusive = isForward` - lowercase `f` and `t` inclusive, `F` and `T`
+not. The probe's first version read `!till` and `dta` came out one character short.
 
 `visual-multi` is ported now, and the estimate above held: no new seam, one large
 mechanical pass. What it did find is in its own commit - `VimEditor.makePrimaryCaret`,
 which the search for occurrences had needed all along, and a `readLine` that is modal
 input rather than a command line. Treat 27 of 30 as complete and `clever-f` as the one
-left, open behind a decision.
+left - unblocked now, and two listeners plus a mechanical port rather than a decision.
 
 `signature` is worth a note as the one port that did not follow upstream's
 implementation at all. IdeaVim draws its mark icons as `RangeHighlighter`s on
