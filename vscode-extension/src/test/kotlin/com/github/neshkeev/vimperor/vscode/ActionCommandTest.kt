@@ -173,6 +173,27 @@ class ActionCommandTest {
   }
 
   /**
+   * The three ids the replayed fixtures named and the table did not have.
+   *
+   * They are why this was worth doing: five of the six fixtures this host still fails run one of
+   * these, and the reason recorded for years was "no VS Code command behind it" - which was wrong
+   * about four of the five. `EditorSelectWord` had been wired the whole time and its fixture failed
+   * anyway, because a dispatched command needs a VS Code to run in and the replay has a stub. So
+   * these three will not move that list; what they fix is an `.ideavimrc` that maps them, which
+   * reported "this VS Code has nothing that does it" until now.
+   */
+  @Test
+  fun `test the caret actions an ideavimrc maps are translated`() {
+    val session = Session()
+    session.run("action EditorCloneCaretBelow")
+    session.run("action EditorRight")
+    session.run("action EditorDown")
+
+    assertEquals(listOf("editor.action.insertCursorBelow", "cursorRight", "cursorDown"), session.dispatched)
+    assertEquals(emptyList(), session.errors)
+  }
+
+  /**
    * An action that is IntelliJ's and nothing else says which of the two it is.
    *
    * "Action not found" would send the reader looking for a typo. The name is right; the feature is

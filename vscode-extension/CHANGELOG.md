@@ -6,6 +6,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- `:action EditorCloneCaretBelow`, `EditorRight` and `EditorDown` work. All three are IntelliJ's
+  names, and an `.ideavimrc` carried over from IdeaVim that maps one of them - `:map <A-n>
+  <Action>(EditorCloneCaretBelow)` is the common line - used to report that this VS Code has
+  nothing that does it. It does: `editor.action.insertCursorBelow`, `cursorRight` and `cursorDown`.
+  The clone is the one worth having, since Vim has no key for a second caret; the two moves are
+  there so a config loads rather than because `l` and `j` need help.
+
 - `clever-f`, the twenty-ninth bundled extension and the last of IdeaVim's thirty. `f` pressed again
   repeats its own search, so `;` and `,` are not needed: `fa` goes to the next `a`, another `f` goes
   to the one after, and `F` turns round. A search ends as soon as the cursor moves somewhere else,

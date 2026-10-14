@@ -426,6 +426,16 @@ internal object IdeaActionAliases {
     "MoveLineDown" to "editor.action.moveLinesDownAction",
     "EditorDuplicate" to "editor.action.copyLinesDownAction",
 
+    // Carets. `EditorCloneCaretBelow` is the one worth having - it is multiple cursors, which Vim
+    // has no key for, and `:map <A-n> <Action>(EditorCloneCaretBelow)` is a line people really
+    // write. The two moves are here for config compatibility rather than because anybody needs
+    // them: `l` and `j` do the same thing without leaving the engine, and these go out to VS Code
+    // and come back through `syncCaretsFromEditor`. They are bare ids because VS Code's built-in
+    // cursor commands have no prefix, as `undo` and `redo` above do not.
+    "EditorRight" to "cursorRight",
+    "EditorDown" to "cursorDown",
+    "EditorCloneCaretBelow" to "editor.action.insertCursorBelow",
+
     // The `$`-prefixed ones are IntelliJ's own editor actions, which people bind when a Vim key is
     // in the way of something they still want.
     "\$Undo" to "undo",

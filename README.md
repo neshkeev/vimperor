@@ -205,8 +205,12 @@ Testing
 Two things are checked that a test suite cannot check on its own. The `external`
 declarations for the VS Code API are compiled against nothing — the extension host
 injects the real API at runtime — so `checkVsCodeApiDeclarations` compares all 127
-of them, name and kind, against `@types/vscode`. Every command id the extension
-sends is compared against a real window by `checkVsCodeCommandIds`.
+of them, name and kind, against `@types/vscode`. And `checkVsCodeCommandIds` keeps
+every command id in one registry, `VsCodeIds.kt`, and asserts that each is listed in
+`VsCodeCommands.all` — which is the list the extension compares against the window's
+own when it starts. That comparison is a line in the activation report rather than a
+build failure, because only a real window can answer it: `checkPackagedExtension`
+runs the `.vsix` in a stub.
 
 Beyond its own tests, the extension replays IdeaVim's test fixtures against the
 VS Code host: **2,472 of 2,478 pass**. The six that do not each name an IntelliJ
