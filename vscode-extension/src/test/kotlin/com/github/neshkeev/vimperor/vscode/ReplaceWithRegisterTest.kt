@@ -152,6 +152,29 @@ class ReplaceWithRegisterTest {
     assertEquals("one\nseven eight", session.content)
   }
 
+  /**
+   * A line-wise replace whose range ends on the last line of a file that has no trailing newline.
+   *
+   * The put deletes the selection first, and that delete takes the newline in *front* of the block
+   * when there is none behind it - so the caret is left at an offset past the end of the shortened
+   * document, where Vim wants a line appended. The engine asked for that case with
+   * `caret.offset == fileSize`, which an overshot offset cannot satisfy, and fell through to an
+   * out-of-range offset that the insert clamped onto the end of the previous line.
+   *
+   * `grr` reaches it only with a count, because a single line is a character-wise range; the plain
+   * Vim keys below reach it without one, which is what makes this an engine bug rather than this
+   * extension's.
+   */
+  @Test
+  fun `test grr with a count onto the last line appends a line`() {
+    val session = Session("one two three\nfour five six\nseven eight")
+
+    session.type("yiw")
+    session.type("j2grr")
+
+    assertEquals("one two three\none", session.content)
+  }
+
   @Test
   fun `test the register survives being used`() {
     val session = Session("aaa bbb ccc")

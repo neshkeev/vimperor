@@ -129,6 +129,28 @@ abstract class VimPutBase : VimPut {
       }
   }
 
+  /**
+   * Whether a line-wise put has to *append* a new last line rather than open one in place.
+   *
+   * The delete a put over a Visual selection starts with leaves the caret at the start of the block
+   * it removed, and that offset is past the end of the shortened document whenever the block ran to
+   * the end of a file with no trailing newline: the newline that survives is the one in *front* of
+   * the block, so there is no line left for the caret to start. Vim appends a line here, which
+   * means a line separator in front of the text and none behind it.
+   *
+   * This used to be asked as `caret.offset == fileSize`, an equality that cannot hold once the
+   * offset has overshot - the branch was unreachable across every test and replayed fixture here -
+   * so the put fell through to an out-of-range offset that the insert silently clamped onto the end
+   * of the previous line. `one two three|four five six|seven eight` with `one` yanked and `jVjp`
+   * gave `one two threeone` where Vim gives `one two three|one`.
+   */
+  private fun appendsPastLastLine(editor: VimEditor, caret: VimCaret, data: PutData): Boolean {
+    if (data.visualSelection?.typeInEditor?.isLine != true) return false
+    val fileSize = editor.fileSize().toInt()
+    if (fileSize == 0 || caret.offset < fileSize) return false
+    return editor.getText(TextRange(fileSize - 1, fileSize))[0] != '\n'
+  }
+
   private fun processText(
     caret: VimCaret?,
     data: PutData,
@@ -453,18 +475,14 @@ abstract class VimPutBase : VimPut {
         }
 
         visualSelection.typeInEditor.isLine -> {
-          val lastChar = if (vimEditor.fileSize() > 0) {
-            vimEditor.getText(TextRange(vimEditor.fileSize().toInt() - 1, vimEditor.fileSize().toInt()))[0]
+          val fileSize = vimEditor.fileSize().toInt()
+          if (appendsPastLastLine(vimEditor, vimCaret, data)) {
+            application.runWriteAction { (vimEditor as MutableVimEditor).insertText(vimCaret, fileSize, "\n") }
+            listOf(fileSize + 1)
           } else {
-            null
-          }
-          if (vimCaret.offset == vimEditor.fileSize().toInt() && vimEditor.fileSize()
-              .toInt() != 0 && lastChar != '\n'
-          ) {
-            application.runWriteAction { (vimEditor as MutableVimEditor).insertText(vimCaret, vimCaret.offset, "\n") }
-            listOf(vimCaret.offset + 1)
-          } else {
-            listOf(vimCaret.offset)
+            // The caret can be past the end of the document here, and an offset the insert clamps
+            // reads as a put that landed somewhere plausible and wrong.
+            listOf(vimCaret.offset.coerceAtMost(fileSize))
           }
         }
 
@@ -522,12 +540,19 @@ abstract class VimPutBase : VimPut {
     var updated = caret
     notifyAboutIdeaPut(editor)
     if (data.visualSelection?.typeInEditor?.isLine == true && editor.isOneLineMode()) return updated
+    // Asked before `prepareDocumentAndGetStartOffsets`, which is what adds the line break an
+    // appended last line is terminated by.
+    val appending = appendsPastLastLine(editor, updated, data)
     val startOffsets = prepareDocumentAndGetStartOffsets(editor, updated, text.typeInRegister, data, additionalData)
+    // A line-wise put writes whole lines, so `processText` gave the text a trailing line separator.
+    // An appended last line is terminated by the break in front of it instead, and keeping both
+    // leaves an empty line below it.
+    val textToPut = if (appending) text.copiedText.text.removeSuffix("\n") else text.copiedText.text
 
     startOffsets.forEach { startOffset ->
       val selectionType = data.visualSelection?.typeInEditor ?: SelectionType.CHARACTER_WISE
       val (endOffset, updatedCaret) = putTextInternal(
-        editor, updated, context, text.copiedText.text, text.typeInRegister, selectionType,
+        editor, updated, context, textToPut, text.typeInRegister, selectionType,
         startOffset, data.count, data.indent, data.caretAfterInsertedText,
       )
       updated = updatedCaret

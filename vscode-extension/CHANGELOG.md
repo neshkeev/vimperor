@@ -49,6 +49,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- A paste over a line-wise Visual selection that reached the last line of a file with no trailing
+  newline put the text on the end of the line *above* it. `jVjp` on a three-line file turned
+  `four five six` and `seven eight` into text appended to `one two three`. Vim appends a line
+  there, and that is what happens now; `grr` with a count reached the same bug.
+
 - `:for x in [1, 2]` with a `:continue` in it never finished. In a config that is an editor that
   never finishes starting. The range form, `for x in range(3)`, was never affected.
 
