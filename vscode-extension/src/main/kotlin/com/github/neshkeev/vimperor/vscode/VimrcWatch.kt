@@ -115,13 +115,28 @@ internal class VimrcWatch(
     }
   }
 
+  /**
+   * The question, and it is as short as it is on purpose.
+   *
+   * **A notification button cannot carry a tooltip**, which is worth writing down because it is the
+   * obvious next idea: `MessageItem` has two fields, `title` and `isCloseAffordance`, and neither
+   * is a hover - `tooltip` appears 37 times in `vscode.d.ts` and not once near a notification.
+   * `MessageOptions.detail` is the nearest thing and fails twice over, belonging to the message
+   * rather than to a button and being documented as rendered only for a *modal* message, which an
+   * unsolicited "your file changed" must not be.
+   *
+   * So the sentence is the only place anything about the buttons could go, and it is deliberately
+   * not used for that: what the two do differently belongs in the README, where there is room to be
+   * accurate about it, rather than in a notification that has to be read at a glance. The short
+   * version is that re-running a file applies what it says and is silent about what it no longer
+   * says - see [VimHost.reloadVimRc].
+   */
   private fun askAbout(path: String?) {
-    val situation = when {
-      path == null -> "Your Vimperor config is gone."
-      path != loadedPath -> "$path is now your Vimperor config."
-      else -> "$path changed."
+    val message = when {
+      path == null -> "Your Vimperor config is gone. Reload to go back to the defaults?"
+      path != loadedPath -> "$path is now your Vimperor config. Load it?"
+      else -> "$path changed. Load it?"
     }
-    val message = "$situation $DIFFERENCE"
     val answers = VimrcAnswer.entries.map { it.label }
     ask(message, answers) { pressed ->
       when (VimrcAnswer.entries.firstOrNull { it.label == pressed }) {
@@ -154,18 +169,6 @@ internal class VimrcWatch(
   }
 
   private companion object {
-    /**
-     * What the two buttons do differently, in the message because it cannot be anywhere else.
-     *
-     * A notification button carries a `title` and nothing more - `MessageItem` has two fields and
-     * neither is a tooltip, and `MessageOptions.detail` is documented as shown only for a *modal*
-     * message, which this must not be. So the one place a comparison can go is the sentence, and
-     * the thing worth comparing is the one asymmetry between the two: re-running a file applies
-     * what it says and is silent about what it no longer says. See [VimHost.reloadVimRc].
-     */
-    const val DIFFERENCE =
-      "Reload re-runs the file; Restart Extensions also resets options the file no longer sets."
-
     /**
      * Long enough that one save is one question.
      *
