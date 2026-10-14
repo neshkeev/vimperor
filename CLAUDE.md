@@ -1034,6 +1034,20 @@ re-running `findVimRc` and comparing the path *and* the text.
 by the file it governs. `none` is answered by `pathsToWatch` returning nothing, so the watchers are
 never created rather than created and ignored.
 
+**Its values are `none`, `prompt`, `autoreload` and `autorestart`, and there are four because `auto`
+could not say which of the two things it did.** The spelling is Vim's and worth knowing before
+adding another: **no option value in this engine contains a separator of any kind** - `lastline`,
+`onemore`, `unnamedplus`, `startsel`, `localoptions` - so a multi-word value is squashed lowercase,
+not kebab, snake or camel.
+
+**A notification cannot carry a checkbox either**, which is the same limit as the tooltip and the
+same `MessageItem` with its two fields. So "remember this" is a button - **Always Reload** - and
+what it sets is a field on `VimrcWatch` that dies with the extension host, because a preference
+nobody wrote in their config should not quietly become permanent. It only ever lifts `prompt` to
+`autoreload`, which is what makes a later `:set vimrcreload=...` win with no listener to write.
+There is deliberately no **Always Restart**: remembering lasts for the session and a restart *ends*
+the session, so it would be stored, used once and discarded by the thing it asked for.
+
 **Reload is IdeaVim's `reloadIdeaVimRc`, and the one line that matters is the one that is not
 `loadVimRc`.** Mappings made while the config runs are owned by `MappingOwner.IdeaVim.InitScript` -
 `MapCommand` decides that from `executingIdeaVimRcConfiguration` - and the first mapping registered

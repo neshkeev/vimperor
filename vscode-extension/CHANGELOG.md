@@ -7,12 +7,15 @@ The Marketplace renders this file on the extension's page, under Changelog.
 ### Added
 
 - Vimperor notices when your config changes on disk and offers to load it. Save `~/.vimperorrc` and
-  a notification appears with **Reload** and **Restart Extensions**; Reload re-runs the file in
-  place, which is instant and keeps every editor, undo history and unsaved change, while Restart
-  restarts the extension host so the config is read exactly as at startup. The difference matters
-  and it is Vim's own: re-running a config applies what the file says and cannot undo an option it
-  no longer sets, so deleting `set nonumber` needs the restart. `set vimrcreload=auto` loads it
-  without asking, `set vimrcreload=none` stops the watching, and `prompt` is the default.
+  a notification appears with **Reload**, **Always Reload** and **Restart Extensions**. Reload
+  re-runs the file in place, which is instant and keeps every editor, undo history and unsaved
+  change, while Restart restarts the extension host so the config is read exactly as at startup.
+  The difference matters and it is Vim's own: re-running a config applies what the file says and
+  cannot undo an option it no longer sets, so deleting `set nonumber` needs the restart. Always
+  Reload takes the question away for the rest of the session and writes nothing to your config, so
+  the next window asks again; there is no *Always Restart*, because remembering lasts for the
+  session and a restart ends it. `set vimrcreload=autoreload` and `=autorestart` pick one without
+  asking at all, `=none` stops the watching, and `prompt` is the default.
 
   Every path in the config order is watched, not just the file that loaded - creating a
   `~/.vimperorrc` while only `~/.vimrc` is there changes which config wins, and so does deleting

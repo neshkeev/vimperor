@@ -145,7 +145,7 @@ internal object VsCodeOptions {
     GLOBAL,
     "vrr",
     "prompt",
-    boundedValues = setOf("none", "prompt", "auto"),
+    boundedValues = VimrcReload.entries.map { it.setting }.toSet(),
   )
 
   /**
@@ -1084,12 +1084,9 @@ internal fun statusIcon(): StatusIcon =
 /** Whether `:w` saves every open file, which is `set ideawrite=all` - not the default here. */
 /** `'vimrcreload'`, as the three things it can mean. See [VsCodeOptions.vimrcreload]. */
 internal fun vimrcReloadMode(): VimrcReload =
-  when (injector.optionGroup.getOptionValue(VsCodeOptions.vimrcreload, OptionAccessScope.GLOBAL(null))
-    .toVimString().value) {
-    "none" -> VimrcReload.NONE
-    "auto" -> VimrcReload.AUTO
-    else -> VimrcReload.PROMPT
-  }
+  injector.optionGroup.getOptionValue(VsCodeOptions.vimrcreload, OptionAccessScope.GLOBAL(null))
+    .toVimString().value
+    .let { setting -> VimrcReload.entries.firstOrNull { it.setting == setting } ?: VimrcReload.PROMPT }
 
 internal fun writesEveryFile(): Boolean =
   injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).toVimString().value == "all"

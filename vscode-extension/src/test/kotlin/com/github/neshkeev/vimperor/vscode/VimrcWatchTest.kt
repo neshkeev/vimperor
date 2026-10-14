@@ -198,23 +198,48 @@ class VimrcWatchTest {
     assertEquals(1, questions.asked.size, questions.asked.toString())
   }
 
-  // ---- the three modes -------------------------------------------------------------------------
+  // ---- the four modes --------------------------------------------------------------------------
 
   @Test
-  fun `test auto loads without asking`() {
+  fun `test autoreload loads without asking`() {
     val session = Session()
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
       session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
-      questions.ask, {}, { VimrcReload.AUTO },
+      questions.ask, {}, { VimrcReload.AUTORELOAD },
     )
     watch.remember("/home/someone/.vimperorrc")
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
 
-    assertEquals(emptyList(), questions.asked, "auto must not ask")
+    assertEquals(emptyList(), questions.asked, "autoreload must not ask")
+    assertEquals(emptyList(), session.dispatched, "and must not restart")
+  }
+
+  /**
+   * `autorestart` restarts instead, which is the other thing `auto` could have meant.
+   *
+   * Which is why there are two values and not one: re-sourcing and restarting differ in what they
+   * can undo, so a setting that said only "automatically" left the reader to guess.
+   */
+  @Test
+  fun `test autorestart restarts without asking`() {
+    val session = Session()
+    val questions = Questions()
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      questions.ask, {}, { VimrcReload.AUTORESTART },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+
+    assertEquals(emptyList(), questions.asked, "autorestart must not ask")
+    assertEquals(listOf(VsCodeCommands.RESTART_EXTENSION_HOST), session.dispatched)
   }
 
   @Test
@@ -258,6 +283,67 @@ class VimrcWatchTest {
     assertEquals(1, questions.asked.size, "asked twice about one edit: ${questions.asked}")
   }
 
+  /**
+   * **Always Reload** stops the asking for the rest of the session, and only for that.
+   *
+   * A notification cannot carry a checkbox, so remembering is a button. What it must not be is
+   * sticky beyond the session - a preference nobody wrote in their config should not quietly become
+   * permanent, and the next extension host asks again.
+   */
+  @Test
+  fun `test always reload stops the asking for the rest of the session`() {
+    val session = Session()
+    val questions = Questions(answer = VimrcAnswer.ALWAYS_RELOAD.label)
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      questions.ask, {}, { VimrcReload.PROMPT },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+    assertEquals(1, questions.asked.size, "the first change is still a question")
+
+    texts["/home/someone/.vimperorrc"] = "set nonumber"
+    watch.settle()
+    texts["/home/someone/.vimperorrc"] = "set number"
+    watch.settle()
+
+    assertEquals(1, questions.asked.size, "asked again after Always Reload: ${questions.asked}")
+  }
+
+  /**
+   * And an explicit `:set` after it wins, which costs no listener.
+   *
+   * The remembered answer only lifts `prompt` to `autoreload`, so any other value of the option is
+   * itself. Someone who sets the option after pressing the button has spoken more recently.
+   */
+  @Test
+  fun `test setting the option after Always Reload takes it back`() {
+    val session = Session()
+    val questions = Questions(answer = VimrcAnswer.ALWAYS_RELOAD.label)
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    var option = VimrcReload.PROMPT
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      questions.ask, {}, { option },
+    )
+    watch.remember("/home/someone/.vimperorrc")
+
+    texts["/home/someone/.vimperorrc"] = "set relativenumber"
+    watch.settle()
+    assertEquals(1, questions.asked.size)
+
+    // `:set vimrcreload=none` - and the remembered answer must not override it.
+    option = VimrcReload.NONE
+    texts["/home/someone/.vimperorrc"] = "set nonumber"
+    watch.settle()
+
+    assertEquals(1, questions.asked.size, "none must still mean none")
+    assertEquals("set nonumber", texts["/home/someone/.vimperorrc"], "and nothing reloaded")
+  }
+
   @Test
   fun `test the restart answer asks VS Code to restart the extensions`() {
     val session = Session()
@@ -281,13 +367,16 @@ class VimrcWatchTest {
   // ---- the option ------------------------------------------------------------------------------
 
   @Test
-  fun `test vimrcreload defaults to prompt and takes the three values`() {
+  fun `test vimrcreload defaults to prompt and takes the four values`() {
     val session = Session()
 
     assertEquals(VimrcReload.PROMPT, vimrcReloadMode())
 
-    session.script("set vimrcreload=auto")
-    assertEquals(VimrcReload.AUTO, vimrcReloadMode())
+    session.script("set vimrcreload=autoreload")
+    assertEquals(VimrcReload.AUTORELOAD, vimrcReloadMode())
+
+    session.script("set vimrcreload=autorestart")
+    assertEquals(VimrcReload.AUTORESTART, vimrcReloadMode())
 
     session.script("set vrr=none")
     assertEquals(VimrcReload.NONE, vimrcReloadMode(), "the short name has to work too")
