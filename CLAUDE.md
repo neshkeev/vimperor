@@ -33,11 +33,13 @@ the fastest answer to "why is this code like this".
 The IntelliJ plugin is gone - 408 files, deleted once the port no longer needed
 it. `src/test` stayed. It holds IdeaVim's tests, which cannot run without the
 plugin - 636 files and 10,492 `@Test` methods - and **the VS Code host mines
-2,427 replayed fixtures out of them as text**: `VimFixtures.load` reads the `.kt`
-files and `VimFixtureReplayTest` plays the keys against this host. 2,421 pass.
+2,445 replayed fixtures out of them as text**: `VimFixtures.load` reads the `.kt`
+files and `VimFixtureReplayTest` plays the keys against this host. 2,439 pass.
 
 This file said 11,727 tests for a long time and the number cannot be reproduced:
-counting `@Test` today gives 10,492, and `src/test` is frozen data here. Derive
+counting `@Test` today gives 10,712 across 661 files, and `src/test` is otherwise
+frozen data here - the one addition since is IdeaVim's own `visual-multi` suite,
+copied in when that extension was ported so the corpus could check it. Derive
 these from the tree rather than from this paragraph - the fixture counts are the
 first line of `vscode-extension/build/fixture-failures.txt` after any run.
 
@@ -46,6 +48,15 @@ and it survives because it never needed to be code. `vscode-extension` declares
 it a task input. Do not tidy it, reformat it, or delete from it: every file in
 there is a potential fixture, and the corpus has grown four times over by the
 harness learning to read more of what is already written.
+
+**And the harness read only a class's own `setUp`, which cost 24 test classes at once.**
+A suite may put its `setUp` in a shared base class and extend it, which is how IdeaVim's
+`visual-multi` tests turn that extension on - so every one of their fixtures replayed with
+the extension *off*, and failed in a way indistinguishable from broken behaviour: `<C-n>`
+unmapped does nothing, and the keys after it land on the plain editor. `baseSetUpBody`
+follows one level of inheritance, which is all any suite here uses, and all 18 of those
+fixtures pass. The lesson is the one this file keeps recording: a fixture that fails is as
+likely to be the harness looking at less than it thinks as it is to be the host.
 
 The six that fail all name an IntelliJ action with no VS Code command behind it -
 `ideajoin`, `EditorCloneCaretBelow`, `EditorSelectWord`, `EditorRight`,
@@ -294,7 +305,7 @@ extension's toggle option, which is what `:set surround` does. So `set <name>` b
 here until the extension options were registered was the other half of it: these fixtures
 could not have been replayed before that was fixed either. 461 of the 1,039 are `matchit`.
 
-2,778 `doTest` calls exist under `src/test` and 2,427 fixtures are harvested - more than that
+2,778 `doTest` calls exist under `src/test` and 2,445 fixtures are harvested - more than that
 number, because the `configureByText`/`typeText`/`assertState` shape is not a `doTest` call at
 all. What is refused is
 counted and printed with every run, and the largest buckets now are tests that set something
@@ -1126,7 +1137,7 @@ of them was deleting text.
 `:function` command, `:help` generated from command annotations with descriptions on 349 commands,
 the `keylog` extension, Replace-mode paste, and VIM-1153 - which replaces `.` with a recorded
 keystroke replay through a new `VimRedoBuffer`. That last one is the biggest and the best measured:
-`.` is what the replayed corpus covers most heavily, so the 2,427 fixtures are the gate on it.
+`.` is what the replayed corpus covers most heavily, so the fixtures are the gate on it.
 
 ### `.` is a keystroke replay now, and it changed nothing here
 

@@ -74,7 +74,15 @@ internal object VimFixtures {
       // What the class does for every test in it. Nearly always `enableExtensions("surround")` in
       // `setUp`, which is the only reason the extension tests could not be read: it is a statement
       // in a *different method*, and the harness only ever looked at the one it was in.
+      //
+      // And sometimes in a different *file*: a suite may put its `setUp` in a shared base class and
+      // extend it, which is how IdeaVim's twenty-four `visual-multi` test classes turn the extension
+      // on. The harness read only the class's own `setUp`, so every one of those fixtures replayed
+      // with the extension *off* - and failed in a way that reads exactly like broken behaviour,
+      // because `<C-n>` unmapped does nothing and the keys after it land on the plain editor.
+      // [baseSetUpBody] is one level of inheritance, which is all any suite here uses.
       val setUpBody = testMethods(source).firstOrNull { it.first == "setUp" }?.second
+        ?: baseSetUpBody(source, path, repositoryRoot)
       val fromSetUp = if (setUpBody == null) emptyList<String>() to emptyList<String>() else {
         setUpCommands(stripLineComments(setUpBody))
       }
@@ -732,6 +740,29 @@ internal object VimFixtures {
    * read and ignored - the first is the fixture harness's own equivalent of itself, and the second
    * seeds text that every fixture replaces anyway.
    */
+  /**
+   * The `setUp` of the base class a test class extends, when it has one and does not declare its own.
+   *
+   * One level, and only a class whose name ends in `TestCase` sitting in the same directory - which
+   * is every base class any suite under `src/test` actually uses. `VimTestCase` itself is excluded:
+   * it is the root of all of them and its `setUp` is the harness's own starting assumption, not
+   * something a fixture adds to.
+   *
+   * It is read as text like everything else here. The alternative - resolving the import and
+   * following it anywhere in the tree - buys nothing, because a base class and the classes that
+   * extend it are in the same package in all 24 cases, and costs a path resolver that would be
+   * wrong in a different way.
+   */
+  private fun baseSetUpBody(source: String, path: String, repositoryRoot: String): String? {
+    val base = Regex("^(?:internal |private )?(?:open |abstract )?class\\s+\\w+\\s*:\\s*(\\w*TestCase)\\s*\\(", RegexOption.MULTILINE)
+      .find(source)?.groupValues?.get(1) ?: return null
+    if (base == "VimTestCase") return null
+    val directory = path.substringBeforeLast('/')
+    val basePath = "$directory/$base.kt"
+    val baseSource = runCatching { readText(basePath) }.getOrNull() ?: return null
+    return testMethods(baseSource).firstOrNull { it.first == "setUp" }?.second
+  }
+
   private fun setUpCommands(body: String): Pair<List<String>, List<String>>? {
     val commands = mutableListOf<String>()
     val extensions = mutableListOf<String>()
