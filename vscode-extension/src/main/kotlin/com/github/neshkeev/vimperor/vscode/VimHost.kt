@@ -718,6 +718,21 @@ class VimHost(
     // column per line: the block's anchor was replaced by whatever VS Code last reported for the
     // line the caret happened to be on.
     if (kind == null) return "ignored, not attributed to the user"
+    // And not while a command line is open, whatever the window says moved it. The caret in the
+    // buffer belongs to the incsearch preview then - borrowed to show where the match is, and put
+    // back by `IncsearchPreview.restoreCaret` when the prompt closes - so there is no user caret
+    // here to adopt. Vim's command line owns the cursor outright; a click is not a thing that can
+    // happen to Vim's.
+    //
+    // Measured from a trace of `V` `:` `s/-`: the preview pushed a collapsed caret at column 8 and
+    // the window reported one back at column 7 **attributed to the keyboard**, so it was not the
+    // echo the check below catches. The engine followed to 7 and pushed 7, which the window can
+    // report again. Worse, a report carrying a *non-empty* selection reaches
+    // `followSelectionIntoMode` and `KeyHandler.reset` twenty lines down, which closes the prompt -
+    // and then the next key typed is not the prompt's. That is the failure the echo check was
+    // written for, half cured: it only recognises a report of what this host pushed, and this one
+    // was a report of something else.
+    if (injector.commandLine.getActiveCommandLine() != null) return "ignored, a command line is open"
     // And not the host's own push, whatever `kind` says. A real window attributed one to the user:
     // the incsearch preview's selection, pushed while `:` was open, came back as a change the user
     // made, and following it into Visual mode reset the key handler and closed the prompt under the

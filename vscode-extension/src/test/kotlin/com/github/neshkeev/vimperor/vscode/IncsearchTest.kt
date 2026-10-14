@@ -9,6 +9,7 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.common.TextRange
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.inVisualMode
@@ -351,6 +352,58 @@ class IncsearchTest {
     session.type("ee")
     assertTrue(session.editor.mode is Mode.CMD_LINE, "and still taking the pattern, not ${session.editor.mode}")
   }
+
+  /**
+   * And one the window blames on the *keyboard* must not drag it either.
+   *
+   * The echo check above only recognises a report of what this host pushed. From a real trace of
+   * `V` `:` `s/-`: the preview pushed a collapsed caret at column 8 and the window reported one back
+   * at column **7**, attributed to the keyboard - not an echo, so it was adopted, and the engine's
+   * caret followed to 7 and was pushed there, which the window can report again. A report carrying a
+   * non-empty selection goes further still and reaches `KeyHandler.reset`, which closes the prompt
+   * and leaves the next key typed to the editor.
+   *
+   * There is no user caret to adopt while a prompt is open: the buffer's is the preview's, borrowed
+   * to show the match and put back by `restoreCaret`. Vim's command line owns the cursor.
+   */
+  @Test
+  fun `test a caret move blamed on the keyboard cannot drag the preview's caret`() {
+    val session = Session("contexts->REQUEST->beans")
+    session.type("V")
+    session.type(":")
+    session.type("s/-")
+    assertEquals(8, session.caretOffset, "the preview should be showing the first match")
+
+    // What the window actually sent, one column to the left of what the host pushed.
+    session.fake.selection = selectionAt(7)
+    val outcome = session.host.selectionChanged(session.fake, 1)
+
+    assertEquals("ignored, a command line is open", outcome)
+    assertEquals(8, session.caretOffset, "the caret still belongs to the preview")
+    assertTrue(session.editor.mode is Mode.CMD_LINE, "and the prompt is still open, not ${session.editor.mode}")
+    assertTrue(injector.commandLine.getActiveCommandLine() != null, "the command line is still taking keys")
+  }
+
+  /** The same guard for a report that carries a selection, which is the one that closed the prompt. */
+  @Test
+  fun `test a selection blamed on the keyboard cannot close the prompt`() {
+    val session = Session("contexts->REQUEST->beans")
+    session.type("V")
+    session.type(":")
+    session.type("s/-")
+
+    session.fake.selection = selectionFrom(4, 8)
+    val outcome = session.host.selectionChanged(session.fake, 1)
+
+    assertEquals("ignored, a command line is open", outcome)
+    assertTrue(session.editor.mode is Mode.CMD_LINE, "the prompt must survive, not become ${session.editor.mode}")
+  }
+
+  /** A collapsed selection the window would report at [column] of the first line. */
+  private fun selectionAt(column: Int) = Selection(Position(0, column), Position(0, column))
+
+  /** And one that covers [from] until [to], which is what a drag reports. */
+  private fun selectionFrom(from: Int, to: Int) = Selection(Position(0, from), Position(0, to))
 
   /** Cancelling puts the caret back where the prompt opened, the way Vim does. */
   @Test

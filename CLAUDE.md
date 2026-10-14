@@ -1183,6 +1183,26 @@ the focus. `VimHost.editorForKey` is that note, and `vimperor.key` reads it too:
 It is deliberately not `lastActiveEditor`, which is a different fact - what `BufLeave` will name, and
 which has to go null when focus leaves the editor area. The flicker is the thing that field is *for*.
 
+**And the third one in this family was the window reporting a caret the prompt owned.** A trace of
+`V` `:` `s/-` says it in two lines: the `'incsearch'` preview pushed a collapsed caret at the match,
+column 8, and the window reported one back at column **7** attributed to *the keyboard*. That is not
+the host's own echo, so `selectionChanged` adopted it - the engine's caret followed to 7, was pushed
+there, and the window can report that again. Worse, a report carrying a *non-empty* selection reaches
+`followSelectionIntoMode` and `KeyHandler.reset`, which **closes the prompt**, and then whatever is
+typed next is the editor's. The user's buffer came back with two characters typed over a selection.
+
+The echo check written for the earlier version of this - "the incsearch preview's selection, pushed
+while `:` was open, came back as a change the user made" - only recognises a report *of what this
+host pushed*. This one was a report of something else, so it went straight past. **While a prompt is
+open there is no user caret to adopt at all**: the buffer's caret is the preview's, borrowed to show
+the match and put back by `restoreCaret`, and Vim's command line owns the cursor outright - a click
+is not a thing that can happen to Vim's. So the whole event is ignored until the prompt closes, which
+also means a click into the text no longer dismisses it; `<Esc>` does, as in Vim.
+
+Both tests discriminate, and the ablation is what named the mechanism rather than the symptom:
+without the guard the collapsed report is `adopted` and the one carrying a selection is `adopted, and
+the mode followed it to VISUAL` - the reset, in the outcome string.
+
 **The fallback traced no line, and that is why this took two round trips to find.** The report it was
 finally caught in is a trace with `<Esc>` in it, six cursor-move echoes after it, and then **no entry
 for the key the user pressed** - followed by a document that had changed. A key that is absent from a

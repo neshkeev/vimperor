@@ -84,6 +84,16 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- Typing an ex command over a Visual selection could edit the document. `V`, then `:`, then a
+  pattern - `:'<,'>s/-` on a line with a `-` in it - and the buffer changed under the prompt.
+  While a command line is open the caret in the buffer belongs to the `'incsearch'` preview, which
+  borrows it to show where the match is and puts it back when the prompt closes; but a caret or
+  selection change the window attributed to *the keyboard* was still being adopted as though the
+  user had clicked. The engine's caret followed the window away from the match, and a report that
+  carried a selection went further and reset the key handler - which closed the prompt and left
+  whatever was typed next to the editor instead. Vim's command line owns the cursor, so the host
+  now ignores what the window says about it until the prompt closes.
+
 - `%` jumped to the nearest bracket instead of the matching one, on any line holding two strings.
   A bracket inside a string is text rather than a bracket, so the scan asks whether each one is
   quoted - and it was asking with the code that implements `i"`, which answers a different
