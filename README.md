@@ -213,8 +213,13 @@ build failure, because only a real window can answer it: `checkPackagedExtension
 runs the `.vsix` in a stub.
 
 Beyond its own tests, the extension replays IdeaVim's test fixtures against the
-VS Code host: **2,472 of 2,478 pass**. The six that do not each name an IntelliJ
-action with no VS Code command behind it, and are listed in
+VS Code host: **2,472 of 2,478 pass**. The six that do not each run an IntelliJ
+action and then assert what it did, and for four of them the obstacle is the replay
+rather than the action - `cursorRight`, `cursorDown`, `editor.action.insertCursorBelow`
+and `editor.action.smartSelect.expand` are real VS Code commands, but **a VS Code
+command needs a VS Code to run in**, and the replay drives this host against a stub
+that records a dispatch and executes nothing. Teaching the stub to carry them out
+would only make the fixture assert the stub. They are listed in
 [`known-fixture-failures.txt`](vscode-extension/src/test/fixtures/known-fixture-failures.txt).
 
 Why Kotlin and not TypeScript

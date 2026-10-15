@@ -146,12 +146,14 @@ every path in the table above, not just the one that loaded, so creating a `~/.v
 you only had a `~/.vimrc` counts as well.
 
 ```vim
-set vimrcreload=prompt   " ask, which is the default
-set vimrcreload=auto     " load it without asking
-set vimrcreload=none     " leave me alone while I edit
+set vimrcreload=prompt        " ask, which is the default
+set vimrcreload=autoreload    " re-run it without asking
+set vimrcreload=autorestart   " restart the extension host without asking
+set vimrcreload=none          " leave me alone while I edit
 ```
 
-The question has two ways to say yes:
+The question has two ways to say yes, and the two automatic values are those two answers with the
+question taken out:
 
 - **Reload** re-runs the file. Instant, and your editors, undo history and unsaved changes are
   untouched. It replaces the mappings the old config made and leaves any you typed by hand alone.
@@ -186,6 +188,11 @@ Definition — a `tags` file is read, and `<C-]>` and `<C-T>` walk it. `q:`, `q/
 history as a buffer you can edit. `:sign` draws in the gutter. Vim's own tutor is built in:
 `:vimtutor`, or *Vimperor: Open Vim Tutor* in the Command Palette.
 
+`:help` opens Vimperor's own help, in Vim's format and with Vim's tags — `:help dd`, `:help v_d`,
+`:help i_CTRL-W` and `:help :s` each jump to their subject. It is rendered from the commands this
+host has registered rather than kept in a file, so it cannot drift from them: a command missing
+from the help is a command Vimperor does not have.
+
 **28 of IdeaVim's 30 bundled extensions are here, plus `easymotion` written for this fork** —
 twenty-nine in all, enabled with `set <name>` or a `Plug` line:
 `surround`, `sneak`, `clever-f`, `commentary`, `targets`, `easymotion`, `multiple-cursors`,
@@ -210,7 +217,7 @@ twenty-nine in all, enabled with `set <name>` or a `Plug` line:
 - **A terminal, channels and jobs.** No `:terminal`, no `job_start()`, no `timer_start()`.
 - **`:syntax`, `:colorscheme`, `:filetype`.** VS Code decides all three. The commands are accepted
   so a borrowed `~/.vimrc` loads without a wall of errors, and say so when asked to change
-  something. `:help` opens VS Code's own documentation rather than Vim's.
+  something.
 
 ## Reporting a problem
 
