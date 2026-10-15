@@ -2,7 +2,7 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
-## [Unreleased]
+## [0.0.11] - 2026-10-15
 
 ### Added
 
@@ -24,6 +24,35 @@ The Marketplace renders this file on the extension's page, under Changelog.
 - **Vimperor: Reload Config** in the Command Palette re-runs your config whenever you ask, without
   waiting to be prompted. It is a contributed command, so `:actionlist` lists it and
   `:action vimperor.reloadConfig` runs it from a mapping like any other.
+
+### Fixed
+
+- `zb` did not always put the last line on the bottom row. Two causes, with the same symptom: a
+  `zb` that did nothing at all, with blank rows under the line. VS Code tells an extension which
+  lines it painted and never how many rows a window has, so the height every scroll command is
+  computed from is worked out from what was painted - and two kinds of report cannot measure it. An
+  editor that has just been activated answers from a window it has not laid out yet, reporting a
+  range narrower than the window actually is, which looks exactly like a measurement; that one is
+  now believed only when the caret is inside it, because a window VS Code is showing has the cursor
+  in it. And while the view already reaches the end of the file *every* report is clipped to the
+  text, so a window that changed size there - the output panel opening or closing, which an
+  extension is told nothing about - can never be measured at all. `zb` hands the placing to VS Code
+  in that case, which is the one API that names a position relative to the window rather than to
+  the file, and corrects the padding it adds. One correct `zb` is also what teaches the height, so
+  the next one is arithmetic again.
+
+- `G` on the last line of a long file left it halfway up the window, with blank rows underneath.
+  Arriving somewhere after a jump of a whole window or more does put the line in the middle, which
+  is Vim's rule and is kept - but Vim does not do it at the end of a file, where it fills the window
+  with the lines above instead and leaves the cursor on the bottom row. Both behaviours are the same
+  function in Vim, told apart by one flag, and only one half of it had been ported. `zz` on the last
+  line still centres it, with blank rows below, exactly as Vim and IdeaVim do.
+
+- `:action HideAllWindows` put the cursor in the Output panel when the panel came back. Every way of
+  showing a closed panel focuses it, and the focus lands a turn or more after the command that asked
+  for it returned - after the request for the editor that was sent beside it. So the editor is now
+  asked for twice: once straight away, which is all the sidebar and the auxiliary bar need, and once
+  after the workbench has settled.
 
 ## [0.0.10] - 2026-10-14
 
