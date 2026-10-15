@@ -8,11 +8,87 @@ to JavaScript and loaded into the extension host. Modes, operators, text objects
 marks and Vimscript are the engine's own, so they behave the way they do in IdeaVim rather than the
 way somebody reimplemented them. **It reads your existing `~/.ideavimrc` unchanged.**
 
+## EasyMotion: jump to anywhere you can see
+
+![EasyMotion labelling every match on screen and jumping to one](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/easymotion.gif)
+
+*`<Leader><Leader>s` then `J` labels every `J` on screen, above the caret and below it, and one
+keystroke goes there. Then the same from Visual mode, where the jump extends the selection instead
+— `x` takes what it covered, `u` puts it back.*
+
+Counting `w`s to reach a word is the part of Vim that never got faster. EasyMotion replaces the
+counting: press a motion and every place that motion could land is labelled with a letter, and
+typing the letter puts you there. The target can be above the caret as easily as below it.
+
+```vim
+set easymotion
+```
+
+Seventeen mappings, vim-easymotion's own, behind `<Leader><Leader>`:
+
+| keys | labels |
+|---|---|
+| `s{char}` | every match of a character, both directions |
+| `f{char}` `F{char}` | matches forwards, matches backwards |
+| `t{char}` `T{char}` | up to a character, either way |
+| `w` `W` `b` `B` | word starts |
+| `e` `E` `ge` `gE` | word ends |
+| `j` `k` | lines |
+| `n` `N` | matches of your last search |
+
+**It is a motion, so it goes where a motion goes.** `d<Leader><Leader>s`, then `r`, then the label
+sitting on the `r` you meant, deletes from the caret to there — forwards or backwards, and `c`,
+`y`, `gu`, `>` and the rest behave the same. In Visual mode the jump extends the selection.
+
+`g:EasyMotion_keys` chooses the label letters, and the whole `<Plug>(easymotion-*)` namespace is
+there to map yourself: the `bd-`, `sol-`, `eol-`, `iskeyword-` and within-line families. Labels are
+command keys, so a Cyrillic layout reaches them too.
+
+**This one is written for Vimperor rather than ported.** IdeaVim's EasyMotion is a separate plugin
+built on AceJump, and both are GPL, so neither could come across to an MIT fork. It follows
+vim-easymotion itself, which is MIT.
+
+
+## Cyrillic keyboard layouts
+
+Vim commands are Latin letters, so with a Cyrillic layout active `dw` is typed as `вц` and reaches
+nothing. Set a layout and it does:
+
+![Setting the Russian keyboard layout](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/edit_with_cyrillic_layout.gif)
+
+```vim
+set keyboardlayout=russian
+```
+
+`russian`, `ukrainian` and `belarusian` are built in. Counts, registers, marks, operators, text
+objects and `.` all follow, because this translates the key rather than adding mappings — which is
+what `nmap ш i` and sixty more lines can never do, since a mapping cannot reach a register name, a
+mark name or a count.
+
 ![Vim commands on a Russian keyboard layout](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/cyrillic_normal.gif)
 
 *The same edit twice. First `vf,x` — select to the first comma, delete it — and `u` to put it back.
 Then `ма,ч` and `г`, which is those same keys struck on a Russian layout, with nothing switched.
 The comma stays a comma: it is `f`'s argument, and an argument is text.*
+
+**Insert mode is untouched**, which is the point: `ш` enters it and what you type after that is the
+word you meant. Search patterns, `:` commands and `f`'s argument are text too, and are left alone.
+
+This is Vim's `'langmap'` with the table filled in — the half Vim has never shipped. `'langmap'`
+still works and is consulted first, so a single key can be redirected without giving up the rest.
+**Seven keys are deliberately left out** (`$`, `^`, `@`, `&`, `/`, `?`, `|`): on a Cyrillic layout
+those sit on keys that emit ASCII, and translating them would take `.`, `,`, `;`, `:`, `/` and `?`
+away from anyone typing in Latin. Both layouts keep working.
+
+**A whole command line typed in the wrong layout is corrected**, and says so:
+
+![A command line typed in the wrong layout, corrected](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/wrap_nowrap.gif)
+
+`:ыуе тщцкфз` runs `:set nowrap`. This is not `'langmap'` reaching the command line — a command
+line carries text as well as commands, and `:s/привет/пока/` must mean what it says. The correction
+is allowed only where it cannot destroy anything: the line must contain **no Latin letter at all**,
+the command as typed must be no command, and the corrected one must be real. So `:w привет.txt` is
+left alone, and nothing has run when the decision is made.
 
 ## Install
 
@@ -95,41 +171,6 @@ A borrowed `~/.vimrc` is read as it is, **but expect part of it not to apply**: 
 plugins here, so a plugin manager does nothing, and neither do autocommands, `syntax` or
 `colorscheme`. Those lines are stepped over and the rest takes effect. The Vimperor output channel
 names the file it loaded.
-
-## Cyrillic keyboard layouts
-
-Vim commands are Latin letters, so with a Cyrillic layout active `dw` is typed as `вц` and reaches
-nothing. Set a layout and it does:
-
-![Setting the Russian keyboard layout](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/edit_with_cyrillic_layout.gif)
-
-```vim
-set keyboardlayout=russian
-```
-
-`russian`, `ukrainian` and `belarusian` are built in. Counts, registers, marks, operators, text
-objects and `.` all follow, because this translates the key rather than adding mappings — which is
-what `nmap ш i` and sixty more lines can never do, since a mapping cannot reach a register name, a
-mark name or a count.
-
-**Insert mode is untouched**, which is the point: `ш` enters it and what you type after that is the
-word you meant. Search patterns, `:` commands and `f`'s argument are text too, and are left alone.
-
-This is Vim's `'langmap'` with the table filled in — the half Vim has never shipped. `'langmap'`
-still works and is consulted first, so a single key can be redirected without giving up the rest.
-**Seven keys are deliberately left out** (`$`, `^`, `@`, `&`, `/`, `?`, `|`): on a Cyrillic layout
-those sit on keys that emit ASCII, and translating them would take `.`, `,`, `;`, `:`, `/` and `?`
-away from anyone typing in Latin. Both layouts keep working.
-
-**A whole command line typed in the wrong layout is corrected**, and says so:
-
-![A command line typed in the wrong layout, corrected](https://raw.githubusercontent.com/neshkeev/vimperor/master/vscode-extension/images/wrap_nowrap.gif)
-
-`:ыуе тщцкфз` runs `:set nowrap`. This is not `'langmap'` reaching the command line — a command
-line carries text as well as commands, and `:s/привет/пока/` must mean what it says. The correction
-is allowed only where it cannot destroy anything: the line must contain **no Latin letter at all**,
-the command as typed must be no command, and the corrected one must be real. So `:w привет.txt` is
-left alone, and nothing has run when the decision is made.
 
 ## What works
 
