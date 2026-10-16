@@ -2,6 +2,32 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Fixed
+
+- A dead key or an input method could delete text, and leaving Visual mode was where it showed. The
+  cause is that `type` is not the only command VS Code types through: a composition - what a dead
+  key or an IME sends while a character is still being chosen - arrives over four more, three of
+  which edit the document, and Vimperor claimed only `type`. So the composed text went straight past
+  Vim into the buffer, and the count it carried was the length of the composition's *own* preview
+  applied at wherever the caret had since been moved to by Vim commands. A composition twenty-seven
+  characters long took twenty-seven characters off the line the caret was on. It waited for the
+  `<Esc>` because VS Code cannot apply a composition while a selection is up, which is why it read
+  as Visual mode altering the text.
+
+  Composed text is now kept out of the document in Normal, Visual, Operator-pending and at the
+  command line, and the character it commits to arrives as a Vim key instead - so `vi'` typed with a
+  dead-key quote selects inside the quotes, and `~` typed as a dead key over a Visual selection
+  toggles the case. Insert, Replace and Select modes are untouched: that is where composed text is
+  meant to go into the document, and where you need to see it while you compose. Ported from IdeaVim
+  (VIM-1503).
+
+- `vimperor.trace` logs changes to the document, with the offset, how much was removed and what was
+  put there. Every change to the *selection* was already traced in detail and a change to the text
+  was not traced at all, so a report of text going missing arrived with no line for whatever had
+  removed it.
+
 ## [0.0.11] - 2026-10-15
 
 ### Added

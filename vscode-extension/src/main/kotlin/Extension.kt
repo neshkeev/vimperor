@@ -10,6 +10,7 @@
 
 // No `package` declaration, deliberately - see the note below.
 
+import com.github.neshkeev.vimperor.vscode.ComposedTextDecision
 import com.github.neshkeev.vimperor.vscode.DecorationHighlighter
 import com.github.neshkeev.vimperor.vscode.Disposable
 import com.github.neshkeev.vimperor.vscode.ExtensionContext
@@ -214,6 +215,38 @@ fun activate(context: ExtensionContext) {
    * not letters. Nothing else may claim it, so this is also why two Vim extensions cannot both be
    * enabled.
    */
+  /**
+   * Carries out what [VimHost] decided about one of the four composition commands.
+   *
+   * The decision is the host's because that is the part a unit test can read; the forwarding is here
+   * because `commands.executeCommand` is not. See [ComposedText].
+   */
+  fun composed(id: String, arguments: dynamic, decision: ComposedTextDecision) {
+    when (decision) {
+      // The composition is VS Code's for its whole length, so every command of it goes through -
+      // `compositionStart` and `compositionEnd` included, or the editor never learns that the
+      // preview it is drawing has finished.
+      is ComposedTextDecision.HandToVsCode -> {
+        traceLine(output, "$id: handed to VS Code, which is where composed text is typed")
+        commands.executeCommand("default:$id", arguments)
+      }
+      is ComposedTextDecision.KeepOut ->
+        traceLine(output, "$id: kept out of the document, a command is being typed")
+      is ComposedTextDecision.Commit -> {
+        val editor = window.activeTextEditor ?: vim.editorForKey()
+        if (editor == null) {
+          traceLine(output, "$id: committed '" + decision.text + "' with no editor of this host's: dropped")
+        } else {
+          reporting(output, "the composed text '" + decision.text + "'") {
+            vim.type(editor, decision.text)
+            refreshMode()
+            trace(output, vim, editor, "composed '" + decision.text + "'")
+          }
+        }
+      }
+    }
+  }
+
   val typing = commands.registerCommand("type") { arguments ->
     // `window.activeTextEditor` is asked first and is not trusted alone: it answers null while
     // focus flickers out of the editor area and back, and at startup before a restored editor has
@@ -222,7 +255,13 @@ fun activate(context: ExtensionContext) {
     // put a `0` in the buffer where Normal mode should have moved the caret.
     val editor = window.activeTextEditor ?: vim.editorForKey()
     val text = arguments?.text as? String
-    if (editor == null || text == null) {
+    // A composition's first update arrives here rather than at `replacePreviousChar`, because its
+    // `replacePrevCharCnt` is zero and a zero count is routed to `type`. So this is asked before
+    // anything else: a composed character is not a key the user pressed.
+    val composing = if (text == null) null else vim.typedDuringComposition(text)
+    if (composing != null) {
+      composed("type", arguments, composing)
+    } else if (editor == null || text == null) {
       // No editor this host has ever seen, or an argument shaped differently than expected. Handing
       // the key back to VS Code is better than swallowing it *here*, where there is no Vim state to
       // interpret it with - and said out loud, because this branch inserts the character and used
@@ -236,6 +275,35 @@ fun activate(context: ExtensionContext) {
         trace(output, vim, editor, "'" + text + "'")
       }
     }
+  }
+
+  // The other three commands a composition is delivered over. All four are registered by the same
+  // call in the installed editor - `bwe("type")`, `bwe("replacePreviousChar")`,
+  // `bwe("compositionType")`, `bwe("compositionStart")`, `bwe("compositionEnd")` - each as both
+  // `<id>` and `default:<id>`, so each is claimable exactly the way `type` is. Three of them edit
+  // the document, and leaving them unclaimed is how a dead key deleted most of a line.
+  val compositionStart = commands.registerCommand("compositionStart") { arguments ->
+    composed("compositionStart", arguments, vim.compositionStarted())
+  }
+  val replacePreviousChar = commands.registerCommand("replacePreviousChar") { arguments ->
+    composed(
+      "replacePreviousChar",
+      arguments,
+      vim.compositionUpdated(arguments?.text as? String ?: "", arguments?.replaceCharCnt as? Int ?: 0),
+    )
+  }
+  // The same thing with room for a count forwards and a caret nudge, which VS Code sends instead
+  // when either is non-zero. Both are ignored while the composition is being kept out: nothing was
+  // inserted, so there is nothing after the caret to replace and nowhere for the caret to be moved.
+  val compositionType = commands.registerCommand("compositionType") { arguments ->
+    composed(
+      "compositionType",
+      arguments,
+      vim.compositionUpdated(arguments?.text as? String ?: "", arguments?.replacePrevCharCnt as? Int ?: 0),
+    )
+  }
+  val compositionEnd = commands.registerCommand("compositionEnd") { arguments ->
+    composed("compositionEnd", arguments, vim.compositionEnded())
   }
 
   // Named keys, which arrive as commands because a keybinding cannot produce a character. Each one
@@ -310,6 +378,20 @@ fun activate(context: ExtensionContext) {
   // than when a key is pressed is what makes that gap short enough not to notice.
   val documentChanged = workspace.onDidChangeTextDocument { event ->
     vim.documentChanged(event.document)
+    // And traced, which is the half this was missing. Every *selection* change was reported in
+    // detail and a change to the text was reported not at all - so a report of text disappearing
+    // arrived as a trace with no line for whatever removed it, and the one event that mattered was
+    // the one event the trace was silent about. An unclaimed `replacePreviousChar` took twenty-seven
+    // characters off a line and the log showed only the caret arriving somewhere new.
+    //
+    // Never the Output panel's own document, for the reason the selection listener says: the trace
+    // is written there, writing to it changes it, and tracing that change writes another line.
+    if (tracing() && event.document.uri.scheme != "output") {
+      val described = event.contentChanges.joinToString(", ") {
+        "@${it.rangeOffset} -${it.rangeLength} +'${it.text}'"
+      }
+      traceLine(output, "document changed [$described]")
+    }
   }
 
   // `BufWritePost`. `BufWritePre` is not fired: VS Code's `onWillSaveTextDocument` wants the edits
@@ -536,6 +618,7 @@ fun activate(context: ExtensionContext) {
   for (registration in listOf<Disposable>(
     output, status, commandLine, matches, messageItem, typing, namedKey, tutor, pasteInCommandLine,
     pasteInReplaceMode,
+    compositionStart, replacePreviousChar, compositionType, compositionEnd,
     wordWrapToggle,
     activeEditorChanged, selectionChanged, windowStateChanged, documentClosed, documentChanged,
     documentSaved,

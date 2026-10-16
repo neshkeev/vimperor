@@ -132,6 +132,8 @@ class VimHost(
     // And the keys `.` would replay, for the same reason: `VimRedoBuffer` is an object, so it
     // outlives a host, and a new session has no last change.
     VimRedoBuffer.resetAll()
+    // A composition belongs to the window that was composing it. See [ComposedText].
+    composedText.forget()
   }
 
   /**
@@ -313,6 +315,51 @@ class VimHost(
   /** A key named the way Vim names it - `<Esc>`, `<C-W>` - from a keybinding rather than typing. */
   fun key(textEditor: TextEditor, notation: String) {
     handle(textEditor, injector.parser.parseKeys(notation))
+  }
+
+  // ---- Dead keys and input methods.
+  //
+  // `type` is not the only core typing command - it is one of seven, registered by the same call in
+  // the installed editor, and four of them *edit the document*. This host claimed `type` alone, so
+  // a composition went straight past Vim into the buffer. See [ComposedText] for the whole of it.
+
+  /** One composition at a time, and it belongs to the window rather than to an editor. */
+  private val composedText = ComposedText()
+
+  /** VS Code's `compositionStart`. */
+  internal fun compositionStarted(): ComposedTextDecision =
+    composedText.started(composedTextIsNotText())
+
+  /** `replacePreviousChar` and `compositionType`, which carry the composition as it grows. */
+  internal fun compositionUpdated(text: String, replacePrevious: Int): ComposedTextDecision =
+    composedText.updated(text, replacePrevious, composedTextIsNotText())
+
+  /** VS Code's `compositionEnd`, by which point the committed text has already been reported. */
+  internal fun compositionEnded(): ComposedTextDecision = composedText.ended()
+
+  /**
+   * What to do with a `type` that arrived inside a composition, or null when there is no composition
+   * and the character is ordinary typing.
+   *
+   * The `type` handler has to ask, because a composition's *first* update is routed to `type`: its
+   * `replacePrevCharCnt` is zero and the view controller sends a zero count that way. Without this
+   * the first composed character was run as a Vim command while the IME went on counting it, which
+   * is what made the eventual `replacePreviousChar` delete text nobody had typed.
+   */
+  internal fun typedDuringComposition(text: String): ComposedTextDecision? =
+    if (!composedText.inProgress) null else compositionUpdated(text, 0)
+
+  /**
+   * Whether composed text is a command being typed rather than text, which is the one rule the port
+   * turns on.
+   *
+   * Insert, Replace and Select are where composed text is meant to reach the document, and are
+   * upstream's own list. The command line is this host's addition and is forced: its prompt is a
+   * status bar item and cannot draw a composition, so the committed text is typed into it instead.
+   */
+  private fun composedTextIsNotText(): Boolean = when (injector.vimState.mode) {
+    is Mode.INSERT, is Mode.REPLACE, is Mode.SELECT -> false
+    else -> true
   }
 
   /**

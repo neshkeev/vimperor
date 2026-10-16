@@ -1461,6 +1461,79 @@ fixed, because a reveal cannot place a line anywhere Vim wants except the bottom
 lands half a line off Vim's `(height - 1) / 2` and `at: "top"` needs no help, since `zt` names a top
 line and `editorScroll` can go there without a height.
 
+### `type` is one of seven typing commands, and four of them edit the document
+
+**A dead key deleted twenty-seven characters of a line on `<Esc>`, and Vimperor never saw the key.**
+Reported as "exiting the visual mode altered the text", with a trace that had no line for whatever
+did it.
+
+`type` is claimed here under a comment saying "there is no other way for an extension to see
+ordinary typing". That is true of `type` and it hid the rest of the family. The installed editor
+registers seven core commands with one call, each as both `<id>` and `default:<id>` - so each is
+claimable exactly the way `type` is:
+
+```js
+bwe("type", {…}); bwe("replacePreviousChar"); bwe("compositionType");
+bwe("compositionStart"); bwe("compositionEnd"); bwe("paste"); bwe("cut");
+```
+
+**`replacePreviousChar` is the IME's commit, and its count is not about the document.**
+`CompositionContext.handleCompositionUpdate` is the whole of it - `replacePrevCharCnt` is
+`this._lastTypeTextLength`, **the length of the composition's own previous preview** - and
+`_compositionType` applies it as `max(1, caret.column - count)`. So a composition that has grown to
+twenty-seven characters deletes twenty-seven characters of whatever the caret is now behind, text the
+composition never put there, because Vim was swallowing every key into commands while the IME went
+on counting. The trace's arithmetic was exact: a 38-character line left 11, the caret landed at
+column 10, and `u` restored 27.
+
+**Why `<Esc>` and not sooner.** `_compositionType` opens with `if (!e.isEmpty()) return null`, so
+while a Visual selection is up the commit cannot apply and sits there harmless. Collapsing the
+selection is what lets it land - which is why this arrives as a report about leaving Visual mode and
+not about typing.
+
+**Ported from IdeaVim's `ComposedTextDispatcher` (VIM-1503), which is nine days older than the
+report.** Upstream had the same bug for years; in IntelliJ the composed text goes in *immediately*
+and over the selection, so `vi'` ate the selected character. Its rule is the one kept here: composed
+text is dropped in Normal, Visual and Operator-pending, and **Insert, Replace and Select are left
+alone, because there it is meant to be typed into the document** and the user has to see it while
+composing. Over-fixing that half is what three of the ten tests guard.
+
+Two things VS Code makes harder than IntelliJ, and one it makes easier:
+
+- **The first update arrives as `type`.** Its count is zero and the view controller routes a zero
+  count there, so a composition's first character is indistinguishable from typing unless
+  `compositionStart` is watched. The ablated stub host prints it - `default:compositionStart,
+  default:type, default:replacePreviousChar` - which is the evidence for this.
+- **There is no `composedTextRange` to read**, so upstream's "a composition the editor already shows
+  has to go through" cannot be asked. It does not need to be: **the decision is taken at
+  `compositionStart` and held to `compositionEnd`**, so whichever side a composition starts on owns
+  it for its whole length and a mode change in the middle - which is exactly what `<Esc>` is -
+  cannot split it and strand a preview. The bit is exact rather than believed, because this host sees
+  every start and every end.
+- **The committed text arrives before `compositionEnd`.** `onCompositionEnd` fires `_onType` and
+  *then* `_onCompositionEnd`, so the recording already holds what the user committed and nothing has
+  to be read back.
+
+The command line keeps composed text out as well, which is a divergence and is forced: IdeaVim's ex
+field is a Swing text field that draws the composition itself (`ExDocument.addInputMethodAttributes`)
+while this prompt is a status bar item that cannot, so the committed text is typed into it instead.
+
+**Two residuals, both named rather than fixed.** An insert session does not see composed text it
+handed to VS Code, so `.` repeats an insert without it - that is the cost of upstream's "left alone",
+and the buffer catches up through `syncIfDocumentMoved` the way it does after a formatter. And a
+composition in Replace mode inserts rather than overwrites, because `default:` is what performs it.
+
+**`paste` and `cut` are the two of the seven still unclaimed**, and they edit as well. Nothing has
+reported them, and `Cmd+V` reaches `editor.action.clipboardPasteAction` rather than the core command,
+which is why - but they are the same shape as this and worth knowing about before the next report.
+
+**The trace had no line for a document change, which is why this took forensics.** Every *selection*
+change was reported in detail and a change to the text was reported not at all, so a report of text
+disappearing arrived with no line for whatever removed it - the same hole `traceLine` filled for a
+key handed to `default:type`, one event over. `onDidChangeTextDocument` now writes offset, length
+removed and text added, and skips the `output` scheme for the reason the selection listener does:
+the trace is written there, and tracing a write to it writes another line.
+
 ### `.` is a keystroke replay now, and it changed nothing here
 
 **VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth

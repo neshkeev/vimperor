@@ -357,6 +357,24 @@ external interface WorkspaceFolder {
 
 external interface TextDocumentChangeEvent {
   val document: TextDocument
+
+  /**
+   * What actually changed, which only the trace reads.
+   *
+   * The buffer keeps itself in step by comparing text rather than by replaying these - see
+   * `DocumentBuffer.syncIfDocumentMoved`, and the reason there: an event says a change happened,
+   * not whether the engine caused it. So this is diagnostics, and it is worth having for exactly
+   * that: a document that moves without a Vim command behind it is the shape of the worst bugs this
+   * host has had, and until this was traced there was no line to read when one happened.
+   */
+  val contentChanges: Array<TextDocumentContentChangeEvent>
+}
+
+/** One range replaced, as VS Code reports it. Offsets, because the engine is offset-first. */
+external interface TextDocumentContentChangeEvent {
+  val rangeOffset: Int
+  val rangeLength: Int
+  val text: String
 }
 
 /**

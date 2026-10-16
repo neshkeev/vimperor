@@ -1153,6 +1153,71 @@ assert.strictEqual(editor.options.cursorStyle, 2, 'Escape with no active editor 
 vscode.window.activeTextEditor = editor
 reset()
 
+// Dead keys and input methods (VIM-1503), which only this script can test: the four commands a
+// composition arrives over are claimed in `Extension.kt`, and the policy behind them is
+// `ComposedTextTest`'s. `type` is not the only core typing command - it is one of seven registered
+// by the same call in the editor, four of which edit the document - and this host claimed `type`
+// alone, so a composition went straight past Vim and into the buffer. A 27-character
+// `replacePreviousChar` took most of a line off on an `<Esc>`.
+for (const command of ['compositionStart', 'replacePreviousChar', 'compositionType', 'compositionEnd']) {
+  assert.ok(
+    registeredCommands.has(command),
+    `the extension left \`${command}\` to VS Code, which edits the document. Registered: ${[...registeredCommands.keys()].join(', ')}`,
+  )
+}
+
+const compose = (command, args) => registeredCommands.get(command)(args)
+
+reset()
+type('i')
+for (const character of 'the quick brown fox') type(character)
+press('<Esc>')
+dispatchedCommands.length = 0
+
+// A composition in Normal mode. The first update arrives as `type`, because its count is zero and
+// VS Code routes a zero count there - so a host watching only `replacePreviousChar` would have run
+// it as a Vim command and left the IME counting.
+compose('compositionStart', {})
+type("'")
+compose('replacePreviousChar', { text: "'~", replaceCharCnt: 1 })
+assert.strictEqual(
+  editor.document._text,
+  'the quick brown fox',
+  `a composition preview reached the document. Got: ${editor.document._text}`,
+)
+assert.deepStrictEqual(
+  dispatchedCommands,
+  [],
+  `a composition in Normal mode was handed back to VS Code: ${dispatchedCommands.join(', ')}`,
+)
+
+// And the count VS Code would have applied is its own preview's length, against whatever column the
+// caret now sits at - so this is the reported bug, with the caret moved away by Vim commands first.
+press('<Esc>')
+compose('replacePreviousChar', { text: '', replaceCharCnt: 27 })
+compose('compositionEnd', {})
+assert.strictEqual(
+  editor.document._text,
+  'the quick brown fox',
+  `the composition deleted text it never typed. Got: ${editor.document._text}`,
+)
+
+// Insert mode is left alone, which is upstream's rule and the half that is easy to over-fix: there
+// the composed text is meant to be in the document, and the user has to see it while composing.
+reset()
+type('i')
+dispatchedCommands.length = 0
+compose('compositionStart', {})
+compose('replacePreviousChar', { text: 'é', replaceCharCnt: 0 })
+compose('compositionEnd', {})
+assert.deepStrictEqual(
+  dispatchedCommands,
+  ['default:compositionStart', 'default:replacePreviousChar', 'default:compositionEnd'],
+  `a composition in Insert mode was not handed to VS Code: ${dispatchedCommands.join(', ')}`,
+)
+press('<Esc>')
+reset()
+
 assert.ok(documentSavedListeners.length > 0, 'the extension registered no save listener')
 for (const listener of documentSavedListeners) listener(editor.document)
 
