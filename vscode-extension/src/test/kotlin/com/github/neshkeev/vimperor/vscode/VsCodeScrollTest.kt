@@ -400,4 +400,73 @@ class VsCodeScrollTest {
     assertEquals(0, session.top)
     assertEquals(5, session.caretLine)
   }
+
+  // `scrolloff=999` keeps the cursor line centred, which turns any stray caret move into a visible
+  // scroll. Ported from IdeaVim (VIM-4329, `99ff55069`).
+
+  /**
+   * A change that replaces whole lines must not scroll, and with `'scrolloff'` at 999 it did.
+   *
+   * `cc` has to put the caret at the start of what it is replacing, and the engine was doing that
+   * with `moveToOffset` - which is not a plain move: it calls `injector.scroll.scrollCaretIntoView`
+   * for the primary caret, on purpose, because text appearing above the caret can move it off screen
+   * without changing its offset. Here that help is the bug. The caret is walked to the *previous*
+   * line's end on the way, 999 recentres the window on wherever it lands, and the text is put back
+   * afterwards while the view stays where the walk left it.
+   *
+   * `moveToInlayAwareOffset` is the same move without the scroll, which is what these three want:
+   * the caret ends where it started, so there was never anything to bring into view.
+   *
+   * A 35-row window with its top at 43 and the caret at 60 is **exactly** centred - 60 - (35-1)/2
+   * is 43 - so the window is where 999 already wants it and every assertion here is "nothing
+   * happened".
+   *
+   * **None of these three discriminates on this host, and the reason is a gap rather than a
+   * coincidence.** `VsCodeScrollGroup.scrollCaretIntoView` returns as soon as the caret is anywhere
+   * inside the window - `position.line >= top && position.line <= top + height - 1` - and never
+   * consults `scrollOffset()`. So `'scrolloff'` does not *pull* the view here: it clamps the caret
+   * when the view moves (`caretLineForView`) and sets a floor under `H` and `L`, and that is all.
+   * The intermediate caret this fix removes lands on line 59, which is inside the window, so
+   * nothing scrolls either way.
+   *
+   * They are kept because they assert Vim's behaviour rather than this host's: `cc` must not scroll,
+   * and when `'scrolloff'` does start pulling the view these are the tests that will catch it
+   * pulling here. Ablated - both `moveToInlayAwareOffset` calls put back to `moveToOffset` - all
+   * three still pass.
+   */
+  @Test
+  fun `test S does not scroll with scrolloff 999`() {
+    val session = Session(lines = 200, caretLine = 60, height = 35)
+    session.scrollTo(43)
+    injector.options(session.editor).scrolloff = 999
+
+    session.type("S")
+
+    assertEquals(43, session.top, "substituting the line scrolled the window")
+    assertEquals(60, session.caretLine)
+  }
+
+  @Test
+  fun `test a counted cc does not scroll with scrolloff 999`() {
+    val session = Session(lines = 200, caretLine = 60, height = 35)
+    session.scrollTo(43)
+    injector.options(session.editor).scrolloff = 999
+
+    session.type("3cc")
+
+    assertEquals(43, session.top, "changing three lines scrolled the window")
+    assertEquals(60, session.caretLine)
+  }
+
+  @Test
+  fun `test changing a linewise selection does not scroll with scrolloff 999`() {
+    val session = Session(lines = 200, caretLine = 60, height = 35)
+    session.scrollTo(43)
+    injector.options(session.editor).scrolloff = 999
+
+    session.type("Vc")
+
+    assertEquals(43, session.top, "changing a linewise selection scrolled the window")
+    assertEquals(60, session.caretLine)
+  }
 }

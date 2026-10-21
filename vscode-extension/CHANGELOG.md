@@ -6,6 +6,15 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- A keyboard layout could translate a key twice, turning one command into another. When a mapping
+  starts to match and the next key spoils it - `nmap gp ll` declared, and you type `g` then
+  something that is not `p` - the keys already typed are replayed, and they were replayed as though
+  freshly typed, so `'langmap'` translated them a second time. The three bundled layouts cannot
+  reach this, because none of them translates an ASCII character, but a hand-written `'langmap'`
+  whose target is also a source does: with `set langmap=ig,gE` the `gg` you typed ran as `gE`.
+  Ported from IdeaVim.
+
+
 - A dead key or an input method could delete text, and leaving Visual mode was where it showed. The
   cause is that `type` is not the only command VS Code types through: a composition - what a dead
   key or an IME sends while a character is still being chosen - arrives over four more, three of

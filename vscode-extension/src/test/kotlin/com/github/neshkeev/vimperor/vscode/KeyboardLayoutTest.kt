@@ -306,4 +306,42 @@ class KeyboardLayoutTest {
     assertEquals("set ts=4", CommandLineLayout.correct("ыуе еы=4"))
     assertEquals("1,2d", CommandLineLayout.correct("1,2в"))
   }
+
+  /**
+   * A mapping that turned out not to match is replayed, and the replayed keys must not be
+   * translated a second time. Ported from IdeaVim (`50229dcc3`).
+   *
+   * The whole of it is in one enum value. When a mapping's prefix matches and the next key spoils
+   * it, `MappingProcessor` gives the buffered keys back to the key handler - and it gave them back
+   * as `TYPED`, which is the one source `'langmap'` *does* translate. So the keys were langmapped on
+   * the way in, buffered, and langmapped again on the way out.
+   *
+   * `langmap=ig,gE` is what makes that visible, because it is a chain: `i` becomes `g` and `g`
+   * becomes `E`. With `nmap gp ll` declared, `g` is a mapping prefix, so typing `i` `i` arrives as
+   * `g` `g`, matches no mapping, and is replayed. The first key is replayed `MAPPING_PREFIX_REPLAY`
+   * and was always safe - it has to be, or a mapping that replays its own first key loops for ever.
+   * The second was translated again, into `E`, so the command that ran was `gE` - back to the end of
+   * the previous word - where the user had typed `gg`.
+   *
+   * This fork reads `'langmap'` for `'keyboardlayout'` as well, and the three tables there cannot
+   * produce this: **no ASCII character is a source in any of them**, deliberately, so a translated
+   * key can never be translated twice. It takes a hand-written `'langmap'` whose target is also a
+   * source to reach the bug - which is why this is tested with one and not with `russian`.
+   */
+  @Test
+  fun `test a replayed abandoned mapping is not translated twice`() {
+    val session = Session()
+    session.press(":nmap gp ll<CR>")
+    injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString(""))
+    injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString("ig,gE"))
+    session.editor.primaryCaret().moveToOffsetNative(session.editor.getLineStartOffset(2))
+
+    session.press("ii")
+
+    assertEquals(
+      0,
+      session.editor.primaryCaret().getBufferPosition().line,
+      "`gg` was replayed as `gE`, so the second `g` was langmapped twice",
+    )
+  }
 }

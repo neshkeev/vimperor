@@ -1534,6 +1534,56 @@ key handed to `default:type`, one event over. `onDidChangeTextDocument` now writ
 removed and text added, and skips the `output` scheme for the reason the selection listener does:
 the trace is written there, and tracing a write to it writes another line.
 
+### The second pass over upstream's commits, and the two numbers that decided it
+
+**42 commits in `upstream-master..upstream/master`, 12 touching the engine, 3 taken.** The recipe is
+the one above and it held; what follows is only what was new about this range, because the four
+reasons to refuse are already written down and three of them applied again unchanged.
+
+**The one taken for this fork's own sake is the langmap fix**, and it is worth knowing why it
+matters more here than upstream. When a mapping's prefix matches and the next key spoils it,
+`MappingProcessor` replays the buffered keys - and replayed them as `KeySource.TYPED`, which is the
+one source `'langmap'` translates. So a key was langmapped on the way in and again on the way out.
+`MAPPING_REPLAY` is the new source and it is not translated.
+
+**This fork's three layout tables cannot produce that bug, and that is the rule paying for itself a
+third time.** `'keyboardlayout'` reads `'langmap'`, so the path is shared - but **no ASCII character
+is a source in any of the tables**, so a translated key is never a source for a second translation.
+It takes a hand-written `'langmap'` whose target is also a source - `langmap=ig,gE`, where `i`
+becomes `g` and `g` becomes `E` - to reach it, which is what the test uses. Upstream's own test is
+the same shape, and the symptom is that `gg` ran as `gE`.
+
+**`'scrolloff'` does not pull the view on this host, which the port of VIM-4329 found rather than
+fixed.** Upstream's fix is right and is taken - `cc` walked the caret to the previous line's end with
+`moveToOffset`, which calls `scrollCaretIntoView` on purpose, and with `scrolloff=999` that
+recentred the window on a line the caret only passed through. It cannot be observed here:
+`scrollCaretIntoView` returns as soon as the caret is anywhere inside the window -
+`position.line >= top && position.line <= top + height - 1` - and never consults `scrollOffset()`.
+So `'scrolloff'` clamps the caret when the view moves (`caretLineForView`) and sets a floor under
+`H` and `L`, and does **not** scroll the view to keep lines around the cursor, which is what Vim's
+`'scrolloff'` is. `j` onto the last visible line scrolls here only because the caret would otherwise
+leave the window. That is a real gap and is not fixed; the three tests are guards that will catch
+the `cc` scroll if it is ever reachable. All three pass ablated, which is how the gap was found.
+
+**`zf` excluding its trailing newline is taken and is unobservable**, for a reason the refusal list
+already covers from the other side: `VsCodeEditor.createFoldRegion` answers null because VS Code
+exposes no API for making a fold region, so the corrected offset is handed to a function that does
+nothing. It adds no seam, which is why it is taken rather than refused - the engine is the thing
+being kept right.
+
+**`clipboard=autoselect` is refused and the engine already had it.** Upstream's commit adds one
+constant to `OptionConstants` and implements the feature in IntelliJ's clipboard manager, over X11's
+primary selection. `Options.clipboard` here already *defaults* to `"autoselect"`, so the value
+parses and always has; what it cannot do is mean anything, because VS Code has no primary selection
+and no API for one. Taking the constant would add dead code naming a value nothing reads.
+
+**And the newline cluster is the real content of this range** - seven commits removing the rule that
+a characterwise Visual selection may not include the end-of-line character. One line in
+`charToNativeSelection` does it and six more follow it. What makes it worth taking is what upstream
+deleted along with it: `@VimBehaviorDiffers` blocks whose own descriptions say *"Off by one because
+IdeaVim does not allow selecting a newline char"*. So this is Vim compatibility, which is this
+fork's stated goal, and it is the one change in the range that moves the replayed corpus.
+
 ### `.` is a keystroke replay now, and it changed nothing here
 
 **VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth
