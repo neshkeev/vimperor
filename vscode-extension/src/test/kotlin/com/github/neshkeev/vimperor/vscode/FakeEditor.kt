@@ -260,11 +260,26 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
   }
 
   /**
-   * VS Code's `_moveTo`, as far as the view goes: the minimal reveal of the line, with no padding.
+   * VS Code's `_moveTo`, as far as the view goes - **padded, like every other reveal an extension
+   * can ask for**.
    *
-   * The cursor is not moved - the host writes `selections` itself, before and after - and the reveal
-   * only happens when the cursor would have moved, which here is whenever the position differs from
-   * the primary selection's active end.
+   * This said "the minimal reveal of the line, with no padding", which is what
+   * `VsCodeEditor.revealLikeAClick` was written believing, and both were wrong in the same way: the
+   * fake answered the way the host believed the editor answers, so every test agreed with the host
+   * and none of them agreed with a window. That is the mirror the `'wrap'` note in CLAUDE.md warns
+   * about, and this is the second time it has cost a real bug.
+   *
+   * `_computeScrollTopToRevealRange` drops its padding for one condition only -
+   * `(source === "mouse" || minimalReveal) && cursorSurroundingLinesStyle === "default"` - and this
+   * host passes `source: "vimperor.reveal"` on purpose, so that VS Code attributes the selection
+   * change to nobody. **The minimal reveal and the un-attributed source are the same flag**, so
+   * asking for one gives up the other. A real click gets `"mouse"` and one line of padding; this
+   * gets the full `max(cursorSurroundingLines, stickyScroll.maxLineCount)`.
+   *
+   * So the arithmetic is `revealLine`'s, with the one line below that VS Code adds for a cursor
+   * reveal, and with no top-alignment fallback: the range comes from the selections rather than from
+   * a range argument, and for those `_computeScrollTopToRevealRange` answers "do not scroll" when the
+   * padded range is taller than the window.
    */
   private fun moveCursor(command: String, args: dynamic) {
     val line = (args.position.lineNumber as Int) - 1
@@ -273,10 +288,14 @@ class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Bool
     val reveals = (args.revealType as Int?) != 2
     cursorMoves += CursorMove(command, line, character, args.source as String?, reveals)
     if (!reveals) return
+    val margin = minOf(viewportHeight / 2, revealMargin)
+    val paddedTop = line - margin
+    val paddedBottom = line + maxOf(0, margin - 1) + 1
+    if (paddedBottom - paddedTop + 1 > viewportHeight) return
     val current = scrollTop
     val newTop = when {
-      line < current -> line
-      line > current + viewportHeight - 1 -> line - viewportHeight + 1
+      paddedTop < current -> paddedTop
+      paddedBottom > current + viewportHeight - 1 -> paddedBottom - viewportHeight + 1
       else -> return
     }.coerceIn(0, lastLine)
     if (revealsTakeEffectImmediately) topLine = newTop else pendingTopLine = newTop

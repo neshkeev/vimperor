@@ -1629,6 +1629,67 @@ the lines of the paragraph are deleted, including the blanks." The test had even
 the whole of a rule before asserting the behaviour it implies**, and when upstream changes a
 behaviour this fork has a comment defending, read the documentation rather than the comment.
 
+### `_moveTo` pads its reveal too, and the minimal reveal is the same flag as the mouse
+
+**`zt` in a markdown file put the caret's line five rows down instead of at the top.** The heading
+above it is what made it visible: a markdown setext heading gives the file a scope for sticky scroll
+to pin, and with sticky scroll showing, `editor.stickyScroll.maxLineCount` becomes the padding VS
+Code keeps above anything it reveals. With sticky scroll off the padding is zero, so every scroll
+command was always right - which is why this survived a release.
+
+**The cure had the disease.** `revealLikeAClick` was written *because* `revealRange` pads every
+reveal vertically, and its comment said `_moveTo`'s reveal "is the minimal one - no padding". It is
+not. `_computeScrollTopToRevealRange` drops the padding for one condition only:
+
+```js
+let g = (e === "mouse" || t) && this._cursorSurroundingLinesStyle === "default";
+if (g) { t || (f = this._lineHeight); }
+else {
+  let S = c / this._lineHeight,
+      y = Math.max(this._cursorSurroundingLines, this._stickyScrollEnabled ? this._maxNumberStickyLines : 0),
+      w = Math.min(S / 2, y);
+  f = w * this._lineHeight;                      // kept above
+  v = Math.max(0, w - 1) * this._lineHeight;     // kept below
+}
+```
+
+`e` is the command's `source`, and **this host passes `source: "vimperor.reveal"` on purpose**, so
+that VS Code attributes the selection change to nobody and `selectionChanged` does not adopt the
+host's own echo. That is the same flag: asking for a source VS Code will not blame on the user gives
+up the minimal reveal. A real click is `"mouse"` and still gets one line of padding; `t`
+(`minimalReveal`) is not reachable from any command an extension can send.
+
+**So the reveal is predicted and undone rather than avoided**, which is `scrollLineToBottom`'s shape
+and for the same reason - there is no horizontal-only scroll to ask for instead, because the column a
+window starts at cannot be read. `putBackTheScrollTheRevealTook` sends one `editorScroll` after the
+reveal: VS Code keeps `margin` lines above and `max(margin - 1, 0) + 1` below, scrolls the minimum
+that satisfies both, and only one edge can be the minimum, so only one correction is ever needed.
+
+Three things decide when it is safe, and the first is why nothing caught this:
+
+- **A reveal driven by the selections does not scroll at all when the padded range is taller than the
+  window** - `2 * margin + 1` lines, eleven by default. Every test in `RevealLikeAClickTest` used a
+  ten-row window, so the reveal had never been able to move the view in a test. The repro needs a
+  taller window before it needs a heading.
+- **The top is read before the reveal is asked for.** In a window the reveal is an RPC and has not
+  landed by the next line; in the stub `executeCommand` runs the handler there and then. Reading
+  afterwards gets two different answers, and the number wanted is the one from before either way.
+- **The bottom edge is corrected only where the height is known exactly.** The height is the one
+  input here that can be a floor, and a wrong height scrolls the window for no reason, where too
+  small a margin only leaves the old behaviour in place.
+
+**And the fake was modelling the belief rather than the editor**, which is the `'wrap'` lesson for the
+second time and the reason this was not a test failure years ago. `FakeEditor.moveCursor` said "the
+minimal reveal of the line, with no padding" - the same sentence as the production comment - so every
+test agreed with the host and none of them agreed with a window. Correcting the fake first *is* the
+reproduction: `Expected <18>, actual <13>`, five lines, exactly the margin. Of six tests four
+discriminate; the two that do not are the ten-row window, which VS Code cannot scroll, and the one
+asserting the horizontal reveal still happens.
+
+**`zt` was the report and it is not the only key.** `zb` was wrong at the other edge in a tall window,
+and so was any motion landing within five rows of either edge - `k` onto the top row scrolled the
+window where Vim leaves it alone. All of those are the same correction.
+
 ### `.` is a keystroke replay now, and it changed nothing here
 
 **VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth

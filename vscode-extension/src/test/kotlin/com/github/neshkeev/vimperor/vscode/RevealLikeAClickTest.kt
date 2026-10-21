@@ -61,6 +61,9 @@ class RevealLikeAClickTest {
     /** Where each cursor command was sent, as `command line:character`. */
     fun moves(): List<String> = fake.cursorMoves.map { "${it.command} ${it.line}:${it.character}" }
 
+    /** The line the engine's caret is on. */
+    val editorLine: Int get() = host.editorFor(fake).primaryCaret().getBufferPosition().line
+
     fun clear() {
       fake.cursorMoves.clear()
       fake.reveals.clear()
@@ -127,6 +130,93 @@ class RevealLikeAClickTest {
       assertEquals(listOf("_moveTo 9:1", "_moveTo 9:0"), session.moves(), keys)
       assertEquals(emptyList(), session.fake.reveals.toList(), "$keys: no padded reveal to undo the scroll")
     }
+  }
+
+  /**
+   * The reported bug: `zt` in a markdown file with a heading above the caret put the caret's line
+   * five rows down instead of at the top.
+   *
+   * Sticky scroll is what makes it visible rather than what causes it. The heading gives the file a
+   * scope to pin, so `editor.stickyScroll.maxLineCount` becomes the padding
+   * `_computeScrollTopToRevealRange` keeps above a revealed line - and the reveal `flushCarets` does
+   * after every scroll took it, undoing the scroll the command had just asked for. With sticky scroll
+   * off the padding is zero and `zt` was always right, which is why this only showed in a file with
+   * headings.
+   *
+   * A window of twenty rows, because the padded range is `2 * margin + 1` lines and VS Code does not
+   * scroll at all when that will not fit: in the ten-row window the rest of this file uses, the
+   * reveal has never been able to move the view, which is why nothing here caught it.
+   */
+  @Test
+  fun `test zt leaves the caret line on the top row of a tall window`() {
+    val session = Session(longLines, height = 20)
+    session.type("19G")
+    session.clear()
+
+    session.type("zt")
+
+    assertEquals(18, session.fake.topLine, "the reveal's padding dragged the window back off `zt`")
+  }
+
+  /** And the caret is still brought into view sideways, which is what the reveal is there for. */
+  @Test
+  fun `test zt still reveals the caret's column`() {
+    val session = Session(longLines, height = 20)
+    session.type("19G")
+    session.clear()
+
+    session.type("zt")
+
+    assertEquals(listOf("_moveTo 18:1", "_moveTo 18:0"), session.moves())
+  }
+
+  /**
+   * The same padding, reached without a scroll command: Vim does not move the view when the caret is
+   * already on screen, and `'scrolloff'` is zero by default.
+   */
+  @Test
+  fun `test k onto the top row does not scroll the window`() {
+    val session = Session(longLines, height = 20)
+    session.type("20G")
+    session.type("zt")
+    session.type("j")
+    session.clear()
+
+    session.type("k")
+
+    assertEquals(19, session.fake.topLine, "moving onto the top row scrolled the window")
+    assertEquals(19, session.editorLine, "the caret should be on the top row")
+  }
+
+  /** `k` *from* the top row does scroll, by one line, because the caret has left the window. */
+  @Test
+  fun `test k from the top row scrolls one line`() {
+    val session = Session(longLines, height = 20)
+    session.type("20G")
+    session.type("zt")
+    session.clear()
+
+    session.type("k")
+
+    assertEquals(18, session.fake.topLine)
+    assertEquals(18, session.editorLine)
+  }
+
+  /**
+   * The same padding at the other edge, which VS Code keeps as `max(margin - 1, 0) + 1` lines below
+   * the caret. `zb` is where it shows, and it is corrected only where the height is known exactly -
+   * the height is the one input here that can be a floor.
+   */
+  @Test
+  fun `test zb leaves the caret line on the bottom row of a tall window`() {
+    val session = Session(longLines, height = 20)
+    session.type("31G")
+    session.clear()
+
+    session.type("zb")
+
+    assertEquals(11, session.fake.topLine, "the reveal's padding pushed the window past `zb`")
+    assertEquals(30, session.editorLine)
   }
 
   @Test
