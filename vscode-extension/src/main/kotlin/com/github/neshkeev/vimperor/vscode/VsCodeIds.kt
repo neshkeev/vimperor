@@ -774,6 +774,12 @@ internal object VsCodeSettings {
   /** The section every one of these lives in. */
   const val EDITOR = "editor"
 
+  /** This extension's own section, for the handful of things a Vim option cannot carry. */
+  const val VIMPEROR = "vimperor"
+
+  /** Whether every config family that exists is sourced, rather than only the first. */
+  const val LOAD_ALL_CONFIGS = "loadAllConfigs"
+
   /** `off`, `on`, `wordWrapColumn` or `bounded`. Vim's `'wrap'` is the first against the rest. */
   const val WORD_WRAP = "wordWrap"
 

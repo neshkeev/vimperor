@@ -12,6 +12,7 @@ import com.maddyhome.idea.vim.KeyHandler
 import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -95,7 +96,7 @@ class VimrcWatchTest {
     session: Session,
     questions: Questions = Questions(),
     mode: VimrcReload = VimrcReload.PROMPT,
-    located: String? = "/home/someone/.vimperorrc",
+    located: List<String> = listOf("/home/someone/.vimperorrc"),
     texts: Map<String, String> = mapOf("/home/someone/.vimperorrc" to "set number"),
   ) = VimrcWatch(
     host = session.host,
@@ -138,7 +139,7 @@ class VimrcWatchTest {
       host = Session().host,
       environment = { name -> if (name == "IDEA_VIM_CUSTOM_VIMRC") "/tmp/custom" else environment(name) },
       readText = { null },
-      locate = { null },
+      locate = { emptyList() },
       mode = { VimrcReload.PROMPT },
     )
 
@@ -153,10 +154,10 @@ class VimrcWatchTest {
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -176,7 +177,7 @@ class VimrcWatchTest {
     val session = Session()
     val questions = Questions()
     val watch = watch(session, questions)
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     watch.settle()
 
@@ -189,14 +190,14 @@ class VimrcWatchTest {
     val session = Session()
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimrc" to "set number")
-    var found = "/home/someone/.vimrc"
+    var found = listOf("/home/someone/.vimrc")
     val watch = VimrcWatch(
       session.host, environment, { texts[it] }, { found }, questions.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimrc")
+    watch.remember(listOf("/home/someone/.vimrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
-    found = "/home/someone/.vimperorrc"
+    found = listOf("/home/someone/.vimperorrc")
     watch.settle()
 
     assertTrue(
@@ -210,9 +211,9 @@ class VimrcWatchTest {
     val session = Session()
     val questions = Questions()
     val watch = VimrcWatch(
-      session.host, environment, { null }, { null }, questions.ask, {}, { VimrcReload.PROMPT },
+      session.host, environment, { null }, { emptyList() }, questions.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     watch.settle()
 
@@ -227,10 +228,10 @@ class VimrcWatchTest {
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.AUTORELOAD },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -251,10 +252,10 @@ class VimrcWatchTest {
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.AUTORESTART },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -269,10 +270,10 @@ class VimrcWatchTest {
     val questions = Questions()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.NONE },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -292,10 +293,10 @@ class VimrcWatchTest {
     val questions = Questions(answer = VimrcAnswer.DISMISS.label)
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -319,17 +320,17 @@ class VimrcWatchTest {
     val question = PendingQuestion()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       question.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
     assertEquals(1, question.asked.size, "the question should be up")
 
     // `Vimperor: Reload Config` from the palette, which tells the watch what it loaded.
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
     question.press(VimrcAnswer.RESTART)
 
     assertEquals(emptyList(), session.dispatched, "the stale Restart must not restart anything")
@@ -342,10 +343,10 @@ class VimrcWatchTest {
     val question = PendingQuestion()
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       question.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -360,10 +361,10 @@ class VimrcWatchTest {
     val questions = Questions(answer = VimrcAnswer.RESTART.label)
     val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
     val watch = VimrcWatch(
-      session.host, environment, { texts[it] }, { "/home/someone/.vimperorrc" },
+      session.host, environment, { texts[it] }, { listOf("/home/someone/.vimperorrc") },
       questions.ask, {}, { VimrcReload.PROMPT },
     )
-    watch.remember("/home/someone/.vimperorrc")
+    watch.remember(listOf("/home/someone/.vimperorrc"))
 
     texts["/home/someone/.vimperorrc"] = "set relativenumber"
     watch.settle()
@@ -453,5 +454,91 @@ class VimrcWatchTest {
     session.host.type(session.fake, "x")
 
     assertEquals("helloone\n", session.fake.document.content, "a hand-typed mapping should survive")
+  }
+  // ---- every config in force -------------------------------------------------------------------
+
+  /**
+   * With `vimperor.loadAllConfigs` on, a change to a file that is *not* the most specific one is
+   * still a change to what is running - and before this it was silence, because the comparison was
+   * against the single winner.
+   *
+   * Which is also what the silence looked like from outside: a watch that had not noticed. Three
+   * configs were being watched all along, and two of them could never produce a question.
+   */
+  @Test
+  fun `test a change to a layered config is offered`() {
+    val session = Session()
+    val questions = Questions()
+    val texts = mutableMapOf(
+      "/home/someone/.vimrc" to "set ignorecase",
+      "/home/someone/.vimperorrc" to "set number",
+    )
+    val watch = VimrcWatch(
+      session.host,
+      environment,
+      { texts[it] },
+      { listOf("/home/someone/.vimrc", "/home/someone/.vimperorrc") },
+      questions.ask,
+      {},
+      { VimrcReload.PROMPT },
+    )
+    watch.remember(listOf("/home/someone/.vimrc", "/home/someone/.vimperorrc"))
+
+    texts["/home/someone/.vimrc"] = "set noignorecase"
+    watch.settle()
+
+    assertEquals(1, questions.asked.size, "a layered config changed, so there is something to offer")
+  }
+
+  /** And the question names the file that moved, not every file in force. */
+  @Test
+  fun `test the question names only the config that changed`() {
+    val session = Session()
+    val questions = Questions()
+    val texts = mutableMapOf(
+      "/home/someone/.vimrc" to "set ignorecase",
+      "/home/someone/.vimperorrc" to "set number",
+    )
+    val watch = VimrcWatch(
+      session.host,
+      environment,
+      { texts[it] },
+      { listOf("/home/someone/.vimrc", "/home/someone/.vimperorrc") },
+      questions.ask,
+      {},
+      { VimrcReload.PROMPT },
+    )
+    watch.remember(listOf("/home/someone/.vimrc", "/home/someone/.vimperorrc"))
+
+    texts["/home/someone/.vimrc"] = "set noignorecase"
+    watch.settle()
+
+    val asked = questions.asked.single()
+    assertTrue(asked.contains("/home/someone/.vimrc"), "should name the file that changed: $asked")
+    assertFalse(
+      asked.contains("/home/someone/.vimperorrc"),
+      "should not name a file that did not change: $asked",
+    )
+  }
+
+  /** A file joining the set is a change too, and it reads as one rather than as an edit. */
+  @Test
+  fun `test a config appearing beside the others is offered as a new config`() {
+    val session = Session()
+    val questions = Questions()
+    val texts = mutableMapOf("/home/someone/.vimperorrc" to "set number")
+    var found = listOf("/home/someone/.vimperorrc")
+    val watch = VimrcWatch(
+      session.host, environment, { texts[it] }, { found }, questions.ask, {}, { VimrcReload.PROMPT },
+    )
+    watch.remember(found)
+
+    texts["/home/someone/.vimrc"] = "set ignorecase"
+    found = listOf("/home/someone/.vimrc", "/home/someone/.vimperorrc")
+    watch.settle()
+
+    val asked = questions.asked.single()
+    assertTrue(asked.contains("are now your"), "two files in force, so the plural: $asked")
+    assertTrue(asked.contains("/home/someone/.vimrc"), asked)
   }
 }

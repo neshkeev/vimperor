@@ -139,11 +139,31 @@ nnoremap <leader>f <Action>(workbench.action.quickOpen)
 `<Action>(id)` runs any VS Code command from a mapping — `:actionlist` lists them all, with the
 shortcut each already has. Each config name is also looked for as `_name` and in its XDG directory.
 
+### Reading all of them instead
+
+If you keep more than one of those files and want every one of them to apply, turn on
+`vimperor.loadAllConfigs` in your VS Code settings:
+
+```jsonc
+"vimperor.loadAllConfigs": true
+```
+
+Then one file from each family is read, **least specific first** — `~/.vimrc`, then `~/.ideavimrc`,
+then `~/.vimperorrc` — so the file written for this editor still has the last word wherever two of
+them disagree. The startup line in the output channel names them in the order they were read, which
+is the order that settles a conflict. Within a family the first spelling found still wins, because
+`~/.vimrc` and `~/_vimrc` are two names for one file; and a path in `IDEA_VIM_CUSTOM_VIMRC` is still
+read on its own, since a file you named outright is an instruction rather than a preference.
+
+It is a VS Code setting rather than a `set` because the answer is needed before any config has run —
+an option could only be set in one of the files it decides the order of.
+
 ### Editing it while Vimperor is running
 
 Save your config and Vimperor offers to load it, right away — no reload, no restart. It watches
 every path in the table above, not just the one that loaded, so creating a `~/.vimperorrc` when
-you only had a `~/.vimrc` counts as well.
+you only had a `~/.vimrc` counts as well. With `vimperor.loadAllConfigs` on, editing *any* of the
+files in force counts too, and the question names the one you changed.
 
 ```vim
 set vimrcreload=prompt        " ask, which is the default

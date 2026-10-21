@@ -619,7 +619,12 @@
           "default": false,
           "description": "Write what each keystroke did to the Vimperor output channel: the mode, the carets, and the selections handed to VS Code. For reporting a problem that only happens in a real editor window."
         },
-        "vimperor.escapeReturnsToEditor": {
+        "vimperor.loadAllConfigs": {
+      "type": "boolean",
+      "default": false,
+      "description": "Run every config file that exists instead of only the first. Vimperor normally reads one file - ~/.vimperorrc, or ~/.ideavimrc, or ~/.vimrc, whichever it finds first - the way Vim and IdeaVim each read one. With this on it sources all three, least specific first (~/.vimrc, then ~/.ideavimrc, then ~/.vimperorrc), so the file written for this editor has the last word. A path in IDEA_VIM_CUSTOM_VIMRC is still read on its own."
+    },
+    "vimperor.escapeReturnsToEditor": {
           "type": "boolean",
           "default": true,
           "description": "Pressing Escape outside the editor puts the cursor back in the document, the way IntelliJ does. Contexts where Escape already has a job keep it: the terminal, and text inputs such as the Search box or a rename field."

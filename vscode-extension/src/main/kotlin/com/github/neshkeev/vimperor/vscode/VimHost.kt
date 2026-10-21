@@ -147,23 +147,29 @@ class VimHost(
    *
    * Returns the path that was run, or null if there was no file to run.
    */
-  fun loadVimRc(editor: VimEditor, environment: (String) -> String? = ::environmentVariable): String? {
+  fun loadVimRc(editor: VimEditor, environment: (String) -> String? = ::environmentVariable): List<String> {
     val files = NodeFileSystem()
-    val path = findVimRc(files, environment) ?: return null
+    val paths = vimRcFilesToLoad(files, environment, loadsEveryConfig())
+    if (paths.isEmpty()) return emptyList()
     vimInjector.optionGroup.startInitVimRc()
     try {
-      injector.vimscriptExecutor.executeFile(path, editor, fileIsIdeaVimRcConfig = true)
-    } catch (e: Throwable) {
-      // A broken config must not stop the extension from working. Vim itself carries on after an
-      // error in the vimrc, and a user with a typo in one line still wants the other twenty.
-      sink.error("Vimperor: " + path + " could not be run: " + e.message)
+      // Each inside its own `try`, which matters once there can be more than one: a `~/.vimrc` that
+      // throws must not stop the `~/.vimperorrc` layered over it, and the reason is the one this
+      // function already had - a user with a typo in one line still wants the other twenty.
+      for (path in paths) {
+        try {
+          injector.vimscriptExecutor.executeFile(path, editor, fileIsIdeaVimRcConfig = true)
+        } catch (e: Throwable) {
+          sink.error("Vimperor: " + path + " could not be run: " + e.message)
+        }
+      }
     } finally {
       vimInjector.optionGroup.endInitVimRc()
     }
     // The config is where `'number'` and `'relativenumber'` are set, and it runs before any key is
     // pressed, so nothing else would apply them until one was.
     editors.values.forEach { applyEditorOptions(it) }
-    return path
+    return paths
   }
 
   /**
@@ -182,7 +188,7 @@ class VimHost(
    * Against the editor on screen, or the fallback window when there is none, which is the same
    * choice startup makes for the same reason.
    */
-  fun reloadVimRc(environment: (String) -> String? = ::environmentVariable): String? {
+  fun reloadVimRc(environment: (String) -> String? = ::environmentVariable): List<String> {
     injector.keyGroup.removeKeyMapping(MappingOwner.IdeaVim.InitScript)
     return loadVimRc(startupEditor(keyedEditor ?: window.activeTextEditor), environment)
   }

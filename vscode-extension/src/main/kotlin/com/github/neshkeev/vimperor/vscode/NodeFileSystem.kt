@@ -107,25 +107,68 @@ class NodeFileSystem : VimFileSystem {
  * Vim's own three are in Vim's own order, from `:h vimrc`: `$HOME/.vimrc`, `$HOME/.vim/vimrc`,
  * `$XDG_CONFIG_HOME/vim/vimrc`, with `_vimrc` tried beside `.vimrc` on any system.
  */
-private fun vimRcCandidates(home: String, xdgConfigHome: String): List<String> = listOf(
+private fun vimRcFamilies(home: String, xdgConfigHome: String): List<List<String>> = listOf(
   // Written for this editor. Wins over everything, wherever it is.
-  "$home/.vimperorrc",
-  "$home/_vimperorrc",
-  "$xdgConfigHome/vimperor/vimperorrc",
+  listOf(
+    "$home/.vimperorrc",
+    "$home/_vimperorrc",
+    "$xdgConfigHome/vimperor/vimperorrc",
+  ),
 
   // Written for IdeaVim, and shared with the IntelliJ plugin unchanged.
-  "$home/.ideavimrc",
-  "$home/_ideavimrc",
-  "$xdgConfigHome/ideavim/ideavimrc",
+  listOf(
+    "$home/.ideavimrc",
+    "$home/_ideavimrc",
+    "$xdgConfigHome/ideavim/ideavimrc",
+  ),
 
   // Written for Vim. The point of reading it is the person who has never installed IdeaVim: they
   // already have a config, and requiring them to copy it to a new name before anything works is a
   // worse first five minutes than the handful of lines this fork will not understand.
-  "$home/.vimrc",
-  "$home/_vimrc",
-  "$home/.vim/vimrc",
-  "$xdgConfigHome/vim/vimrc",
+  listOf(
+    "$home/.vimrc",
+    "$home/_vimrc",
+    "$home/.vim/vimrc",
+    "$xdgConfigHome/vim/vimrc",
+  ),
 )
+
+/** The families flattened, most specific first, which is the order [findVimRc] searches. */
+private fun vimRcCandidates(home: String, xdgConfigHome: String): List<String> =
+  vimRcFamilies(home, xdgConfigHome).flatten()
+
+/**
+ * Every config to run, in the order they should be sourced.
+ *
+ * With [loadAll] false this is [findVimRc]'s answer and nothing else: the first file that exists
+ * wins outright, which is what Vim and IdeaVim do - each reads one file - and what this host has
+ * always done.
+ *
+ * With it true, one file from *each* family is run, and **least specific first**: `~/.vimrc`, then
+ * `~/.ideavimrc`, then `~/.vimperorrc`. The order is the whole point. Sourcing later overrides
+ * earlier, so the file written for this editor gets the last word, exactly as the search order says
+ * it should - the two rules are the same preference read from opposite ends.
+ *
+ * Within a family the first that exists still wins: `~/.vimrc` and `~/_vimrc` are two spellings of
+ * one file, not two files to run.
+ *
+ * `IDEA_VIM_CUSTOM_VIMRC` is unaffected either way. A path named outright is an instruction rather
+ * than a preference, so when it is set and the file is there it is the only config read - layering
+ * other files under something the user pointed at by hand would be the opposite of what they asked.
+ */
+fun vimRcFilesToLoad(
+  files: NodeFileSystem,
+  environment: (String) -> String?,
+  loadAll: Boolean,
+): List<String> {
+  environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }?.let { custom ->
+    if (files.exists(custom)) return listOf(custom)
+  }
+  val home = environment("HOME") ?: environment("USERPROFILE") ?: return emptyList()
+  val xdg = xdgConfigHome(home, environment)
+  if (!loadAll) return listOfNotNull(vimRcCandidates(home, xdg).firstOrNull { files.exists(it) })
+  return vimRcFamilies(home, xdg).mapNotNull { family -> family.firstOrNull { files.exists(it) } }.asReversed()
+}
 
 /**
  * Whether the config that was found is Vim's own, rather than one written for this fork.

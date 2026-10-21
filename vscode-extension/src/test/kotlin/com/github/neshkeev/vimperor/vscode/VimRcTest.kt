@@ -48,7 +48,12 @@ class VimRcTest {
       KeyHandler.getInstance().fullReset(host.editorFor(fake))
     }
 
+    /** The one config that was run, or null - which is every test here but the layering ones. */
     fun load(environment: Map<String, String>): String? =
+      loadAll(environment).singleOrNull()
+
+    /** Every config that was run, in the order they were sourced. */
+    fun loadAll(environment: Map<String, String>): List<String> =
       host.loadVimRc(host.editorFor(fake)) { environment[it] }
 
     fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
@@ -317,6 +322,123 @@ class VimRcTest {
     val mapping = injector.keyGroup.getKeyMapping(MappingMode.LANG)
     assertTrue(mapping.hasmapto(injector.parser.parseKeys("b")), "`a` should map to `b`")
     assertTrue(mapping.hasmapto(injector.parser.parseKeys("d")), "`c` should map to `d`")
+  }
+  // ---- vimperor.loadAllConfigs -----------------------------------------------------------------
+
+  /**
+   * One file, which is Vim's rule and IdeaVim's: each reads a single config and the first family
+   * that exists wins outright. The guard for everything below it.
+   */
+  @Test
+  fun `test only the first family is read by default`() {
+    val home = writing(
+      mapOf(
+        ".vimperorrc" to "set ignorecase\n",
+        ".ideavimrc" to "set ignorecase\n",
+        ".vimrc" to "set ignorecase\n",
+      ),
+    )
+    val session = Session("Foo foo", emptyMap())
+
+    assertEquals(listOf("$home/.vimperorrc"), session.loadAll(mapOf("HOME" to home)))
+  }
+
+  /**
+   * `vimperor.loadAllConfigs`: one file from each family, **least specific first**.
+   *
+   * A VS Code setting rather than a Vim option, and necessarily - an option would have to be set in
+   * one of the files it decides the order of. See [loadsEveryConfig].
+   */
+  @Test
+  fun `test every family is read when the setting is on, least specific first`() {
+    loadingEveryConfig {
+      val home = writing(
+        mapOf(
+          ".vimperorrc" to "set ignorecase\n",
+          ".ideavimrc" to "set ignorecase\n",
+          ".vimrc" to "set ignorecase\n",
+        ),
+      )
+      val session = Session("Foo foo", emptyMap())
+
+      assertEquals(
+        listOf("$home/.vimrc", "$home/.ideavimrc", "$home/.vimperorrc"),
+        session.loadAll(mapOf("HOME" to home)),
+      )
+    }
+  }
+
+  /**
+   * And the order is the point: sourcing later overrides earlier, so the file written for this
+   * editor has the last word.
+   *
+   * Two options, because one cannot say this. `'ignorecase'` is set by both files and so proves the
+   * *order*; `'smartcase'` is set only by the `.vimrc` and so proves it ran at all - without it the
+   * test passes just as well when the `.vimrc` is never read, which is the state this feature
+   * replaces.
+   */
+  @Test
+  fun `test the most specific config wins a conflict`() {
+    loadingEveryConfig {
+      val home = writing(
+        mapOf(
+          ".vimrc" to "set ignorecase\nset smartcase\n",
+          ".vimperorrc" to "set noignorecase\n",
+        ),
+      )
+      val session = Session("Foo foo", emptyMap())
+
+      session.loadAll(mapOf("HOME" to home))
+
+      assertEquals(emptyList(), session.sink.errors)
+      assertTrue(injector.globalOptions().smartcase, "the `.vimrc` was read")
+      assertFalse(
+        injector.globalOptions().ignorecase,
+        "`.vimperorrc` is sourced last, so its answer is the one left standing",
+      )
+    }
+  }
+
+  /** `~/.vimrc` and `~/_vimrc` are two spellings of one file, not two files to run. */
+  @Test
+  fun `test one spelling per family`() {
+    loadingEveryConfig {
+      val home = writing(mapOf(".vimrc" to "set ignorecase\n", "_vimrc" to "set ignorecase\n"))
+      val session = Session("Foo foo", emptyMap())
+
+      assertEquals(listOf("$home/.vimrc"), session.loadAll(mapOf("HOME" to home)))
+    }
+  }
+
+  /**
+   * A path named outright is an instruction rather than a preference, so it is still read alone -
+   * layering other files under something the user pointed at by hand would be the opposite of what
+   * they asked for.
+   */
+  @Test
+  fun `test a custom vimrc is still read on its own`() {
+    loadingEveryConfig {
+      val home = writing(mapOf(".vimperorrc" to "set ignorecase\n", ".vimrc" to "set ignorecase\n"))
+      val custom = writing(mapOf("custom.vim" to "set ignorecase\n"))
+      val session = Session("Foo foo", emptyMap())
+
+      val loaded = session.loadAll(
+        mapOf("HOME" to home, "IDEA_VIM_CUSTOM_VIMRC" to "$custom/custom.vim"),
+      )
+
+      assertEquals(listOf("$custom/custom.vim"), loaded)
+    }
+  }
+
+  /** The setting on for the duration of [body], and off afterwards however it ends. */
+  private fun loadingEveryConfig(body: () -> Unit) {
+    val configuration = js("require('vscode').workspace.configuration")
+    try {
+      configuration.vimperor = js("({ loadAllConfigs: true })")
+      body()
+    } finally {
+      configuration.vimperor = undefined
+    }
   }
 }
 

@@ -1111,6 +1111,47 @@ to be discovered.
 debounce is there too: one save is two or three events, and the text is compared against what was
 last loaded so that a format-on-save which rewrote the file identically asks nothing.
 
+### Reading every config instead of the first, and why that is a setting
+
+**`findVimRc` takes one file and that is Vim's rule**, which is also IdeaVim's - each program reads
+one config. It is still the default. `vimperor.loadAllConfigs` runs one file from *each* family
+instead, **least specific first**: `~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc`.
+
+The order is the search order read from the other end, and that is the whole argument for it.
+`findVimRc` prefers the most specific file; sourcing later overrides earlier; so running them
+least-specific-first gives the most specific file the last word. The two rules express one
+preference.
+
+**It is a VS Code setting and could not have been a Vim option.** The answer is needed before any
+config has run - before even the order they run in is known - and an option would have to be set in
+one of the files it governs. `'vimrcreload'` *is* a Vim option for the opposite reason: it is read
+after the config, every time, which is what lets the file it governs set it. The two look alike and
+are not, and `loadsEveryConfig` says so where it is read.
+
+**What stays the same, and each is a test that does not discriminate.** Within a family the first
+spelling still wins, because `~/.vimrc` and `~/_vimrc` are two names for one file rather than two
+files to run. A path in `IDEA_VIM_CUSTOM_VIMRC` is still read alone: a file named outright is an
+instruction rather than a preference, and layering others under it would be the opposite of what was
+asked. And the default is unchanged, which is the guard that matters most - this is opt-in because
+plenty of people keep a `~/.vimrc` deliberately separate from their IdeaVim config, and sourcing it
+for them would be a surprise rather than a feature.
+
+**The watch had to learn to count past one, and that is what the user reported.** `settle()` compared
+`findVimRc`'s answer - the single winner - against what was loaded, so a change to a file that was
+*not* the winner was silence. That was correct while only one file ran, and it is why editing
+`~/.ideavimrc` with a `~/.vimperorrc` present did nothing: all ten paths were watched all along, and
+two of the three families could never produce a question. The baseline is now the list of files that
+ran, with their texts, so any of them changing is a change to what is running; with the setting off
+the list holds nought or one entry and behaves exactly as the single path did.
+
+The question names the files that moved rather than every file in force - with three configs running,
+"your config changed" leaves the reader to guess which - and distinguishes a file *joining* the set
+from a file being edited, because the answer to the first may be a file the user has never opened.
+
+**One config that throws must not stop the ones layered over it**, so `executeFile` is wrapped per
+file rather than once around the loop. That is the reason the function already had for carrying on -
+a user with a typo in one line still wants the other twenty - applied to files instead of lines.
+
 ### `HideAllWindows` reads the layout from a `when` clause, because nothing else will say
 
 **VS Code answers no API about its own workbench.** Whether the sidebar, the panel or the auxiliary

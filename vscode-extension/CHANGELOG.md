@@ -4,7 +4,27 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- `vimperor.loadAllConfigs` reads every config file you have instead of only the first. Vimperor
+  normally reads one - `~/.vimperorrc`, or `~/.ideavimrc`, or `~/.vimrc`, whichever it finds first -
+  the way Vim and IdeaVim each read one. Turn this on and it sources all three, least specific first
+  (`~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc`), so the file written for this editor still
+  has the last word where two of them disagree. The startup line names them in the order they were
+  read. Within a family the first spelling still wins, and a path in `IDEA_VIM_CUSTOM_VIMRC` is still
+  read on its own.
+
+  It is a VS Code setting rather than a `set` line because the answer is needed before any config has
+  run - an option could only be set in one of the files it decides the order of.
+
 ### Fixed
+
+- Editing a config that was not the one in force did nothing and said nothing. All the paths were
+  being watched, but a change only counted when it changed the *winning* file - so with a
+  `~/.vimperorrc` present, saving `~/.ideavimrc` or `~/.vimrc` was silence indistinguishable from a
+  watch that had not noticed. With `vimperor.loadAllConfigs` on, every file in force is now part of
+  what a change is measured against, and the question names the one you changed.
+
 
 - `:set wrap` could unwrap a long line and `:set nowrap` wrap it - the option working backwards.
   VS Code's word-wrap toggle acts on whichever editor has focus and cannot be aimed at another, so

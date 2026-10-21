@@ -67,15 +67,21 @@ internal class VimrcWatch(
   private val host: VimHost,
   private val environment: (String) -> String? = { injector.systemInfoService.getenv(it) },
   private val readText: (String) -> String? = ::textOrNull,
-  private val locate: ((String) -> String?) -> String? = { env -> findVimRc(NodeFileSystem(), env) },
+  private val locate: ((String) -> String?) -> List<String> =
+    { env -> vimRcFilesToLoad(NodeFileSystem(), env, loadsEveryConfig()) },
   private val ask: (String, List<String>, (String?) -> Unit) -> Unit = ::showVimrcQuestion,
   private val announce: (String) -> Unit = {},
   private val mode: () -> VimrcReload = ::vimrcReloadMode,
 ) {
 
-  /** The path and text of the config as it was last run, which is what a change is measured against. */
-  private var loadedPath: String? = null
-  private var loadedText: String? = null
+  /**
+   * Every config that was last run, with its text, which is what a change is measured against.
+   *
+   * A list rather than one path because `vimperor.loadAllConfigs` can put all three families in
+   * force at once, and then a change to *any* of them is a change to what is running. With the
+   * setting off this holds nought or one entry and behaves exactly as the single path did.
+   */
+  private var loaded: List<Pair<String, String?>> = emptyList()
 
   private var pending: ScheduledTask = ScheduledTask.NONE
 
@@ -109,12 +115,11 @@ internal class VimrcWatch(
    * [path] is null when there was no config to run, which is a state worth holding rather than
    * ignoring: the interesting change then is a file *appearing*.
    */
-  fun remember(path: String?) {
+  fun remember(paths: List<String>) {
     // Every route that settles the matter comes through here - a reload, a dismissal, and the
     // `Vimperor: Reload Config` command - so this is the one place the generation has to move.
     generation++
-    loadedPath = path
-    loadedText = path?.let(readText)
+    loaded = paths.map { it to readText(it) }
   }
 
   /** Where the debounce has got to, so a test can run it without waiting. */
@@ -133,14 +138,13 @@ internal class VimrcWatch(
     val mode = mode()
     if (mode == VimrcReload.NONE) return
 
-    val path = locate(environment)
-    val text = path?.let(readText)
-    if (path == loadedPath && text == loadedText) return
+    val now = locate(environment).map { it to readText(it) }
+    if (now == loaded) return
 
     when (mode) {
       VimrcReload.AUTORELOAD -> reload()
       VimrcReload.AUTORESTART -> restart()
-      VimrcReload.PROMPT -> askAbout(path)
+      VimrcReload.PROMPT -> askAbout(now)
       VimrcReload.NONE -> Unit
     }
   }
@@ -161,13 +165,22 @@ internal class VimrcWatch(
    * version is that re-running a file applies what it says and is silent about what it no longer
    * says - see [VimHost.reloadVimRc].
    */
-  private fun askAbout(path: String?) {
+  private fun askAbout(now: List<Pair<String, String?>>) {
     // The verb is the button's, in all three: a question that says "Load" over a button that says
     // "Reload" makes the reader check whether they are the same thing.
+    //
+    // Which files are in force is a different change from what they say, and the sentence says
+    // which: a file appearing or going changes the set, and that is worth naming because the
+    // *answer* to it may be a file the user has never edited. When only the text moved, the files
+    // that moved are named rather than all of them - with three configs in force, "your config
+    // changed" would leave the reader to guess which of them it meant.
+    val paths = now.map { it.first }
+    val changed = now.filter { it !in loaded }.map { it.first }
     val message = when {
-      path == null -> "Your Vimperor config is gone. Reload to go back to the defaults?"
-      path != loadedPath -> "$path is now your Vimperor config. Reload it?"
-      else -> "$path changed. Reload it?"
+      now.isEmpty() -> "Your Vimperor config is gone. Reload to go back to the defaults?"
+      paths != loaded.map { it.first } -> "${paths.joinToString(", ")} ${isOrAre(paths)} now your " +
+        "Vimperor config. Reload ${itOrThem(paths)}?"
+      else -> "${changed.joinToString(", ")} changed. Reload ${itOrThem(changed)}?"
     }
     val answers = VimrcAnswer.entries.map { it.label }
     val asOf = generation
@@ -183,7 +196,7 @@ internal class VimrcWatch(
         // Dismissed, or the notification closed itself. Either way the new text becomes the
         // baseline: being asked once about an edit is help, and being asked again about the same
         // edit on the next unrelated save is nagging.
-        VimrcAnswer.DISMISS, null -> remember(path)
+        VimrcAnswer.DISMISS, null -> remember(paths)
       }
     }
   }
@@ -197,14 +210,25 @@ internal class VimrcWatch(
    */
   private fun reload() {
     reloading = true
-    val path = try {
+    val paths = try {
       host.reloadVimRc()
     } finally {
       reloading = false
     }
-    remember(path)
-    announce(if (path == null) "No config to load." else "Loaded $path")
+    remember(paths)
+    announce(if (paths.isEmpty()) "No config to load." else "Loaded " + paths.joinToString(", "))
   }
+
+  /**
+   * "is" or "are", and "it" or "them".
+   *
+   * Spelled out rather than left as "file(s)" because the question is the one sentence a user reads
+   * before deciding, and a message that cannot manage its own grammar reads like one that cannot
+   * manage anything else.
+   */
+  private fun isOrAre(paths: List<String>) = if (paths.size == 1) "is" else "are"
+
+  private fun itOrThem(paths: List<String>) = if (paths.size == 1) "it" else "them"
 
   /** Hands the whole session back to VS Code, which reads the config again on the way up. */
   private fun restart() = host.run(VsCodeCommands.RESTART_EXTENSION_HOST, waitForIt = false)

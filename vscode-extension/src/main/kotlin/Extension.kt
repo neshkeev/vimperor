@@ -420,14 +420,16 @@ fun activate(context: ExtensionContext) {
   // session, silently, because the message saying so was inside the same `let`. It runs against the
   // fallback window when there is nothing on screen.
   val loaded = vim.loadVimRc(vim.startupEditor(window.activeTextEditor))
-  if (loaded == null) {
+  if (loaded.isEmpty()) {
     output.appendLine("No .vimperorrc, .ideavimrc or .vimrc found.")
   } else {
-    output.appendLine("Loaded " + loaded)
+    // In the order they were sourced, which is the order that decides a conflict - so a reader who
+    // wonders why one of two settings won can see the answer rather than work it out.
+    output.appendLine("Loaded " + loaded.joinToString(", "))
     // Only for Vim's own file, because it is the only one written for a different program. A
     // config runs with errors suppressed, so without this line a `.vimrc` whose plugin manager and
     // autocommands did nothing looks exactly like one that worked.
-    if (isVimsOwnConfig(loaded)) {
+    if (loaded.any { isVimsOwnConfig(it) }) {
       output.appendLine("That is a Vim config. Lines this extension does not implement - plugin")
       output.appendLine("managers, autocommands, syntax - are skipped without complaint.")
     }
@@ -547,9 +549,11 @@ fun activate(context: ExtensionContext) {
   // edit the user had already applied.
   val reloadConfig = commands.registerCommand("vimperor.reloadConfig") {
     reporting(output, "reloading the config") {
-      val path = vim.reloadVimRc()
-      vimrcWatch.remember(path)
-      output.appendLine(if (path == null) "No config to reload." else "Reloaded " + path)
+      val paths = vim.reloadVimRc()
+      vimrcWatch.remember(paths)
+      output.appendLine(
+        if (paths.isEmpty()) "No config to reload." else "Reloaded " + paths.joinToString(", "),
+      )
       refreshExtensionContexts()
       refreshMode()
     }
