@@ -61,9 +61,13 @@ class RevealLikeAClickTest {
     /** Where each cursor command was sent, as `command line:character`. */
     fun moves(): List<String> = fake.cursorMoves.map { "${it.command} ${it.line}:${it.character}" }
 
+    /** Where each `revealRange` was aimed, as `line:character` - the `'sidescrolloff'` margins. */
+    fun sideReveals(): List<String> = fake.revealedRanges.map { "${it.start.line}:${it.start.character}" }
+
     fun clear() {
       fake.cursorMoves.clear()
       fake.reveals.clear()
+      fake.revealedRanges.clear()
       fake.horizontalScrolls.clear()
     }
   }
@@ -212,9 +216,14 @@ class RevealLikeAClickTest {
 
   /**
    * `:set sidescrolloff=10`, asked for instead of centring: the caret kept ten columns from either
-   * edge. The cursor commands reveal a point, and VS Code keeps only the last reveal requested before
-   * it paints, so the two sides go a frame apart - the side the caret is heading first, then the
-   * other, then the caret itself - each sending the cursor back to the caret without revealing.
+   * edge. VS Code keeps only the last reveal requested before it paints, so the two sides go a frame
+   * apart - the side the caret is heading first, then the other, then the caret itself.
+   *
+   * **The margins are revealed and the caret is visited.** The margins used to be visited too, with
+   * the cursor sent to the column and back, and a cursor move is painted: the caret was seen stepping
+   * ten columns out and returning on every keystroke. `revealRange` moves no cursor; the caret's own
+   * step still goes one column along and back, which is what makes VS Code reveal a point it is
+   * already on, and one column has never been noticed.
    */
   @Test
   fun `test sidescrolloff reveals the columns either side of the caret a frame apart`(): Promise<Unit> {
@@ -225,13 +234,11 @@ class RevealLikeAClickTest {
 
     session.type("j")
 
-    assertEquals(listOf("1:60!", "1:50"), session.steps(), "heading right, so the right-hand margin first")
+    assertEquals(listOf("1:60"), session.sideReveals(), "heading right, so the right-hand margin first")
+    assertEquals(emptyList(), session.steps(), "and no cursor was moved to do it")
     return after(200) {
-      assertEquals(
-        listOf("1:60!", "1:50", "1:40!", "1:50", "1:51", "1:50!"),
-        session.steps(),
-        "then the left-hand margin, then the caret",
-      )
+      assertEquals(listOf("1:60", "1:40"), session.sideReveals(), "then the left-hand margin")
+      assertEquals(listOf("1:51", "1:50!"), session.steps(), "then the caret, one column along and back")
       session.sidescrolloff(0)
     }
   }
@@ -245,9 +252,10 @@ class RevealLikeAClickTest {
 
     session.type("h")
 
-    assertEquals(listOf("0:39!", "0:49"), session.steps())
+    assertEquals(listOf("0:39"), session.sideReveals())
     return after(200) {
-      assertEquals(listOf("0:39!", "0:49", "0:59!", "0:49", "0:50", "0:49!"), session.steps())
+      assertEquals(listOf("0:39", "0:59"), session.sideReveals())
+      assertEquals(listOf("0:50", "0:49!"), session.steps())
       session.sidescrolloff(0)
     }
   }
@@ -264,14 +272,17 @@ class RevealLikeAClickTest {
     session.type("j")
 
     return after(200) {
-      val lines = session.fake.cursorMoves.map { it.line }
-      assertEquals(listOf(1, 1), lines.take(2), "the first j's first step went out at once")
-      assertTrue(lines.drop(2).all { it == 2 }, "and nothing for line 1 after the second j: ${session.steps()}")
+      val lines = session.fake.revealedRanges.map { it.start.line }
+      assertEquals(listOf(1), lines.take(1), "the first j's first step went out at once")
+      assertTrue(
+        lines.drop(1).all { it == 2 },
+        "and nothing for line 1 after the second j: ${session.sideReveals()}",
+      )
       session.sidescrolloff(0)
     }
   }
 
-  /** In Insert mode the cursor commands would split typed text into undo steps. */
+  /** In Insert mode a reveal worked out for the old caret would scroll away from what is typed. */
   @Test
   fun `test entering Insert mode abandons the steps`(): Promise<Unit> {
     val session = Session(longLines)
@@ -283,7 +294,12 @@ class RevealLikeAClickTest {
     session.type("i")
 
     return after(200) {
-      assertEquals(listOf("1:60!", "1:50"), session.steps())
+      // The right-hand margin went out before `i`, and entering Insert mode reveals the caret on its
+      // own account - what must not be there is the left-hand margin, which was still waiting.
+      assertTrue(
+        "1:40" !in session.sideReveals(),
+        "the left-hand margin step should have been abandoned: ${session.sideReveals()}",
+      )
       session.sidescrolloff(0)
     }
   }
@@ -298,7 +314,7 @@ class RevealLikeAClickTest {
 
     session.type("h")
 
-    assertEquals(listOf("0:0!", "0:2"), session.steps())
+    assertEquals(listOf("0:0"), session.sideReveals())
     session.sidescrolloff(0)
   }
 
@@ -316,7 +332,7 @@ class RevealLikeAClickTest {
 
     session.type("l")
 
-    assertEquals(listOf("0:141!", "0:101"), session.steps())
+    assertEquals(listOf("0:141"), session.sideReveals())
     session.sidescrolloff(0)
   }
 

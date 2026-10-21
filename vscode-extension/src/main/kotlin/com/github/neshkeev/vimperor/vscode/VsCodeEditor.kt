@@ -1021,9 +1021,22 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val second = if (rightFirst) target.character - margin else target.character + margin
     val expected = pushedSelections
     fun stillCurrent() = pushedSelections == expected && canRevealLikeAClick(selections)
+    // **Revealed, not visited.** This used to send the cursor to the column and back, and a cursor
+    // move is painted: the caret was seen stepping ten columns out and returning on every keystroke,
+    // which is what this was reported for. The comment above claims both commands "arrive in the same
+    // task, before the editor paints, so the step is never drawn" - and each `executeCommand` is a
+    // separate RPC, so the main thread is free to paint between them. One column was never noticed;
+    // `'sidescrolloff'` columns are.
+    //
+    // `revealRange` moves no cursor and reveals horizontally, and its one cost is the vertical padding
+    // this file keeps meeting - so it is asked for only where it provably cannot scroll vertically,
+    // which is what `revealCaretColumn` already does with it. Within the padding of either edge the
+    // side margins are skipped rather than walked: `'sidescrolloff'` goes unhonoured there, and that
+    // is a better trade than a caret that jumps.
     fun revealColumn(character: Int) {
-      commands.executeCommand(command, cursorTo(target.line, character.coerceIn(0, length)))
-      commands.executeCommand(command, cursorTo(target.line, target.character, reveal = false))
+      if (!revealCannotScrollVertically(target.line)) return
+      val at = Position(target.line, character.coerceIn(0, length))
+      nativeEditor.revealRange(Range(at, at), TextEditorRevealType.Default)
     }
 
     revealColumn(first)

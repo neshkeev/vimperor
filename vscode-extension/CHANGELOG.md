@@ -6,6 +6,14 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- With `'sidescrolloff'` set, the caret could be seen jumping to the middle of the line and back on
+  every keystroke. Keeping the caret that many columns from the window's edges means asking VS Code
+  to show a column either side of it, and this extension was asking by sending the real cursor there
+  and back - which VS Code is free to paint before the cursor returns. The columns are revealed
+  instead, so no cursor moves. Where that cannot be done without also scrolling the window up or
+  down - within five rows of the top or bottom - the margins are left alone rather than walked, so
+  `'sidescrolloff'` has no effect that close to an edge.
+
 - A characterwise Visual selection can reach the end of the line, which it could not before. The
   clearest case is an empty line: `v` on one selected nothing at all, so `vd` there deleted nothing.
   Selecting a word or a paragraph that ends on a line boundary was off by one character for the same

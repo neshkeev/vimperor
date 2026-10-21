@@ -1686,6 +1686,38 @@ by default - is taller than the window. Every test in `RevealLikeAClickTest` use
 so the reveal has never been able to move the view in a test, and any future test for this needs a
 window taller than eleven rows before it needs a heading.
 
+### A column is revealed, not visited, because a cursor move is painted
+
+**The caret was seen stepping ten columns out and back on every keystroke**, reported twice. It only
+happens with `'sidescrolloff'` set - the option defaults to 0 - and the trace reads straight off the
+mechanism once you know what to look for: four selection reports per key, `(N,10)`, `(N,0)`,
+`(N,1)`, `(N,0)`. The first pair is the right-hand margin being *visited*; the second step asks for
+column `0 - 10`, which clamps to the caret's own column and so fires no event at all; the last pair
+is the caret's own one-column detour.
+
+`revealLikeAClick` honours `'sidescrolloff'` by sending the cursor to `caret ± margin` and back,
+under a comment saying both commands "arrive in the same task, before the editor paints, so the step
+is never drawn". **Each `executeCommand` is a separate RPC and the main thread is free to paint
+between them**, so the step is drawn whenever it feels like it. One column was never noticed; ten
+are. The assumption had been load-bearing and wrong since the mechanism was written.
+
+`revealRange` moves no cursor and reveals horizontally, so the margins use it, and its one cost is
+the vertical padding this file keeps meeting - so it is asked for only where
+`revealCannotScrollVertically` says a reveal cannot move the view at all, which is what
+`revealCaretColumn` already does with it. **The caret's own step still goes one column along and
+back**, and has to: it is the only way to make VS Code reveal a point the cursor is already on, and
+`revealRange` at the caret is what the vertical guard would refuse near an edge.
+
+**The residual is that `'sidescrolloff'` goes unhonoured within the reveal margin of the window's top
+or bottom row** - five rows by default - because that is where the guard refuses. A caret that stops
+jumping is the better trade, and the alternative was worse: gating the margins on the caret's
+absolute column instead, with `getApproximateScreenWidth`'s 80, would have switched the option off
+for every line shorter than that.
+
+Of ten tests five discriminate. The guards are `zs`/`ze`, which reach the edge by their own path, the
+two cancellation tests - `zl` and Insert mode, which assert that a step did *not* happen and so hold
+either way - and two matched only by the word "margin".
+
 ### `.` is a keystroke replay now, and it changed nothing here
 
 **VIM-1153 was ported and the measurement says it is behaviour-neutral in this host.** That is worth
