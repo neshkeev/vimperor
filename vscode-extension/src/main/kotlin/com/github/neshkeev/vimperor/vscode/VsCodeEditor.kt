@@ -813,13 +813,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // scrolled - a count, the `z` of `zl` - must not reveal it the old way either, or the window a
     // `zl` or a mouse wheel just moved comes straight back.
     if (!(moved || scrolled || revealCaretAfterFlush) && canRevealLikeAClick(selections)) return
-    // Read before the reveal is asked for, not after. In a window the reveal is an RPC and has not
-    // landed by the next line; in the stub `executeCommand` runs the handler there and then, so the
-    // view has already moved. The number this needs is where the view was *before* either way.
-    val topBeforeReveal = if (viewportIsStale) null else screenTopLine
     if ((moved || scrolled || revealCaretAfterFlush) && revealLikeAClick(selections)) {
       revealCaretAfterFlush = false
-      topBeforeReveal?.let { putBackTheScrollTheRevealTook(selections.single(), it) }
       // Kept for the modes that still reveal the old way: a caret far along its line leaves the window
       // scrolled off column zero, and coming back from Insert mode has to know that.
       revealedForColumn = selections.single().active.character >= injector.engineEditorHelper.getApproximateScreenWidth(this)
@@ -955,11 +950,9 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * use instead, because the column a window starts at cannot be read: a mouse wheel moves it without
    * telling an extension anything.
    *
-   * `_moveTo` is the command a click in the text runs, and it is the only one that reveals
-   * *horizontally* as well. **Its reveal is not the minimal one**, which this comment claimed for a
-   * release and which [putBackTheScrollTheRevealTook] now corrects for: the padding is dropped only
-   * when `source === "mouse"` or the reveal is flagged minimal, and this host passes a source of its
-   * own on purpose, so the vertical padding applies here exactly as it does to `revealRange`. `_moveToSelect` is the same keeping the selection's anchor. Neither reveals when the
+   * `_moveTo` is the command a click in the text runs, and its reveal is the minimal one - no
+   * padding, the vertical scroll only if the line is really off screen, and the horizontal one it was
+   * missing. `_moveToSelect` is the same keeping the selection's anchor. Neither reveals when the
    * cursor is already where it is sent, and after `selections` has just been written it always is -
    * so the cursor goes one column along first and then back. Both arrive in the same task, before the
    * editor paints, so the step is never drawn; and the second reveal is computed from the first one's
@@ -1117,64 +1110,6 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   }
 
   /** The cases [revealLikeAClick] leaves to [revealCaretColumn] - see its documentation. */
-  /**
-   * Puts the window back where Vim asked for it, after [revealLikeAClick] has padded it.
-   *
-   * **`_moveTo`'s reveal is padded like every other, and this file believed otherwise.** The comment
-   * on [revealLikeAClick] says its reveal is "the minimal one - no padding", and
-   * `_computeScrollTopToRevealRange` drops the padding for exactly one condition:
-   * `(source === "mouse" || minimalReveal) && cursorSurroundingLinesStyle === "default"`. This host
-   * passes `source: "vimperor.reveal"` on purpose - so that VS Code attributes the selection change
-   * to nobody and `selectionChanged` does not adopt this host's own echo - and **the minimal reveal
-   * and the un-attributed source are the same flag**, so asking for the one gives up the other. A
-   * real click is `"mouse"` and gets one line; this gets
-   * `max(cursorSurroundingLines, stickyScroll.maxLineCount)`, five by default.
-   *
-   * Reported as `zt` in a markdown file putting the caret's line five rows down. Sticky scroll is
-   * what made it visible rather than what caused it: a heading above the caret gives the file a scope
-   * to pin, which is what turns the five on. With sticky scroll off the margin is zero and every
-   * scroll command was always right, which is why this survived.
-   *
-   * The reveal's effect is arithmetic, so it is predicted and undone rather than avoided - the same
-   * shape as `scrollLineToBottom`, and for the same reason: there is no horizontal-only reveal to
-   * ask for instead. VS Code keeps `margin` lines above the caret and `max(margin - 1, 0) + 1` below,
-   * scrolls the minimum that satisfies both, and - for a reveal driven by the selections rather than
-   * by a range - does not scroll at all when the padded range is taller than the window. That last
-   * rule is why a ten-row window never showed this.
-   *
-   * Only one edge can be the minimum, so only one correction is ever sent. The bottom edge is
-   * corrected only where the height is known exactly: it is the one input here that can be a floor,
-   * and a wrong height would scroll the window for no reason, where too small a margin only leaves
-   * the old behaviour in place.
-   */
-  private fun putBackTheScrollTheRevealTook(selection: Selection, top: Int) {
-    val height = screenHeight
-    val margin = minOf(height / 2, revealMargin())
-    if (margin <= 0) return
-    // `2 * margin + 1`: the line, the margin above, and `margin - 1` plus the one line VS Code adds
-    // below for a cursor reveal. It will not scroll at all when that does not fit.
-    if (2 * margin + 1 > height) return
-    val line = selection.active.line
-    val lastLine = maxOf(0, lineCount() - 1)
-    val predicted = when {
-      top > line - margin -> maxOf(0, line - margin)
-      !screenHeightIsFloor && top < line + margin - height + 1 ->
-        minOf(lastLine, line + margin - height + 1)
-      else -> return
-    }
-    val correction = top - predicted
-    if (correction == 0) return
-    commands.executeCommand(
-      VsCodeCommands.EDITOR_SCROLL,
-      json(
-        "to" to if (correction > 0) "down" else "up",
-        "by" to "line",
-        "value" to abs(correction),
-        "revealCursor" to false,
-      ),
-    )
-  }
-
   private fun canRevealLikeAClick(selections: List<Selection>): Boolean {
     if (selections.size != 1) return false
     if (window.activeTextEditor !== nativeEditor) return false

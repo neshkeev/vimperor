@@ -6,17 +6,6 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
-- `zt` put the caret's line five rows below the top of the window instead of at the top, in any file
-  where sticky scroll had something to pin - a heading in Markdown, a function in code. `zb` was
-  wrong the same way at the bottom edge, and so was any motion that landed within five rows of
-  either edge: `k` onto the top row scrolled the window where Vim leaves it alone.
-
-  The cause is that every reveal VS Code offers an extension is padded, including the one a click
-  uses, and the padding is `editor.stickyScroll.maxLineCount` while sticky scroll is showing. This
-  extension brings the caret into view after a scroll so that the window follows it sideways, and
-  that reveal was quietly undoing the scroll it had just asked for. The window is now put back where
-  Vim asked for it. With sticky scroll off there is no padding and nothing changes.
-
 - A characterwise Visual selection can reach the end of the line, which it could not before. The
   clearest case is an empty line: `v` on one selected nothing at all, so `vd` there deleted nothing.
   Selecting a word or a paragraph that ends on a line boundary was off by one character for the same
