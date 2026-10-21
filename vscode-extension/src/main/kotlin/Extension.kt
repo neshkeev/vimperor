@@ -17,6 +17,7 @@ import com.github.neshkeev.vimperor.vscode.ExtensionContext
 import com.github.neshkeev.vimperor.vscode.IdeaActionAliases
 import com.github.neshkeev.vimperor.vscode.MessageLine
 import com.github.neshkeev.vimperor.vscode.NodeFileSystem
+import com.github.neshkeev.vimperor.vscode.OUTPUT_SCHEME
 import com.github.neshkeev.vimperor.vscode.OutputChannel
 import com.github.neshkeev.vimperor.vscode.RelativePattern
 import com.github.neshkeev.vimperor.vscode.OutputChannelPanelService
@@ -189,7 +190,11 @@ fun activate(context: ExtensionContext) {
     // Tracked against the editor as well as the mode, because a newly focused editor needs the
     // shape applied even when the mode has not changed: VS Code gives each editor its own options,
     // and one opened while in Normal mode would otherwise keep the user's default bar.
-    val editor = window.activeTextEditor
+    //
+    // The editor the keys go to rather than whichever one VS Code calls active, because the shape
+    // *is* the mode indicator and a mode is a thing only a buffer has. Focusing the Output panel
+    // drew a Vim block caret in it, which is the cosmetic half of the caret jumping there.
+    val editor = vim.editorForKeystroke(window.activeTextEditor)
     if (editor != null && (mode != lastMode || editor !== styledEditor)) {
       styledEditor = editor
       editor.options.cursorStyle = vim.cursorStyleFor(mode)
@@ -233,7 +238,7 @@ fun activate(context: ExtensionContext) {
       is ComposedTextDecision.KeepOut ->
         traceLine(output, "$id: kept out of the document, a command is being typed")
       is ComposedTextDecision.Commit -> {
-        val editor = window.activeTextEditor ?: vim.editorForKey()
+        val editor = vim.editorForKeystroke(window.activeTextEditor)
         if (editor == null) {
           traceLine(output, "$id: committed '" + decision.text + "' with no editor of this host's: dropped")
         } else {
@@ -248,12 +253,13 @@ fun activate(context: ExtensionContext) {
   }
 
   val typing = commands.registerCommand("type") { arguments ->
-    // `window.activeTextEditor` is asked first and is not trusted alone: it answers null while
-    // focus flickers out of the editor area and back, and at startup before a restored editor has
-    // been focused. VS Code runs `type` only when a text editor has the keyboard, so a null here is
-    // a stale answer and `editorForKey` is the editor that still has it. Trusting the null is what
-    // put a `0` in the buffer where Normal mode should have moved the caret.
-    val editor = window.activeTextEditor ?: vim.editorForKey()
+    // What `window.activeTextEditor` says is not trusted on its own, in either direction. It
+    // answers null while focus flickers out of the editor area and back, and at startup before a
+    // restored editor has been focused - and trusting that null is what put a `0` in the buffer
+    // where Normal mode should have moved the caret. It also answers the **Output panel**, which is
+    // a text editor and is where the caret went when that was taken for a file. See
+    // [VimHost.editorForKeystroke].
+    val editor = vim.editorForKeystroke(window.activeTextEditor)
     val text = arguments?.text as? String
     // A composition's first update arrives here rather than at `replacePreviousChar`, because its
     // `replacePrevCharCnt` is zero and a zero count is routed to `type`. So this is asked before
@@ -310,9 +316,10 @@ fun activate(context: ExtensionContext) {
   // carries the Vim notation for the key it stands for, so the manifest and the engine agree
   // without a table in between.
   val namedKey = commands.registerCommand("vimperor.key") { arguments ->
-    // The same fallback as `type`, and for the same reason: a named key is dropped outright when
-    // there is no editor, so `<Esc>` landing in the flicker left the mode where it was.
-    val editor = window.activeTextEditor ?: vim.editorForKey()
+    // The same question as `type` asks, and for the same two reasons: a named key is dropped
+    // outright when there is no editor, so `<Esc>` landing in the flicker left the mode where it
+    // was - and a key pressed in the Output panel is not Vim's to run.
+    val editor = vim.editorForKeystroke(window.activeTextEditor)
     val notation = arguments as? String ?: arguments?.key as? String
 
     // The workbench layout, which a `when` clause can read and an extension cannot. Only the `<CR>`
@@ -358,7 +365,7 @@ fun activate(context: ExtensionContext) {
   val selectionChanged = window.onDidChangeTextEditorSelection { event ->
     val outcome = vim.selectionChanged(event.textEditor, event.kind)
     refreshMode()
-    if (tracing() && event.textEditor.document.uri.scheme != "output") {
+    if (tracing() && event.textEditor.document.uri.scheme != OUTPUT_SCHEME) {
       val reported = event.selections.joinToString(", ") {
         "(${it.anchor.line},${it.anchor.character})-(${it.active.line},${it.active.character})"
       }
@@ -386,7 +393,7 @@ fun activate(context: ExtensionContext) {
     //
     // Never the Output panel's own document, for the reason the selection listener says: the trace
     // is written there, writing to it changes it, and tracing that change writes another line.
-    if (tracing() && event.document.uri.scheme != "output") {
+    if (tracing() && event.document.uri.scheme != OUTPUT_SCHEME) {
       val described = event.contentChanges.joinToString(", ") {
         "@${it.rangeOffset} -${it.rangeLength} +'${it.text}'"
       }
@@ -590,7 +597,7 @@ fun activate(context: ExtensionContext) {
   // [VimHost.pasteIntoCommandLine]. The manifest claims the chord only while the prompt is open, so
   // in every other mode VS Code's own paste is what runs.
   val pasteInCommandLine = commands.registerCommand("vimperor.pasteInCommandLine") {
-    val editor = window.activeTextEditor
+    val editor = vim.editorForKeystroke(window.activeTextEditor)
     if (editor != null) {
       reporting(output, "pasting into the command line") {
         vim.pasteIntoCommandLine(editor) {
@@ -604,7 +611,7 @@ fun activate(context: ExtensionContext) {
   // `cmd+v` in Replace mode. VS Code's own paste inserts; Vim's Replace mode overwrites, so the
   // editor's binding is taken over for that one mode. See `VimHost.pasteInReplaceMode`.
   val pasteInReplaceMode = commands.registerCommand("vimperor.pasteInReplaceMode") {
-    val editor = window.activeTextEditor ?: vim.editorForKey()
+    val editor = vim.editorForKeystroke(window.activeTextEditor)
     if (editor != null) {
       reporting(output, "pasting in replace mode") {
         vim.pasteInReplaceMode(editor) {

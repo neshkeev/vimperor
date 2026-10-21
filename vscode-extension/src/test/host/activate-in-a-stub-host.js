@@ -113,10 +113,10 @@ class Range {
 /** The one file this host has open, named in both the document and the tab that shows it. */
 const bufferPath = '/test/buffer.txt'
 
-function makeEditor(text) {
+function makeEditor(text, { path = bufferPath, scheme = 'file' } = {}) {
   const document = {
-    uri: { scheme: 'file', path: bufferPath, fsPath: bufferPath },
-    fileName: bufferPath,
+    uri: { scheme, path, fsPath: path },
+    fileName: path,
     isUntitled: false,
     // This host's file uses `\n`; `DocumentBufferTest` is where the CRLF side is checked.
     eol: 1,
@@ -244,15 +244,20 @@ const bufferTab = {
 const selectionListeners = []
 
 /**
- * The Output panel's own editor, which VS Code reports selection changes for like any other: a line
- * appended to the channel moves its caret to the next line. Reported only where it is checked.
+ * The Output panel's own editor, which is a text editor like any other - that is the whole of the
+ * bug it is used for below - and which VS Code reports selection changes for: a line appended to
+ * the channel moves its caret to the next line. Reported only where it is checked.
+ *
+ * A whole editor rather than a document and a scheme, so that a host adopting it as a buffer gets
+ * what a real window would give it. A stub too thin to be driven would have failed the scenario by
+ * throwing, which is not the same as failing it for the reason it was written.
  */
 let outputEditorReportsSelections = false
 let outputSelectionEvents = 0
-const outputEditor = {
-  document: { uri: { scheme: 'output', path: 'extension-output-neshkeev.vimperor-#1-Vimperor' } },
-  selections: [],
-}
+const outputEditor = makeEditor('Vimperor is running.\nVimperor: the trace is written here.', {
+  path: 'extension-output-neshkeev.vimperor-#1-Vimperor',
+  scheme: 'output',
+})
 function outputCaretMoved() {
   if (!outputEditorReportsSelections) return
   // Bounded, so that a loop fails the assertion that checks for one rather than overflowing the stack.
@@ -1151,6 +1156,67 @@ type('i')
 press('<Esc>')
 assert.strictEqual(editor.options.cursorStyle, 2, 'Escape with no active editor did not leave Insert mode')
 vscode.window.activeTextEditor = editor
+reset()
+
+// The other thing `window.activeTextEditor` answers that a keystroke cannot use: the Output panel.
+//
+// That panel is a text editor, and VS Code names it active the moment it takes the keyboard. This
+// host adopted it like any other file - registering an editor is what makes the engine consider it
+// focused - so from then on every flush pushed a caret into the panel and every key moved it. The
+// trace of the report is exact: `gg` scrolled the panel to its top and `V` selected its first line,
+// in a document growing under the caret because the trace is written there. Only this script can
+// see it: the field and all three handlers that read it are in `Extension.kt`.
+reset()
+type('i')
+for (const character of 'one two three') type(character)
+press('<Esc>')
+dispatchedCommands.length = 0
+contextsSet.length = 0
+const panelTextBefore = outputEditor.document._text
+const panelCaretBefore = JSON.stringify(outputEditor.selections)
+const panelTopBefore = outputEditor.topLine
+
+vscode.window.activeTextEditor = outputEditor
+for (const listener of activeEditorListeners) listener(outputEditor)
+type('V')
+type('x')
+press('<Esc>')
+
+assert.strictEqual(
+  editor.document._text,
+  'one two three',
+  `a key pressed in the Output panel reached the file instead. Got: ${editor.document._text}`,
+)
+assert.strictEqual(
+  outputEditor.document._text,
+  panelTextBefore,
+  `a key pressed in the Output panel edited the panel. Got: ${outputEditor.document._text}`,
+)
+assert.strictEqual(
+  JSON.stringify(outputEditor.selections),
+  panelCaretBefore,
+  `a Vim caret was pushed into the Output panel. Got: ${JSON.stringify(outputEditor.selections)}`,
+)
+assert.strictEqual(
+  outputEditor.topLine,
+  panelTopBefore,
+  `the Output panel was scrolled by a Vim command. Got line ${outputEditor.topLine}`,
+)
+assert.deepStrictEqual(
+  contextsSet.filter((args) => args[0] === 'vimperor.mode'),
+  [],
+  `a key in the Output panel changed the window's mode. Sent: ${JSON.stringify(contextsSet)}`,
+)
+// Handed back rather than swallowed, which is the same answer `type` gives for any editor this host
+// has no Vim state for - and a no-op in a real window, because the panel is read only.
+assert.deepStrictEqual(
+  dispatchedCommands,
+  ['default:type', 'default:type'],
+  `typing in the Output panel should go to VS Code and nowhere else. Dispatched: ${dispatchedCommands.join(', ')}`,
+)
+
+vscode.window.activeTextEditor = editor
+for (const listener of activeEditorListeners) listener(editor)
 reset()
 
 // Dead keys and input methods (VIM-1503), which only this script can test: the four commands a

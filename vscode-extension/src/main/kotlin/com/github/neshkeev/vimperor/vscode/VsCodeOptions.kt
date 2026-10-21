@@ -846,7 +846,7 @@ internal fun setWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
   // trace showed it exactly - a press asked for one document, an activation of another on the next
   // line, and the second document wrapping with this host believing it had no override.
   //
-  // `keyboardProvedIn` is the same reasoning as `VimHost.editorForKey`, which this file's problem is
+  // `keyboardProvedIn` is the same reasoning as `VimHost.editorForKeystroke`, which this file's problem is
   // a second instance of: a key that arrived is proof the editor had the keyboard, where
   // `activeTextEditor` is only a claim. The cost is that a wrap asked for off screen waits for a key
   // in that file rather than for the tab to be shown.

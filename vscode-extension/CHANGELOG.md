@@ -22,6 +22,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **The caret could jump into the Output panel and the keys would follow it there.** `gg` scrolled
+  that panel to its top, `V` selected a line of it and `x` deleted from it, while the file you were
+  editing sat untouched. As far as VS Code's API is concerned the Output panel *is* a text editor,
+  and it is reported as the active one the moment it takes the keyboard - so Vimperor adopted it as
+  a buffer, drew a Vim caret in it, and gave it every keystroke. It is now refused: a key pressed
+  while that panel has the keyboard is not Vim's, and is handed back to VS Code rather than run.
+
 - Editing a config that was not the one in force did nothing and said nothing. All the paths were
   being watched, but a change only counted when it changed the *winning* file - so with a
   `~/.vimperorrc` present, saving `~/.ideavimrc` or `~/.vimrc` was silence indistinguishable from a

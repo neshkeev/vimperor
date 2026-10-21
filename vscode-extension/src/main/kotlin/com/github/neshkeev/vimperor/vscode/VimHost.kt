@@ -202,7 +202,32 @@ class VimHost(
    * for the engine to run a command when there is no window yet.
    */
   fun startupEditor(textEditor: TextEditor?): VimEditor =
-    textEditor?.let { editorFor(it) } ?: vimInjector.fallbackWindow
+    textEditor?.takeIf { isBuffer(it) }?.let { editorFor(it) } ?: vimInjector.fallbackWindow
+
+  /**
+   * Whether a `TextEditor` VS Code has handed over is a buffer this host may own, rather than one of
+   * the workbench's own views wearing a text editor's clothes.
+   *
+   * **The Output panel is a text editor**, and `window.activeTextEditor` names it the moment that
+   * panel takes the keyboard - scheme `output`, path `extension-output-<publisher>.<name>-#1-...`.
+   * This host adopted it like any other file: [activeEditorChanged] handed it to [editorFor], which
+   * registers an editor with the engine and so makes it the one the engine considers focused. From
+   * then on every flush pushed a caret into it and every key moved that caret. Reported as the
+   * caret jumping to the output window, and the trace of it is exact - `gg` scrolled the panel to
+   * its top and `V` selected its first line, in a document that was growing under the caret because
+   * the trace is written there.
+   *
+   * A key typed there is not Vim's at all, which is the other half: [editorForKeystroke] answers
+   * null rather than falling back to the editor that *had* the keyboard, because driving a file the
+   * user cannot see would be worse than doing nothing.
+   *
+   * It names the one scheme to refuse rather than listing the ones allowed, and that is deliberate:
+   * everything else VS Code shows in a text editor is a buffer somebody navigates, the read-only
+   * ones included - the `git:` side of a diff, `vscode-userdata:` settings, the untitled document
+   * `q:` opens - and Vim's motions have to work in all of them.
+   */
+  private fun isBuffer(textEditor: TextEditor): Boolean =
+    textEditor.document.uri.scheme != OUTPUT_SCHEME
 
   /** The Vim editor for [textEditor], created on first sight and reused after. */
   fun editorFor(textEditor: TextEditor): VsCodeEditor {
@@ -252,6 +277,9 @@ class VimHost(
    * taken as the truth rather than reconciled against what was believed.
    */
   fun wordWrapToggled(textEditor: TextEditor, wasWrapping: Boolean) {
+    // Not the Output panel's, which `Alt+Z` reaches as readily as any editor - and `'wrap'` is not
+    // a thing that panel has. See [isBuffer].
+    if (!isBuffer(textEditor)) return
     wordWrapToggledByHand(editorFor(textEditor), wasWrapping)
   }
 
@@ -426,12 +454,22 @@ class VimHost(
   private var keyedEditor: TextEditor? = null
 
   /**
-   * Where a key goes when `window.activeTextEditor` answers null. See [keyedEditor].
+   * Which editor a keystroke belongs to, given whatever `window.activeTextEditor` answered.
    *
-   * Null only before this host has seen any editor at all, which is the one case where handing the
-   * key back to VS Code is the right answer: there is no Vim state to interpret it with.
+   * Three answers, not two. An editor that is a buffer is the answer outright. A **null** is a
+   * stale answer rather than a true one - VS Code runs `type` only while a text editor has the
+   * keyboard - so [keyedEditor], the editor this host last handled a key in, is the one that still
+   * has it. And a **non-buffer** is a refusal: the Output panel has the keyboard, the key is not
+   * Vim's, and falling back to [keyedEditor] there would drive a file off screen. See [isBuffer].
+   *
+   * Null before this host has seen any editor at all as well, which is the one case where handing
+   * the key back to VS Code is right: there is no Vim state to interpret it with.
    */
-  internal fun editorForKey(): TextEditor? = keyedEditor
+  internal fun editorForKeystroke(active: TextEditor?): TextEditor? = when {
+    active == null -> keyedEditor
+    isBuffer(active) -> active
+    else -> null
+  }
 
   /**
    * Vim's alternate file, `#`: the buffer that was current before this one.
@@ -450,6 +488,11 @@ class VimHost(
    * Returns what it did to the mode, for the trace, or null when it did nothing.
    */
   fun activeEditorChanged(editor: TextEditor?): String? {
+    // The Output panel taking the keyboard is not a buffer change, and adopting it as one is what
+    // put a Vim caret in the output window. Nothing here is touched: not `lastActiveEditor`, which
+    // would make `#` name the panel and fire `BufLeave` for the file still on screen, and not
+    // `keyedEditor`, which goes on naming the editor the keys were going to. See [isBuffer].
+    if (editor != null && !isBuffer(editor)) return "the Output panel is not a buffer"
     val left = lastActiveEditor
     lastActiveEditor = editor
     // Only ever set, never cleared here: this is the editor a key is going to, and the null half of
@@ -1036,6 +1079,15 @@ class VimHost(
     const val WORKBENCH_SETTLE_MILLIS = 50
   }
 }
+
+/**
+ * The scheme VS Code gives the Output panel's document.
+ *
+ * As far as the API is concerned that panel is a text editor like any other, which is both why the
+ * trace listeners skip it - the trace is written there, so tracing a write to it writes another
+ * line - and why [VimHost.isBuffer] has to refuse it. Named once so the two are one fact.
+ */
+internal const val OUTPUT_SCHEME = "output"
 
 /** Node's environment, which is the user's - `HOME`, `XDG_CONFIG_HOME` and the rest. */
 private fun environmentVariable(name: String): String? = injector.systemInfoService.getenv(name)

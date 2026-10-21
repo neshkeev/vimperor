@@ -435,13 +435,16 @@ class VimHostTest {
     assertEquals(listOf("workbench.action.nextEditor"), session.commands.dispatched)
   }
 
-  // ---- Which editor a key belongs to, when VS Code has stopped saying.
+  // ---- Which editor a key belongs to, when VS Code answers something a keystroke cannot use.
   //
-  // `window.activeTextEditor` flickers to null and back whenever focus leaves the editor area, and
-  // is null at startup before a restored editor has been focused. `Extension.kt` used to read it
-  // alone, and a key that arrived in one of those windows was handed to `default:type` - which
-  // inserts it. `editorForKey` is what it reads instead. The handler itself is checked in the stub
-  // host, which is the only place `Extension.kt` runs; these are the invariants the field owes it.
+  // Two ways it does that, and they pull in opposite directions. `window.activeTextEditor` flickers
+  // to null and back whenever focus leaves the editor area, and is null at startup before a
+  // restored editor has been focused - `Extension.kt` used to read it alone, and a key arriving in
+  // one of those windows was handed to `default:type`, which inserts it. And it answers the Output
+  // panel, which is a text editor, and which this host adopted as a buffer: the caret jumped there
+  // and the keys went with it. `editorForKeystroke` is what is read instead. The handlers are
+  // checked in the stub host, which is the only place `Extension.kt` runs; these are the invariants
+  // it owes them.
 
   @Test
   fun `test the editor a key goes to survives VS Code answering null for the active one`() {
@@ -451,7 +454,7 @@ class VimHostTest {
 
     assertEquals(
       session.fake,
-      session.host.editorForKey(),
+      session.host.editorForKeystroke(null),
       "focus leaving the editor area and coming back must not lose where the keys go",
     )
   }
@@ -459,11 +462,11 @@ class VimHostTest {
   @Test
   fun `test a key has somewhere to go as soon as one has been handled`() {
     val session = Session("one two")
-    assertNull(session.host.editorForKey(), "nothing has been typed into yet")
+    assertNull(session.host.editorForKeystroke(null), "nothing has been typed into yet")
 
     session.type("x")
 
-    assertEquals(session.fake, session.host.editorForKey())
+    assertEquals(session.fake, session.host.editorForKeystroke(null))
   }
 
   /**
@@ -477,11 +480,53 @@ class VimHostTest {
 
     session.fake.document.isClosed = false
     session.host.forgetDocument(session.fake.document)
-    assertEquals(session.fake, session.host.editorForKey(), "a language change is not a close")
+    assertEquals(session.fake, session.host.editorForKeystroke(null), "a language change is not a close")
 
     session.fake.document.isClosed = true
     session.host.forgetDocument(session.fake.document)
-    assertNull(session.host.editorForKey(), "a closed document is nowhere to send a key")
+    assertNull(session.host.editorForKeystroke(null), "a closed document is nowhere to send a key")
+  }
+
+  /**
+   * The Output panel is a text editor, and VS Code reports it active when it takes the keyboard.
+   *
+   * Adopting it is what put a Vim caret in the output window: registering an editor is what makes
+   * the engine consider it focused, and from there every flush pushed a caret into the panel and
+   * every key moved it. `gg` scrolled the panel to its top and `V` selected its first line - in a
+   * document that was growing under the caret, because the trace is written there.
+   */
+  @Test
+  fun `test the Output panel is not adopted as a buffer`() {
+    val session = Session("one two")
+    session.type("x")
+    val panel = FakeEditor("Vimperor is running.", "/extension-output-vimperor", scheme = "output")
+
+    assertEquals("the Output panel is not a buffer", session.host.activeEditorChanged(panel))
+    assertTrue(
+      session.host.describeState(panel).contains("no editor registered"),
+      "the panel must not be registered with the engine: " + session.host.describeState(panel),
+    )
+    assertEquals(
+      session.fake,
+      session.host.editorForKeystroke(null),
+      "the keys were going to the file and the panel does not take them",
+    )
+  }
+
+  /**
+   * And a key pressed while that panel has the keyboard is not Vim's to run.
+   *
+   * Null rather than the fallback to [VimHost.editorForKeystroke]'s remembered editor, which is the
+   * one place that fallback would be wrong: VS Code really is saying which editor has the keyboard,
+   * and driving a file the user cannot see is worse than doing nothing.
+   */
+  @Test
+  fun `test a key pressed in the Output panel reaches no editor`() {
+    val session = Session("one two")
+    session.type("x")
+    val panel = FakeEditor("Vimperor is running.", "/extension-output-vimperor", scheme = "output")
+
+    assertNull(session.host.editorForKeystroke(panel))
   }
 
   /**

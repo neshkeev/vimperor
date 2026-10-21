@@ -442,7 +442,7 @@ Code answers by *clearing* the override it does have. Both directions are then w
 so it is stable rather than flickering - and `:set wrap?` answers from the belief, so it agrees with
 itself and not with the screen.
 
-`keyboardProvedIn` is the fix and it is `VimHost.editorForKey`'s reasoning a second time: **a key
+`keyboardProvedIn` is the fix and it is `VimHost.editorForKeystroke`'s reasoning a second time: **a key
 that arrived is proof the editor had the keyboard, where `activeTextEditor` is only a claim.** It is
 deliberately not `keyedEditor`, which an activation sets as well - that field answers "where does the
 next key go", which is a different question and can name a tab the user has already left. So a wrap
@@ -1341,8 +1341,8 @@ goes to a panel and returns", and `startupEditor` says it "is often null at exac
 `.ideavimrc` should be read". Neither note had been carried across to the keystroke path. **VS Code
 runs `type` only when a text editor has the keyboard**, so a null arriving there is a stale answer
 rather than a true one - and the last editor this host handled a key in is the editor that still has
-the focus. `VimHost.editorForKey` is that note, and `vimperor.key` reads it too: a named key was
-*dropped* in the same window, so an `<Esc>` could leave the mode where it was.
+the focus. `VimHost.editorForKeystroke` is that note, and `vimperor.key` reads it too: a named key
+was *dropped* in the same window, so an `<Esc>` could leave the mode where it was.
 
 It is deliberately not `lastActiveEditor`, which is a different fact - what `BufLeave` will name, and
 which has to go null when focus leaves the editor area. The flicker is the thing that field is *for*.
@@ -1378,6 +1378,53 @@ log reads as a key that was never sent. `traceLine` writes both cases now.
 not, and `default:type` was never dispatched. The three tests in `VimHostTest` cover the invariants
 the field owes it: it survives a null, it is set by the first keystroke, and it goes with its
 document - on a real close only, which is the distinction `forgetDocument` already turns on.
+
+### The Output panel is a text editor, and this host adopted it as a buffer
+
+**The caret jumped into the output window and the keys followed it there.** `gg` scrolled that panel
+to its top, `V` selected its first line, and `x` deleted from it - in a document that was growing
+under the caret, because the trace is written there.
+
+**The same field, read the other way round.** The section above is about `window.activeTextEditor`
+answering *less* than the truth; this is about it answering more. The Output panel is a text editor
+as far as the API is concerned, and that field names it the moment the panel takes the keyboard -
+scheme `output`, path `extension-output-<publisher>.<name>-#1-...`. Every door that took a
+`TextEditor` from VS Code handed it to `editorFor`, which is what **registers** an editor with the
+engine and so makes it the one the engine considers focused. From there it is not a near miss: the
+panel is in `editors`, so every flush pushes a caret into it, `'hlsearch'` paints it, and
+`applyEditorOptions` writes Vim's gutter and indent onto it.
+
+`VimHost.isBuffer` is the whole fix and it is one comparison. What took the thought is where to put
+it, and the answer is that there are **five doors**, not one: the activation, a keystroke, `Alt+Z`,
+either paste, and startup. `editorFor` cannot be the choke point - it has to return a
+`VsCodeEditor`, and there is nothing to return for a non-buffer - so each door asks. A throwaway
+wrapper was considered and is not enough: the mode is global, so `V` in the panel would still put
+the *window* into Visual mode even if nothing were registered.
+
+**A key pressed there is refused rather than redirected**, which is the one judgement in this.
+`editorForKeystroke` has three answers where it used to have two: an editor that is a buffer, the
+remembered editor when VS Code says null, and **null** for a non-buffer. Falling back to the
+remembered one there would be worse than the bug - VS Code really is saying which editor has the
+keyboard, and driving a file off screen beats nothing only if you cannot see either. `type` hands
+the character to `default:type`, which is a no-op on a read-only panel; a named key is dropped.
+
+**It names the one scheme to refuse rather than listing the ones allowed**, deliberately. Everything
+else VS Code shows in a text editor is a buffer somebody navigates, the read-only ones included -
+the `git:` side of a diff, `vscode-userdata:` settings, the untitled document `q:` opens - and Vim's
+motions have to work in all of them. `OUTPUT_SCHEME` is one constant now, because the two trace
+listeners already skipped that scheme for a related reason: the trace is written there, so tracing a
+write to it writes another line.
+
+**The cosmetic half is `refreshMode`**, which wrote the caret *shape* onto `activeTextEditor` - a
+Vim block caret drawn in the panel. It reads `editorForKeystroke` too: the shape is the mode
+indicator, and a mode is a thing only a buffer has.
+
+**All three tests discriminate, and the stub host's is the one that names the bug.** Ablated, it
+fails on `a key pressed in the Output panel edited the panel` - the file was untouched and the panel
+had taken the keys, which is the report exactly. `VimHostTest` covers the two host-side facts: the
+activation is refused, and `editorForKeystroke` answers null for the panel. The stub's `outputEditor`
+had to grow from a document and a scheme into a whole editor for that: a stub too thin to be driven
+would have failed the scenario by throwing, which is not the same as failing it for the right reason.
 
 ### Reading IdeaVim's commits for fixes worth taking, and the four reasons most are not
 

@@ -25,6 +25,13 @@ class FakeDocument(
   path: String = "/test/buffer.txt",
   /** An unnamed buffer, as `:enew` or `q:` opens. Vim's `%` is empty for one. */
   override val isUntitled: Boolean = false,
+  /**
+   * Which kind of thing VS Code is showing, which is not always a file.
+   *
+   * `output` is the one that matters, because the Output panel is a text editor and the host has to
+   * refuse it - see [VimHost.isBuffer]. A fake that could only be a file could not say so.
+   */
+  scheme: String = "file",
 ) : TextDocument {
   var content: String = text
     internal set
@@ -37,7 +44,7 @@ class FakeDocument(
    * really replacing the first. That hid a real bug: a replaced editor was inheriting its
    * window-local options from the fallback window rather than from the editor it replaced.
    */
-  override val uri: Uri = FakeUri("file", path)
+  override val uri: Uri = FakeUri(scheme, path)
   override val fileName: String get() = uri.fsPath
 
   /** VS Code's language mode, which `'filetype'` and `'syntax'` write through `languages`. */
@@ -109,8 +116,13 @@ data class RecordedReveal(val start: Int, val end: Int, val type: Int)
 /** A single replacement, in the offsets it was made against, so a test can see how wide it was. */
 data class RecordedEdit(val start: Int, val end: Int, val text: String)
 
-class FakeEditor(text: String, path: String = "/test/buffer.txt", untitled: Boolean = false) : TextEditor {
-  override val document: FakeDocument = FakeDocument(text, path, untitled)
+class FakeEditor(
+  text: String,
+  path: String = "/test/buffer.txt",
+  untitled: Boolean = false,
+  scheme: String = "file",
+) : TextEditor {
+  override val document: FakeDocument = FakeDocument(text, path, untitled, scheme)
   override var selections: Array<Selection> = arrayOf(Selection(Position(0, 0), Position(0, 0)))
 
   /**
