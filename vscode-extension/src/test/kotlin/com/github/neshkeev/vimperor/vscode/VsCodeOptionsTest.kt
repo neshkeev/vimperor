@@ -934,8 +934,11 @@ class VsCodeOptionsTest {
 
       val later = FakeEditor("later\nfile", path = "/test/later.txt")
       session.host.activeEditorChanged(later)
+      assertEquals(emptyList(), session.toggles(), "an activation cannot aim the toggle")
 
-      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles())
+      session.host.key(later, "<Esc>")
+
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles(), "the first key in it delivers")
       assertTrue(wordWrapNow(session.host.editorFor(later)), "the new tab wraps, as Vim means it to")
     } finally {
       reset()
@@ -1033,7 +1036,7 @@ class VsCodeOptionsTest {
    * the case this exists for.
    */
   @Test
-  fun `test a wrap asked for off screen waits for the file`() {
+  fun `test a wrap asked for off screen waits for a key in the file`() {
     try {
       val session = Session()
       val other = FakeEditor("other\nfile", path = "/test/other.txt")
@@ -1046,8 +1049,15 @@ class VsCodeOptionsTest {
       assertTrue(wordWrapNow(otherEditor), "though `:set wrap?` answers with what was asked for")
 
       session.host.activeEditorChanged(other)
+      assertEquals(
+        emptyList(),
+        session.toggles(),
+        "an activation cannot aim the toggle: the press would land on whatever the user moved to next",
+      )
 
-      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles(), "delivered once it is")
+      session.host.key(other, "<Esc>")
+
+      assertEquals(listOf(VsCodeCommands.TOGGLE_WORD_WRAP), session.toggles(), "delivered by the first key in it")
     } finally {
       reset()
     }

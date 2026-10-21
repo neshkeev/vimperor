@@ -464,10 +464,11 @@ class VimHost(
       // now means the answer is there before the first key. A file opened and never edited is
       // otherwise asked about only when a text object declines once.
       symbols.refresh(editor.document)
-      // A wrap asked for while this file was not the one on screen can be delivered now that it is.
-      // `editor.action.toggleWordWrap` runs against whatever has focus and cannot be aimed, so this
-      // is the moment the ask becomes possible. See [WordWrapSettingMapper].
-      applyPendingWordWrap(editorFor(editor))
+      // A pending wrap is deliberately *not* delivered here, and that is the fix for the wrap
+      // working backwards. The toggle cannot be aimed and the press is not waited for, so one sent
+      // in answer to an activation executes after any switch already queued behind it - and toggles
+      // whichever file the user has moved to. The ask waits for a key in the file instead, which is
+      // the only proof of focus there is. See [keyboardProvedIn].
       fire(AutoCmdEvent.BufEnter, editorFor(editor))
     }
     return if (ended) "Visual mode ended in the editor left behind" else null
@@ -582,6 +583,9 @@ class VimHost(
     // arriving here is proof that this editor has the keyboard, whatever `activeTextEditor` says a
     // moment later. See [keyedEditor].
     keyedEditor = textEditor
+    // And the proof that this editor has the keyboard *now*, which is what aims the word-wrap
+    // toggle. Separate from `keyedEditor` because that is also set by an activation.
+    keyboardProvedIn = identityOf(textEditor)
     // Someone else may have edited the document since the last command - the user with a mouse, a
     // formatter, a language server. The engine reads the buffer, so it has to be told first.
     if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()

@@ -770,6 +770,15 @@ internal class WordWrapSettingMapper : LocalOptionValueOverride<VimInt> {
  * initialising a window is synchronous and there is one thread, so no two are ever inside it at
  * once.
  */
+/**
+ * The editor a keystroke last reached, which is the only proof of focus this host can get.
+ *
+ * Deliberately not `VimHost.keyedEditor`, which an *activation* sets as well - that is the field for
+ * "where does the next key go", and it answers for a tab the user may already have left. This one is
+ * written only from `VimHost.handle`, so it is a fact about a key that arrived. See [setWordWrap].
+ */
+internal var keyboardProvedIn: String? = null
+
 internal var openingAWindow: Boolean = false
 
 /**
@@ -828,9 +837,22 @@ internal fun wordWrapNow(editor: VsCodeEditor): Boolean {
  */
 internal fun setWordWrap(editor: VsCodeEditor, wrapping: Boolean) {
   val state = wordWraps.getOrPut(editor.getPath()) { DocumentWrap() }
-  if (injector.editorGroup.getFocusedEditor() !== editor) {
+  // **Only a keystroke proves which editor the toggle will reach.** `editor.action.toggleWordWrap`
+  // acts on whatever has focus and cannot be aimed, and the press is a command this host sends and
+  // does not wait for - so it executes on the main thread *after* whatever the main thread has done
+  // since. An activation is the dangerous moment: the extension host hears about it only once it has
+  // happened, so a press sent in answer to one lands after any switch already queued behind it, and
+  // toggles the file the user has moved to instead. Reported as the wrap working backwards, and the
+  // trace showed it exactly - a press asked for one document, an activation of another on the next
+  // line, and the second document wrapping with this host believing it had no override.
+  //
+  // `keyboardProvedIn` is the same reasoning as `VimHost.editorForKey`, which this file's problem is
+  // a second instance of: a key that arrived is proof the editor had the keyboard, where
+  // `activeTextEditor` is only a claim. The cost is that a wrap asked for off screen waits for a key
+  // in that file rather than for the tab to be shown.
+  if (keyboardProvedIn != editor.getPath()) {
     state.wanted = wrapping
-    editor.trace("wrap: $wrapping is waiting for this file to be the one on screen")
+    editor.trace("wrap: $wrapping is waiting for a key in this file, which is what aims the toggle")
     return
   }
   state.wanted = null

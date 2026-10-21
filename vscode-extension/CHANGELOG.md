@@ -2,6 +2,19 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Fixed
+
+- `:set wrap` could unwrap a long line and `:set nowrap` wrap it - the option working backwards.
+  VS Code's word-wrap toggle acts on whichever editor has focus and cannot be aimed at another, so
+  this extension waited for the file to be the one on screen before pressing it. Waiting for the
+  *activation* is what was wrong: an extension is told a tab became active only after it has, so the
+  press could arrive once you had already switched on again, and flip the wrap of the file you had
+  moved to. That file's wrap was then the opposite of what Vimperor believed, and every `:set wrap`
+  after it meant `nowrap`. A wrap asked for in a file that is not in front of you now waits for a
+  keystroke in that file, which is the only proof of which editor the toggle will reach.
+
 ## [0.0.12] - 2026-10-22
 
 ### Fixed
