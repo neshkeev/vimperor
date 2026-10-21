@@ -133,40 +133,37 @@ private fun vimRcFamilies(home: String, xdgConfigHome: String): List<List<String
   ),
 )
 
-/** The families flattened, most specific first, which is the order [findVimRc] searches. */
+/** The families flattened, most specific first, which is the order a config is searched for. */
 private fun vimRcCandidates(home: String, xdgConfigHome: String): List<String> =
   vimRcFamilies(home, xdgConfigHome).flatten()
 
 /**
- * Every config to run, in the order they should be sourced.
+ * Every config to run, in the order they are sourced: **least specific first**.
  *
- * With [loadAll] false this is [findVimRc]'s answer and nothing else: the first file that exists
- * wins outright, which is what Vim and IdeaVim do - each reads one file - and what this host has
- * always done.
+ * One file from each family that has one - `~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc` -
+ * and the last one read wins wherever two of them disagree. The order is the whole point, and it is
+ * the search order read from the other end: the preference that puts `~/.vimperorrc` first when
+ * looking for a config is the same preference that gives it the last word when running them all.
  *
- * With it true, one file from *each* family is run, and **least specific first**: `~/.vimrc`, then
- * `~/.ideavimrc`, then `~/.vimperorrc`. The order is the whole point. Sourcing later overrides
- * earlier, so the file written for this editor gets the last word, exactly as the search order says
- * it should - the two rules are the same preference read from opposite ends.
+ * **This is a divergence from Vim and IdeaVim, which each read one file**, and it is deliberate.
+ * Vimperor is the third program to read these files rather than the first, so somebody arriving with
+ * a `~/.vimrc` and a `~/.ideavimrc` has two configs that both say something true about how they
+ * want to work; taking only the most specific one threw the rest away silently. Anything that should
+ * apply here and not elsewhere goes in `~/.vimperorrc`, which runs last.
  *
- * Within a family the first that exists still wins: `~/.vimrc` and `~/_vimrc` are two spellings of
- * one file, not two files to run.
+ * Within a family the first that exists wins: `~/.vimrc` and `~/_vimrc` are two spellings of one
+ * file, not two files to run.
  *
- * `IDEA_VIM_CUSTOM_VIMRC` is unaffected either way. A path named outright is an instruction rather
- * than a preference, so when it is set and the file is there it is the only config read - layering
- * other files under something the user pointed at by hand would be the opposite of what they asked.
+ * `IDEA_VIM_CUSTOM_VIMRC` is the one exception, and it is read alone. A path named outright is an
+ * instruction rather than a preference, so layering other files under something the user pointed at
+ * by hand would be the opposite of what they asked for.
  */
-fun vimRcFilesToLoad(
-  files: NodeFileSystem,
-  environment: (String) -> String?,
-  loadAll: Boolean,
-): List<String> {
+fun vimRcFilesToLoad(files: NodeFileSystem, environment: (String) -> String?): List<String> {
   environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }?.let { custom ->
     if (files.exists(custom)) return listOf(custom)
   }
   val home = environment("HOME") ?: environment("USERPROFILE") ?: return emptyList()
   val xdg = xdgConfigHome(home, environment)
-  if (!loadAll) return listOfNotNull(vimRcCandidates(home, xdg).firstOrNull { files.exists(it) })
   return vimRcFamilies(home, xdg).mapNotNull { family -> family.firstOrNull { files.exists(it) } }.asReversed()
 }
 
@@ -184,52 +181,17 @@ fun vimRcFilesToLoad(
 fun isVimsOwnConfig(path: String): Boolean =
   path.endsWith("/.vimrc") || path.endsWith("/_vimrc") || path.endsWith("vim/vimrc")
 
-/**
- * Where a user's configuration lives, in the order this host looks for it.
- *
- * `~/.vimperorrc`, then `~/.ideavimrc`, then `~/.vimrc` - and a whole family is searched before the
- * next one starts, so an XDG `vimperor/vimperorrc` also beats a `~/.ideavimrc`, even though the home
- * directory is searched first within any one family. **The name is the intent.** Somebody who wrote
- * a file called `vimperorrc` meant it for this editor, and it should not lose to a config that
- * happens to sit in a directory that gets looked at earlier.
- *
- * The last family is what makes this usable by somebody who has never installed IdeaVim. Their
- * `~/.vimrc` will contain lines this fork does not implement - a plugin manager above all - and
- * those report errors and are stepped over, the way Vim itself carries on past a bad line. A config
- * that half works is worth more than no config at all, and it is the reason `:syntax`,
- * `:colorscheme` and `:filetype` are accepted rather than rejected.
- *
- * Nothing is merged: the first file found is the only one read. That is what `.ideavimrc` already
- * promised, and it is what makes `~/.vimperorrc` useful as "everything I already had, plus the
- * lines that only make sense in VS Code" - `source ~/.vimrc` on its first line does the rest, and
- * does it explicitly, where a merge would have to guess at an order.
- *
- * The IntelliJ plugin reads `.ideavimrc` and only `.ideavimrc`. This function is host-local for
- * that reason: sharing a config between the two editors is what the second family is *for*, and
- * teaching the plugin to read `.vimperorrc` would defeat it.
- *
- * `IDEA_VIM_CUSTOM_VIMRC` still overrides all of it, which is what tests and dotfile managers use.
- */
-fun findVimRc(files: NodeFileSystem, environment: (String) -> String?): String? {
-  environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }?.let { custom ->
-    if (files.exists(custom)) return custom
-  }
-
-  val home = environment("HOME") ?: environment("USERPROFILE") ?: return null
-  return vimRcCandidates(home, xdgConfigHome(home, environment)).firstOrNull { files.exists(it) }
-}
 
 /**
  * Every path a config could arrive at, whether or not one is there now.
  *
- * What a file watcher needs, and it is deliberately not "the file that loaded". [findVimRc] takes
- * the first of three families that exists, so *creating* `~/.vimperorrc` while only `~/.vimrc` is
- * there changes which config wins - a change the watcher has to see, and one that watching the
- * loaded file alone would miss entirely. The same goes the other way: deleting the one that won
- * hands the session over to the next family down.
+ * What a file watcher needs, and it is deliberately not "the files that loaded". A family gaining
+ * a file changes what runs - *creating* `~/.vimperorrc` adds a config that then has the last word -
+ * and so does a family losing one, which is a change watching only the loaded files would miss
+ * entirely. Every spelling is included for the same reason.
  *
- * `IDEA_VIM_CUSTOM_VIMRC` comes first when it is set, as it does in [findVimRc], and is included
- * even when the file is not there yet for the same reason as the rest.
+ * `IDEA_VIM_CUSTOM_VIMRC` comes first when it is set, as it does in [vimRcFilesToLoad], and is
+ * included even when the file is not there yet for the same reason as the rest.
  */
 fun vimRcPaths(environment: (String) -> String?): List<String> {
   val custom = environment("IDEA_VIM_CUSTOM_VIMRC")?.takeIf { it.isNotEmpty() }

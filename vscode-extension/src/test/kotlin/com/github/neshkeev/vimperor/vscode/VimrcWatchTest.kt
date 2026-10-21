@@ -458,9 +458,8 @@ class VimrcWatchTest {
   // ---- every config in force -------------------------------------------------------------------
 
   /**
-   * With `vimperor.loadAllConfigs` on, a change to a file that is *not* the most specific one is
-   * still a change to what is running - and before this it was silence, because the comparison was
-   * against the single winner.
+   * A change to a file that is *not* the most specific one is still a change to what is running -
+   * and before this it was silence, because the comparison was against the single winner.
    *
    * Which is also what the silence looked like from outside: a watch that had not noticed. Three
    * configs were being watched all along, and two of them could never produce a question.

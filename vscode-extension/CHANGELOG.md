@@ -4,36 +4,29 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- `vimperor.loadAllConfigs` reads every config file you have instead of only the first. Vimperor
-  normally reads one - `~/.vimperorrc`, or `~/.ideavimrc`, or `~/.vimrc`, whichever it finds first -
-  the way Vim and IdeaVim each read one. Turn this on and it sources all three, least specific first
-  (`~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc`), so the file written for this editor still
-  has the last word where two of them disagree. The startup line names them in the order they were
-  read. Within a family the first spelling still wins, and a path in `IDEA_VIM_CUSTOM_VIMRC` is still
-  read on its own.
+- **Vimperor now reads every config file you have, not just the first.** It used to take one -
+  `~/.vimperorrc`, or `~/.ideavimrc`, or `~/.vimrc`, whichever it found first - the way Vim and
+  IdeaVim each read one. It now reads one from each family in this order: `~/.vimrc`, then
+  `~/.ideavimrc`, then `~/.vimperorrc`, and **the last one read wins** wherever two of them disagree.
+  So an existing setup still works untouched, and `~/.vimperorrc` is still the place for what should
+  apply here and not elsewhere - it simply has the last word instead of being the only word.
 
-  It is a VS Code setting rather than a `set` line because the answer is needed before any config has
-  run - an option could only be set in one of the files it decides the order of.
+  If you keep a `~/.vimrc` that you deliberately did *not* want Vimperor to read, it will be read
+  now. The startup line in the output channel names every file that ran, in the order it ran.
+
+  Unchanged: within a family the first spelling found is the one read, since `~/.vimrc` and
+  `~/_vimrc` are two names for one file; and `IDEA_VIM_CUSTOM_VIMRC`, when set, is still the only
+  file read.
 
 ### Fixed
 
 - Editing a config that was not the one in force did nothing and said nothing. All the paths were
   being watched, but a change only counted when it changed the *winning* file - so with a
   `~/.vimperorrc` present, saving `~/.ideavimrc` or `~/.vimrc` was silence indistinguishable from a
-  watch that had not noticed. With `vimperor.loadAllConfigs` on, every file in force is now part of
-  what a change is measured against, and the question names the one you changed.
-
-
-- `:set wrap` could unwrap a long line and `:set nowrap` wrap it - the option working backwards.
-  VS Code's word-wrap toggle acts on whichever editor has focus and cannot be aimed at another, so
-  this extension waited for the file to be the one on screen before pressing it. Waiting for the
-  *activation* is what was wrong: an extension is told a tab became active only after it has, so the
-  press could arrive once you had already switched on again, and flip the wrap of the file you had
-  moved to. That file's wrap was then the opposite of what Vimperor believed, and every `:set wrap`
-  after it meant `nowrap`. A wrap asked for in a file that is not in front of you now waits for a
-  keystroke in that file, which is the only proof of which editor the toggle will reach.
+  watch that had not noticed. Every file in force is now part of what a change is measured against,
+  and the question names the one you changed.
 
 ## [0.0.12] - 2026-10-22
 

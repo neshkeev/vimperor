@@ -97,12 +97,13 @@ class VimRcTest {
   // ---- which of the two families wins ------------------------------------------------------
 
   @Test
-  fun `test vimperorrc is preferred over ideavimrc`() {
+  fun `test vimperorrc runs after ideavimrc`() {
     val home = writing(mapOf(".vimperorrc" to "set ignorecase\n", ".ideavimrc" to "set nowrapscan\n"))
     val session = Session("text", emptyMap())
 
-    assertEquals("$home/.vimperorrc", session.load(mapOf("HOME" to home)))
-    assertTrue(injector.globalOptions().wrapscan, "the ideavimrc must not have run as well")
+    assertEquals(listOf("$home/.ideavimrc", "$home/.vimperorrc"), session.loadAll(mapOf("HOME" to home)))
+    assertFalse(injector.globalOptions().wrapscan, "the ideavimrc ran too, so its answer is in")
+    assertTrue(injector.globalOptions().ignorecase, "and the vimperorrc ran after it")
   }
 
   @Test
@@ -121,14 +122,14 @@ class VimRcTest {
    * it for this editor, and a search ordered by location rather than by name would ignore that.
    */
   @Test
-  fun `test an XDG vimperorrc beats an ideavimrc in the home directory`() {
+  fun `test an XDG vimperorrc runs after an ideavimrc in the home directory`() {
     val home = writing(mapOf(".ideavimrc" to "set nowrapscan\n"))
     val config = writing(mapOf("vimperor/vimperorrc" to "set ignorecase\n"))
     val session = Session("text", emptyMap())
 
     assertEquals(
-      "$config/vimperor/vimperorrc",
-      session.load(mapOf("HOME" to home, "XDG_CONFIG_HOME" to config)),
+      listOf("$home/.ideavimrc", "$config/vimperor/vimperorrc"),
+      session.loadAll(mapOf("HOME" to home, "XDG_CONFIG_HOME" to config)),
     )
   }
 
@@ -170,12 +171,13 @@ class VimRcTest {
   }
 
   @Test
-  fun `test an ideavimrc beats a vimrc`() {
+  fun `test an ideavimrc runs after a vimrc`() {
     val home = writing(mapOf(".ideavimrc" to "set ignorecase\n", ".vimrc" to "set nowrapscan\n"))
     val session = Session("text", emptyMap())
 
-    assertEquals("$home/.ideavimrc", session.load(mapOf("HOME" to home)))
-    assertTrue(injector.globalOptions().wrapscan, "the vimrc must not have run as well")
+    assertEquals(listOf("$home/.vimrc", "$home/.ideavimrc"), session.loadAll(mapOf("HOME" to home)))
+    assertFalse(injector.globalOptions().wrapscan, "the vimrc ran too, so its answer is in")
+    assertTrue(injector.globalOptions().ignorecase, "and the ideavimrc ran after it")
   }
 
   /** Where people who keep everything under `~/.vim` put it. One of Vim's own three. */
@@ -323,14 +325,18 @@ class VimRcTest {
     assertTrue(mapping.hasmapto(injector.parser.parseKeys("b")), "`a` should map to `b`")
     assertTrue(mapping.hasmapto(injector.parser.parseKeys("d")), "`c` should map to `d`")
   }
-  // ---- vimperor.loadAllConfigs -----------------------------------------------------------------
+  // ---- every family, last one wins -------------------------------------------------------------
 
   /**
-   * One file, which is Vim's rule and IdeaVim's: each reads a single config and the first family
-   * that exists wins outright. The guard for everything below it.
+   * One file from each family, **least specific first**, which is the rule for all of them.
+   *
+   * A divergence from Vim and IdeaVim, which each read one file, and the reason is that Vimperor is
+   * the third program to read these rather than the first: somebody arriving with a `~/.vimrc` and a
+   * `~/.ideavimrc` has two configs that both say something true, and taking only the most specific
+   * threw the rest away in silence.
    */
   @Test
-  fun `test only the first family is read by default`() {
+  fun `test every family is read, least specific first`() {
     val home = writing(
       mapOf(
         ".vimperorrc" to "set ignorecase\n",
@@ -340,32 +346,22 @@ class VimRcTest {
     )
     val session = Session("Foo foo", emptyMap())
 
-    assertEquals(listOf("$home/.vimperorrc"), session.loadAll(mapOf("HOME" to home)))
+    assertEquals(
+      listOf("$home/.vimrc", "$home/.ideavimrc", "$home/.vimperorrc"),
+      session.loadAll(mapOf("HOME" to home)),
+    )
   }
 
-  /**
-   * `vimperor.loadAllConfigs`: one file from each family, **least specific first**.
-   *
-   * A VS Code setting rather than a Vim option, and necessarily - an option would have to be set in
-   * one of the files it decides the order of. See [loadsEveryConfig].
-   */
+  /** And a family with no file in it is simply absent, rather than leaving a gap. */
   @Test
-  fun `test every family is read when the setting is on, least specific first`() {
-    loadingEveryConfig {
-      val home = writing(
-        mapOf(
-          ".vimperorrc" to "set ignorecase\n",
-          ".ideavimrc" to "set ignorecase\n",
-          ".vimrc" to "set ignorecase\n",
-        ),
-      )
-      val session = Session("Foo foo", emptyMap())
+  fun `test a family with no config is skipped`() {
+    val home = writing(mapOf(".vimperorrc" to "set ignorecase\n", ".vimrc" to "set ignorecase\n"))
+    val session = Session("Foo foo", emptyMap())
 
-      assertEquals(
-        listOf("$home/.vimrc", "$home/.ideavimrc", "$home/.vimperorrc"),
-        session.loadAll(mapOf("HOME" to home)),
-      )
-    }
+    assertEquals(
+      listOf("$home/.vimrc", "$home/.vimperorrc"),
+      session.loadAll(mapOf("HOME" to home)),
+    )
   }
 
   /**
@@ -379,7 +375,7 @@ class VimRcTest {
    */
   @Test
   fun `test the most specific config wins a conflict`() {
-    loadingEveryConfig {
+    run {
       val home = writing(
         mapOf(
           ".vimrc" to "set ignorecase\nset smartcase\n",
@@ -402,7 +398,7 @@ class VimRcTest {
   /** `~/.vimrc` and `~/_vimrc` are two spellings of one file, not two files to run. */
   @Test
   fun `test one spelling per family`() {
-    loadingEveryConfig {
+    run {
       val home = writing(mapOf(".vimrc" to "set ignorecase\n", "_vimrc" to "set ignorecase\n"))
       val session = Session("Foo foo", emptyMap())
 
@@ -416,8 +412,8 @@ class VimRcTest {
    * they asked for.
    */
   @Test
-  fun `test a custom vimrc is still read on its own`() {
-    loadingEveryConfig {
+  fun `test a custom vimrc is read on its own`() {
+    run {
       val home = writing(mapOf(".vimperorrc" to "set ignorecase\n", ".vimrc" to "set ignorecase\n"))
       val custom = writing(mapOf("custom.vim" to "set ignorecase\n"))
       val session = Session("Foo foo", emptyMap())
@@ -427,17 +423,6 @@ class VimRcTest {
       )
 
       assertEquals(listOf("$custom/custom.vim"), loaded)
-    }
-  }
-
-  /** The setting on for the duration of [body], and off afterwards however it ends. */
-  private fun loadingEveryConfig(body: () -> Unit) {
-    val configuration = js("require('vscode').workspace.configuration")
-    try {
-      configuration.vimperor = js("({ loadAllConfigs: true })")
-      body()
-    } finally {
-      configuration.vimperor = undefined
     }
   }
 }

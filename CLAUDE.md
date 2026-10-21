@@ -1049,11 +1049,10 @@ VS Code already runs for the workspace, with no polling, no `fs.watch` and nothi
 A non-recursive pattern naming one file is the cheap case; a recursive watch of a home directory
 would have been an expensive way to ask the same question.
 
-**What is watched is every path a config could arrive at, not the file that loaded.** `findVimRc`
-takes the first of three families that exists, so *creating* `~/.vimperorrc` while only `~/.vimrc`
-is in force changes which config wins - and deleting the one that won hands the session to the next
-family down. `vimRcPaths` is that list, and whether a change actually happened is settled by
-re-running `findVimRc` and comparing the path *and* the text.
+**What is watched is every path a config could arrive at, not the files that loaded.** A family
+gaining a file changes what runs, and so does one losing it, so the watch covers every candidate
+rather than the ones in force. `vimRcPaths` is that list, and whether a change actually happened is
+settled by re-running `vimRcFilesToLoad` and comparing the paths *and* their texts.
 
 **`'vimrcreload'` is read fresh every time, which is the only way it could work**: the option is set
 by the file it governs. `none` is answered by `pathsToWatch` returning nothing, so the watchers are
@@ -1111,46 +1110,53 @@ to be discovered.
 debounce is there too: one save is two or three events, and the text is compared against what was
 last loaded so that a format-on-save which rewrote the file identically asks nothing.
 
-### Reading every config instead of the first, and why that is a setting
+### Every config family is read, and the last one wins
 
-**`findVimRc` takes one file and that is Vim's rule**, which is also IdeaVim's - each program reads
-one config. It is still the default. `vimperor.loadAllConfigs` runs one file from *each* family
-instead, **least specific first**: `~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc`.
+**Vim and IdeaVim each read one file; this host reads one from each family**, least specific first -
+`~/.vimrc`, then `~/.ideavimrc`, then `~/.vimperorrc` - and the last one read wins a conflict. There
+is no option and no setting: it is simply the rule.
 
-The order is the search order read from the other end, and that is the whole argument for it.
-`findVimRc` prefers the most specific file; sourcing later overrides earlier; so running them
-least-specific-first gives the most specific file the last word. The two rules express one
-preference.
+The order is the old search order read from the other end, which is the argument for it. The
+preference that made `~/.vimperorrc` the file to look for *first* is the same preference that gives
+it the last word when all of them run. `findVimRc` is gone, because nothing needed "which one file
+wins" any more.
 
-**It is a VS Code setting and could not have been a Vim option.** The answer is needed before any
-config has run - before even the order they run in is known - and an option would have to be set in
-one of the files it governs. `'vimrcreload'` *is* a Vim option for the opposite reason: it is read
-after the config, every time, which is what lets the file it governs set it. The two look alike and
-are not, and `loadsEveryConfig` says so where it is read.
+**Why diverge at all**: Vimperor is the third program to read these files rather than the first.
+Somebody arriving with a `~/.vimrc` and a `~/.ideavimrc` has two configs that each say something
+true about how they want to work, and taking only the most specific one threw the rest away in
+silence. The cost is the mirror image - a `~/.vimrc` kept deliberately separate now also runs - and
+that is the trade this fork has chosen.
+
+**It was briefly a VS Code setting, `vimperor.loadAllConfigs`, and that was wrong on a rule worth
+writing down: nothing about how Vim behaves is configured outside the `*rc` files.** The two
+settings that remain are not Vim behaviour - `vimperor.trace` is a diagnostic and
+`vimperor.escapeReturnsToEditor` is a keybinding's `when` clause in all but name. Anything that
+answers a question Vim has an answer for belongs in the config, and if an option cannot be read
+early enough to govern itself then the behaviour is not an option: it is the rule.
 
 **What stays the same, and each is a test that does not discriminate.** Within a family the first
-spelling still wins, because `~/.vimrc` and `~/_vimrc` are two names for one file rather than two
-files to run. A path in `IDEA_VIM_CUSTOM_VIMRC` is still read alone: a file named outright is an
-instruction rather than a preference, and layering others under it would be the opposite of what was
-asked. And the default is unchanged, which is the guard that matters most - this is opt-in because
-plenty of people keep a `~/.vimrc` deliberately separate from their IdeaVim config, and sourcing it
-for them would be a surprise rather than a feature.
+spelling wins, because `~/.vimrc` and `~/_vimrc` are two names for one file rather than two files to
+run. And `IDEA_VIM_CUSTOM_VIMRC` is read alone: a path named outright is an instruction rather than a
+preference, so layering others under it would be the opposite of what was asked.
 
 **The watch had to learn to count past one, and that is what the user reported.** `settle()` compared
-`findVimRc`'s answer - the single winner - against what was loaded, so a change to a file that was
-*not* the winner was silence. That was correct while only one file ran, and it is why editing
-`~/.ideavimrc` with a `~/.vimperorrc` present did nothing: all ten paths were watched all along, and
-two of the three families could never produce a question. The baseline is now the list of files that
-ran, with their texts, so any of them changing is a change to what is running; with the setting off
-the list holds nought or one entry and behaves exactly as the single path did.
+the single winner against what was loaded, so a change to any other file was silence - which is why
+editing `~/.ideavimrc` with a `~/.vimperorrc` present did nothing visible. All ten paths were watched
+all along; two of the three families could never produce a question. The baseline is the list of
+files that ran, with their texts, so any of them changing is a change to what is running.
 
 The question names the files that moved rather than every file in force - with three configs running,
-"your config changed" leaves the reader to guess which - and distinguishes a file *joining* the set
+"your config changed" leaves the reader to guess which - and tells a file *joining* the set apart
 from a file being edited, because the answer to the first may be a file the user has never opened.
 
 **One config that throws must not stop the ones layered over it**, so `executeFile` is wrapped per
 file rather than once around the loop. That is the reason the function already had for carrying on -
 a user with a typo in one line still wants the other twenty - applied to files instead of lines.
+
+**Three existing tests had to be rewritten rather than kept**, which is the tell that this is a
+behaviour change and not a refactor: they asserted that the shadowed file "must not have run as
+well". They assert the order now - both run, and the preferred one runs last - which is the same
+preference they were written for.
 
 ### `HideAllWindows` reads the layout from a `when` clause, because nothing else will say
 
@@ -2090,7 +2096,8 @@ See `vscode-extension/DEVELOPMENT.md` for the port's architecture.
 - Use `<Action>` in mappings, not `:action`
 - Config file: Vimperor's own is `~/.vimperorrc`; it falls back to `~/.ideavimrc`, then Vim's
   `~/.vimrc`. Three families in that order, XDG and `_name` included, a whole family before the
-  next one starts. Host-local, in `NodeFileSystem.findVimRc`
+  next one starts, and all three are read with the last winning. Host-local, in
+  `NodeFileSystem.vimRcFilesToLoad`
 - A config runs with `indicateErrors = false`, so a line it cannot execute fails *silently*.
   That is IdeaVim's behaviour and why startup names the file it loaded
 - Goal: match Vim's functionality and architecture

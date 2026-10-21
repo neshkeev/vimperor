@@ -112,21 +112,20 @@ Nothing in the extension is specific to VS Code, and `&ide` answers with whichev
 
 ## Your config
 
-Vimperor's own file is **`~/.vimperorrc`**. If you do not have one it reads whichever of these you
-do — first found wins, nothing is merged:
+Vimperor reads **all three** of these, and in this order — **the last one wins** wherever two of
+them disagree:
 
-| file | for |
-|---|---|
-| **`~/.vimperorrc`** | **Vimperor's own. Read first** |
-| `~/.ideavimrc` | shared with IdeaVim in IntelliJ, unchanged |
-| `~/.vimrc` | Vim's own — nothing to copy, nothing to rename |
+| read | file | for |
+|---|---|---|
+| 1st | `~/.vimrc` | Vim's own — nothing to copy, nothing to rename |
+| 2nd | `~/.ideavimrc` | shared with IdeaVim in IntelliJ, unchanged |
+| 3rd | **`~/.vimperorrc`** | **Vimperor's own. Has the last word** |
 
-So **an existing setup works untouched.** You only need a `~/.vimperorrc` when something should
-apply here and not in IntelliJ; when you do, pull in the rest on its first line:
+So **an existing setup works untouched**, and you only need a `~/.vimperorrc` for what should apply
+here and not elsewhere — it runs last, so anything in it overrides the others:
 
 ```vim
 " ~/.vimperorrc
-source ~/.ideavimrc
 
 set number relativenumber
 set incsearch hlsearch
@@ -137,33 +136,25 @@ nnoremap <leader>f <Action>(workbench.action.quickOpen)
 ```
 
 `<Action>(id)` runs any VS Code command from a mapping — `:actionlist` lists them all, with the
-shortcut each already has. Each config name is also looked for as `_name` and in its XDG directory.
+shortcut each already has. Each config name is also looked for as `_name` and in its XDG directory;
+of those spellings the first one found is the file for that row, since `~/.vimrc` and `~/_vimrc` are
+two names for one config rather than two configs. The startup line in the output channel names what
+was read, in the order it was read — which is the order that settles a conflict.
 
-### Reading all of them instead
+This is a divergence from Vim and IdeaVim, which each read one file. Vimperor is the third program
+to read these rather than the first, so arriving with both a `~/.vimrc` and a `~/.ideavimrc` means
+two configs that each say something true about how you want to work, and taking only one of them
+threw the rest away without saying so.
 
-If you keep more than one of those files and want every one of them to apply, turn on
-`vimperor.loadAllConfigs` in your VS Code settings:
-
-```jsonc
-"vimperor.loadAllConfigs": true
-```
-
-Then one file from each family is read, **least specific first** — `~/.vimrc`, then `~/.ideavimrc`,
-then `~/.vimperorrc` — so the file written for this editor still has the last word wherever two of
-them disagree. The startup line in the output channel names them in the order they were read, which
-is the order that settles a conflict. Within a family the first spelling found still wins, because
-`~/.vimrc` and `~/_vimrc` are two names for one file; and a path in `IDEA_VIM_CUSTOM_VIMRC` is still
-read on its own, since a file you named outright is an instruction rather than a preference.
-
-It is a VS Code setting rather than a `set` because the answer is needed before any config has run —
-an option could only be set in one of the files it decides the order of.
+`IDEA_VIM_CUSTOM_VIMRC` is the exception: set it and that file is the only one read, because a path
+you name outright is an instruction rather than a preference.
 
 ### Editing it while Vimperor is running
 
 Save your config and Vimperor offers to load it, right away — no reload, no restart. It watches
 every path in the table above, not just the one that loaded, so creating a `~/.vimperorrc` when
-you only had a `~/.vimrc` counts as well. With `vimperor.loadAllConfigs` on, editing *any* of the
-files in force counts too, and the question names the one you changed.
+you only had a `~/.vimrc` counts as well. Editing *any* of the files in force counts, and the
+question names the one you changed.
 
 ```vim
 set vimrcreload=prompt        " ask, which is the default

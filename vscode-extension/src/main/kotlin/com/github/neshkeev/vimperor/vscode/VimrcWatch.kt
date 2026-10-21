@@ -60,7 +60,7 @@ internal enum class VimrcAnswer(val label: String) {
  * A change to a file that is *not* the one in force still counts, and that is deliberate rather
  * than sloppy. [vimRcPaths] is every path a config could arrive at, because creating
  * `~/.vimperorrc` while only `~/.vimrc` is loaded changes which file wins - and so does deleting
- * the one that won. Whether that *is* a change is settled by re-running [findVimRc] and comparing
+ * one of them. Whether that *is* a change is settled by re-running [vimRcFilesToLoad] and comparing
  * the path as well as the text.
  */
 internal class VimrcWatch(
@@ -68,7 +68,7 @@ internal class VimrcWatch(
   private val environment: (String) -> String? = { injector.systemInfoService.getenv(it) },
   private val readText: (String) -> String? = ::textOrNull,
   private val locate: ((String) -> String?) -> List<String> =
-    { env -> vimRcFilesToLoad(NodeFileSystem(), env, loadsEveryConfig()) },
+    { env -> vimRcFilesToLoad(NodeFileSystem(), env) },
   private val ask: (String, List<String>, (String?) -> Unit) -> Unit = ::showVimrcQuestion,
   private val announce: (String) -> Unit = {},
   private val mode: () -> VimrcReload = ::vimrcReloadMode,
@@ -77,9 +77,9 @@ internal class VimrcWatch(
   /**
    * Every config that was last run, with its text, which is what a change is measured against.
    *
-   * A list rather than one path because `vimperor.loadAllConfigs` can put all three families in
-   * force at once, and then a change to *any* of them is a change to what is running. With the
-   * setting off this holds nought or one entry and behaves exactly as the single path did.
+   * A list rather than one path because all three families can be in force at once, and then a
+   * change to *any* of them is a change to what is running. Where only one file exists this holds
+   * one entry and behaves exactly as the single path did.
    */
   private var loaded: List<Pair<String, String?>> = emptyList()
 

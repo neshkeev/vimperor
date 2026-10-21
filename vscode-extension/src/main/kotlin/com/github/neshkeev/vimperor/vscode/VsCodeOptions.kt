@@ -1110,19 +1110,5 @@ internal fun vimrcReloadMode(): VimrcReload =
     .toVimString().value
     .let { setting -> VimrcReload.entries.firstOrNull { it.setting == setting } ?: VimrcReload.PROMPT }
 
-/**
- * Whether every config family that exists is sourced, rather than only the first.
- *
- * **A VS Code setting rather than a Vim option, and it has to be.** An option would have to be set
- * in one of the files it governs, and the answer is needed before any of them has run - before even
- * the order they run in is known. `'vimrcreload'` gets to be a Vim option because it is read
- * *after* the config, which is the opposite case and the reason the two are not alike.
- */
-internal fun loadsEveryConfig(): Boolean = try {
-  workspace.getConfiguration(VsCodeSettings.VIMPEROR).get(VsCodeSettings.LOAD_ALL_CONFIGS) == true
-} catch (e: Throwable) {
-  false
-}
-
 internal fun writesEveryFile(): Boolean =
   injector.optionGroup.getOptionValue(VsCodeOptions.ideawrite, OptionAccessScope.GLOBAL(null)).toVimString().value == "all"
