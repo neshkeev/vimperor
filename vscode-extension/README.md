@@ -185,8 +185,16 @@ commands and more than a hundred options.
 `gf` opens the file under the caret; `%` on the command line is the current file and takes Vim's
 `:p`, `:h`, `:t`, `:r` and `:e` modifiers. The tag stack is real rather than a wrapper around Go to
 Definition — a `tags` file is read, and `<C-]>` and `<C-T>` walk it. `q:`, `q/` and `q?` open the
-history as a buffer you can edit. `:sign` draws in the gutter. Vim's own tutor is built in:
-`:vimtutor`, or *Vimperor: Open Vim Tutor* in the Command Palette.
+history as a buffer you can edit. `:sign` draws in the gutter.
+
+**New to Vim, or new to Vimperor?** `:tutor` opens Vim's own thirty-minute introduction in a
+scratch buffer. `:vimtutor` and `:vimperortutor` are the same command — type one in full, since
+none of the three abbreviates, `:t` being Vim's `:copy` — and *Vimperor: Open Vim Tutor* in the
+Command Palette is the same door from VS Code's side. The buffer is meant to be taken apart: the
+lessons say "delete this word" and mean it, nothing is saved unless you ask, and it goes with the
+tab. These are Vim's lessons with Vimperor's answers written into them, so where a lesson would
+have sent you to a `~/.vimrc` or to a part of Vim that an editor extension has no equivalent of,
+it tells you what to do here instead.
 
 `:help` opens Vimperor's own help, in Vim's format and with Vim's tags — `:help dd`, `:help v_d`,
 `:help i_CTRL-W` and `:help :s` each jump to their subject. It is rendered from the commands this
