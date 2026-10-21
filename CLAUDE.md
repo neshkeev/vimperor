@@ -425,6 +425,31 @@ are arithmetic, and the bit starts **correct**, because a document this host has
 cannot have an override. `VimHost.forgetDocument` drops it when VS Code closes the file, and
 `VimHost.start` drops the lot, because a new host is a new set of models.
 
+**The toggle cannot be aimed, and an activation is not proof of focus.** `:set wrap` unwrapped a
+long line and `:set nowrap` wrapped it - the option working backwards - and the cause is that
+`editor.action.toggleWordWrap` acts on whatever has focus, is dispatched without being waited for,
+and was being dispatched in answer to `onDidChangeActiveTextEditor`. **The extension host is told a
+tab became active only after it has**, so a press sent in answer to one executes after any switch
+already queued behind it, and toggles the file the user moved to instead. The trace shows it on two
+adjacent lines: a press asked for one document, an activation of another, and the second document
+wrapping while this host believed it had no override at all.
+
+**One stray press inverts the option for the rest of the session**, which is what makes this worth a
+paragraph rather than a line. The press count is arithmetic over one bit, and the bit starts correct
+only because a document this host has not seen cannot have an override. Give that document one it
+does not know about and `:set wrap` computes a single press from "no override, setting off", which VS
+Code answers by *clearing* the override it does have. Both directions are then wrong in the same way,
+so it is stable rather than flickering - and `:set wrap?` answers from the belief, so it agrees with
+itself and not with the screen.
+
+`keyboardProvedIn` is the fix and it is `VimHost.editorForKey`'s reasoning a second time: **a key
+that arrived is proof the editor had the keyboard, where `activeTextEditor` is only a claim.** It is
+deliberately not `keyedEditor`, which an activation sets as well - that field answers "where does the
+next key go", which is a different question and can name a tab the user has already left. So a wrap
+asked for off screen waits for a key in that file rather than for the tab to be shown. That is the
+cost, and the two tests that discriminate assert the press is *not* sent on an activation; the fake
+cannot model a press landing on the wrong editor, so the seam is all there is to assert.
+
 **`Alt+Z` used to be what broke it and is now what repairs it.** `editorWordWrap` is a context
 key - unreadable by an extension, readable in a `when` clause, which is the trick
 `youcompleteme` is built out of - so `package.json` binds the chord twice, under it and under
