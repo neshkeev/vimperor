@@ -69,13 +69,17 @@ private val VimperorTutorHost = TutorHost(
     |  turn them on, put the settings you want in a startup script that Vimperor
     |  reads every time it starts.
     |
-    |  Vimperor reads the same file IdeaVim does, because it is the same engine and
-    |  because that is the file its users already have. Create one of these in your
-    |  home directory - the first that exists is the one that is read:
+    |  Create one of these in your home directory. The first that exists is the one
+    |  that is read, and nothing is merged:
     |
+    |        ~/.vimperorrc
     |        ~/.ideavimrc
-    |        ~/_ideavimrc
-    |        ${'$'}XDG_CONFIG_HOME/ideavim/ideavimrc
+    |        ~/.vimrc
+    |
+    |  The first is Vimperor's own. The other two are there because they may be
+    |  files you already have - an IdeaVim config from IntelliJ, or Vim's own - and
+    |  neither needs copying or renaming. Each name is also looked for as _name and
+    |  under ${'$'}XDG_CONFIG_HOME, so ${'$'}XDG_CONFIG_HOME/ideavim/ideavimrc is read too.
     |
     |  Add these lines to it:
     |
@@ -85,19 +89,26 @@ private val VimperorTutorHost = TutorHost(
     |
     |  Then read it back in without restarting, the way Vim does:
     |
-    |        :source ~/.ideavimrc
+    |        :source ~/.vimperorrc
     |
     |  With those, searching shows matches as you type, leaves them highlighted, and
     |  keeps five lines of context around the cursor.
     |
-    |  You can read your existing Vim configuration from it, too:
+    |  If you keep a ~/.vimrc, you can pull it in rather than copying it:
     |
     |        source ~/.vimrc
     |
-    |  Vim plugins are not supported yet, so leave "Plug" lines out for now.
+    |  Vimperor also bundles most of the plugins an IdeaVim user has. Turn one on by
+    |  its name, which is how IdeaVim does it too:
+    |
+    |        set surround
+    |        set highlightedyank
+    |
+    |  What is not bundled cannot be fetched: there is no plugin manager here, so a
+    |  plugin Vimperor does not already carry will not load.
   """.trimMargin(),
 
-  startupScriptSummary = "  1. Create an ideavimrc startup script to keep your preferred settings.",
+  startupScriptSummary = "  1. Create a vimperorrc startup script to keep your preferred settings.",
 
   conclusionIntro = """
     |  This concludes the Vimperor Tutor.  It was intended to give a brief overview

@@ -82,8 +82,15 @@ class TutorTest {
 
   @Test
   fun `test the tutor points at the config file this host actually reads`() {
-    assertTrue("~/.ideavimrc" in text, "the vimrc this host looks for")
-    assertTrue("XDG_CONFIG_HOME/ideavim/ideavimrc" in text, "and the XDG location it falls back to")
+    assertTrue("~/.vimperorrc" in text, "this host's own config file, which is the one read first")
+    assertTrue("~/.ideavimrc" in text, "the IdeaVim one it falls back to")
+    assertTrue("XDG_CONFIG_HOME/ideavim/ideavimrc" in text, "and the XDG location under that")
+    // Naming them out of order teaches the second choice as if it were the first, which is what
+    // this lesson did until `~/.vimperorrc` existed and nobody came back to it.
+    assertTrue(
+      text.indexOf("~/.vimperorrc") < text.indexOf("~/.ideavimrc"),
+      "named in the order they are searched",
+    )
   }
 
   @Test
@@ -96,10 +103,24 @@ class TutorTest {
     )
   }
 
+  /**
+   * This used to assert that the tutor taught no plugin at all, on the grounds that none could be
+   * loaded. That stopped being true when the extensions were ported, and the lesson went on saying
+   * to leave `Plug` lines out - so a reader was told the opposite of what the README says. What is
+   * worth asserting is the thing that can go wrong: that a name the tutor tells you to `set` is a
+   * name this host answers to.
+   */
   @Test
-  fun `test the tutor does not offer plugins this host cannot load`() {
-    assertTrue("Plug '" !in text, "Vim plugins are not supported yet and must not be taught")
-    assertTrue("highlightedyank" !in text, "nor the plugin IdeaVim suggests")
+  fun `test the extensions the tutor teaches are ones this host bundles`() {
+    for (name in listOf("surround", "highlightedyank")) {
+      assertTrue("set $name" in text, "the tutor should teach `set $name`")
+      assertTrue(name in VsCodeExtensions.BUNDLED, "`set $name` must name a bundled extension")
+    }
+    assertTrue(
+      "Plug '" !in text,
+      "a Plug line names a repository to fetch; the tutor teaches `set <name>`, which is shorter " +
+        "and is what works for everything bundled",
+    )
   }
 
   /**
