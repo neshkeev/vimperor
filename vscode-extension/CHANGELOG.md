@@ -2,7 +2,7 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
-## [Unreleased]
+## [0.0.12] - 2026-10-22
 
 ### Fixed
 
@@ -36,6 +36,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
   whose target is also a source does: with `set langmap=ig,gE` the `gg` you typed ran as `gE`.
   Ported from IdeaVim.
 
+- The tutor taught two things the rest of the documentation contradicts. It told you to create
+  `~/.ideavimrc`, which was right when that was the only config file and has been the second choice
+  since `~/.vimperorrc` arrived - all three families are named now, in the order they are searched,
+  with a line saying why the other two are there. And it said Vim plugins were not supported and to
+  leave `Plug` lines out, which would have stopped a reader ever trying `set surround`: an arbitrary
+  plugin still cannot be fetched, because there is no plugin manager, but twenty-nine are bundled and
+  `set <name>` is how you turn one on. Reach it with `:tutor`, `:vimtutor` or `:vimperortutor`.
 
 - A dead key or an input method could delete text, and leaving Visual mode was where it showed. The
   cause is that `type` is not the only command VS Code types through: a composition - what a dead
