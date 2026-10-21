@@ -2,7 +2,7 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
-## [Unreleased]
+## [0.0.12] - 2026-10-22
 
 ### Changed
 
@@ -29,15 +29,20 @@ The Marketplace renders this file on the extension's page, under Changelog.
   a buffer, drew a Vim caret in it, and gave it every keystroke. It is now refused: a key pressed
   while that panel has the keyboard is not Vim's, and is handed back to VS Code rather than run.
 
+- `:set wrap` could unwrap a long line and `:set nowrap` wrap it - the option working backwards.
+  VS Code's word-wrap toggle acts on whichever editor has focus and cannot be aimed at another, so
+  this extension waited for the file to be the one on screen before pressing it. Waiting for the
+  *activation* is what was wrong: an extension is told a tab became active only after it has, so the
+  press could arrive once you had already switched on again, and flip the wrap of the file you had
+  moved to. That file's wrap was then the opposite of what Vimperor believed, and every `:set wrap`
+  after it meant `nowrap`. A wrap asked for in a file that is not in front of you now waits for a
+  keystroke in that file, which is the only proof of which editor the toggle will reach.
+
 - Editing a config that was not the one in force did nothing and said nothing. All the paths were
   being watched, but a change only counted when it changed the *winning* file - so with a
   `~/.vimperorrc` present, saving `~/.ideavimrc` or `~/.vimrc` was silence indistinguishable from a
   watch that had not noticed. Every file in force is now part of what a change is measured against,
   and the question names the one you changed.
-
-## [0.0.12] - 2026-10-22
-
-### Fixed
 
 - With `'sidescrolloff'` set, the caret could be seen jumping to the middle of the line and back on
   every keystroke. Keeping the caret that many columns from the window's edges means asking VS Code
