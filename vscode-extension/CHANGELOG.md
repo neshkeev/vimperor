@@ -6,6 +6,20 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- A characterwise Visual selection can reach the end of the line, which it could not before. The
+  clearest case is an empty line: `v` on one selected nothing at all, so `vd` there deleted nothing.
+  Selecting a word or a paragraph that ends on a line boundary was off by one character for the same
+  reason, and so was `D` on an empty line, `gJ` over a selection, and `zf` in Visual mode folding one
+  line too many. IdeaVim carried this as a known divergence from Vim for years - its own tests
+  described the results as "off by one because IdeaVim does not allow selecting a newline char" - and
+  it is fixed upstream and ported here, with sixteen more of IdeaVim's own tests now replayed against
+  this host as a result.
+
+  One consequence is worth spelling out because it looks like a new bug: `d}` on a line followed by a
+  blank one now takes that line's newline with it. That is Vim's `:h exclusive` rule for a motion
+  that starts at or before the first non-blank and ends in column 1 - it becomes linewise - and this
+  extension used to stop one character short.
+
 - A keyboard layout could translate a key twice, turning one command into another. When a mapping
   starts to match and the next key spoils it - `nmap gp ll` declared, and you type `g` then
   something that is not `p` - the keys already typed are replayed, and they were replayed as though

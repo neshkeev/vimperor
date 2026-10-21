@@ -1579,10 +1579,55 @@ and no API for one. Taking the constant would add dead code naming a value nothi
 
 **And the newline cluster is the real content of this range** - seven commits removing the rule that
 a characterwise Visual selection may not include the end-of-line character. One line in
-`charToNativeSelection` does it and six more follow it. What makes it worth taking is what upstream
-deleted along with it: `@VimBehaviorDiffers` blocks whose own descriptions say *"Off by one because
-IdeaVim does not allow selecting a newline char"*. So this is Vim compatibility, which is this
-fork's stated goal, and it is the one change in the range that moves the replayed corpus.
+`charToNativeSelection` does it and six more follow it, and the comment above that line had been
+asking for it for years, naming the other hack that would have to go with it. What makes it worth
+taking is what upstream deleted along with it: `@VimBehaviorDiffers` blocks whose own descriptions
+say *"Off by one because IdeaVim does not allow selecting a newline char"*. So this is Vim
+compatibility, which is this fork's stated goal.
+
+**The empty line is where the old rule bit hardest**: there the caret already sits at the line's
+end, so the inclusive adjustment was dropped and `v` selected **nothing at all**. Ablated, that test
+reports `Expected <(4, 5)>, actual <(4, 4)>`.
+
+**It is the one change in the range that moves the replayed corpus, and the corpus was stale rather
+than right.** That matters, because the rule written down here is the opposite - "when a fix makes
+the corpus worse, the corpus is usually right" - and this is the exception, with a test for telling
+which case you are in. Taking the engine half alone cost 18 fixtures. **Every one of the 18 was in a
+test file upstream had changed in the same cluster**, which is the check: ten files, and the list
+upstream touched is a strict superset. `src/test` is a snapshot of IdeaVim's tests, so when upstream
+changes the behaviour *and* its own expectations, our copy asserts a behaviour that no longer exists
+anywhere.
+
+So the ten files were refreshed from `upstream/master`, which is the move `visual-multi` and
+`clever-f` already established - copying IdeaVim's own tests in so the corpus can check the
+behaviour. **Eight of the ten were byte-identical to the snapshot beforehand**, so for those the
+refresh is exactly this range's change and nothing else; the other two also gained a regression test
+upstream had added since the fork. Check that before refreshing a file - a file that has drifted for
+other reasons will import expectations for engine changes that were not taken.
+
+The corpus went from **2,472 of 2,478 to 2,488 of 2,494**: sixteen fixtures more, the same six
+failures. The gain is the `@VimBehaviorDiffers` annotations going away, because the harness refuses
+those - so a behaviour upstream has stopped diverging on becomes testable here for the first time.
+
+**One of this fork's own tests was wrong, and it was wrong in its reasoning rather than only in its
+expectation.** `PortedExtensionsTest.test it composes with an operator` asserted that `d}` leaves
+the newline of the line it empties, and argued it from `:h exclusive`: "an exclusive motion whose end
+lands in column 1 has that end pulled back to the end of the previous line, and becomes inclusive".
+That rule is real and it is not the only one. Vim's own words, in order:
+
+1. "If the motion is exclusive and the end of the motion is in column 1, the end of the motion is
+   moved to the end of the previous line and the motion becomes inclusive."
+2. `*exclusive-linewise*` - "If the motion is exclusive, the end of the motion is in column 1 **and
+   the start of the motion was at or before the first non-blank in the line**, the motion becomes
+   linewise."
+
+The caret was at column 0, which is at or before the first non-blank, so the second applies on top
+of the first and a linewise `d` takes the newline. Vim's example for that rule says it outright:
+"If a paragraph begins with some blanks and you do `d}` while standing on the first non-blank, all
+the lines of the paragraph are deleted, including the blanks." The test had even warned that it was
+"the kind of thing a later change would fix" - and the warning was pointing the wrong way. **Cite
+the whole of a rule before asserting the behaviour it implies**, and when upstream changes a
+behaviour this fork has a comment defending, read the documentation rather than the comment.
 
 ### `.` is a keystroke replay now, and it changed nothing here
 

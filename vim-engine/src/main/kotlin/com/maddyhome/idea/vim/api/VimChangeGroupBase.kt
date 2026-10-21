@@ -1311,6 +1311,7 @@ abstract class VimChangeGroupBase : VimChangeGroup {
             editor.offsetToBufferPosition(pos).line,
             caret,
           )
+        pos = editor.normalizeOffset(pos, isChange)
         updated
       } else {
         caret

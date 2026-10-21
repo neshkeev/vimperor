@@ -106,10 +106,28 @@ class PortedExtensionsTest {
   }
 
   /**
-   * `d}` deletes `one` and leaves its newline, which looks wrong and is Vim's own rule: an
-   * exclusive motion whose end lands in column 1 has that end pulled back to the end of the
-   * previous line, and becomes inclusive (`:h exclusive`). So the motion stops after `one` rather
-   * than after `one\n`. Asserted because it is the kind of thing a later change would "fix".
+   * `d}` takes the whole line, newline included, because `:h exclusive` has **two** rules and this
+   * is the second one.
+   *
+   * This test asserted `"\n  \ntwo\n"` and argued for it from the first rule alone - "an exclusive
+   * motion whose end lands in column 1 has that end pulled back to the end of the previous line,
+   * and becomes inclusive" - and warned that it was "the kind of thing a later change would fix".
+   * The change came, from upstream, and the warning was pointing the wrong way: the rule it cited
+   * is real and is not the one that applies here. Vim's own words, in order:
+   *
+   *  1. "If the motion is exclusive and the end of the motion is in column 1, the end of the motion
+   *     is moved to the end of the previous line and the motion becomes inclusive."
+   *  2. `*exclusive-linewise*` - "If the motion is exclusive, the end of the motion is in column 1
+   *     **and the start of the motion was at or before the first non-blank in the line**, the motion
+   *     becomes linewise."
+   *
+   * The caret is at column 0 of `one`, which is at or before its first non-blank, so the second rule
+   * applies on top of the first and the motion is linewise - and a linewise `d` takes the line's
+   * newline with it. Vim's own example for that rule says so outright: "If a paragraph begins with
+   * some blanks and you do `d}` while standing on the first non-blank, all the lines of the
+   * paragraph are deleted, including the blanks."
+   *
+   * IdeaVim's `ParagraphMotionTest` was changed to this expectation in the same range as the fix.
    */
   @Test
   fun `test it composes with an operator`() {
@@ -117,7 +135,7 @@ class PortedExtensionsTest {
 
     session.type("d}")
 
-    assertEquals("\n  \ntwo\n", session.content)
+    assertEquals("  \ntwo\n", session.content)
   }
 
   // ---- textobj-entire --------------------------------------------------------------------------
