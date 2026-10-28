@@ -992,8 +992,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val margin = injector.options(this).sidescrolloff.coerceIn(0, MAX_SIDE_MARGIN)
     if (margin == 0) {
       val detour = if (target.character < length) target.character + 1 else target.character - 1
-      commands.executeCommand(command, cursorTo(target.line, detour))
-      commands.executeCommand(command, cursorTo(target.line, target.character))
+      moveCursorTo(command, selection, target.line, detour)
+      moveCursorTo(command, selection, target.line, target.character)
       return true
     }
 
@@ -1046,8 +1046,8 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       pendingSideReveal = injector.application.schedule(ONE_FRAME) {
         if (!stillCurrent()) return@schedule
         val detour = if (target.character < length) target.character + 1 else target.character - 1
-        commands.executeCommand(command, cursorTo(target.line, detour, reveal = false))
-        commands.executeCommand(command, cursorTo(target.line, target.character))
+        moveCursorTo(command, selection, target.line, detour, reveal = false)
+        moveCursorTo(command, selection, target.line, target.character)
       }
     }
     return true
@@ -1111,12 +1111,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val margin = injector.options(this).sidescrolloff.coerceIn(0, MAX_SIDE_MARGIN)
     val column = (if (left) target.character - margin else target.character + margin).coerceIn(0, length)
     if (column != target.character) {
-      commands.executeCommand(command, cursorTo(target.line, column))
-      commands.executeCommand(command, cursorTo(target.line, target.character, reveal = false))
+      moveCursorTo(command, selection, target.line, column)
+      moveCursorTo(command, selection, target.line, target.character, reveal = false)
     } else {
       val detour = if (target.character < length) target.character + 1 else target.character - 1
-      commands.executeCommand(command, cursorTo(target.line, detour, reveal = false))
-      commands.executeCommand(command, cursorTo(target.line, target.character))
+      moveCursorTo(command, selection, target.line, detour, reveal = false)
+      moveCursorTo(command, selection, target.line, target.character)
     }
     lastRevealedCharacter = target.character
     return true
@@ -1164,7 +1164,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
 
   /**
    * The source the cursor commands are given. Any string VS Code does not know becomes a selection
-   * event with no `kind`, which is how the host tells its own reveal from a user's click.
+   * event with no `kind`, which keeps a reveal of this host's from reading as a click.
+   *
+   * It does not make the event recognisable, which is a thing to know before relying on it: VS Code
+   * maps `keyboard`, `mouse` and `api` to a kind and leaves *everything else* unattributed, so a
+   * reveal of this host's arrives looking exactly like the user's own `cursorWordLeft`. What tells
+   * them apart is [cursorMoveWasAskedFor].
    */
   private val REVEAL_SOURCE = "vimperor.reveal"
 
@@ -1179,6 +1184,65 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * a line long before that (`editor.stopRenderingLineAfter`, 10,000 by default).
    */
   private val ALL_THE_WAY_LEFT = 100_000
+
+  /**
+   * Sends one of the cursor commands, and records the selection it will leave behind.
+   *
+   * Every cursor move this host asks for is reported back as a selection change VS Code attributes
+   * to nobody, which is **the same report a cursor command of the user's produces**:
+   * `TextEditorSelectionChangeKind` has a value for the keyboard, for the mouse and for the API, and
+   * none for `cursorWordLeft`. So the only thing that tells the two apart is that this host asked
+   * for one of them, and this is the record of having asked. See [cursorMoveWasAskedFor].
+   *
+   * Only the step away from the caret really needs an entry - the step back lands on what was
+   * pushed, which [syncCaretsFromEditor] already recognises - but both are recorded, because which
+   * of the pair is which is this function's business and not its callers'.
+   */
+  private fun moveCursorTo(command: String, selection: Selection, line: Int, character: Int, reveal: Boolean = true) {
+    val position = Position(line, character)
+    val anchor = if (command == VsCodeCommands.MOVE_CURSOR_SELECTING) selection.anchor else position
+    cursorMovesAsked += offsetOf(anchor) to offsetOf(position)
+    commands.executeCommand(command, cursorTo(line, character, reveal))
+  }
+
+  /**
+   * The cursor moves this host has asked VS Code for since the last key, and not yet seen come back.
+   *
+   * Since the last key, because a record of having asked is only useful while the answer is still
+   * on its way, and is misleading afterwards: it answers for one *position*, so an ask left lying
+   * about makes a later caret move to that column read as this host's own writing. That is not
+   * hypothetical - it is what the stub host caught. A `zs` in one scenario left an ask for offset 4,
+   * and three hundred lines later an `Alt+Left` to column 4 was silenced by it.
+   *
+   * A keystroke is the right lifetime rather than a flush. VS Code sends an editor's properties in
+   * the task that changed them, so everything asked for before the previous key has been reported
+   * or folded into a report that was; and `zs` and `ze` ask for their steps *during* a keystroke,
+   * which a flush-cleared list would throw away before the reports arrived. See
+   * [VimHost.handle].
+   */
+  private val cursorMovesAsked: MutableList<Pair<Int, Int>> = mutableListOf()
+
+  /** Drops the record - see [cursorMovesAsked]. Called for every editor when a key arrives. */
+  internal fun forgetCursorMovesAsked() = cursorMovesAsked.clear()
+
+  /**
+   * Whether the selections VS Code is now reporting are a cursor move this host asked for.
+   *
+   * Consuming, because a position is not a promise: a second report of the same place, after this
+   * one has been accounted for, is somebody else putting the caret where a reveal once put it.
+   */
+  internal fun cursorMoveWasAskedFor(): Boolean {
+    if (cursorMovesAsked.isEmpty()) return false
+    val incoming = nativeEditor.selections.map { offsetOf(it.anchor) to offsetOf(it.active) }.singleOrNull()
+      ?: return false
+    val index = cursorMovesAsked.indexOfFirst { it == incoming }
+    if (index < 0) return false
+    // Everything before it goes too. The commands land in order, and VS Code sends one delta per
+    // task carrying the selections as they are when it runs - so a step still listed behind this one
+    // had its own report folded into this.
+    repeat(index + 1) { cursorMovesAsked.removeAt(0) }
+    return true
+  }
 
   /**
    * `_moveTo`'s argument: a 1-based model position, and the source that keeps the event unattributed.

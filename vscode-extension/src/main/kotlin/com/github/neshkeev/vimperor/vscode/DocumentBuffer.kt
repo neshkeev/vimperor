@@ -69,6 +69,26 @@ class DocumentBuffer(private val editor: TextEditor) {
     private set
 
   /**
+   * How many edits of this buffer's are on their way to VS Code and have not come back.
+   *
+   * VS Code moves the cursor itself to keep it with the text an edit shifted, and reports that as a
+   * selection change it attributes to nobody - the same report a cursor command of the user's
+   * produces. The two cannot be told apart by anything in the event, so they are told apart by
+   * this: inside the window a report is this host's own edit coming home, and outside it the caret
+   * was moved by somebody else. See [VimHost.selectionChanged].
+   *
+   * The window is exact rather than approximate, which is worth knowing before trusting it. VS
+   * Code's own `MainThreadDocuments` takes the version it has sent the extension host as the one the
+   * extension host knows, in the same handler that sends it - so the editor-properties delta
+   * carrying the shifted cursor goes out in the same main-thread task as the edit, which is the task
+   * whose reply resolves the promise below. The report always arrives first.
+   */
+  private var writes: Int = 0
+
+  /** Whether an edit of this buffer's is in flight - see [writes]. */
+  val writing: Boolean get() = writes > 0
+
+  /**
    * Whether the document has been changed by something other than the engine, and takes its version
    * if so.
    *
@@ -277,7 +297,12 @@ class DocumentBuffer(private val editor: TextEditor) {
     // One entry per Vim command rather than per keystroke - see [UndoStops], which is what decides
     // whether this edit opens a new one. Never a stop *after*: the next boundary closes the entry.
     val options = json("undoStopBefore" to UndoStops.takeStopBefore(), "undoStopAfter" to false)
+    writes++
+    // The rejection half is not optional, for the reason on `Thenable.then`: an edit against a
+    // closed editor rejects, and a write left counted as in flight would go on silencing the user's
+    // own caret moves in this editor. It reports nothing, because that is what it did before.
     editor.edit({ it.replace(range, replacement) }, options.unsafeCast<EditOptions>()).then({ applied ->
+      writes--
       if (applied) {
         flushed = target
       } else {
@@ -286,6 +311,8 @@ class DocumentBuffer(private val editor: TextEditor) {
         reseed()
       }
       onResult(applied)
+    }, {
+      writes--
     })
   }
 

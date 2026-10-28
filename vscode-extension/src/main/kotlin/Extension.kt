@@ -660,8 +660,15 @@ fun deactivate() {
 private fun tracing(): Boolean = workspace.getConfiguration("vimperor").get("trace") == true
 
 /** What VS Code said caused a selection change, in words a trace reader does not have to look up. */
+/**
+ * Who VS Code says moved the cursor, for the trace.
+ *
+ * The null case used to read "an extension or an edit", which is what the host believed and is not
+ * what the field means: VS Code leaves the kind off everything it has no value for, a cursor command
+ * of the user's included. A trace line naming the wrong culprit is worse than one naming none.
+ */
 private fun selectionKind(kind: Int?): String = when (kind) {
-  null -> "an extension or an edit"
+  null -> "a source VS Code will not name"
   TextEditorSelectionChangeKind.Keyboard -> "the keyboard"
   TextEditorSelectionChangeKind.Mouse -> "the mouse"
   TextEditorSelectionChangeKind.Command -> "a command"

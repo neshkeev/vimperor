@@ -635,6 +635,11 @@ class VimHost(
     // And the proof that this editor has the keyboard *now*, which is what aims the word-wrap
     // toggle. Separate from `keyedEditor` because that is also set by an activation.
     keyboardProvedIn = identityOf(textEditor)
+    // A key is a user action later than anything this host asked the cursor to do, so the record of
+    // having asked has stopped being evidence and started being a trap: it answers for a position,
+    // and an ask left lying about silences the user's own move to that column. See
+    // [VsCodeEditor.cursorMovesAsked], and the stub host, which is where that was caught.
+    editors.values.forEach { it.forgetCursorMovesAsked() }
     // Someone else may have edited the document since the last command - the user with a mouse, a
     // formatter, a language server. The engine reads the buffer, so it has to be told first.
     if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
@@ -838,12 +843,15 @@ class VimHost(
   }
 
   /**
-   * Takes VS Code's selections as the carets, which is what happens when the user clicks or drags.
+   * Takes VS Code's selections as the carets, which is what happens when the user clicks, drags, or
+   * moves the cursor with a chord this extension has not claimed.
    *
-   * Only when nothing is pending, and only when VS Code says the user did it - see the `kind` check
-   * below, which is the part that matters and the part a stub host cannot have, because a stub
-   * fires no events at all.
-    *
+   * Only when nothing of this host's can account for the report. What VS Code offers is `kind`, and
+   * it is weaker than it looks: it names the keyboard, the mouse and the API and leaves everything
+   * else unattributed, so the engine cannot ask "did the user do this" - only "did I". The checks
+   * below are that question asked three ways: an edit of this host's in flight, a reveal of this
+   * host's, and an echo of what it pushed.
+   *
    * Returns what it made of the event, for the trace. This is the one way the mode can change
    * without a key - a click in Visual mode ends it - so when a selection is reported as dropped
    * between two keys, this line is the only record of why.
@@ -852,13 +860,33 @@ class VimHost(
     val editor = editors[identityOf(textEditor)] ?: return "ignored, no editor registered"
     if (editor.nativeEditor !== textEditor) return "ignored, a stale editor"
     if (pending > 0) return "ignored, a command is still landing"
-    // Only a change VS Code attributes to the user. `kind` is null for one it did not attribute -
-    // an edit moving its own caret, or an extension writing `TextEditor.selections` - and both of
-    // those are this host's own writing coming back. Reading them was the reason `O` opened a line
-    // above and left the caret below it, and the reason a blockwise Visual selection came apart one
-    // column per line: the block's anchor was replaced by whatever VS Code last reported for the
-    // line the caret happened to be on.
-    if (kind == null) return "ignored, not attributed to the user"
+    // A change VS Code did not attribute to anybody, which is **not the same thing as one this host
+    // made**. That is what this read until now - "an edit moving its own caret, or an extension
+    // writing `TextEditor.selections`, and both of those are this host's own writing coming back" -
+    // and it is half the truth. `TextEditorSelectionChangeKind` has a value for the keyboard, for
+    // the mouse and for the API, and **none for a cursor command**: `cursorWordLeft` sets the source
+    // to `moveWordCommand`, which VS Code maps to nothing at all. So every caret move the user made
+    // with a chord this extension does not claim - `Alt+Left` and `Alt+Right` on macOS, `Cmd+Left`
+    // and `Cmd+Right`, anything another extension binds - was dropped, and the engine went on
+    // believing the caret was where it had last pushed it. Reported as a typed character landing at
+    // the end of the line: three `Alt+Left` presses, ignored, and then the insert went to the stale
+    // offset and took the caret with it.
+    //
+    // So the two cases that really are this host's own writing are named instead, and each is
+    // something the host *did* rather than something VS Code says:
+    if (kind == null) {
+      // An edit of this host's, with VS Code moving the cursor to keep it with the text. This is the
+      // report that made `O` open a line above and leave the caret below it, and it is the one the
+      // engine must not read: the caret it carries is where the text went, not where Vim wants it,
+      // and the push that says so is still in flight. See [DocumentBuffer.writing] for why the
+      // window is exact.
+      if (editor.buffer.writing) return "ignored, this host's own edit is moving the carets with the text"
+      // A reveal of this host's, which moves the cursor one column along and back because that is the
+      // only way to ask VS Code for the reveal a click gets. Adopting the step would be more than
+      // cosmetic: a caret adopted from the window takes the window's column as the one `j` and `k`
+      // aim for, so `$` followed by `j` would stop following the longest line.
+      if (editor.cursorMoveWasAskedFor()) return "ignored, a reveal this host asked for"
+    }
     // And not while a command line is open, whatever the window says moved it. The caret in the
     // buffer belongs to the incsearch preview then - borrowed to show where the match is, and put
     // back by `IncsearchPreview.restoreCaret` when the prompt closes - so there is no user caret

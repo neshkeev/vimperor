@@ -1426,6 +1426,66 @@ activation is refused, and `editorForKeystroke` answers null for the panel. The 
 had to grow from a document and a scheme into a whole editor for that: a stub too thin to be driven
 would have failed the scenario by throwing, which is not the same as failing it for the right reason.
 
+### A selection change with no `kind` is not this host's own writing
+
+**A character typed in Insert mode appeared at the end of the line and the caret jumped after it.**
+The trace has the whole of it in four lines: three selection changes at columns 37, 32 and 28 - a
+word at a time, which is `Alt+Left` - each one `ignored, not attributed to the user`, and then `'ё'`
+inserted at the offset the engine still believed in, 43, with the caret pushed after it. Two
+symptoms, one stale offset.
+
+**`TextEditorSelectionChangeKind` is weaker than its name**, and VS Code's own mapping is the whole
+argument: `case "keyboard": return 1; case "mouse": return 2; case "api": case "code.jump": case
+"code.navigation": return 3` - and **no default**. A cursor command is the default. `cursorWordLeft`
+sets the source to `moveWordCommand`, plain arrows pass no source at all, and `type` is the only one
+of them that says `keyboard`, which is why the field reads as "the user" for typing and for clicking
+and for nothing else. So "no kind" means *VS Code is not saying*, and this host read it as "this host
+did it" - the comment said so outright, "an edit moving its own caret, or an extension writing
+`TextEditor.selections`, and both of those are this host's own writing coming back". Half true, and
+the other half is every caret move made with a chord `package.json` does not claim.
+
+**So the question is "did I", which VS Code cannot be asked and the host can answer itself.** Three
+ways, and the first two are the new ones:
+
+- **An edit of this host's in flight.** This is the report the `kind` check was really written for -
+  the one that made `O` open a line above and leave the caret below it - and the window is exact
+  rather than hopeful. `MainThreadDocuments` takes the version it has *sent* the extension host as
+  the version the extension host knows, in the same handler that sends it, so the editor-properties
+  delta carrying the shifted cursor goes out in the same main-thread task as the edit - the task
+  whose reply resolves `TextEditor.edit`'s promise. The report always arrives before the push.
+  `DocumentBuffer.writing` is that window, counted rather than flagged, and cleared on rejection too
+  for the reason written on `Thenable.then`.
+- **A reveal of this host's.** `revealLikeAClick` sends the cursor one column along and back, because
+  neither cursor command reveals a cursor that has not moved, and `_moveToSelect` keeps the anchor -
+  so in Visual mode the step arrives looking exactly like a selection widened by a column, which is
+  the symptom an old test had recorded against the blanket rule. Adopting it is not cosmetic either:
+  a caret taken from the window takes the window's column as the one `j` and `k` aim for, so `$` then
+  `j` would stop following the longest line. `cursorMovesAsked` is the record of having asked.
+- **An echo of what was pushed**, which `syncCaretsFromEditor` already recognised.
+
+**The record of having asked needed a lifetime, and that is the part that cost a round.** It was
+first written as a capped list - the reasoning being that a flush cannot clear it, since `zs` and
+`ze` ask for their steps *during* a keystroke and the flush that ends that keystroke would throw the
+asks away before the reports arrived. A cap bounds the list and does not bound the *lie*: an ask
+answers for one position, so an unanswered one silences that column for as long as it sits there.
+**The stub host caught it** - a `zs` three hundred lines earlier had left an ask for offset 4, and
+the new scenario's `Alt+Left` to column 4 was ignored by it, which is the reported bug reproduced by
+the fix for the reported bug. The asks are dropped when a key arrives instead: a key is a user action
+later than anything this host asked the cursor to do, and VS Code sends an editor's properties within
+the task that changed them.
+
+**All four parts discriminate, and the ablations are worth recording because three of the four are
+guards rather than fixes.** Without the rule: seven tests and the stub host. Without the
+edit-in-flight guard: the `O` test. Without the reveal guard: the two reveal tests and the Visual-mode
+one. Without the per-keystroke lifetime: the staleness test and the stub host.
+
+**And a test that holds an edit must release it before it asserts.** `FakeEditor.holdEdits` was added
+for this - `resolved()` answers inside `edit` and closes the window before anything can look into it,
+which is why nothing had ever covered that report - and the first version of the test asserted while
+the edit was still held. Under ablation it threw there, left the keystroke half finished, and took
+`PortedExtensionsTest`, the fixture replay and `VsCodeUnimplementedTest` down with it: `KeyHandler`
+and the engine are global, so a test that dies mid-command is not a test that only fails.
+
 ### Reading IdeaVim's commits for fixes worth taking, and the four reasons most are not
 
 `upstream` is read-only and is kept to read from, and the engine is shared, so upstream's bug fixes
@@ -1771,12 +1831,17 @@ else {
 ```
 
 `e` is the command's `source`, and this host passes `source: "vimperor.reveal"` on purpose so that VS
-Code attributes the selection change to nobody and `selectionChanged` does not adopt its own echo.
-**That is the same flag**: asking for a source VS Code will not blame on the user gives up the
+Code attributes the selection change to nobody. **That is the same flag**: asking for a source VS Code will not blame on the user gives up the
 minimal reveal. A real click is `"mouse"` and still gets one line; `minimalReveal` is not reachable
 from any command an extension can send. So `zt` asks for a top and the reveal afterwards pulls the
 window back by `max(cursorSurroundingLines, stickyScroll.maxLineCount)` - five by default, and zero
 with sticky scroll off, which is why this only shows in a file that has a scope to pin.
+
+**What that trade no longer buys is the suppression**, which is worth knowing before weighing it
+again. The unattributed source was how the reveal's own step was kept out of `selectionChanged`, and
+it was never able to do that job - a user's `cursorWordLeft` is unattributed too, which is the bug
+in the section above. The step is recognised by `VsCodeEditor.cursorMovesAsked` now, so the source is
+carrying one thing instead of two.
 
 **Why the correction was reverted: it makes the caret's line invisible.** Undoing the padding exactly
 puts the caret's line at `scrollTop`, and the sticky widget *overlays* the top rows - so the line

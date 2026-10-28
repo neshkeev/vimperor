@@ -1219,6 +1219,37 @@ vscode.window.activeTextEditor = editor
 for (const listener of activeEditorListeners) listener(editor)
 reset()
 
+// And the same field read from the other side again: a caret VS Code moved and will not say who
+// moved it.
+//
+// `TextEditorSelectionChangeKind` names the keyboard, the mouse and the API and nothing else, so
+// `cursorWordLeft` - `Alt+Left` on macOS, which this extension does not claim - arrives with no kind
+// at all, exactly like an edit of this host's own. The host dropped it, went on believing the caret
+// was where it had last pushed one, and put the next character there: reported as "inserting a symbol
+// moves the caret to the end of line", with a trace of three such moves ignored in a row.
+reset()
+type('i')
+for (const character of 'one two three') type(character)
+
+// Column 4 on purpose. The first version of the fix kept the reveals it had asked for in a capped
+// list rather than dropping them at the next key, and a `zs` three hundred lines above this left an
+// ask for offset 4 that silenced exactly this move.
+const wordBack = new Position(0, 4)
+editor.selections = [new Selection(wordBack, wordBack)]
+editor.selection = editor.selections[0]
+for (const listener of selectionListeners) {
+  listener({ textEditor: editor, selections: editor.selections, kind: undefined })
+}
+type('X')
+
+assert.strictEqual(
+  editor.document._text,
+  'one Xtwo three',
+  `a character typed after an unattributed caret move went to the stale offset. Got: ${editor.document._text}`,
+)
+press('<Esc>')
+reset()
+
 // Dead keys and input methods (VIM-1503), which only this script can test: the four commands a
 // composition arrives over are claimed in `Extension.kt`, and the policy behind them is
 // `ComposedTextTest`'s. `type` is not the only core typing command - it is one of seven registered

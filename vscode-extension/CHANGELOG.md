@@ -2,6 +2,20 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Fixed
+
+- **A character typed in Insert mode could appear at the end of the line, taking the caret with
+  it.** It happened after moving the caret with a chord Vimperor does not claim - `Alt+Left` and
+  `Alt+Right` on macOS, `Cmd+Left` and `Cmd+Right`, `Alt+Left`/`Alt+Right` elsewhere, or anything
+  another extension binds to a cursor command. VS Code tells an extension who moved the cursor, and
+  the answer it gives for a cursor command is *nobody* - the same answer it gives when the extension
+  moved the cursor itself. Vimperor read that as its own doing and ignored the move, so the caret it
+  believed in stayed where it had last put one and the next character went there. Such a move is now
+  adopted, and the two cases that really are Vimperor's own are recognised by what it did rather
+  than by what VS Code declines to say.
+
 ## [0.0.12] - 2026-10-22
 
 ### Changed

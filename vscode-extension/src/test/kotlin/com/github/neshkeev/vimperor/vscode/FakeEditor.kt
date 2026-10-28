@@ -528,7 +528,46 @@ class FakeEditor(
     }
     if (edits.isNotEmpty()) document.version++
     recordedEdits += builder.edits
-    return resolved(true)
+    if (!holdEdits) return resolved(true)
+    return HeldAnswer().also { heldEdit = it }
+  }
+
+  /**
+   * Whether an edit's *answer* is held back, leaving the window VS Code's own `edit` always leaves
+   * open.
+   *
+   * The text is written either way, because that is the order a real editor works in: it applies the
+   * edit, moves its own cursor to keep it with the text, tells the extension host about both, and
+   * only then replies. So everything this host does in the reply - pushing the carets, most of all -
+   * happens *after* VS Code has already reported a caret of its own. [resolved] answers at once and
+   * closes that window before a test can look into it, which is why nothing could cover the one
+   * report `VimHost.selectionChanged` must not read.
+   */
+  var holdEdits: Boolean = false
+  private var heldEdit: HeldAnswer? = null
+
+  /** Answers the edit that [holdEdits] held, as VS Code's reply would. */
+  fun releaseEdit(applied: Boolean = true) {
+    val held = heldEdit
+    heldEdit = null
+    held?.answer(applied)
+  }
+}
+
+/** An edit's answer, kept until the test gives it - see [FakeEditor.holdEdits]. */
+private class HeldAnswer : Thenable<Boolean> {
+  private var waiting: ((Boolean) -> Unit)? = null
+
+  @Suppress("OVERRIDING_EXTERNAL_FUN_WITH_OPTIONAL_PARAMS")
+  override fun then(onFulfilled: (Boolean) -> Unit, onRejected: (Any?) -> Unit): Thenable<Boolean> {
+    waiting = onFulfilled
+    return this
+  }
+
+  fun answer(applied: Boolean) {
+    val callback = waiting
+    waiting = null
+    callback?.invoke(applied)
   }
 }
 

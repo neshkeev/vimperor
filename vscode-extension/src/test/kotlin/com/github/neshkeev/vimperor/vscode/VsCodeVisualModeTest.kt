@@ -142,33 +142,39 @@ class VsCodeVisualModeTest {
   }
 
   /**
-   * A change VS Code did not attribute to the user is this host's own writing coming back.
+   * The one column a reveal of this host's steps along is not a selection the user made.
    *
-   * `kind` is null for a selection an *edit* moved and for one an extension set, and both of those
-   * are this host. Reading them was what left `O` opening a line above with the caret still below
-   * it, and what made a blockwise Visual selection widen by a column on every `j` - the block's
-   * anchor was replaced by whatever VS Code had last reported for the line the caret was on. The
-   * offline half of this port cannot see it: no stub fires an event at all.
+   * This asserted the wider claim - that *any* change VS Code did not attribute is this host's own
+   * writing coming back - and that claim was a bug of its own: VS Code leaves the kind off a cursor
+   * command as well, so `Alt+Left` moved the caret where Vim could not see it. See
+   * `CaretMovedByVsCodeTest`, which is where the reading of that field now lives.
+   *
+   * What survives is this, which is the symptom the old comment described: `revealLikeAClick` sends
+   * the cursor one column past the caret and back, because neither cursor command reveals a cursor
+   * that has not moved, and `_moveToSelect` keeps the anchor - so the step arrives looking exactly
+   * like a selection widened by a column. Adopted, it widened the selection on every motion.
    */
   @Test
-  fun `test a selection change VS Code did not attribute to the user is ignored`() {
+  fun `test the one column a reveal steps along does not widen the selection`() {
     val session = Session("one two three")
+    js("require('vscode').window").activeTextEditor = session.fake
     session.type("v")
     session.type("e")
     val caret = session.editor.primaryCaret()
     val afterMotion = caret.selectionStart to caret.selectionEnd
 
-    // What an applied edit reports: new selections, and no kind. Asserted on the *engine's* carets
-    // rather than on the fake's selections, which is what this test is overwriting.
-    session.fake.selections = arrayOf(Selection(Position(0, 9), Position(0, 9)))
-    session.host.selectionChanged(session.fake, kind = null)
+    // Asserted on the *engine's* carets rather than on the fake's selections, which is what this
+    // test is overwriting.
+    session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 4)))
+    val outcome = session.host.selectionChanged(session.fake, kind = null)
 
+    assertEquals("ignored, a reveal this host asked for", outcome)
     assertEquals("VISUAL", session.host.modeName())
     val after = session.editor.primaryCaret()
     assertEquals(
       afterMotion,
       after.selectionStart to after.selectionEnd,
-      "an unattributed change is this host's own and must not move the engine's carets",
+      "a reveal of this host's own must not move the engine's carets",
     )
   }
 
@@ -217,13 +223,6 @@ class VsCodeVisualModeTest {
       "echo of what was pushed",
       session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Keyboard),
     )
-  }
-
-  @Test
-  fun `test a change VS Code did not attribute is reported as ignored`() {
-    val session = Session("one two three")
-    session.type("ve")
-    assertEquals("ignored, not attributed to the user", session.host.selectionChanged(session.fake, kind = null))
   }
 
   @Test
