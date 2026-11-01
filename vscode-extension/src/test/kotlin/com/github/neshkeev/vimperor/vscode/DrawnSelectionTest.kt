@@ -56,6 +56,47 @@ class DrawnSelectionTest {
     assertEquals(1, session.drawn.active.line, "on `two`, not on `three`")
   }
 
+  /**
+   * The other direction, which is what a real window reported: `V` then `k` left the cursor on
+   * the original line, so the selection appeared not to extend. VS Code draws the cursor at
+   * `active`, and the drawn selection always put that at the document-order end - the last
+   * covered line, which is the right place for `j` and the wrong place for `k`.
+   */
+  @Test
+  fun `test V then k draws the cursor on the line k moved to`() {
+    val session = Session("one\ntwo\nthree\n")
+
+    session.type("jVk")
+
+    assertEquals(0, session.drawn.active.line, "on `one`, the line k moved to")
+    assertEquals(1, session.drawn.anchor.line, "the original line is the other end")
+  }
+
+  /**
+   * The shape that made it visible: a long line, `V`, then `k`. The engine's selection grew and
+   * the cursor stayed at column 862 of the original line, so on screen nothing had moved.
+   */
+  @Test
+  fun `test V then k on a long line moves the drawn cursor up`() {
+    val long = "x".repeat(862)
+    val session = Session("short\nmid\n$long\n")
+
+    session.type("jjVk")
+
+    assertEquals(1, session.drawn.active.line, "on `mid`")
+    assertEquals(2, session.drawn.anchor.line, "the long line stays the other end")
+  }
+
+  /** `d` still takes both lines, which is the engine's selection, not the drawn one. */
+  @Test
+  fun `test Vk then d deletes both lines`() {
+    val session = Session("one\ntwo\nthree\n")
+
+    session.type("jVkd")
+
+    assertEquals("three\n", session.fake.document.content)
+  }
+
   /** The engine's own selection is untouched - only what is drawn moves. */
   @Test
   fun `test the engine still selects the whole line including its newline`() {

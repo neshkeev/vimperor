@@ -785,7 +785,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val ordered = listOf(primary) + vimCarets.filter { it !== primary }
     val selections = ordered.map { caret ->
       if (caret.hasSelection()) {
-        Selection(positionOf(caret.selectionStart), positionOf(shownEnd(caret.selectionStart, caret.selectionEnd)))
+        drawnSelection(caret)
       } else {
         val position = positionOf(caret.offset)
         Selection(position, position)
@@ -1090,7 +1090,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     if (vimCarets.size != 1) return false
     val caret = primaryCaret()
     val selection = if (caret.hasSelection()) {
-      Selection(positionOf(caret.selectionStart), positionOf(shownEnd(caret.selectionStart, caret.selectionEnd)))
+      drawnSelection(caret)
     } else {
       val position = positionOf(caret.offset)
       Selection(position, position)
@@ -1272,6 +1272,31 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
   internal fun revealPrimaryCaret() {
     val position = positionOf(primaryCaret().offset)
     nativeEditor.revealRange(Range(position, position), TextEditorRevealType.Default)
+  }
+
+  /**
+   * What VS Code is asked to draw for a caret that has a selection.
+   *
+   * VS Code draws the cursor at `active`. The engine's selection is a document-order range, so
+   * putting `active` at that range's end always leaves the cursor on the last covered line - right
+   * for `Vj`, and the reason `Vk` looked like it did nothing: the engine's range grew and the
+   * cursor stayed put. When the caret is on the first line of a multi-line selection, `active` is
+   * that start and `anchor` is the drawn end, so the highlight still covers both lines and the
+   * cursor follows `k`.
+   *
+   * [shownEnd] still pulls a linewise end back off the following line, whichever end is `active`.
+   */
+  private fun drawnSelection(caret: VimCaret): Selection {
+    val start = caret.selectionStart
+    val drawnEnd = shownEnd(start, caret.selectionEnd)
+    val startPos = positionOf(start)
+    val endPos = positionOf(drawnEnd)
+    val caretLine = positionOf(caret.offset).line
+    return if (caretLine <= startPos.line && startPos.line < endPos.line) {
+      Selection(endPos, startPos)
+    } else {
+      Selection(startPos, endPos)
+    }
   }
 
   /**
