@@ -4,6 +4,8 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+## [0.0.13] - 2026-11-01
+
 ### Fixed
 
 - **A character typed in Insert mode could appear at the end of the line, taking the caret with
@@ -15,6 +17,13 @@ The Marketplace renders this file on the extension's page, under Changelog.
   believed in stayed where it had last put one and the next character went there. Such a move is now
   adopted, and the two cases that really are Vimperor's own are recognised by what it did rather
   than by what VS Code declines to say.
+
+- **`V` then `k` could leave the cursor on the original line, so the selection appeared not to
+  extend.** It was a long line that made it obvious: `V` selected it, `k` grew the range, and the
+  cursor stayed at the far end of that line. VS Code draws the cursor at a selection's `active` end,
+  and Vimperor always put that at the last covered line - the right place for `j` and the wrong
+  place for `k`. The cursor now follows the caret, so `k` moves it onto the line above and the
+  highlight grows with it.
 
 ## [0.0.12] - 2026-10-22
 
