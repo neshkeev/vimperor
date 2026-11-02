@@ -2,7 +2,7 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
-## [Unreleased]
+## [0.0.14] - 2026-11-02
 
 ### Fixed
 
