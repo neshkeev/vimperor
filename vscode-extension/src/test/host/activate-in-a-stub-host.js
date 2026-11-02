@@ -140,10 +140,16 @@ function makeEditor(text, { path = bufferPath, scheme = 'file' } = {}) {
     },
   }
 
+  // `selection` is VS Code's shorthand for `selections[0]`. Keeping them as two plain fields
+  // left `selection` on the last `_moveTo` after a later flush assigned `selections` only, so
+  // a scenario reading `editor.selection` after `0` reported the previous column.
+  let selections = [{ anchor: new Position(0, 0), active: new Position(0, 0) }]
   return {
     document,
-    selection: { anchor: new Position(0, 0), active: new Position(0, 0) },
-    selections: [{ anchor: new Position(0, 0), active: new Position(0, 0) }],
+    get selection() { return selections[0] },
+    set selection(value) { selections[0] = value },
+    get selections() { return selections },
+    set selections(value) { selections = value },
 
     // How the file is indented, which VS Code resolves and Vim's Tab and `S` both ask for. Two
     // spaces rather than VS Code's default four, so that a scenario asserting the indent is
@@ -180,10 +186,23 @@ function makeEditor(text, { path = bufferPath, scheme = 'file' } = {}) {
     // VS Code's `editorScroll`, which is what actually moves the view here - `revealRange` is not
     // used by the extension any more. It arrives through `commands.executeCommand` because that is
     // where VS Code puts it: it acts on the focused editor rather than on one it is handed.
+    // A column-wise scroll (`to: left` / `right`) does not move the view vertically. Treating it as
+    // `down` used to send `gg` at column zero - which now scrolls all the way left - to the last line.
     editorScroll(args) {
+      if (args.to === 'left' || args.to === 'right') return
       const last = document.lineCount - 1
       const signed = args.to === 'up' ? -args.value : args.value
       this.topLine = Math.min(Math.max(this.topLine + signed, 0), last)
+    },
+    // `_moveTo` always moves the cursor. A collapsed caret at column zero is written this way and
+    // not by assigning `selections`, so a stub that left them alone would keep the old column after
+    // `0` and hide the leftover-replace case that is this command.
+    moveCursor(command, args) {
+      const line = args.position.lineNumber - 1
+      const character = args.position.column - 1
+      const position = new Position(line, character)
+      const anchor = command === '_moveToSelect' ? this.selections[0].anchor : position
+      this.selections = [new Selection(anchor, position)]
     },
     decorations: new Map(),
     setDecorations(type, ranges) {
@@ -369,6 +388,10 @@ const vscode = {
       // its behalf, so it goes to the editor and stays out of the list the other scenarios assert.
       if (command === 'editorScroll') {
         editor.editorScroll(args[0])
+        return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
+      }
+      if (command === '_moveTo' || command === '_moveToSelect') {
+        editor.moveCursor(command, args[0])
         return { then: (onFulfilled) => (onFulfilled(undefined), { then: () => {} }) }
       }
       dispatchedCommands.push(command)
@@ -1297,6 +1320,51 @@ assert.strictEqual(
   editor.document._text,
   'the quick brown fox',
   `the composition deleted text it never typed. Got: ${editor.document._text}`,
+)
+
+// After Visual then `<Esc>`, a leftover `replacePreviousChar` (the composition that could not land
+// while the selection was up) must not steal the next typed keys. Those arrive as ordinary `type`,
+// and treating them as more composition is what left Normal mode looking dead.
+reset()
+type('i')
+for (const character of 'hello world') type(character)
+press('<Esc>')
+press('0')
+type('v')
+type('e')
+press('<Esc>')
+assert.strictEqual(
+  editor.document._text,
+  'hello world',
+  `the Visual session did not leave the text it typed. Got: ${editor.document._text}`,
+)
+compose('replacePreviousChar', { text: '', replaceCharCnt: 1 })
+type('w')
+// `selections[0]`, because this host writes that and not `selection` - VS Code's `selection` is
+// shorthand for the primary and assigning it would throw every other caret away. See `flushCarets`.
+assert.strictEqual(
+  editor.selections[0].active.character,
+  6,
+  `w after Esc from Visual was swallowed by a leftover composition. caret: ${editor.selections[0].active.character}`,
+)
+
+// The leftover replace can itself be the key. `_lastTypeTextLength` is still the leftover preview's
+// length, so VS Code routes the next character to `replacePreviousChar` rather than to `type` - the
+// count is 1 and the text is the leftover plus the new character. Dropping that is what made the
+// first `0` after Visual `<Esc>` do nothing, so it took two presses to reach the start of the line.
+reset()
+type('i')
+for (const character of 'hello world') type(character)
+press('<Esc>')
+press('0')
+type('v')
+type('e')
+press('<Esc>')
+compose('replacePreviousChar', { text: '00', replaceCharCnt: 1 })
+assert.strictEqual(
+  editor.selections[0].active.character,
+  0,
+  `0 after Esc from Visual was dropped as a leftover composition. caret: ${editor.selections[0].active.character}`,
 )
 
 // Insert mode is left alone, which is upstream's rule and the half that is easy to over-fix: there

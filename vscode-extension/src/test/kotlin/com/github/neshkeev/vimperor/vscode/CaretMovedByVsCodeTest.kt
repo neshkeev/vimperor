@@ -133,7 +133,7 @@ class CaretMovedByVsCodeTest {
 
   /**
    * And the other one: the step `revealLikeAClick` takes to make VS Code reveal a caret it is already
-   * on - one column along and back, because neither cursor command reveals a cursor that has not
+   * on - one column away and back, because neither cursor command reveals a cursor that has not
    * moved.
    *
    * Adopting it would be more than cosmetic. A caret taken from the window takes the window's column
@@ -146,7 +146,7 @@ class CaretMovedByVsCodeTest {
     session.type("ll")
     val remembered = session.editor.primaryCaret().vimLastColumn
 
-    assertEquals("ignored, a reveal this host asked for", session.cursorMovedTo(0, 3))
+    assertEquals("ignored, a reveal this host asked for", session.cursorMovedTo(0, 1))
     assertEquals(2, session.editor.primaryCaret().offset, "the engine's caret should not have followed the step")
     assertEquals(remembered, session.editor.primaryCaret().vimLastColumn)
   }
@@ -167,7 +167,7 @@ class CaretMovedByVsCodeTest {
     session.type("ll")
     session.type("i")
 
-    assertEquals("adopted", session.cursorMovedTo(0, 3))
+    assertEquals("adopted", session.cursorMovedTo(0, 1))
   }
 
   /**
@@ -180,7 +180,7 @@ class CaretMovedByVsCodeTest {
     js("require('vscode').window").activeTextEditor = session.fake
     session.type("ll")
 
-    assertEquals("ignored, a reveal this host asked for", session.cursorMovedTo(0, 3))
-    assertEquals("adopted", session.cursorMovedTo(0, 3))
+    assertEquals("ignored, a reveal this host asked for", session.cursorMovedTo(0, 1))
+    assertEquals("adopted", session.cursorMovedTo(0, 1))
   }
 }

@@ -78,14 +78,30 @@ internal class ComposedText {
    */
   private var keepingOut: Boolean? = null
 
+  /**
+   * Whether [started] has been called for the composition in flight.
+   *
+   * Distinct from [keepingOut]. An update can arrive with no `compositionStart` - this host
+   * activating mid-IME, or the leftover `replacePreviousChar` that lands when a Visual selection
+   * collapses. An empty leftover is kept out of the document; a leftover that carries typed keys
+   * is those keys, because `compositionEnd` never comes to deliver them. Neither is a reason to
+   * treat the next `type` as more composition: those keys are ordinary typing, and swallowing
+   * them is what left Normal mode looking dead after `<Esc>`.
+   */
+  private var sawStart: Boolean = false
+
   /** The composition as this host has been told it so far, which is what Vim will be given. */
   private var composed: String = ""
 
-  /** Whether a composition is in flight, which is what tells a `type` apart from a typed key. */
-  val inProgress: Boolean get() = keepingOut != null
+  /**
+   * Whether a composition whose `compositionStart` this host saw is in flight, which is what tells
+   * a `type` apart from a typed key. A stray [updated] without that start is not this.
+   */
+  val inProgress: Boolean get() = sawStart
 
   /** VS Code's `compositionStart`. */
   fun started(keepOutOfTheDocument: Boolean): ComposedTextDecision {
+    sawStart = true
     keepingOut = keepOutOfTheDocument
     composed = ""
     return if (keepOutOfTheDocument) ComposedTextDecision.KeepOut else ComposedTextDecision.HandToVsCode
@@ -99,7 +115,9 @@ internal class ComposedText {
    * activating in the middle of one, which is the single case where the rule above cannot be
    * applied because there is nothing to apply it from. Deciding from the mode now is the answer that
    * fixes the reported bug; the residual is a preview already in the document, which stays there
-   * until the user removes it.
+   * until the user removes it. A keep-out update with no start and a non-empty recording is the
+   * leftover `replacePreviousChar` that also carries the next key, and is committed immediately
+   * because `compositionEnd` never comes for a leftover.
    */
   fun updated(text: String, replacePrevious: Int, keepOutOfTheDocument: Boolean): ComposedTextDecision {
     val keeping = keepingOut ?: keepOutOfTheDocument
@@ -109,6 +127,17 @@ internal class ComposedText {
     // through it: the count is the previous preview's length and this recording *is* that preview,
     // so the two agree - and where they do not, dropping what the count asks for is still right.
     composed = composed.dropLast(replacePrevious) + text
+    // A leftover `replacePreviousChar` after Visual `<Esc>` has no `compositionStart` and never
+    // gets a `compositionEnd`. An empty one is the composition that could not land while the
+    // selection was up; keeping it out is the whole of that. A non-empty one is the *next* key
+    // as well - `_lastTypeTextLength` is still the leftover preview's length, so VS Code routes
+    // the character here instead of to `type`. The suffix past the count is that character; the
+    // leftover prefix is not a key the user pressed.
+    if (!sawStart && composed.isNotEmpty()) {
+      val typed = if (text.length > replacePrevious) text.drop(replacePrevious) else text
+      forget()
+      return ComposedTextDecision.Commit(typed)
+    }
     return ComposedTextDecision.KeepOut
   }
 
@@ -126,6 +155,7 @@ internal class ComposedText {
 
   /** Between hosts and between tests. A new host is a new session and cannot be mid-composition. */
   fun forget() {
+    sawStart = false
     keepingOut = null
     composed = ""
   }

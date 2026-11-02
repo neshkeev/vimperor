@@ -235,8 +235,12 @@ fun activate(context: ExtensionContext) {
         traceLine(output, "$id: handed to VS Code, which is where composed text is typed")
         commands.executeCommand("default:$id", arguments)
       }
-      is ComposedTextDecision.KeepOut ->
-        traceLine(output, "$id: kept out of the document, a command is being typed")
+      is ComposedTextDecision.KeepOut -> {
+        val text = arguments?.text as? String
+        val count = arguments?.replaceCharCnt as? Int ?: arguments?.replacePrevCharCnt as? Int
+        val detail = if (text != null || count != null) " (text='${text ?: ""}', count=${count ?: 0})" else ""
+        traceLine(output, "$id: kept out of the document, a command is being typed$detail")
+      }
       is ComposedTextDecision.Commit -> {
         val editor = vim.editorForKeystroke(window.activeTextEditor)
         if (editor == null) {

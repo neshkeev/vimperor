@@ -308,8 +308,10 @@ class IncsearchTest {
     session.type("thr")
 
     // Through the match's first character, not up to it: Vim's `'selection'` is inclusive, so the
-    // selection covers the character the caret is on.
-    assertEquals(0 to 13, session.selection, "the selection should reach the previewed match")
+    // engine covers the character the caret is on. The drawn cursor sits on that character.
+    assertEquals(0, session.editor.primaryCaret().selectionStart)
+    assertEquals(13, session.editor.primaryCaret().selectionEnd, "through the match's first character")
+    assertEquals(0 to 12, session.selection, "the drawn cursor sits on that character")
   }
 
   /**

@@ -27,7 +27,7 @@ import kotlin.test.assertTrue
  * so it could only be used away from the window's edges. `VsCodeEditor.revealLikeAClick` asks for the
  * reveal a click gets instead, through `_moveTo`.
  *
- * The fake cannot scroll sideways, so what is asserted is what was sent: a step one column along and
+ * The fake cannot scroll sideways, so what is asserted is what was sent: a step one column away and
  * back to the caret, from a source VS Code will not attribute to the user, and no padded reveal.
  */
 class RevealLikeAClickTest {
@@ -80,14 +80,19 @@ class RevealLikeAClickTest {
   private val longLine = "aaaaaa ".repeat(45).trim()
   private val longLines = (0 until 40).joinToString("\n") { longLine }
 
+  /**
+   * `j` onto column zero used to step to column 1 and back so `_moveTo` would reveal a caret it was
+   * already on. That step is painted, so the same flash `0` showed. `_moveTo` goes straight to
+   * column zero of the new line (the native cursor is still on the old one), then all the way left.
+   */
   @Test
-  fun `test j reveals the caret like a click, stepping one column along and back`() {
+  fun `test j onto column zero scrolls all the way left`() {
     val session = Session(longLines)
 
     session.type("j")
 
-    assertEquals(listOf("_moveTo 1:1", "_moveTo 1:0"), session.moves())
-    assertTrue(session.fake.cursorMoves.all { it.source == "vimperor.reveal" }, "a source VS Code gives no kind")
+    assertEquals(listOf("_moveTo 1:0"), session.moves(), "straight to column zero, no detour onto column 1")
+    assertTrue(session.fake.horizontalScrolls.single() < 0, "all the way left")
     assertEquals(emptyList(), session.fake.reveals.toList(), "no padded reveal besides")
   }
 
@@ -100,7 +105,8 @@ class RevealLikeAClickTest {
 
     session.type("j")
 
-    assertEquals(listOf("_moveTo 8:1", "_moveTo 8:0"), session.moves())
+    assertEquals(listOf("_moveTo 8:0"), session.moves(), "straight to column zero, no detour onto column 1")
+    assertTrue(session.fake.horizontalScrolls.single() < 0, "all the way left")
     assertEquals(0, session.fake.topLine, "the caret is on screen, so the window stays")
   }
 
@@ -128,7 +134,8 @@ class RevealLikeAClickTest {
 
       session.type(keys)
 
-      assertEquals(listOf("_moveTo 9:1", "_moveTo 9:0"), session.moves(), keys)
+      assertEquals(emptyList(), session.moves(), "$keys: no painted detour onto column 1")
+      assertTrue(session.fake.horizontalScrolls.single() < 0, "$keys: all the way left")
       assertEquals(emptyList(), session.fake.reveals.toList(), "$keys: no padded reveal to undo the scroll")
     }
   }
@@ -146,6 +153,9 @@ class RevealLikeAClickTest {
   @Test
   fun `test Visual mode reveals with the selection kept`() {
     val session = Session(longLines)
+    // Off column zero, where the reveal scrolls left instead of stepping the cursor.
+    session.type("l")
+    session.clear()
 
     session.type("vj")
 
@@ -154,6 +164,75 @@ class RevealLikeAClickTest {
     val last = session.fake.cursorMoves.last()
     val active = session.fake.selections.single().active
     assertEquals(active.line to active.character, last.line to last.character, "ending where the selection is drawn to")
+  }
+
+  /**
+   * The column after `e` is often the next word - `(` in `foo(bar)` - and a cursor move is painted.
+   * Stepping onto it made the first `w` after `<Esc>` look like a key that did nothing.
+   */
+  @Test
+  fun `test the reveal step stays on this word, not the next`() {
+    val session = Session("getParagraphOutlineLevel(paragraph);")
+
+    session.type("ve")
+
+    assertEquals(
+      listOf("_moveToSelect 0:22", "_moveToSelect 0:23"),
+      session.moves().takeLast(2),
+      "back a column from the last character of the identifier, not onto `(`",
+    )
+  }
+
+  @Test
+  fun `test Esc from Visual does not reveal onto the next word`() {
+    val session = Session("getParagraphOutlineLevel(paragraph);")
+    session.type("ve")
+    session.clear()
+
+    session.key("<Esc>")
+
+    assertEquals(
+      listOf("_moveTo 0:22", "_moveTo 0:23"),
+      session.moves(),
+      "the collapsed caret is revealed by stepping back, not onto `(`",
+    )
+  }
+
+  /**
+   * Column zero has no previous column, so a detour would be the *next* character and is painted.
+   * `_moveTo` still has to run, while the native cursor is on the old column: assigning selections
+   * first leaves `_moveTo` a no-op, and with `nowrap` the view can stay scrolled so `0` looks like
+   * it missed until the next key paints a move.
+   */
+  @Test
+  fun `test 0 does not reveal onto the second character`() {
+    val session = Session("2. Оптимизация (индексы)")
+    session.type("veee")
+    session.key("<Esc>")
+    session.clear()
+
+    session.type("0")
+
+    assertEquals(listOf("_moveTo 0:0"), session.moves(), "straight to column zero, no detour onto column 1")
+    assertEquals(0, session.fake.selections.single().active.character, "the caret itself is at column zero")
+    val columns = session.fake.horizontalScrolls.single()
+    assertTrue(columns < 0, "and all the way left, the way an empty line is revealed")
+  }
+
+  /**
+   * `v` at column zero draws `active` at the exclusive end - column 1 - and the reveal steps there.
+   * After `0`, that put the block on the second character.
+   */
+  @Test
+  fun `test v at column zero does not reveal onto the second character`() {
+    val session = Session("3. Очистка данных (партиционирование)")
+    session.type("0")
+    session.clear()
+
+    session.type("v")
+
+    assertEquals(emptyList(), session.moves(), "no painted detour onto column 1")
+    assertEquals(0, session.fake.selections.single().active.character, "cursor stays on the first character")
   }
 
   /**
@@ -169,7 +248,7 @@ class RevealLikeAClickTest {
 
     session.type("2j")
 
-    assertEquals(emptyList(), session.moves())
+    assertEquals(listOf("_moveTo 2:0"), session.moves(), "straight to column zero of the empty line")
     val columns = session.fake.horizontalScrolls.single()
     assertTrue(columns < 0, "to the left")
     val widestCharacterInPixels = 50.0
@@ -222,8 +301,9 @@ class RevealLikeAClickTest {
    * **The margins are revealed and the caret is visited.** The margins used to be visited too, with
    * the cursor sent to the column and back, and a cursor move is painted: the caret was seen stepping
    * ten columns out and returning on every keystroke. `revealRange` moves no cursor; the caret's own
-   * step still goes one column along and back, which is what makes VS Code reveal a point it is
-   * already on, and one column has never been noticed.
+   * step still goes one column away and back, which is what makes VS Code reveal a point it is
+   * already on. That step goes back a column when there is one, because the column after is often
+   * the next word and a painted step onto it made `w` look like a no-op.
    */
   @Test
   fun `test sidescrolloff reveals the columns either side of the caret a frame apart`(): Promise<Unit> {
@@ -238,7 +318,7 @@ class RevealLikeAClickTest {
     assertEquals(emptyList(), session.steps(), "and no cursor was moved to do it")
     return after(200) {
       assertEquals(listOf("1:60", "1:40"), session.sideReveals(), "then the left-hand margin")
-      assertEquals(listOf("1:51", "1:50!"), session.steps(), "then the caret, one column along and back")
+      assertEquals(listOf("1:49", "1:50!"), session.steps(), "then the caret, one column back and forth")
       session.sidescrolloff(0)
     }
   }
@@ -255,7 +335,7 @@ class RevealLikeAClickTest {
     assertEquals(listOf("0:39"), session.sideReveals())
     return after(200) {
       assertEquals(listOf("0:39", "0:59"), session.sideReveals())
-      assertEquals(listOf("0:50", "0:49!"), session.steps())
+      assertEquals(listOf("0:48", "0:49!"), session.steps())
       session.sidescrolloff(0)
     }
   }
@@ -378,7 +458,7 @@ class RevealLikeAClickTest {
 
     assertEquals(1, session.fake.horizontalScrolls.size)
     assertTrue(session.fake.horizontalScrolls.single() > 0, "all the way right first")
-    assertEquals(listOf("0:51", "0:50!"), session.steps())
+    assertEquals(listOf("0:49", "0:50!"), session.steps())
   }
 
   @Test
@@ -390,7 +470,7 @@ class RevealLikeAClickTest {
     session.type("ze")
 
     assertTrue(session.fake.horizontalScrolls.single() < 0, "all the way left first")
-    assertEquals(listOf("0:51", "0:50!"), session.steps())
+    assertEquals(listOf("0:49", "0:50!"), session.steps())
   }
 
   /** `'sidescrolloff'` columns in from the edge: the column that far out is the one revealed. */

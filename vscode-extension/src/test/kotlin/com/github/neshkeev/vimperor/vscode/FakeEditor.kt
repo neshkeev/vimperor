@@ -299,6 +299,12 @@ class FakeEditor(
     // `_moveTo` skips its reveal for exactly this value.
     val reveals = (args.revealType as Int?) != 2
     cursorMoves += CursorMove(command, line, character, args.source as String?, reveals)
+    // `_moveTo` always moves the cursor; `revealType: 2` only skips the reveal. A fake that left
+    // `selections` alone agreed with a host that assigned them afterwards, and hid the race where
+    // that assignment landed first and cancelled the reveal.
+    val position = Position(line, character)
+    val anchor = if (command == "_moveToSelect") selections.first().anchor else position
+    selections = arrayOf(Selection(anchor, position))
     if (!reveals) return
     val margin = minOf(viewportHeight / 2, revealMargin)
     val paddedTop = line - margin

@@ -37,6 +37,7 @@ import com.maddyhome.idea.vim.helper.isEndAllowed
 import com.maddyhome.idea.vim.impl.state.VimStateMachineImpl
 import com.maddyhome.idea.vim.state.mode.Mode
 import com.maddyhome.idea.vim.state.mode.SelectionType
+import com.maddyhome.idea.vim.state.mode.selectionType
 import kotlin.js.json
 import kotlin.math.abs
 
@@ -791,6 +792,29 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
         Selection(position, position)
       }
     }
+    // Column zero cannot detour to a previous column; the old reveal stepped onto column 1 and that
+    // is painted. `_moveTo` only reveals when the native cursor *moves*, and assigning `selections`
+    // first puts it already at the target, so the command is a no-op. With `nowrap` the view can
+    // stay scrolled to the old column, and `0` looks like it missed until a later key paints a move.
+    // Send `_moveTo` here, while the native cursor is still on that old column.
+    //
+    // And do not assign `selections` afterwards when that `_moveTo` is the whole of a collapsed
+    // caret. Each is a separate RPC; if the assignment lands first, `_moveTo` sees a cursor already
+    // at column zero, `cursorStateChanged` is false, and there is no reveal. A real window after
+    // Visual `<Esc>` then `0` still had the caret on the old column for that reason.
+    var caretMovedByCursorCommand = false
+    if (selections.size == 1 && canRevealLikeAClick(selections)) {
+      val target = selections.single()
+      if (target.active.character == 0) {
+        val previous = pushedSelections.singleOrNull()?.let { positionOf(it.second) }
+        if (previous != null && (previous.line != target.active.line || previous.character != 0)) {
+          moveCursorTo(cursorCommandFor(target), target, target.active.line, 0)
+          val collapsed = target.active.line == target.anchor.line &&
+            target.active.character == target.anchor.character
+          caretMovedByCursorCommand = collapsed
+        }
+      }
+    }
     // `selections` and nothing else. Assigning `selection` afterwards looks like setting the primary
     // and is not: VS Code documents it as "shorthand for TextEditor.selections[0]", and its setter
     // is `this._selections = [value]` - so it *discards* every other caret. A block selection was
@@ -798,7 +822,9 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // offline could see it, because the fake and the stub both keep `selection` as a plain field
     // rather than as the shorthand it is. The primary is already first in this list, which is where
     // VS Code takes it from.
-    nativeEditor.selections = selections.toTypedArray()
+    if (!caretMovedByCursorCommand) {
+      nativeEditor.selections = selections.toTypedArray()
+    }
     val pushed = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
     val moved = pushed != pushedSelections
     pushedSelections = pushed
@@ -954,9 +980,10 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * padding, the vertical scroll only if the line is really off screen, and the horizontal one it was
    * missing. `_moveToSelect` is the same keeping the selection's anchor. Neither reveals when the
    * cursor is already where it is sent, and after `selections` has just been written it always is -
-   * so the cursor goes one column along first and then back. Both arrive in the same task, before the
-   * editor paints, so the step is never drawn; and the second reveal is computed from the first one's
-   * scroll, which a caret on a visible line does not have.
+   * so the cursor goes one column away and back. Each `executeCommand` is a separate RPC and the
+   * main thread is free to paint between them, so the step *is* drawn. Stepping onto the next
+   * character - `(` after `e` on `foo(bar)` - made the first `w` look like a no-op, which is why
+   * [detourColumn] goes back a column when there is one.
    *
    * The selection events they cause carry this source, which VS Code gives no `kind`, so
    * `VimHost.selectionChanged` ignores them as not the user's.
@@ -979,10 +1006,13 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val previous = lastRevealedCharacter
     lastRevealedCharacter = target.character
     val length = lineLength(target.line)
-    if (length == 0) {
-      // An empty line has no column to step to. Its caret is in column zero, and the one scroll that
-      // shows column zero is all the way left - which `editorScroll` can do without touching the
-      // vertical position. That line's vertical position is Vim's arithmetic alone.
+    if (length == 0 || target.character == 0) {
+      // Column zero - empty line or `0` / `gg` / `j` onto the start - has no previous column, so the
+      // detour would be the *next* character. A cursor move is painted, and `0` after `<Esc>` from
+      // Visual looked like a miss: the engine was already at the start, the block sat on the second
+      // character for a frame. The one scroll that shows column zero is all the way left, which
+      // `editorScroll` can do without touching the vertical position. That line's vertical position
+      // is Vim's arithmetic alone.
       commands.executeCommand(
         VsCodeCommands.EDITOR_SCROLL,
         json("to" to "left", "by" to "column", "value" to ALL_THE_WAY_LEFT, "revealCursor" to false),
@@ -991,7 +1021,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     }
     val margin = injector.options(this).sidescrolloff.coerceIn(0, MAX_SIDE_MARGIN)
     if (margin == 0) {
-      val detour = if (target.character < length) target.character + 1 else target.character - 1
+      val detour = detourColumn(target.character, length)
       moveCursorTo(command, selection, target.line, detour)
       moveCursorTo(command, selection, target.line, target.character)
       return true
@@ -1045,7 +1075,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       revealColumn(second)
       pendingSideReveal = injector.application.schedule(ONE_FRAME) {
         if (!stillCurrent()) return@schedule
-        val detour = if (target.character < length) target.character + 1 else target.character - 1
+        val detour = detourColumn(target.character, length)
         moveCursorTo(command, selection, target.line, detour, reveal = false)
         moveCursorTo(command, selection, target.line, target.character)
       }
@@ -1114,7 +1144,7 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
       moveCursorTo(command, selection, target.line, column)
       moveCursorTo(command, selection, target.line, target.character, reveal = false)
     } else {
-      val detour = if (target.character < length) target.character + 1 else target.character - 1
+      val detour = detourColumn(target.character, length)
       moveCursorTo(command, selection, target.line, detour, reveal = false)
       moveCursorTo(command, selection, target.line, target.character)
     }
@@ -1129,6 +1159,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     val mode = mode
     return mode !is Mode.INSERT && mode !is Mode.REPLACE && mode !is Mode.CMD_LINE
   }
+
+  /**
+   * The column a reveal steps to so VS Code will reveal a caret it is already on.
+   *
+   * `_moveTo` does not reveal when the cursor has not moved. Prefer the column *before* the caret:
+   * the column after is often the next word (`foo(bar)` after `e`), and a cursor move is painted, so
+   * stepping onto it made `w` look like a key that did nothing. Column zero is not revealed this
+   * way: [revealLikeAClick] scrolls all the way left instead, because the only detour left is
+   * column 1 and that one is painted.
+   */
+  private fun detourColumn(character: Int, length: Int): Int =
+    if (character > 0) character - 1 else if (length > 0) 1 else 0
 
   /** A click for a caret, a drag for a selection, so that the anchor stays where it is. */
   private fun cursorCommandFor(selection: Selection): String {
@@ -1284,41 +1326,58 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    * that start and `anchor` is the drawn end, so the highlight still covers both lines and the
    * cursor follows `k`.
    *
-   * [shownEnd] still pulls a linewise end back off the following line, whichever end is `active`.
+   * [shownEnd] still pulls a linewise end back off the following line. Characterwise is the same
+   * off-by-one one column over: an exclusive end puts `active` on the character *after* the one
+   * the caret is on, so `<Esc>` stepped the cursor back and the first `w` only walked it forward
+   * again. When the caret has moved off the start, `active` is the caret itself - the last
+   * selected character, where Vim's block sits. When the caret is still at the start - a
+   * one-character `v`, or Visual `0` / `F` / `b` growing backwards - `active` is the caret and
+   * `anchor` is the exclusive end. The other way around puts the cursor on the next character, so
+   * `0` then `v` sat on the second character and Visual `0` looked like a miss. `active == anchor`
+   * would collapse the native range and highlight nothing.
    */
   private fun drawnSelection(caret: VimCaret): Selection {
     val start = caret.selectionStart
     val drawnEnd = shownEnd(start, caret.selectionEnd)
     val startPos = positionOf(start)
     val endPos = positionOf(drawnEnd)
-    val caretLine = positionOf(caret.offset).line
-    return if (caretLine <= startPos.line && startPos.line < endPos.line) {
-      Selection(endPos, startPos)
-    } else {
-      Selection(startPos, endPos)
+    val caretPos = positionOf(caret.offset)
+    val caretLine = caretPos.line
+    if (caretLine <= startPos.line && startPos.line < endPos.line) {
+      return Selection(endPos, startPos)
     }
+    if (mode.selectionType == SelectionType.CHARACTER_WISE) {
+      if (caret.offset > start) {
+        return Selection(startPos, caretPos)
+      }
+      if (drawnEnd > start) {
+        return Selection(endPos, caretPos)
+      }
+    }
+    return Selection(startPos, endPos)
   }
 
   /**
    * Where a selection should be drawn as ending, which is not always where it ends.
    *
-   * VS Code draws the cursor at a selection's `active` end, and a *linewise* selection ends at the
+   * VS Code draws the cursor at a selection's `active` end. A linewise selection ends at the
    * start of the line after the last one it covers - so `V` on a single line drew the cursor on
    * the line below it, one line further down than Vim's. Pulling the drawn end back to the end of
    * the last covered line puts the cursor back on that line.
    *
-   * Only what is *drawn* moves. The engine's own selection is untouched, so `d` over a linewise
-   * selection still takes the newline with it.
+   * Only what is *drawn* moves. The engine's own selection is untouched, so a linewise `d` still
+   * takes the newline.
    *
-   * By line rather than by stepping back one character: on a CRLF document `end - 1` is the offset
-   * between the carriage return and the newline, and a cursor there is a cursor in the middle of a
-   * line ending.
+   * By column rather than by `end - 1`: on a CRLF document that offset is between the carriage
+   * return and the newline, and a cursor there is a cursor in the middle of a line ending.
    */
   private fun shownEnd(start: Int, end: Int): Int {
     if (end <= start) return end
     val position = positionOf(end)
-    if (position.character != 0 || position.line == 0) return end
-    return maxOf(start, getLineEndOffset(position.line - 1))
+    if (position.character == 0 && position.line != 0) {
+      return maxOf(start, getLineEndOffset(position.line - 1))
+    }
+    return end
   }
 
   /**

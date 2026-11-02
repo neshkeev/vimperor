@@ -195,6 +195,69 @@ class ComposedTextTest {
   }
 
   /**
+   * After Visual then `<Esc>`, a leftover `replacePreviousChar` (the composition that could not
+   * land while the selection was up) must not steal the keys that follow.
+   *
+   * Those arrive as ordinary `type`, and treating them as more composition is what left Normal
+   * mode looking dead: every command swallowed, `compositionEnd` never coming. `compositionStart`
+   * is what tells a `type` apart from a typed key. An update without one is still kept out of the
+   * document - the original eat-the-line bug - and is not a composition this host is in the
+   * middle of.
+   */
+  @Test
+  fun `test a type after a stray composition update is an ordinary key`() {
+    val (host, fake, _) = session("hello world")
+    host.keys(fake, "vll")
+    host.keys(fake, "<Esc>")
+    assertEquals("NORMAL", host.modeName())
+
+    assertIs<ComposedTextDecision.KeepOut>(host.compositionUpdated("", 1))
+    assertNull(
+      host.typedDuringComposition("w"),
+      "a key after a stray composition update was swallowed",
+    )
+  }
+
+  /**
+   * The leftover replace can itself *be* the key the user pressed.
+   *
+   * `_lastTypeTextLength` is still the previous preview's length, so VS Code routes the next
+   * character to `replacePreviousChar` rather than to `type`. The count is 1 and the text is the
+   * leftover preview plus the new character - `00` when the leftover was `0` and the user typed
+   * `0`. Keeping that out of the document is right; dropping it is what made the first `0` after
+   * Visual `<Esc>` do nothing, so it took two presses to reach the start of the line.
+   * `compositionEnd` never comes for a leftover, so the new character has to be a command now.
+   */
+  @Test
+  fun `test a stray replace that carries typed keys is those keys`() {
+    val (host, fake, _) = session("hello world")
+    host.keys(fake, "ww")
+    host.keys(fake, "ve")
+    host.keys(fake, "<Esc>")
+    assertEquals("NORMAL", host.modeName())
+    assertTrue(
+      host.editorFor(fake).primaryCaret().getBufferPosition().column > 0,
+      "setup left the caret at the start of the line",
+    )
+
+    val decision = host.compositionUpdated("00", 1)
+    val commit = assertIs<ComposedTextDecision.Commit>(decision)
+    assertEquals("0", commit.text, "the leftover preview was typed as well as the new key")
+    host.type(fake, commit.text)
+
+    assertEquals(
+      0,
+      host.editorFor(fake).primaryCaret().getBufferPosition().column,
+      "the first 0 after Esc from Visual was dropped",
+    )
+    assertEquals("hello world", fake.document.getText())
+    assertNull(
+      host.typedDuringComposition("w"),
+      "a key after the stray replace was swallowed",
+    )
+  }
+
+  /**
    * The command line keeps composed text out too, which is the one divergence from upstream.
    *
    * IdeaVim's ex field is a Swing text field and draws the composition itself; this host's prompt is
@@ -216,16 +279,21 @@ class ComposedTextTest {
    * A composition this host joined in the middle, which is the one case the rule cannot be applied
    * from and so is decided by the mode at the time.
    *
-   * It is what fixes the reported bug even when the `compositionStart` was missed - this host
-   * activating while an IME was already open - and the residual is named in [ComposedText]: a
+   * In Normal mode that is a command, and `compositionEnd` never comes for a leftover, so the
+   * typed keys are committed on the update itself. The residual is named in [ComposedText]: a
    * preview already in the document stays there.
    */
   @Test
   fun `test an update with no composition started is decided by the mode`() {
     val (host, fake, _) = session("hello")
 
-    assertIs<ComposedTextDecision.KeepOut>(host.compositionUpdated("é", 1))
+    val decision = host.compositionUpdated("é", 1)
+    val commit = assertIs<ComposedTextDecision.Commit>(decision)
+    assertEquals("é", commit.text, "a stray keep-out update with no start is the typed keys")
     assertEquals("hello", fake.document.getText())
-    assertTrue(host.compositionEnded() is ComposedTextDecision.Commit, "the committed text was dropped")
+    assertIs<ComposedTextDecision.HandToVsCode>(
+      host.compositionEnded(),
+      "the same text was committed again when the composition ended",
+    )
   }
 }

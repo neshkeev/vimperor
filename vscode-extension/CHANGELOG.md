@@ -4,6 +4,46 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Fixed
+
+- **After `<Esc>` from Visual, Normal-mode commands could do nothing.** A composition that could not
+  land while the selection was up arrived as `replacePreviousChar` once `<Esc>` collapsed it, and
+  that was enough for the next keys to be treated as more of the same composition. They were kept
+  out of the document and never given to Vim, and `compositionEnd` never came to finish the session.
+  A `type` is a composition update only after `compositionStart`; a leftover replace no longer
+  starts a composition that swallows the keys that follow it.
+
+- **`w` after `<Esc>` from Visual could look like it did nothing, so it took two presses to move
+  a word.** Two things put the cursor one character past where Vim's is. A characterwise selection
+  ends one past the last selected character, so `ve` drew the block on the character *after* `e`.
+  And the reveal that follows every keystroke steps one column away and back so VS Code will
+  reveal a caret it is already on - onto that same next character, often `(` in `foo(bar)` - and
+  a cursor move is painted, so even with the block on the last character the first `w` still
+  looked like a no-op. The cursor now sits on the last selected character, and the reveal steps
+  back a column when there is one.
+
+- **`0` after leaving Visual could look like it did nothing, so it took two presses to reach the
+  start of the line.** At column zero the reveal has no previous column to step to, so it stepped
+  onto the second character and back, and a cursor move is painted. Skipping that detour left
+  `_moveTo` a no-op: the caret was already assigned to column zero, VS Code does not reveal a
+  cursor that has not moved, and with `nowrap` the view can stay scrolled so the first `0` is
+  invisible until the next key paints a move. `_moveTo` now runs while the native cursor is still
+  on the old column, straight to column zero, and is the only write of a collapsed caret there -
+  assigning `selections` afterwards is a second RPC that can land first and cancel the reveal. The
+  view still scrolls all the way left.
+
+- **`0` after `<Esc>` from Visual could still do nothing on the first press.** A leftover IME
+  `replacePreviousChar` still held the previous preview's length, so the next character arrived as
+  that replace (`text='00'`) and was dropped. A leftover replace that carries typed text is now
+  those keys, and they run as the command immediately.
+
+- **`0` then `v`, or Visual `0`, could still put the cursor on the second character.** A
+  one-character selection has to stay exclusive or VS Code highlights nothing, and the exclusive
+  end is the next column - so `v` at the start of the line sat on the character after the one Vim
+  is on, and Visual `0` growing backwards left the cursor at the original end. `active` is now the
+  caret and `anchor` is the exclusive end, so the highlight stays and the cursor sits where Vim's
+  does.
+
 ## [0.0.13] - 2026-11-01
 
 ### Fixed

@@ -11,6 +11,7 @@ package com.github.neshkeev.vimperor.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * What VS Code is left drawing for a linewise selection.
@@ -33,8 +34,9 @@ class DrawnSelectionTest {
     }
 
     fun type(text: String) = text.forEach { host.type(fake, it.toString()) }
+    fun key(notation: String) = host.key(fake, notation)
     val drawn: Selection get() = fake.selections[0]
-    val editor: VsCodeEditor get() = host.editorFor(fake) as VsCodeEditor
+    val editor: VsCodeEditor get() = host.editorFor(fake)
   }
 
   @Test
@@ -117,5 +119,96 @@ class DrawnSelectionTest {
     session.type("Vd")
 
     assertEquals("two\n", session.fake.document.content)
+  }
+
+  /**
+   * A one-character `v` has to stay exclusive: `active == anchor` collapses the native range and
+   * VS Code highlights nothing. Putting `active` at the exclusive end puts the cursor on the
+   * *next* character, so `v` at column zero sat on the second character and Visual `0` looked
+   * like a miss. Reverse the selection: `active` is the caret, `anchor` is the exclusive end.
+   */
+  @Test
+  fun `test v still highlights the character under the caret`() {
+    val session = Session("hello")
+
+    session.type("v")
+
+    assertEquals(0, session.drawn.active.character, "on the character v selected, not the next one")
+    assertEquals(1, session.drawn.anchor.character, "exclusive end kept so the character is highlighted")
+  }
+
+  /**
+   * Reported from a real window: `0` then `v` put the cursor on the second character, so `0` looked
+   * like it had missed. Visual `0` after expanding from the start did the same - engine at column
+   * zero, `active` one past it.
+   */
+  @Test
+  fun `test Visual 0 draws the cursor at the start of the line`() {
+    val session = Session("3. Очистка данных (партиционирование)")
+
+    session.type("vee")
+    session.type("0")
+
+    assertEquals(0, session.drawn.active.character, "on the first character, not the second")
+    assertTrue(session.drawn.anchor.character > 0, "the exclusive end keeps the character highlighted")
+  }
+
+  /** Backward characterwise: `v$` then `0` must move the drawn cursor, not only grow the highlight. */
+  @Test
+  fun `test Visual 0 from later in the line moves the drawn cursor to column zero`() {
+    val session = Session("3. Очистка данных (партиционирование)")
+
+    session.type("ww")
+    session.type("ve")
+    session.type("0")
+
+    assertEquals(0, session.drawn.active.character, "the cursor follows 0, not the original end")
+  }
+
+  /**
+   * Characterwise Visual is the same shape as linewise, one column instead of one line. VS Code
+   * draws the cursor at `active`, and a characterwise selection ends one past the last selected
+   * character, so `ve` put the cursor on the character *after* `e` landed on. `<Esc>` then moved
+   * it back onto that character, and the first `w` only walked it forward again - looking like a
+   * key that did nothing.
+   */
+  @Test
+  fun `test ve draws the cursor on the last selected character`() {
+    val session = Session("hello world")
+
+    session.type("ve")
+
+    assertEquals(4, session.drawn.active.character, "on `o`, not one past it")
+    assertEquals(0, session.drawn.anchor.character)
+  }
+
+  /** `d` still takes the last selected character, which is the engine's selection, not the drawn one. */
+  @Test
+  fun `test ve then d deletes the whole word`() {
+    val session = Session("hello world")
+
+    session.type("ved")
+
+    assertEquals(" world", session.fake.document.content)
+  }
+
+  /**
+   * The thing a real window reported: after `<Esc>`, `w` looked like it did nothing, so it took
+   * two presses to move a word. The drawn cursor had been sitting on the exclusive end - the
+   * character *after* `e` - and `<Esc>` put it back on that character, so the first `w` only
+   * walked it forward onto where it had been. On `hello.world` that exclusive end is the dot,
+   * which `w` treats as a word of its own.
+   */
+  @Test
+  fun `test Esc from characterwise visual leaves the drawn cursor where it was`() {
+    val session = Session("hello.world")
+
+    session.type("ve")
+    val at = session.drawn.active.character
+    session.key("<Esc>")
+
+    assertEquals(at, session.drawn.active.character, "Esc should not step the cursor back a column")
+    session.type("w")
+    assertEquals(5, session.drawn.active.character, "w from `o` lands on the dot, one word on")
   }
 }

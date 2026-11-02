@@ -379,6 +379,11 @@ class VimHost(
    * `replacePrevCharCnt` is zero and the view controller sends a zero count that way. Without this
    * the first composed character was run as a Vim command while the IME went on counting it, which
    * is what made the eventual `replacePreviousChar` delete text nobody had typed.
+   *
+   * Only a composition whose `compositionStart` this host saw counts. A leftover
+   * `replacePreviousChar` after Visual `<Esc>` is kept out of the document when it is empty, and
+   * is the typed keys when it carries them; the keys that follow it are ordinary typing, not more
+   * of that composition.
    */
   internal fun typedDuringComposition(text: String): ComposedTextDecision? =
     if (!composedText.inProgress) null else compositionUpdated(text, 0)

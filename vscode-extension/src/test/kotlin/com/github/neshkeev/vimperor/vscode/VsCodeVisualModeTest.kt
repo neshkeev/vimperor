@@ -46,7 +46,7 @@ class VsCodeVisualModeTest {
     session.type("v")
 
     assertEquals("VISUAL", session.host.modeName())
-    assertEquals(0 to 1, session.selection, "v should select the character the caret is on")
+    assertEquals(1 to 0, session.selection, "cursor on the character, exclusive end the other way so it stays highlighted")
   }
 
   @Test
@@ -55,7 +55,9 @@ class VsCodeVisualModeTest {
     session.type("v")
     session.type("e")
 
-    assertEquals(0 to 3, session.selection, "ve should select the word")
+    assertEquals(0 to 2, session.selection, "the drawn cursor sits on the last character of the word")
+    assertEquals(0, session.editor.primaryCaret().selectionStart)
+    assertEquals(3, session.editor.primaryCaret().selectionEnd, "the engine still covers the last character")
   }
 
   @Test
@@ -165,7 +167,13 @@ class VsCodeVisualModeTest {
 
     // Asserted on the *engine's* carets rather than on the fake's selections, which is what this
     // test is overwriting.
-    session.fake.selections = arrayOf(Selection(Position(0, 0), Position(0, 4)))
+    // The one column a reveal steps away from the drawn `active`, not a column picked by hand:
+    // characterwise Visual now sits `active` on the caret, so the detour moves with it, and the
+    // step goes back a column when there is one.
+    val drawn = session.fake.selection
+    val detourColumn = if (drawn.active.character > 0) drawn.active.character - 1 else drawn.active.character + 1
+    val detour = Position(drawn.active.line, detourColumn)
+    session.fake.selections = arrayOf(Selection(drawn.anchor, detour))
     val outcome = session.host.selectionChanged(session.fake, kind = null)
 
     assertEquals("ignored, a reveal this host asked for", outcome)

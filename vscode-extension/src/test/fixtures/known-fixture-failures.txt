@@ -6,7 +6,7 @@
 # - never edit a name by hand to make the build pass. A comment here is a whole line: a fixture's
 # name can contain `#`, because the second `doTest` in a method is `...#2`.
 #
-# 2417 of the 2423 harvested fixtures pass.
+# 2488 of the 2494 harvested fixtures pass.
 #
 # Nine of the twenty arrived with the corpus's fifth step - `commandToKeys` and the read-only
 # assertions - and they are what a new fixture is for. Six are one gap: a mapping onto a *modified*
