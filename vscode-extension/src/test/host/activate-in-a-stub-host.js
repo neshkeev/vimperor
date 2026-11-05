@@ -98,6 +98,12 @@ const disposable = () => ({ dispose() {} })
 
 class Position {
   constructor(line, character) {
+    if (line < 0) {
+      throw new Error('Illegal argument: line must be non-negative')
+    }
+    if (character < 0) {
+      throw new Error('Illegal argument: character must be non-negative')
+    }
     this.line = line
     this.character = character
   }

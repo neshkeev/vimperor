@@ -19,6 +19,14 @@
 
 class Position {
   constructor(line, character) {
+    // VS Code's own constructor. A negative line is not a position it will draw, and the message
+    // is the one a real window throws - `extHostTypes.Position`.
+    if (line < 0) {
+      throw new Error('Illegal argument: line must be non-negative')
+    }
+    if (character < 0) {
+      throw new Error('Illegal argument: character must be non-negative')
+    }
     this.line = line
     this.character = character
   }

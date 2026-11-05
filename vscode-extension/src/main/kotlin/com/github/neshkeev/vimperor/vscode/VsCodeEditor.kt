@@ -1421,9 +1421,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   internal var selectionHandedToHostCommand: Boolean = false
 
+  /**
+   * A position VS Code will accept for [offset].
+   *
+   * An offset past the end of the buffer is the end of the file. The offset remembered from the
+   * previous flush can sit past it: `dd` on the empty line a trailing newline opens deletes that
+   * newline, and the old offset is one past the new end. [offsetToBufferPosition] answers an offset
+   * it cannot place with line -1, and `Position` throws `line must be non-negative` - which took
+   * the keyboard, because the next keystroke flushes and asks again, and every key after it did too.
+   */
   private fun positionOf(offset: Int): Position {
-    val position = offsetToBufferPosition(offset)
-    return Position(position.line, position.column)
+    val position = offsetToBufferPosition(offset.coerceIn(0, buffer.text.length))
+    return Position(position.line.coerceAtLeast(0), position.column.coerceAtLeast(0))
   }
 
   private fun offsetOf(position: Position): Int =

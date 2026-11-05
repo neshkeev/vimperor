@@ -291,6 +291,28 @@ class RevealLikeAClickTest {
     assertEquals(emptyList(), session.moves())
   }
 
+  /**
+   * `dd` on the empty line a trailing newline opens, then another key.
+   *
+   * The flush that put the caret there remembered its offset, which was the end of the buffer.
+   * Deleting the newline leaves that offset one past the new end, and the next flush asked VS Code
+   * for the position of it. `Position` throws `line must be non-negative`, and the keyboard stayed
+   * there: every later key failed the same way, and the output panel opened over the editor.
+   */
+  @Test
+  fun `test a key after deleting the empty last line still lands`() {
+    val lines = (0 until 8).joinToString("\n") { "line $it" }
+    val session = Session(lines + "\n")
+
+    session.key("G")
+    session.type("dd")
+    session.type("g")
+    session.key("gg")
+
+    assertEquals(lines, session.fake.document.content, "the empty line goes, and the line above it stays")
+    assertEquals(0, session.host.editorFor(session.fake).primaryCaret().offset)
+  }
+
   // ---- 'sidescrolloff' ---------------------------------------------------------------------------
 
   /**
