@@ -44,12 +44,12 @@ abstract class VimStringParserBase : VimStringParser {
           (key.keyCode - 'A'.code + 1).toChar().toString()
         }
       } else {
-        "^" + key.keyCode.toChar()
+        "^" + keyCodeToChar(key.keyCode)
       }
     } else if (key.keyChar == VimKeyCodes.CHAR_UNDEFINED && key.keyCode == VimKeyCodes.VK_ENTER) {
       return "\n"
     }
-    return key.keyCode.toChar().toString()
+    return keyCodeToChar(key.keyCode).toString()
   }
 
   override fun toKeyNotation(keyStrokes: List<VimKeyStroke>): String {
@@ -67,7 +67,10 @@ abstract class VimStringParserBase : VimStringParser {
     val c = keyStroke.keyChar
     val keyCode = keyStroke.keyCode
     val modifiers = keyStroke.modifiers
-    if (c != VimKeyCodes.CHAR_UNDEFINED && !isControlCharacter(c)) {
+    val isTyped = c != VimKeyCodes.CHAR_UNDEFINED && !isControlCharacter(c)
+    // Shift only changes which character a key types, so `<S-%>` is still `%`. Ctrl, Alt and Meta do not: a typed
+    // `%` with Alt is `<A-%>`, and printing the bare character would hide the modifier.
+    if (isTyped && modifiers and NON_SHIFT_MODIFIERS == 0) {
       return c.toString()
     }
     var prefix = ""
@@ -83,6 +86,9 @@ abstract class VimStringParserBase : VimStringParser {
     if (modifiers and VimKeyCodes.SHIFT_DOWN_MASK != 0) {
       prefix += "S-"
     }
+    if (isTyped) {
+      return "<$prefix$c>"
+    }
     var name = getVimKeyValue(keyCode)
     if (name != null) {
       name = if (containsDisplayUppercaseKeyNames(name)) {
@@ -97,7 +103,11 @@ abstract class VimStringParserBase : VimStringParser {
         return escape
       }
       try {
-        name = toChars(keyCode).concatToString()
+        name = if (keyCode in PUNCTUATION_KEY_CODES) {
+          keyCodeToChar(keyCode).toString()
+        } else {
+          toChars(keyCode).concatToString()
+        }
       } catch (_: IllegalArgumentException) {
       }
     }
@@ -631,8 +641,45 @@ abstract class VimStringParserBase : VimStringParser {
     } else if (modifiers == VimKeyCodes.SHIFT_DOWN_MASK && c.isLetter()) {
       VimKeyStroke.getKeyStroke(c.uppercaseChar())
     } else {
-      VimKeyStroke.getKeyStroke(c.uppercaseChar().code, modifiers)
+      val keyCode = getKeyCode(c, modifiers)
+      if (keyCode != null) VimKeyStroke.getKeyStroke(keyCode, modifiers) else VimKeyStroke.getKeyStroke(c, modifiers)
     }
+  }
+
+  /**
+   * The key code of the key that types [c], or null for ASCII punctuation that only a shifted key types.
+   *
+   * Such a character stays a typed keystroke. Inventing a key code for it aliases an unrelated key: quote is 39,
+   * which is [VimKeyCodes.VK_RIGHT], backquote is 96, which is [VimKeyCodes.VK_NUMPAD0], and percent is 37, which
+   * is [VimKeyCodes.VK_LEFT]. Only the unshifted punctuation keys have a code of their own, and quote and backquote
+   * are the two whose code is not the character.
+   */
+  private fun getKeyCode(c: Char, modifiers: Int): Int? {
+    if (c.code !in ASCII_PUNCTUATION) return c.uppercaseChar().code
+    // Ctrl-(? @ [\]^_) are ASCII control characters, stored by their character code. `<C-[>` happens to be
+    // [VimKeyCodes.VK_OPEN_BRACKET]; `<C-^>` is not a key code at all.
+    if (modifiers and VimKeyCodes.CTRL_DOWN_MASK != 0 && c in '?'..'_') return c.code
+    return when (c) {
+      '-' -> VimKeyCodes.VK_MINUS
+      '=' -> VimKeyCodes.VK_EQUALS
+      '[' -> VimKeyCodes.VK_OPEN_BRACKET
+      ']' -> VimKeyCodes.VK_CLOSE_BRACKET
+      '\\' -> VimKeyCodes.VK_BACK_SLASH
+      ';' -> VimKeyCodes.VK_SEMICOLON
+      '\'' -> VimKeyCodes.VK_QUOTE
+      ',' -> VimKeyCodes.VK_COMMA
+      '.' -> VimKeyCodes.VK_PERIOD
+      '/' -> VimKeyCodes.VK_SLASH
+      '`' -> VimKeyCodes.VK_BACK_QUOTE
+      else -> null
+    }
+  }
+
+  /** The character a punctuation key types with no Shift. Every other key code is already that character. */
+  private fun keyCodeToChar(keyCode: Int): Char = when (keyCode) {
+    VimKeyCodes.VK_QUOTE -> '\''
+    VimKeyCodes.VK_BACK_QUOTE -> '`'
+    else -> keyCode.toChar()
   }
 
   private enum class KeyParserState {
@@ -649,5 +696,24 @@ abstract class VimStringParserBase : VimStringParser {
 
     private const val VK_PLUG = VimKeyCodes.CHAR_UNDEFINED.code - 1
     private const val VK_ACTION = VimKeyCodes.CHAR_UNDEFINED.code - 2
+
+    private const val NON_SHIFT_MODIFIERS =
+      VimKeyCodes.CTRL_DOWN_MASK or VimKeyCodes.ALT_DOWN_MASK or VimKeyCodes.META_DOWN_MASK
+
+    private val ASCII_PUNCTUATION = ('!'.code..'~'.code).filterNot { it.toChar().isLetterOrDigit() }.toSet()
+
+    private val PUNCTUATION_KEY_CODES = setOf(
+      VimKeyCodes.VK_MINUS,
+      VimKeyCodes.VK_EQUALS,
+      VimKeyCodes.VK_OPEN_BRACKET,
+      VimKeyCodes.VK_CLOSE_BRACKET,
+      VimKeyCodes.VK_BACK_SLASH,
+      VimKeyCodes.VK_SEMICOLON,
+      VimKeyCodes.VK_QUOTE,
+      VimKeyCodes.VK_COMMA,
+      VimKeyCodes.VK_PERIOD,
+      VimKeyCodes.VK_SLASH,
+      VimKeyCodes.VK_BACK_QUOTE,
+    )
   }
 }

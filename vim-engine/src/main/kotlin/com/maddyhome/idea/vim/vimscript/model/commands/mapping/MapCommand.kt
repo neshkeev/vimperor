@@ -30,6 +30,7 @@ import com.maddyhome.idea.vim.vimscript.model.expressions.Expression
 import com.maddyhome.idea.vim.vimscript.model.expressions.SimpleExpression
 import com.maddyhome.idea.vim.annotations.NonNls
 import com.maddyhome.idea.vim.helper.enumSetOf
+import com.maddyhome.idea.vim.key.VimKeyCodes
 import com.maddyhome.idea.vim.key.VimKeyStroke
 
 /**
@@ -209,7 +210,12 @@ data class MapCommand(val range: Range, val cmd: String, val modifier: CommandMo
         if (specialArgument != null) {
           specialArguments.add(specialArgument)
         } else {
-          fromKeys = injector.parser.parseKeys(processBars(part))
+          fromKeys = injector.parser.parseKeys(processBars(part)).also { keys ->
+            // A modified character with no key of its own, e.g. <A-%>, is a typed keystroke no key press matches.
+            if (keys.any { it.keyChar != VimKeyCodes.CHAR_UNDEFINED && it.modifiers != 0 }) {
+              throw exExceptionMessage("command.map.no.key.for.character", part)
+            }
+          }
         }
       }
     }
