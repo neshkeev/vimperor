@@ -125,10 +125,71 @@ class CaretMovedByVsCodeTest {
       outcome,
       "the cursor VS Code moved to keep it with the text is not a caret move",
     )
+    assertEquals(
+      1,
+      session.fake.selections.single().active.line,
+      "the reply puts the caret back on the line O opened",
+    )
 
     session.type("x")
 
     assertEquals("one\nx\ntwo", session.content, "O should have left the caret on the line it opened")
+  }
+
+  /**
+   * The same report, on the first line, where `k` cannot move the engine's caret at all.
+   *
+   * `O` inserts the break at the caret and leaves the caret there. VS Code carries that caret to
+   * the line below, the offset is the one already pushed, and nothing writes it back. The caret
+   * on screen stays put, and `k` - already on the first line, as far as the engine knows - does
+   * not move it either.
+   */
+  @Test
+  fun `test O on the first line puts the caret on the line it opened`() {
+    val session = Session("hello")
+    session.fake.holdEdits = true
+    session.type("O")
+    session.cursorMovedTo(1, 0)
+    session.fake.holdEdits = false
+    session.fake.releaseEdit()
+
+    assertEquals(0, session.fake.selections.single().active.line, "the caret is on the line O opened")
+    assertEquals("\nhello", session.content)
+
+    session.host.key(session.fake, "<Esc>")
+    session.type("k")
+
+    assertEquals(0, session.fake.selections.single().active.line, "k stays on that line, and the screen agrees")
+  }
+
+  /**
+   * A linewise paste onto the first character is the same shape.
+   *
+   * The caret stays at the start of the pasted line, which is the offset it already had. The edit
+   * carries the on-screen caret to the line below, and `k` from the engine's first line leaves it
+   * there.
+   */
+  @Test
+  fun `test a linewise paste keeps the caret on the pasted line`() {
+    val session = Session("world")
+    session.type("yy")
+    session.fake.holdEdits = true
+    session.type("P")
+    val outcome = session.cursorMovedTo(1, 0)
+    session.fake.holdEdits = false
+    session.fake.releaseEdit()
+
+    assertEquals(
+      "ignored, this host's own edit is moving the carets with the text",
+      outcome,
+    )
+    assertEquals("world\nworld", session.content)
+    assertEquals(0, session.fake.selections.single().active.line, "the caret is on the pasted line")
+    assertEquals(0, session.editor.primaryCaret().offset)
+
+    session.type("k")
+
+    assertEquals(0, session.fake.selections.single().active.line, "k does not leave the caret on the line below")
   }
 
   /**

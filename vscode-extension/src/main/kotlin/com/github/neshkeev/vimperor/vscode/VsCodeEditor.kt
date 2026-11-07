@@ -834,9 +834,18 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // `nmap <C-o> <Action>(Back)` is `workbench.action.navigateBack`, the same command as Ctrl+-,
     // and the write landed on top of the jump and put the caret back where it had been. A caret
     // the engine did not move has nothing to tell the editor.
+    //
+    // An edit is the exception, and the offset is the wrong thing to ask. VS Code carries a caret
+    // that sits on inserted text to the end of that text, and [VimHost.selectionChanged] ignores
+    // the report because it arrives while the edit is still in flight. `O` and a linewise `P`
+    // then leave the caret at the offset it already had, so this comparison says nothing moved
+    // and the caret on screen stays on the line below. `k` runs from the engine's line and the
+    // one the user is looking at does not move.
     val pushed = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
     val moved = pushed != pushedSelections
-    if (moved && !caretMovedByCursorCommand) {
+    val shiftedByEdit = buffer.wrote &&
+      pushed.toSet() != nativeEditor.selections.map { offsetOf(it.anchor) to offsetOf(it.active) }.toSet()
+    if ((moved || shiftedByEdit) && !caretMovedByCursorCommand) {
       nativeEditor.selections = selections.toTypedArray()
     }
     pushedSelections = pushed

@@ -89,6 +89,15 @@ class DocumentBuffer(private val editor: TextEditor) {
   val writing: Boolean get() = writes > 0
 
   /**
+   * Whether the [flush] whose reply is running wrote the document.
+   *
+   * A motion flushes too and writes nothing, so a caret found somewhere else then was moved by
+   * something other than this edit. Valid inside that flush's callback and nowhere else.
+   */
+  var wrote: Boolean = false
+    private set
+
+  /**
    * Whether the document has been changed by something other than the engine, and takes its version
    * if so.
    *
@@ -251,6 +260,7 @@ class DocumentBuffer(private val editor: TextEditor) {
   fun flush(onResult: (Boolean) -> Unit = {}) {
     val target = text
     if (target == flushed) {
+      wrote = false
       onResult(true)
       return
     }
@@ -260,6 +270,7 @@ class DocumentBuffer(private val editor: TextEditor) {
       // Something else edited the document since the engine last agreed with it. Writing now would
       // revert that edit, so take the document's version and let the caller decide.
       reseed()
+      wrote = false
       onResult(false)
       return
     }
@@ -310,9 +321,11 @@ class DocumentBuffer(private val editor: TextEditor) {
         // document is the truth in that case.
         reseed()
       }
+      wrote = applied
       onResult(applied)
     }, {
       writes--
+      wrote = false
     })
   }
 
