@@ -335,8 +335,10 @@ abstract class VimMotionGroupBase : VimMotionGroup {
 
   /**
    * A change in another file is opened and jumped to here rather than returned as a motion, and the
-   * motion then fails - which reads wrong and is what the jump list does too. A `Motion` is an
-   * offset into *this* editor, and there is nothing to say about an offset in a different one.
+   * motion then fails - which reads wrong. A `Motion` is an offset into *this* editor, and there is
+   * nothing to say about an offset in a different one. `<C-O>` used to fail the same way after the
+   * caret had already moved, and now returns [Motion.NoMotion]; marks, the tag stack and the change
+   * list still return [Motion.Error].
    */
   private fun motionToChange(editor: VimEditor, change: VimChangeList.Change): Motion {
     val target = BufferPosition(change.line, change.col, false)
@@ -360,11 +362,11 @@ abstract class VimMotionGroupBase : VimMotionGroup {
         if (spot == -1) {
           jumpService.addJump(editor, false)
         }
-        newEditor.let {
-          it.currentCaret().moveToOffset(it.normalizeOffset(newEditor.bufferPositionToOffset(lp), false))
-        }
-      }
-      Motion.Error
+        val offset = newEditor.normalizeOffset(newEditor.bufferPositionToOffset(lp), false)
+        newEditor.currentCaret().moveToOffset(offset)
+        // The caret moved in another editor, so there is nothing to move in this one.
+        Motion.NoMotion
+      } ?: Motion.Error
     } else {
       if (spot == -1) {
         jumpService.addJump(editor, false)

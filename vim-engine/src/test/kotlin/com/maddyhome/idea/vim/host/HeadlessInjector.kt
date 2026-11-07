@@ -901,6 +901,14 @@ class HeadlessFile : VimFileBase() {
   /** The buffer list `:ls` and `:ball` read, which a test arranges by name. */
   var buffers: List<String> = emptyList()
 
+  /**
+   * Buffers a test has already opened, keyed by the path a jump names.
+   *
+   * [selectEditor] is how `<C-O>` lands in another file. A path with nothing here still answers
+   * null, which is "this host cannot open it".
+   */
+  val openEditors: MutableMap<String, VimEditor> = mutableMapOf()
+
   override fun openFile(filename: String, context: ExecutionContextApi, focusEditor: Boolean): String? {
     opened += filename
     return null
@@ -935,7 +943,8 @@ class HeadlessFile : VimFileBase() {
   override fun getWorkingDirectory(context: ExecutionContextApi): String = "/work"
 
   override fun getProjectId(project: Any): String = "headless"
-  override fun selectEditor(projectId: String, documentPath: String, protocol: String): VimEditor? = null
+  override fun selectEditor(projectId: String, documentPath: String, protocol: String): VimEditor? =
+    openEditors[documentPath]
 }
 
 /**
