@@ -368,9 +368,11 @@ class TestVimEditor(
   override var vimChangeActionSwitchMode: Mode? = null
 
   override val indentConfig: VimIndentConfig get() = TODO("TestVimEditor.indentConfig is not implemented yet")
-  override var replaceMask: VimEditorReplaceMask?
-    get() = TODO("TestVimEditor.replaceMask is not implemented yet")
-    set(_) = TODO("TestVimEditor.replaceMask is not implemented yet")
+  /**
+   * Stored, not computed. Leaving Replace clears it, and a setter that throws means that mode can
+   * never be left.
+   */
+  override var replaceMask: VimEditorReplaceMask? = null
   /**
    * One project, one id. The jump list is keyed by it, because IntelliJ keeps a separate jump list
    * per project window.

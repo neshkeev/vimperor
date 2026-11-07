@@ -39,52 +39,78 @@ data class NormalCommand(val range: Range, val modifier: CommandModifier, val ar
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    val rangeSpecified = range.size() != 0
-    val range = getLineRange(editor, editor.primaryCaret())
-
-    // `:normal` runs its argument as Normal-mode keys, so if we are called from Insert - which is what an autocmd
-    // fired by an insert does - we have to leave Insert first, and put it back afterwards. Vim does the same: the
-    // mode `:normal` was invoked from is restored when it finishes.
     val modeBefore = editor.mode
-    if (modeBefore is Mode.INSERT || modeBefore is Mode.REPLACE) {
-      editor.mode = Mode.NORMAL()
+    if (modeBefore.isInsertOrReplace()) {
+      executeFromInsertMode(editor, context, modeBefore)
+    } else {
+      executeOnEachLine(editor, context)
     }
-
-    for (line in range.startLine..range.endLine) {
-      if (editor.lineCount() < line) {
-        break
-      }
-
-      // If a range is specified, the caret is moved to the start of each line before the command is executed
-      if (rangeSpecified) {
-        editor.currentCaret().moveToOffset(injector.motion.moveCaretToLineStart(editor, line))
-      }
-
-      // Perform operations
-      val keys = injector.parser.stringToKeys(argument)
-      val keyHandler = KeyHandler.getInstance()
-      keyHandler.reset(editor)
-      for (key in keys) {
-        val keySource =
-          if (modifier == CommandModifier.BANG) KeySource.NORMAL_COMMAND_NOT_MAPPED else KeySource.NORMAL_COMMAND
-        keyHandler.handleKey(editor, key, keySource, context, keyHandler.keyHandlerState)
-      }
-
-      // Exit if state leaves as insert or cmd_line
-      val mode = editor.mode
-      if (mode is Mode.CMD_LINE) {
-        injector.commandLine.getActiveCommandLine()?.close(refocusOwningEditor = true, resetCaret = false)
-      }
-      if (modeBefore is Mode.INSERT || modeBefore is Mode.REPLACE) {
-        editor.mode = modeBefore
-        return ExecutionResult.Success
-      }
-
-      if (mode is Mode.INSERT || mode is Mode.REPLACE) {
-        editor.exitInsertMode(context)
-      }
-    }
-
     return ExecutionResult.Success
   }
+
+  /**
+   * From Insert or Replace the keys run once, in Normal mode, and that mode is back when they are done.
+   *
+   * It is back even when the line is past the end of the buffer and the keys never run. The old loop restored the
+   * mode only after the line check, so the `break` left Normal mode behind.
+   */
+  private fun executeFromInsertMode(editor: VimEditor, context: ExecutionContext, insertMode: Mode) {
+    editor.mode = Mode.NORMAL()
+    val line = getLineRange(editor, editor.primaryCaret()).startLine
+    // 0-based, and not clamped. Past the end is `line > lineCount()`, the old `lineCount() < line`.
+    // `line >= lineCount()` is a different test: line `lineCount()` itself still runs.
+    if (line <= editor.lineCount()) {
+      executeOnLine(editor, context, line)
+      closeCommandLine(editor)
+    }
+    editor.mode = insertMode
+  }
+
+  private fun executeOnEachLine(editor: VimEditor, context: ExecutionContext) {
+    val lines = getLineRange(editor, editor.primaryCaret())
+    for (line in lines.startLine..lines.endLine) {
+      // The keys can delete lines, so the end of the buffer is checked again for every line.
+      if (line > editor.lineCount()) break
+      executeOnLine(editor, context, line)
+      abandonUnfinishedCommand(editor, context)
+    }
+  }
+
+  private fun executeOnLine(editor: VimEditor, context: ExecutionContext, line: Int) {
+    // A range moves the caret to the start of the line. Without one, the caret stays where it is.
+    if (isRangeGiven) {
+      editor.currentCaret().moveToOffset(injector.motion.moveCaretToLineStart(editor, line))
+    }
+    typeKeys(editor, context)
+  }
+
+  private fun typeKeys(editor: VimEditor, context: ExecutionContext) {
+    val keys = injector.parser.stringToKeys(argument)
+    val keyHandler = KeyHandler.getInstance()
+    keyHandler.reset(editor)
+    for (key in keys) {
+      val keySource =
+        if (modifier == CommandModifier.BANG) KeySource.NORMAL_COMMAND_NOT_MAPPED else KeySource.NORMAL_COMMAND
+      keyHandler.handleKey(editor, key, keySource, context, keyHandler.keyHandlerState)
+    }
+  }
+
+  /** Keys that end in Insert or on the command line leave a command unfinished, and it is abandoned. */
+  private fun abandonUnfinishedCommand(editor: VimEditor, context: ExecutionContext) {
+    when {
+      editor.mode is Mode.CMD_LINE -> closeCommandLine(editor)
+      editor.mode.isInsertOrReplace() -> editor.exitInsertMode(context)
+    }
+  }
+
+  private fun closeCommandLine(editor: VimEditor) {
+    if (editor.mode is Mode.CMD_LINE) {
+      injector.commandLine.getActiveCommandLine()?.close(refocusOwningEditor = true, resetCaret = false)
+    }
+  }
+
+  private val isRangeGiven: Boolean
+    get() = range.size() != 0
+
+  private fun Mode.isInsertOrReplace() = this is Mode.INSERT || this is Mode.REPLACE
 }
