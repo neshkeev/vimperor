@@ -822,11 +822,17 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // offline could see it, because the fake and the stub both keep `selection` as a plain field
     // rather than as the shorthand it is. The primary is already first in this list, which is where
     // VS Code takes it from.
-    if (!caretMovedByCursorCommand) {
-      nativeEditor.selections = selections.toTypedArray()
-    }
+    //
+    // And not when the caret has not moved. The setter sends `$trySetSelections` whether or not the
+    // value changed, and that write is queued after any command this keystroke just dispatched.
+    // `nmap <C-o> <Action>(Back)` is `workbench.action.navigateBack`, the same command as Ctrl+-,
+    // and the write landed on top of the jump and put the caret back where it had been. A caret
+    // the engine did not move has nothing to tell the editor.
     val pushed = selections.map { offsetOf(it.anchor) to offsetOf(it.active) }
     val moved = pushed != pushedSelections
+    if (moved && !caretMovedByCursorCommand) {
+      nativeEditor.selections = selections.toTypedArray()
+    }
     pushedSelections = pushed
     val scrolled = scrollRequestedSinceFlush
     scrollRequestedSinceFlush = false

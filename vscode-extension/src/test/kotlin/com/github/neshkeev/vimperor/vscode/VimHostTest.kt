@@ -35,9 +35,19 @@ class VimHostTest {
     /** What each command was given, for the one or two that take an argument. */
     val arguments: MutableList<Array<Any?>> = mutableListOf()
 
+    /**
+     * Runs as the command is asked for, before the keystroke flushes.
+     *
+     * That is when VS Code has moved the caret and has not yet answered the promise: the flush is
+     * still to come, and it is the thing that can put the caret back. See
+     * [test a mapped Ctrl-o leaves the caret where Go Back put it].
+     */
+    var onDispatch: ((String) -> Unit)? = null
+
     fun run(command: String, args: Array<Any?>, onDone: (Boolean) -> Unit) {
       dispatched += command
       arguments += args
+      onDispatch?.invoke(command)
       callbacks += onDone
     }
 
@@ -149,6 +159,42 @@ class VimHostTest {
     session.type("u")
     session.commands.complete { }
     assertEquals("abc", session.content)
+  }
+
+  /**
+   * `nmap <C-o> <Action>(Back)` is Ctrl+-.
+   *
+   * Both are `workbench.action.navigateBack`. The mapping reached the command and then the
+   * keystroke wrote the caret it still had, which is the caret Go Back had just left, so the jump
+   * was undone before it could be seen. Ctrl+- never writes a caret afterwards. The command is
+   * what moves it, and the engine's copy is where it was when the key was pressed.
+   */
+  @Test
+  fun `test a mapped Ctrl-o leaves the caret where Go Back put it`() {
+    val session = Session("alpha\nbeta\ngamma")
+    session.type("G")
+    session.commands.complete { }
+    val editor = session.host.editorFor(session.fake)
+    assertEquals(2, editor.primaryCaret().getBufferPosition().line)
+
+    session.type(":nmap <C-o> <Action>(Back)")
+    session.key("<CR>")
+    session.commands.complete { }
+
+    val start = Position(0, 0)
+    session.commands.onDispatch = { command ->
+      if (command == "workbench.action.navigateBack") {
+        session.fake.selections = arrayOf(Selection(start, start))
+      }
+    }
+    session.key("<C-O>")
+
+    assertEquals(listOf("workbench.action.navigateBack"), session.commands.dispatched)
+    assertEquals(0, session.fake.selection.active.line, "the flush put the caret back where Go Back had moved it from")
+
+    session.commands.complete { }
+    session.type("x")
+    assertEquals("lpha\nbeta\ngamma", session.content, "the next key has to land where Go Back left the caret")
   }
 
   @Test
