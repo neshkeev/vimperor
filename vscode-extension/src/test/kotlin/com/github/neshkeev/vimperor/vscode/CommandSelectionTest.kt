@@ -10,6 +10,7 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
@@ -58,6 +59,29 @@ class CommandSelectionTest {
       session.fake.selections.all { it.anchor.line == it.active.line && it.anchor.character == it.active.character },
       "the drawn selection should have been collapsed rather than left for a key that cannot clear it",
     )
+  }
+
+  /**
+   * Visual block is one selection per line. Undo restores all of them, and Normal mode keeps the
+   * one on the first line of the change. Leaving the rest is a caret on every line, and `<Esc>`
+   * has nothing to clear: Normal mode does not drop carets.
+   */
+  @Test
+  fun `test a restored block leaves the caret on its first line`() {
+    val session = Session("foo\nbar\nbaz\n")
+    // Primary first, the way a downward block is pushed: the last line, then the others.
+    session.fake.selections = arrayOf(
+      Selection(Position(2, 0), Position(2, 3)),
+      Selection(Position(0, 0), Position(0, 3)),
+      Selection(Position(1, 0), Position(1, 3)),
+    )
+    session.editor.syncCaretsFromEditor()
+
+    session.editor.dropSelectionLeftByCommand()
+
+    assertEquals(1, session.editor.carets().size, "normal mode keeps one caret")
+    assertEquals(0, session.editor.primaryCaret().offset, "on the first line of the change")
+    assertEquals(1, session.fake.selections.size)
   }
 
   @Test

@@ -216,20 +216,20 @@ private class YSSurroundHandler : ExtensionHandler {
 
 private class VSurroundHandler : ExtensionHandler {
   override fun execute(editor: VimEditor, context: ExecutionContext, operatorArguments: OperatorArguments) {
-    val selectionStart = editor.primaryCaret().selectionStart
     // Leaving visual mode has to wait for the surround, which now happens in a callback - so it is
     // handed to the operator rather than done on the next line, where it would run first.
-    val leaveVisual = {
+    // The offset is the top line's surround. A downward block's primary is the last line, and the
+    // inserts above it make that line's old selection start point at the wrong place.
+    val leaveVisual = { offset: Int ->
       injector.application.runWriteAction {
         editor.exitVisualMode()
-        editor.primaryCaret().moveToOffset(selectionStart)
+        editor.primaryCaret().moveToOffset(offset)
 
         // Reset the key handler so that the command trie is updated for the new mode (Normal)
         // TODO: This should probably be handled by ToHandlerMapping.execute
         KeyHandler.getInstance().reset(editor)
       }
     }
-    // NB: Operator ignores SelectionType anyway
     Operator(leaveVisual).apply(editor, context, editor.mode.selectionType)
   }
 }
@@ -371,24 +371,36 @@ private class DSurroundHandler : ExtensionHandler {
   }
 }
 
-private class Operator(private val onSurrounded: () -> Unit = {}) : OperatorFunction {
+private class Operator(private val onSurrounded: (Int) -> Unit = { _ -> }) : OperatorFunction {
   /**
    * Answers before it knows, which is the price of a character that arrives later.
    *
-   * The range is still decided here, synchronously, and is the one thing that can still say
+   * The ranges are still decided here, synchronously, and are the one thing that can still say
    * "no" - so `false` continues to mean "there was nothing to operate on". A pair the user then
    * asks for that does not exist used to abort the operator too, and now quietly does nothing.
    */
   override fun apply(editor: VimEditor, context: ExecutionContext, selectionType: SelectionType?): Boolean {
-    // XXX: Will it work with line-wise or block-wise selections?
-    val range = getSurroundRange(editor.currentCaret()) ?: return false
+    // A visual block is one native caret per line; character and line selections stay one range.
+    // Taken now, before the surround character arrives on a later key. Applied from the bottom up
+    // so the text inserted on a line does not move the ranges above it. `insertText` honours the
+    // offset, so one caret can place every line's pair.
+    val ranges = if (editor.mode is Mode.VISUAL && selectionType == SelectionType.BLOCK_WISE) {
+      editor.nativeCarets()
+        .map { TextRange(it.selectionStart, it.selectionEnd) }
+        .sortedByDescending { it.startOffset }
+    } else {
+      listOfNotNull(getSurroundRange(editor.currentCaret()))
+    }
+    if (ranges.isEmpty()) return false
+    val restoreAt = ranges.last().startOffset
+    val caret = editor.currentCaret()
     readCharacter(editor, context) { c ->
       getOrInputPair(c, editor, context) { pair ->
         if (pair != null) {
-          performSurround(pair, range, editor.currentCaret(), selectionType == SelectionType.LINE_WISE)
+          ranges.forEach { performSurround(pair, it, caret, selectionType == SelectionType.LINE_WISE) }
           // Jump back to start
           executeNormalWithoutMapping(injector.parser.parseKeys("`["), editor)
-          onSurrounded()
+          onSurrounded(restoreAt)
         }
       }
     }

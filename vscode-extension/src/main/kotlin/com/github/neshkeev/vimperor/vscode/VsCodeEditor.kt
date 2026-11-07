@@ -672,10 +672,16 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
     // undo restores the selection a change was made over - `Vj<C-X>` then `u` gives back two
     // selected lines - and Vim's `u` is not Visual mode: it leaves the caret on the first line of
     // the change. Five fixtures, all of them `V`-mode operators followed by `u`.
-    vimCarets.forEach {
-      if (it.hasSelection()) it.moveToOffsetNative(it.selectionStart)
-      it.removeSelection()
-    }
+    //
+    // A block is one selection per line, and the same undo restores every one of them. Collapsing
+    // each in place left a caret on every line of the block, and `<Esc>` cannot clear them: Normal
+    // mode never has a selection to leave, so it has no answer for carets that should not be there.
+    // One caret survives, on the earliest start, which is the first line of the change.
+    val keeper = vimCarets.filter { it.hasSelection() }.minBy { it.selectionStart }
+    keeper.moveToOffsetNative(keeper.selectionStart)
+    keeper.removeSelection()
+    vimCarets.forEach { it.isPrimary = it === keeper }
+    removeSecondaryCarets()
     // Pushed back rather than left for the next keystroke, which would mean the user looking at a
     // highlight that no key can act on.
     flushCarets()

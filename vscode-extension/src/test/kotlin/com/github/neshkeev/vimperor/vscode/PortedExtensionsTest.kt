@@ -835,6 +835,99 @@ class PortedExtensionsTest {
   }
 
   /**
+   * `S` in a visual block surrounds every line, not only the primary caret.
+   *
+   * A downward block's primary is the last line. The lines are wrapped from the bottom up, and the
+   * caret is left on the first character of the top line's surround.
+   */
+  @Test
+  fun `test S wraps every line of a visual block`() {
+    val session = Session("foo\nbar\nbaz\n", "surround")
+
+    session.host.key(session.fake, "<C-V>")
+    session.type("jjllS\"")
+
+    assertEquals("\"foo\"\n\"bar\"\n\"baz\"\n", session.content)
+    assertEquals(0, session.caret, "on the first quote")
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /** The same, over the columns the block covers rather than the whole line. */
+  @Test
+  fun `test S wraps the block's columns on each line`() {
+    val session = Session("afoo b\nabar b\nabaz b\n", "surround")
+    session.type("l")
+
+    session.host.key(session.fake, "<C-V>")
+    session.type("jjllS)")
+
+    assertEquals("a(foo) b\na(bar) b\na(baz) b\n", session.content)
+    assertEquals(1, session.caret, "on the opening parenthesis")
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /**
+   * `u` after a block `S` restores the text and one caret.
+   *
+   * The edit is written while the editor still shows the block, so VS Code's undo puts those
+   * selections back. Normal mode then kept a caret on every line, and `<Esc>` left them there.
+   */
+  @Test
+  fun `test undo of a block surround leaves one caret`() {
+    val fake = FakeEditor("foo\nbar\nbaz\n")
+    val host = VimHost(runCommand = { command, _, onDone ->
+      if (command == VsCodeCommands.UNDO) fake.undo()
+      onDone(true)
+    }).also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(fake))
+    UndoStops.reset()
+    injector.extensionLoader.enableExtension(
+      ExtensionBean("surround", VsCodeExtensions.PLUGIN_ID, "init", ""),
+    )
+
+    host.key(fake, "<C-V>")
+    "jjllS\"".forEach { host.type(fake, it.toString()) }
+    host.type(fake, "u")
+
+    val editor = host.editorFor(fake)
+    assertEquals("foo\nbar\nbaz\n", fake.document.content)
+    assertEquals(1, editor.carets().size, "undo must not leave a caret on every line of the block")
+    assertEquals(0, editor.primaryCaret().offset, "on the first line of the change")
+    assertEquals(Mode.NORMAL(), editor.mode)
+    assertEquals(1, fake.selections.size)
+  }
+
+  /**
+   * `:normal yss"` delivers the surround character as the next key of the command.
+   *
+   * `readKeys` takes it from that key, so `:normal` does not have to push its keys onto the key
+   * stack the way a blocking `getChar` did.
+   */
+  @Test
+  fun `test normal command surrounds each line of a range`() {
+    val session = Session("foo\nbar\nbaz\n", "surround")
+
+    session.ex("1,3normal yss\"")
+
+    assertEquals("\"foo\"\n\"bar\"\n\"baz\"\n", session.content)
+    assertEquals(12, session.caret, "on the last line's quote")
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /** `VG` then `:normal yss"` is the same command over the visual range. */
+  @Test
+  fun `test normal command surrounds each line of a visual selection`() {
+    val session = Session("foo\nbar\nbaz\n", "surround")
+    session.type("VG")
+
+    session.ex("normal yss\"")
+
+    assertEquals("\"foo\"\n\"bar\"\n\"baz\"\n", session.content)
+    assertEquals(12, session.caret, "on the last line's quote")
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /**
    * A tag name, which is where the one-session rule earns its keep: `<`, `e`, `m` and `>` all reach
    * the same prompt. Reading the `<` and then opening a second prompt for the name loses a
    * keystroke - measured on the IntelliJ host, where `ysiw<em>` arrived as `<m>`.
