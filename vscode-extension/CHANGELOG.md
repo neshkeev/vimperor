@@ -2,6 +2,106 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [0.0.15] - 2026-11-05
+
+### Added
+
+- **The quickfix list opens in a buffer.** `:copen` and `:lopen` printed the list into the output
+  panel, which is a pager: moving through the list, and jumping from a line, is what a buffer is
+  for. The list opens read-only, the same way `:help` does, as `[Quickfix List]` or
+  `[Location List]`, and both may be open at once. A second `:copen` rewrites the buffer that is
+  already open. Enter on a line jumps to that entry in the file the window was opened from and
+  leaves the list open. A line with no file behind it is not a jump. `:cwindow` and `:lwindow`
+  open only when some entry has a file, and close the window when none does. `:cclose` and
+  `:lclose` close the buffer and leave the list. The output panel stays, and `:clist` and
+  `:llist` still print there.
+
+  While the window is open, `:cnext`, `:cprevious`, `:cfirst`, `:clast` and `:cc` rewrite it and
+  move the caret onto the current entry. The location-list twins do the same for that window, and
+  a command typed in the location window walks the list the window is showing. With the window
+  closed, a step leaves it closed. `:cnfile` goes to the first entry of the next file, and
+  `:cpfile` (`:cNfile`) to the last entry of the previous one. `:lnfile` and `:lpfile`
+  (`:lNfile`) do the same on the location list. A line with no file is not a file of its own. A
+  count that runs past the end stops on the last file it reaches, and already being there is E42,
+  the same error as `:cnext`.
+
+- **`:actionlist` opens in a buffer.** Searching a long list of command ids, or moving through
+  it, is what a buffer is for. The list opens read-only as `[Action List]`, and the chord bound
+  to each command is printed beside it. The pattern is split on `*`, and every piece has to
+  appear in the line, so `:actionlist git*commit` finds `git.commitStagedAll` and
+  `:actionlist cmd+k` matches a chord as well as a name. A second `:actionlist` rewrites the open
+  buffer with the new filter. Enter on a command line runs that command in the file the list was
+  opened from and leaves the list open. The header and the `--- N of M ---` line are not commands.
+
+- **`<C-O>` returns to the diff it left.** A jump stored only the file, so jumping back from a
+  diff opened the plain editor. The jump now records which side of which diff it was made in. The
+  same line in a diff and in a file are two places, and so are the two sides of one diff. An open
+  diff is shown again. A closed one is not: a side that is the file falls through to the plain
+  editor, and a side that is not, such as a `git:` original, is dropped and the motion continues.
+  `:jumps` names the side. The `'` mark is recorded as that same place, so it is one jump with the
+  one `<C-O>` made.
+
+  Leaving the newest end of the jump list records where the caret is and then steps one further,
+  so `<C-O>` does not land on the place already recorded.
+
+- **Enter finishes a surround tag.** A tag name finished only on `>`, so a tag with attributes
+  had no way to end. Enter finishes it, which is how a tag with attributes is typed: the name, a
+  space, the attributes, then Enter. The name stops before whitespace or `>`, and the rest is the
+  attributes. `<Esc>` during visual `S`, or a tag with no name, leaves Visual mode and leaves the
+  caret where the selection ended. A surround that wraps still moves the caret to the start of
+  what it wrapped.
+
+### Fixed
+
+- **A mapped `<C-o>` skipped places, and the second press could do nothing.** `<C-o>` mapped to
+  `<Action>(Back)`, and `<C-i>` to `<Action>(Forward)`, ran VS Code's Go Back and Go Forward.
+  That history keeps a place only when it is at least ten lines from the one before it, and a
+  caret Vimperor wrote — a paste, a reveal — is not a place, so two clicks four lines apart were
+  one stop. On another file the new editor reported column 0, and that report was written over
+  the place Go Back had restored. Those two mappings now walk the places the caret was actually
+  moved to, including a tab switch where the caret did not move. An open file is moved directly.
+  A file whose tab has been closed is opened again at that line and column. Unmapped `<C-O>` is
+  still the jump list.
+
+- **An `<Action>` mapping that moved the caret put it back.** The keystroke wrote the caret the
+  engine still had, and that write is queued after the command the mapping ran, so the jump
+  landed and was then undone. A caret the engine did not move is left where the command put it.
+
+- **A paste or `O` left the caret on the line below the text it inserted.** VS Code carries its
+  own caret to the end of an insertion and reports that while the edit is still in flight. The
+  report is the text moving, so it was ignored, and nothing put Vim's caret back. `k` then ran
+  from Vim's line while the caret on screen stayed put. After an edit, the caret is written back
+  when the one on screen is not the one Vim left.
+
+- **`S` on a visual block wrapped only the last line.** A downward block's primary caret is the
+  last line, and that was the only line surrounded. Each line of the block has its own caret, and
+  they are wrapped from the bottom up so the text inserted on a line does not move the lines
+  above. One caret remains, at the start of the first line of the change.
+
+- **`:normal` from Insert, over a line past the end of the buffer, stayed in Normal.** `:normal`
+  switches to Normal and puts Insert back when the keys are done. The restore sat after the check
+  for a line past the end, so that line broke out and the keys had not run. The mode is put back
+  after the check. From Insert the keys still run once, on the first line of the range.
+
+- **`<C-O>` into another file beeped.** The caret in the other file had already moved, and the
+  motion then reported an error. A jump that lands is no motion in this editor. A file that
+  cannot be opened is still an error.
+
+- **`nmap <A-'>` ran on Alt+Right.** A modified character was stored as its character code. `'`
+  is 39, which is also Right, and a backquote is 96, which is keypad 0, so the same mapping with
+  a backquote ran on Alt and the keypad zero. Quote and backquote use their own key codes.
+  Punctuation that only a shifted key types, such as `<A-%>`, has no key of its own and is
+  refused: map the key itself, for example `<A-S-5>`.
+
+- **A key after deleting the last line stopped the keyboard.** `dd` on the empty line a trailing
+  newline opens leaves the offset from the previous flush one past the new end. The next
+  keystroke asked VS Code for that position, which throws, and every key after it failed the same
+  way. An offset past the end is the end of the file.
+
+- **`:help` could be edited, and a second `:help` opened another buffer.** The help buffer is
+  read-only, and a second `:help` rewrites the one already open. `q:` still runs the line under
+  the caret and closes.
+
 ## [0.0.14] - 2026-11-02
 
 ### Fixed
