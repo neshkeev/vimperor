@@ -941,6 +941,104 @@ class PortedExtensionsTest {
     assertEquals("<em>hello</em> world\n", session.content)
   }
 
+  /**
+   * A tag is finished with Enter as well as with `>`.
+   *
+   * Enter's character is a newline, and the attributes are everything up to an optional `>`. Left
+   * on the name it is wrapped into the tag, `<em\n>`, so the text has to be this and not merely
+   * "a tag was inserted".
+   */
+  @Test
+  fun `test a tag name is finished with enter`() {
+    val session = Session("Hello World!", "surround")
+    session.type("w")
+
+    session.type("ysiwtem")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals("Hello <em>World</em>!", session.content)
+  }
+
+  /** The same, with attributes: everything after the name, up to Enter. */
+  @Test
+  fun `test a tag with attributes is finished with enter`() {
+    val session = Session("Hello World!", "surround")
+    session.type("w")
+
+    session.type("ysiwtspan class=\"important\"")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals("Hello <span class=\"important\">World</span>!", session.content)
+  }
+
+  /** Visual `S` with a tag finished by Enter leaves visual mode once the surround has happened. */
+  @Test
+  fun `test a visual tag surround is finished with enter`() {
+    val session = Session("<div><p>content</p></div>", "surround")
+    session.type("fc")
+
+    session.type("vt<Sti")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals("<div><p><i>content</i></p></div>", session.content)
+    assertEquals(Mode.NORMAL(), session.mode)
+  }
+
+  /**
+   * Esc in the tag prompt leaves visual mode and does not move the caret.
+   *
+   * The caret stays on the active end of `vt<`, the `t` of `content`, rather than jumping back to
+   * the selection start. That jump is what a surround that happened does, and a cancelled one must
+   * not.
+   */
+  @Test
+  fun `test escape in a visual tag prompt leaves the caret where the selection ended`() {
+    val text = "<div><p>content</p></div>"
+    val session = Session(text, "surround")
+    session.type("fc")
+
+    session.type("vt<Sti")
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals(text, session.content)
+    assertEquals(Mode.NORMAL(), session.mode)
+    assertEquals(text.indexOf("</p>") - 1, session.caret, "on the t of content, not the selection start")
+  }
+
+  /**
+   * `t` then Enter, with no name, is not a pair.
+   *
+   * The prompt did finish, so this is not the Esc path. Visual mode is still left, nothing is
+   * wrapped, and the caret is not pulled back to the selection start.
+   */
+  @Test
+  fun `test a visual tag with no name is not a surround`() {
+    val text = "<div><p>content</p></div>"
+    val session = Session(text, "surround")
+    session.type("fc")
+
+    session.type("vt<St")
+    session.host.key(session.fake, "<CR>")
+
+    assertEquals(text, session.content)
+    assertEquals(Mode.NORMAL(), session.mode)
+    assertEquals(text.indexOf("</p>") - 1, session.caret, "on the t of content, not the selection start")
+  }
+
+  /** Esc before any surround character, while the selection is still up, leaves visual mode too. */
+  @Test
+  fun `test escape before the surround character leaves visual mode`() {
+    val text = "<div><p>content</p></div>"
+    val session = Session(text, "surround")
+    session.type("fcvt<S")
+
+    session.host.key(session.fake, "<Esc>")
+
+    assertEquals(text, session.content)
+    assertEquals(Mode.NORMAL(), session.mode)
+    assertEquals(text.indexOf("</p>") - 1, session.caret, "on the t of content, not the selection start")
+  }
+
   /** `f` takes a function name, up to Enter - which vim-surround has always wanted. */
   @Test
   fun `test f wraps in a function call`() {
@@ -959,6 +1057,21 @@ class PortedExtensionsTest {
     val session = Session("hello world\n", "surround")
 
     session.type("ysiw")
+    session.host.key(session.fake, "<Esc>")
+    session.type("x")
+
+    assertEquals("ello world\n", session.content, "`x` deleted a character rather than being eaten")
+  }
+
+  /**
+   * The same, once the tag prompt is open. `ysiw<` is not visual, so cancelling it must not do
+   * anything but close the prompt: the next key is still the user's.
+   */
+  @Test
+  fun `test escape during a tag name cancels a surround in progress`() {
+    val session = Session("hello world\n", "surround")
+
+    session.type("ysiw<")
     session.host.key(session.fake, "<Esc>")
     session.type("x")
 

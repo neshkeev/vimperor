@@ -230,7 +230,16 @@ private class VSurroundHandler : ExtensionHandler {
         KeyHandler.getInstance().reset(editor)
       }
     }
-    Operator(leaveVisual).apply(editor, context, editor.mode.selectionType)
+    // Esc, or a prompt that finished without being a pair, still has to leave visual mode. The
+    // caret stays where the selection left it. Moving it to the selection start is what a surround
+    // that wrapped does, and one that did not must not.
+    val abandonVisual = {
+      injector.application.runWriteAction {
+        editor.exitVisualMode()
+        KeyHandler.getInstance().reset(editor)
+      }
+    }
+    Operator(leaveVisual, abandonVisual).apply(editor, context, editor.mode.selectionType)
   }
 }
 
@@ -371,13 +380,19 @@ private class DSurroundHandler : ExtensionHandler {
   }
 }
 
-private class Operator(private val onSurrounded: (Int) -> Unit = { _ -> }) : OperatorFunction {
+private class Operator(
+  private val onSurrounded: (Int) -> Unit = { _ -> },
+  private val onAbandoned: () -> Unit = {},
+) : OperatorFunction {
   /**
    * Answers before it knows, which is the price of a character that arrives later.
    *
    * The ranges are still decided here, synchronously, and are the one thing that can still say
    * "no" - so `false` continues to mean "there was nothing to operate on". A pair the user then
    * asks for that does not exist used to abort the operator too, and now quietly does nothing.
+   * [onAbandoned] is that nothing, plus `<Esc>` before it ever became a pair. Normal mode has
+   * nothing to undo, so the default is empty; visual `S` uses it to leave visual mode without
+   * moving the caret. It is not run when the surround happens - that path is [onSurrounded].
    */
   override fun apply(editor: VimEditor, context: ExecutionContext, selectionType: SelectionType?): Boolean {
     // A visual block is one native caret per line; character and line selections stay one range.
@@ -394,13 +409,15 @@ private class Operator(private val onSurrounded: (Int) -> Unit = { _ -> }) : Ope
     if (ranges.isEmpty()) return false
     val restoreAt = ranges.last().startOffset
     val caret = editor.currentCaret()
-    readCharacter(editor, context) { c ->
-      getOrInputPair(c, editor, context) { pair ->
+    readCharacter(editor, context, onCancel = onAbandoned) { c ->
+      getOrInputPair(c, editor, context, onCancel = onAbandoned) { pair ->
         if (pair != null) {
           ranges.forEach { performSurround(pair, it, caret, selectionType == SelectionType.LINE_WISE) }
           // Jump back to start
           executeNormalWithoutMapping(injector.parser.parseKeys("`["), editor)
           onSurrounded(restoreAt)
+        } else {
+          onAbandoned()
         }
       }
     }
@@ -426,7 +443,9 @@ private const val REGISTER = '"'
 
 private const val OPERATOR_FUNC = "SurroundOperatorFunc"
 
-private val tagNameAndAttributesCapturePattern = Regex("(\\S+)([^>]*)>")
+// Finished with `>` or with Enter, so the closing `>` is optional. The name stops before
+// whitespace or `>`, and everything after it is attributes.
+private val tagNameAndAttributesCapturePattern = Regex("([^\\s>]+)([^>]*)>?")
 
 private data class SurroundPair(val first: String, val second: String, val shouldTrim: Boolean)
 
@@ -457,19 +476,20 @@ private fun getSurroundPair(c: Char): SurroundPair? = if (c in SURROUND_PAIRS) {
 /**
  * The pair to wrap with, over as many keystrokes as it takes.
  *
- * One character for `"` or `)`; `<` or `t` then a tag name up to `>`; `f` or `F` then a function
- * name up to Enter. All three arrive through a single [readKeys] session, so the decision of "have
- * I got it all yet" is [pairInputComplete] - a pure question about the keys typed so far - and the
- * building of the pair is [pairFrom]. Keeping the two apart is what lets the prompt close before
- * anything is done with the answer.
+ * One character for `"` or `)`; `<` or `t` then a tag name up to `>` or Enter; `f` or `F` then a
+ * function name up to Enter. All three arrive through a single [readKeys] session, so the decision
+ * of "have I got it all yet" is [pairInputComplete] - a pure question about the keys typed so far -
+ * and the building of the pair is [pairFrom]. Keeping the two apart is what lets the prompt close
+ * before anything is done with the answer.
  *
  * [onPair] is given null when what the user asked for is not a pair, and is not called at all if
- * they pressed `<Esc>`.
+ * they pressed `<Esc>`. [onCancel] is that `<Esc>`.
  */
 private fun getOrInputPair(
   c: Char,
   editor: VimEditor,
   context: ExecutionContext,
+  onCancel: () -> Unit = {},
   onPair: (SurroundPair?) -> Unit,
 ) {
   if (!c.opensLongInput()) {
@@ -481,6 +501,7 @@ private fun getOrInputPair(
     context,
     label = if (c == 'f' || c == 'F') "function: " else "<",
     isComplete = { keys -> pairInputComplete(c, keys) },
+    onCancel = onCancel,
     onInput = { keys -> onPair(pairFrom(c, keys)) },
   )
 }
@@ -490,11 +511,11 @@ private fun Char.opensLongInput(): Boolean = this == '<' || this == 't' || this 
 
 private fun pairInputComplete(opener: Char, keys: List<VimKeyStroke>): Boolean {
   val last = keys.lastOrNull() ?: return false
-  return if (opener == 'f' || opener == 'F') {
-    last.keyCode == VimKeyCodes.VK_ENTER
-  } else {
-    last.keyChar == '>'
-  }
+  // Enter finishes a function name and a tag. A tag is also finished with `>`, which is what
+  // `ysiw<em>` already types. Enter's character is not `>`, so the key code is what says it has
+  // arrived - the same test the function-name path has always used.
+  if (last.keyCode == VimKeyCodes.VK_ENTER) return true
+  return opener != 'f' && opener != 'F' && last.keyChar == '>'
 }
 
 private fun pairFrom(opener: Char, keys: List<VimKeyStroke>): SurroundPair? {
@@ -509,7 +530,11 @@ private fun pairFrom(opener: Char, keys: List<VimKeyStroke>): SurroundPair? {
       SurroundPair("$name(", ")", false)
     }
   } else {
-    val match = tagNameAndAttributesCapturePattern.find(typed) ?: return null
+    // Enter's character is a trailing `\n` or `\r`, and the attributes are everything up to an
+    // optional `>`. Left on the string it is swallowed into them and the wrapper is `<em\n>`.
+    // The function-name path trims it for the same reason.
+    val tag = typed.trimEnd('\n', '\r')
+    val match = tagNameAndAttributesCapturePattern.find(tag) ?: return null
     val tagName = match.groupValues[1]
     val tagAttributes = match.groupValues[2]
     SurroundPair("<$tagName$tagAttributes>", "</$tagName>", false)
