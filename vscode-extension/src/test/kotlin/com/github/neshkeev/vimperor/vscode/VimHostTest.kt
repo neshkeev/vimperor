@@ -8,6 +8,8 @@
 
 package com.github.neshkeev.vimperor.vscode
 
+import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -162,39 +164,114 @@ class VimHostTest {
   }
 
   /**
-   * `nmap <C-o> <Action>(Back)` is Ctrl+-.
-   *
-   * Both are `workbench.action.navigateBack`. The mapping reached the command and then the
-   * keystroke wrote the caret it still had, which is the caret Go Back had just left, so the jump
-   * was undone before it could be seen. Ctrl+- never writes a caret afterwards. The command is
-   * what moves it, and the engine's copy is where it was when the key was pressed.
+   * `nmap <C-o> <Action>(Back)` walks the places the caret has been, and the flush at the end of
+   * the key must not put it back where the key was pressed.
    */
   @Test
-  fun `test a mapped Ctrl-o leaves the caret where Go Back put it`() {
+  fun `test a mapped Ctrl-o leaves the caret where it jumped`() {
     val session = Session("alpha\nbeta\ngamma")
-    session.type("G")
-    session.commands.complete { }
-    val editor = session.host.editorFor(session.fake)
-    assertEquals(2, editor.primaryCaret().getBufferPosition().line)
-
+    click(session.host, session.fake, 2, 0)
+    click(session.host, session.fake, 0, 0)
     session.type(":nmap <C-o> <Action>(Back)")
     session.key("<CR>")
     session.commands.complete { }
 
-    val start = Position(0, 0)
-    session.commands.onDispatch = { command ->
-      if (command == "workbench.action.navigateBack") {
-        session.fake.selections = arrayOf(Selection(start, start))
-      }
-    }
     session.key("<C-O>")
 
-    assertEquals(listOf("workbench.action.navigateBack"), session.commands.dispatched)
-    assertEquals(0, session.fake.selection.active.line, "the flush put the caret back where Go Back had moved it from")
-
-    session.commands.complete { }
+    assertEquals(emptyList(), session.commands.dispatched, "Back is not VS Code's ten-line history")
+    assertEquals(2, session.fake.selection.active.line)
     session.type("x")
-    assertEquals("lpha\nbeta\ngamma", session.content, "the next key has to land where Go Back left the caret")
+    assertEquals("alpha\nbeta\namma", session.content, "the next key has to land where the jump left the caret")
+  }
+
+  /**
+   * Two clicks four lines apart. VS Code's Go Back keeps neither as its own stop, so the second
+   * `<C-o>` used to do nothing.
+   */
+  @Test
+  fun `test a mapped Ctrl-o visits every click on the same file`() {
+    val session = Session("one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\neleven")
+    click(session.host, session.fake, 4, 2)
+    click(session.host, session.fake, 0, 1)
+    click(session.host, session.fake, 10, 3)
+    session.type(":nmap <C-o> <Action>(Back)")
+    session.key("<CR>")
+
+    session.key("<C-O>")
+    assertEquals(0 to 1, session.fake.selection.active.line to session.fake.selection.active.character)
+
+    session.key("<C-O>")
+    assertEquals(4 to 2, session.fake.selection.active.line to session.fake.selection.active.character)
+  }
+
+  /** A click in another file is a place `<C-o>` can return to, at that column. */
+  @Test
+  fun `test a mapped Ctrl-o lands in another open file where the caret was`() {
+    val here = FakeEditor("alpha\nbeta\ngamma", path = "/test/here.txt")
+    val there = FakeEditor("one\ntwo\nthree\nfour", path = "/test/there.txt")
+    val commands = DeferredCommands()
+    val host = VimHost(runCommand = commands::run).also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(here))
+    host.activeEditorChanged(there)
+    click(host, there, 1, 1)
+    host.activeEditorChanged(here)
+    click(host, here, 0, 0)
+    activeEditor = here
+    mapBack(host, here, commands)
+
+    host.key(here, "<C-O>")
+
+    assertEquals(1, there.selection.active.line)
+    assertEquals(1, there.selection.active.character)
+    host.type(there, "x")
+    assertEquals("one\nto\nthree\nfour", there.document.content)
+    assertEquals("alpha\nbeta\ngamma", here.document.content)
+  }
+
+  /** A click in a file that was then closed is still a place `<C-o>` opens. */
+  @Test
+  fun `test a mapped Ctrl-o reopens a closed file where the caret was`() {
+    val here = FakeEditor("alpha\nbeta\ngamma", path = "/test/here.txt")
+    val there = FakeEditor("one\ntwo\nthree\nfour", path = "/test/there.txt")
+    val commands = DeferredCommands()
+    val host = VimHost(runCommand = commands::run).also { it.start() }
+    KeyHandler.getInstance().fullReset(host.editorFor(here))
+    host.activeEditorChanged(there)
+    click(host, there, 1, 1)
+    host.activeEditorChanged(here)
+    click(host, here, 0, 0)
+    there.document.isClosed = true
+    host.forgetDocument(there.document)
+    mapBack(host, here, commands)
+
+    host.key(here, "<C-O>")
+
+    assertEquals(VsCodeCommands.OPEN, commands.dispatched.single())
+    val args = commands.arguments.single()
+    assertEquals("file:///test/there.txt", (args[0] as Uri).toString())
+    val selection = args[1].asDynamic().selection
+    assertEquals(2, selection.startLineNumber)
+    assertEquals(2, selection.startColumn)
+  }
+
+  /** The stub's `window.activeTextEditor`, which is what a keystroke and a reveal both consult. */
+  private var activeEditor: TextEditor?
+    get() = js("require('vscode').window").activeTextEditor as TextEditor?
+    set(value) {
+      js("require('vscode').window").activeTextEditor = value
+    }
+
+  private fun click(host: VimHost, editor: FakeEditor, line: Int, character: Int) {
+    host.editorFor(editor)
+    val at = Position(line, character)
+    editor.selections = arrayOf(Selection(at, at))
+    host.selectionChanged(editor, TextEditorSelectionChangeKind.Mouse)
+  }
+
+  private fun mapBack(host: VimHost, editor: FakeEditor, commands: DeferredCommands) {
+    host.type(editor, ":nmap <C-o> <Action>(Back)")
+    host.key(editor, "<CR>")
+    commands.complete { }
   }
 
   @Test

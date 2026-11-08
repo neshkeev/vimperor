@@ -28,6 +28,7 @@ import com.maddyhome.idea.vim.common.ModeChangeListener
 import com.maddyhome.idea.vim.helper.exitVisualMode
 import com.maddyhome.idea.vim.key.noteCaretMoveInInsertSession
 import com.maddyhome.idea.vim.key.resetAbbreviationSession
+import kotlin.js.json
 
 /**
  * The running extension: keys in, edits out.
@@ -248,7 +249,13 @@ class VimHost(
     // went with the wrapper, and a probe replacing one mid-`Vjjj` showed Visual mode surviving.
     val editor = VsCodeEditor(textEditor)
     // The carets belong to the document, not to the wrapper. See [VsCodeEditor.adoptCaretsFrom].
-    existing?.let { editor.adoptCaretsFrom(it) }
+    // Not while Go Back or Go Forward is landing. The `TextEditor` it just showed already carries
+    // the place from the navigation history, and it is a different place from the caret this host
+    // remembers: copying that one over and flushing it puts the user back where they last *left*
+    // the file. A tab that had been closed has nothing remembered, and the same flush writes the
+    // caret the new editor reported before VS Code restored the history position, which is the
+    // start of the file.
+    if (navigationPending == 0) existing?.let { editor.adoptCaretsFrom(it) }
     // ...and the window's height belongs to the window. See [VsCodeEditor.adoptViewportFrom].
     existing?.let { editor.adoptViewportFrom(it) }
     editors[identity] = editor
@@ -524,6 +531,12 @@ class VimHost(
       // whichever file the user has moved to. The ask waits for a key in the file instead, which is
       // the only proof of focus there is. See [keyboardProvedIn].
       fire(AutoCmdEvent.BufEnter, editorFor(editor))
+      // A tab switch is a place `<C-o>` returns to, even when the caret in that file did not move.
+      val shown = editors[identityOf(editor)]
+      if (shown != null) {
+        val at = shown.primaryCaret().getBufferPosition()
+        caretHistory.record(CaretHistory.Place(shown.getPath(), at.line, at.column))
+      }
     }
     return if (ended) "Visual mode ended in the editor left behind" else null
   }
@@ -608,7 +621,11 @@ class VimHost(
    */
   private fun fire(event: AutoCmdEvent, editor: VsCodeEditor?) {
     injector.autoCmd.handleEvent(event, editor?.getPath(), editor)
-    editor?.flush()
+    // A flush now would write the caret this host still has. Go Back has either just put a
+    // different one on screen, or has not restored it yet; either way the write lands on top of
+    // the place the user is going to. The command's own completion reads the editor once that
+    // place is there. See [adoptWhereNavigationLanded].
+    if (navigationPending == 0) editor?.flush()
   }
 
   /** What the engine asked to have replayed. See `SingleThreadedApplication.postKey`. */
@@ -740,21 +757,112 @@ class VimHost(
    * that is never coming back.
    */
   override fun run(command: String, arguments: Array<Any?>, waitForIt: Boolean, afterwards: () -> Unit) {
+    // `<C-o>` and `<C-i>` are mapped to these. VS Code's own Go Back drops a place that is within
+    // ten lines of the one before it, so the second press on one file does nothing. The places
+    // the caret was actually at are [caretHistory].
+    if (command == GO_BACK) {
+      goBack()
+      return
+    }
+    if (command == GO_FORWARD) {
+      goForward()
+      return
+    }
+    val navigating = isNavigation(command)
     if (!waitForIt) {
+      if (navigating) navigationPending++
       runCommand(command, arguments) { succeeded ->
         if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
+        if (navigating) {
+          adoptWhereNavigationLanded()
+          navigationPending--
+        }
       }
       return
     }
     pending++
+    if (navigating) navigationPending++
     // Held until the re-read below, not run here: at this point the buffer still holds the text
     // from before the command, and the whole reason a caller wants this hook is to place a caret
     // in the text the command produced.
     landed += afterwards
     runCommand(command, arguments) { succeeded ->
       if (!succeeded) sink.error("Vimperor: VS Code has no command '$command'.")
+      // Before the flag drops, so the editor Go Back opened is read rather than repaired from the
+      // caret this host remembered. And before the re-read below, which flushes what it synced.
+      if (navigating) adoptWhereNavigationLanded()
       pending--
+      if (navigating) navigationPending--
       if (pending == 0) hostCommandsFinished()
+    }
+  }
+
+  /**
+   * Go Back and Go Forward, `workbench.action.navigateBack` and `navigateForward`.
+   *
+   * `<C-o>` and `<C-i>` are mapped to them. Both walk VS Code's own navigation history, which
+   * crosses every editor the user has been to and reopens one whose tab has since been closed.
+   * The caret they restore is not the caret this host last had in that file.
+   */
+  private fun isNavigation(command: String): Boolean = command == GO_BACK || command == GO_FORWARD
+
+  /** How many of those commands are in flight. A tab switch while one is has to leave the caret alone. */
+  private var navigationPending: Int = 0
+
+  /** Every place the caret has been. `<C-o>` and `<C-i>` walk this, not VS Code's ten-line history. */
+  private val caretHistory = CaretHistory()
+
+  /**
+   * Takes the editor and caret Go Back or Go Forward just showed.
+   *
+   * The active-editor event arrives first, and the `TextEditor` it carries does not have the
+   * history position yet — the same order a plain tab switch has, where believing that report
+   * writes the wrong caret. By the time the command's promise resolves, the position is on the
+   * editor. Reading it here is what makes `<C-o>` land there, in whichever file it was, open or
+   * just reopened.
+   */
+  private fun adoptWhereNavigationLanded() {
+    val active = window.activeTextEditor ?: return
+    if (!isBuffer(active)) return
+    val editor = editorFor(active)
+    editor.syncCaretsFromEditor()
+    keyedEditor = active
+  }
+
+  private fun goBack() = caretHistory.back()?.let { show(it) }
+
+  private fun goForward() = caretHistory.forward()?.let { show(it) }
+
+  /**
+   * Puts [place] on screen and makes it the caret the engine will flush.
+   *
+   * An editor that is already open is moved directly: asking VS Code to open it again reports the
+   * editor at column 0 before the position arrives, and that report was being kept. A file whose
+   * tab has been closed is opened at the position, which is the option `vscode.open` takes.
+   */
+  private fun show(place: CaretHistory.Place) {
+    caretHistory.applying = true
+    try {
+      val open = editors.values.firstOrNull { it.getPath() == place.identity }
+      if (open != null) {
+        val at = Position(place.line, place.character)
+        open.nativeEditor.selections = arrayOf(Selection(at, at))
+        open.syncCaretsFromEditor()
+        keyedEditor = open.nativeEditor
+        if (window.activeTextEditor !== open.nativeEditor) {
+          window.showTextDocument(open.nativeEditor.document)
+        }
+      } else {
+        val selection = json(
+          "startLineNumber" to place.line + 1,
+          "startColumn" to place.character + 1,
+          "endLineNumber" to place.line + 1,
+          "endColumn" to place.character + 1,
+        )
+        runCommand(VsCodeCommands.OPEN, arrayOf(UriFactory.parse(place.identity), json("selection" to selection))) {}
+      }
+    } finally {
+      caretHistory.applying = false
     }
   }
 
@@ -864,7 +972,13 @@ class VimHost(
   fun selectionChanged(textEditor: TextEditor, kind: Int?): String {
     val editor = editors[identityOf(textEditor)] ?: return "ignored, no editor registered"
     if (editor.nativeEditor !== textEditor) return "ignored, a stale editor"
-    if (pending > 0) return "ignored, a command is still landing"
+    // Undo and a reformat move the caret while they rewrite the document, and that report is not
+    // where the caret belongs - the re-read when the command lands is. Go Back is the opposite.
+    // Its selection *is* the place, it arrives while the command is still in flight, and dropping
+    // it leaves the engine on the caret the user just left. The next flush then paints that caret,
+    // or the (0, 0) a newly shown editor reports before the history position is applied, over the
+    // place Go Back already put on screen.
+    if (pending > 0 && navigationPending == 0) return "ignored, a command is still landing"
     // A change VS Code did not attribute to anybody, which is **not the same thing as one this host
     // made**. That is what this read until now - "an edit moving its own caret, or an extension
     // writing `TextEditor.selections`, and both of those are this host's own writing coming back" -
@@ -912,8 +1026,17 @@ class VimHost(
     // made, and following it into Visual mode reset the key handler and closed the prompt under the
     // next key. `syncCaretsFromEditor` recognises its own echo; what it adopted is the only thing
     // that can say the user did something.
+    val before = editor.primaryCaret().getBufferPosition()
     val caretBefore = editor.primaryCaret().offset
     if (!editor.syncCaretsFromEditor()) return "echo of what was pushed"
+    // Where the caret was, then where the click or the command put it. Both, because the first
+    // visit has to be able to come back to the place it left. A move this host is making to follow
+    // `<C-o>` is already in the list.
+    val after = editor.primaryCaret().getBufferPosition()
+    if (before.line != after.line || before.column != after.column) {
+      caretHistory.record(CaretHistory.Place(editor.getPath(), before.line, before.column))
+      caretHistory.record(CaretHistory.Place(editor.getPath(), after.line, after.column))
+    }
     // The second door a cursor move comes through, and the one a keystroke cannot see: a click or a
     // drag. Reported here rather than from the engine for the reason on `VimCaretMovedListener` -
     // what moved the caret is not the question, only that it is somewhere else now.
@@ -1110,6 +1233,10 @@ class VimHost(
   private companion object {
     /** See [runAfterTheWorkbenchSettles]. Three frames. */
     const val WORKBENCH_SETTLE_MILLIS = 50
+
+    /** `<Action>(Back)` and `<Action>(Forward)`. Handled here rather than sent to VS Code. */
+    const val GO_BACK = "workbench.action.navigateBack"
+    const val GO_FORWARD = "workbench.action.navigateForward"
   }
 }
 

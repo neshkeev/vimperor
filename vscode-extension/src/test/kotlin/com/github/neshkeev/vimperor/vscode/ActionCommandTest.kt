@@ -183,13 +183,32 @@ class ActionCommandTest {
     assertEquals(emptyList(), session.errors)
   }
 
+  /**
+   * `<Action>(Back)` is not sent to VS Code. VS Code's Go Back drops a place within ten lines of
+   * the one before it, so two clicks on one file came back as one stop and the second `<C-o>` did
+   * nothing. The places are this host's.
+   */
   @Test
-  fun `test an Action mapping written for IdeaVim works too`() {
-    val session = Session()
+  fun `test an Action mapping written for IdeaVim walks back through each click`() {
+    val session = Session("one\ntwo\nthree\nfour\nfive\nsix\nseven\neight\nnine\nten\neleven")
+    fun click(line: Int, character: Int) {
+      val at = Position(line, character)
+      session.fake.selections = arrayOf(Selection(at, at))
+      session.host.selectionChanged(session.fake, TextEditorSelectionChangeKind.Mouse)
+    }
+    click(4, 2)
+    click(0, 1)
+    click(10, 3)
     session.run("nmap <C-o> <Action>(Back)")
-    session.key("<C-O>")
 
-    assertEquals(listOf("workbench.action.navigateBack"), session.dispatched)
+    session.key("<C-O>")
+    assertEquals(0, session.fake.selection.active.line)
+    assertEquals(1, session.fake.selection.active.character)
+
+    session.key("<C-O>")
+    assertEquals(4, session.fake.selection.active.line)
+    assertEquals(2, session.fake.selection.active.character)
+    assertEquals(emptyList(), session.dispatched)
   }
 
   /**
