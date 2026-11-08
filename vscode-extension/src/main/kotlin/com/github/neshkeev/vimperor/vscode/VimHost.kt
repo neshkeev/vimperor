@@ -1235,8 +1235,8 @@ class VimHost(
     const val WORKBENCH_SETTLE_MILLIS = 50
 
     /** `<Action>(Back)` and `<Action>(Forward)`. Handled here rather than sent to VS Code. */
-    const val GO_BACK = "workbench.action.navigateBack"
-    const val GO_FORWARD = "workbench.action.navigateForward"
+    const val GO_BACK = VsCodeCommands.NAVIGATE_BACK
+    const val GO_FORWARD = VsCodeCommands.NAVIGATE_FORWARD
   }
 }
 

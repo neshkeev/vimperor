@@ -267,6 +267,14 @@ internal object VsCodeCommands {
   const val NEXT_EDITOR = "workbench.action.nextEditor"
   const val PREVIOUS_EDITOR = "workbench.action.previousEditor"
   const val PREVIOUS_USED_EDITOR_IN_GROUP = "workbench.action.openPreviousRecentlyUsedEditorInGroup"
+
+  /**
+   * `<Action>(Back)` and `<Action>(Forward)`. A mapping to either is answered from the caret
+   * history in [VimHost] and is not dispatched; the ids stay here so the alias and that answer
+   * name the same command.
+   */
+  const val NAVIGATE_BACK = "workbench.action.navigateBack"
+  const val NAVIGATE_FORWARD = "workbench.action.navigateForward"
   const val MOVE_EDITOR_LEFT_IN_GROUP = "workbench.action.moveEditorLeftInGroup"
   const val MOVE_EDITOR_RIGHT_IN_GROUP = "workbench.action.moveEditorRightInGroup"
 
@@ -356,7 +364,7 @@ internal object VsCodeCommands {
     DELETE_FILE, RENAME_FILE, EXPLORER_COPY, EXPLORER_PASTE,
     SELECT_NEXT_SUGGESTION, SELECT_PREV_SUGGESTION,
     SAVE, SAVE_ALL, CLOSE_ACTIVE_EDITOR, CLOSE_OTHER_EDITORS, REVERT_AND_CLOSE,
-    NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP,
+    NEXT_EDITOR, PREVIOUS_EDITOR, PREVIOUS_USED_EDITOR_IN_GROUP, NAVIGATE_BACK, NAVIGATE_FORWARD,
     MOVE_EDITOR_LEFT_IN_GROUP, MOVE_EDITOR_RIGHT_IN_GROUP, RESTART_EXTENSION_HOST,
     FOCUS_ABOVE_GROUP, FOCUS_BELOW_GROUP, FOCUS_LEFT_GROUP, FOCUS_RIGHT_GROUP,
     FOCUS_NEXT_GROUP, FOCUS_PREVIOUS_GROUP,
@@ -428,8 +436,8 @@ internal object IdeaActionAliases {
     "GotoSuperMethod" to null,
     "GotoRelated" to null,
 
-    "Back" to "workbench.action.navigateBack",
-    "Forward" to "workbench.action.navigateForward",
+    "Back" to VsCodeCommands.NAVIGATE_BACK,
+    "Forward" to VsCodeCommands.NAVIGATE_FORWARD,
     "JumpToLastChange" to "workbench.action.navigateToLastEditLocation",
     "GotoNextError" to "editor.action.marker.next",
     "GotoPreviousError" to "editor.action.marker.prev",

@@ -37,6 +37,9 @@ const contextsSet = []
 /** What `Extension.kt` registered for a document closing and for one being saved. */
 const documentClosedListeners = []
 const documentSavedListeners = []
+
+/** Untitled documents `:actionlist`, `:help` and the quickfix window open. The list is their text. */
+const openedUntitled = []
 const watchedConfigPatterns = []
 
 /** Whether `vimperor.trace` is on. Flipped on for the stretch of this script that checks it. */
@@ -258,6 +261,18 @@ class TabInputText {
   }
 }
 
+/**
+ * A diff tab: two URIs and no single `uri`. Every jump (`gg`, `G`) narrows each tab with
+ * `instanceof`, so the constructor has to be here even when every open tab is a file. A missing
+ * one throws "Right-hand side of 'instanceof' is not an object" and aborts the key.
+ */
+class TabInputTextDiff {
+  constructor(original, modified) {
+    this.original = original
+    this.modified = modified
+  }
+}
+
 const bufferTab = {
   label: 'buffer.txt',
   isActive: true,
@@ -305,6 +320,7 @@ const vscode = {
     }
   },
   TabInputText,
+  TabInputTextDiff,
   Selection,
   // Constructed with `new`, like ThemeColor above and for the same reason.
   RelativePattern: class RelativePattern {
@@ -364,6 +380,11 @@ const vscode = {
     showInformationMessage: () => ({ then: (onFulfilled) => { onFulfilled(undefined); return undefined } }),
     // Captured rather than dropped: `:autocmd BufEnter` is wired here, in `Extension.kt`, and a
     // unit test that calls the host directly would not see that wiring at all.
+    // `:actionlist` and `:help` show the untitled document they just opened. Resolving keeps the
+    // keystroke from dying; the file this host is driving stays the active editor.
+    showTextDocument: (document) => ({
+      then: (onFulfilled) => (onFulfilled({ document, selections: [], revealRange() {} }), { then: () => {} }),
+    }),
     onDidChangeActiveTextEditor: (callback) => {
       activeEditorListeners.push(callback)
       return disposable()
@@ -450,6 +471,20 @@ const vscode = {
      * absence - what is checked here is the other half, that it uses it when it is there.
      */
     openTextDocument: (target) => {
+      // An untitled buffer (`:actionlist`, `:help`, the quickfix window) arrives as options with
+      // `content`, not as a URI. The default keybindings are the URI, and they are the other caller.
+      if (target && typeof target.content === 'string') {
+        const document = {
+          getText: () => target.content,
+          languageId: target.language || 'plaintext',
+          uri: { scheme: 'untitled', path: `Untitled-${openedUntitled.length + 1}` },
+          isUntitled: true,
+          isClosed: false,
+          lineCount: target.content.split('\n').length,
+        }
+        openedUntitled.push(document)
+        return { then: (onFulfilled) => (onFulfilled(document), { then: () => {} }) }
+      }
       const uri = typeof target === 'string' ? target : target && target.path
       assert.ok(uri && String(uri).includes('keybindings.json'), `openTextDocument was asked for ${uri}`)
       const defaults = [
@@ -913,7 +948,8 @@ type(':')
 for (const character of 'actionlist') type(character)
 press('<CR>')
 
-const listed = output.join('\n')
+// The list is the buffer, not the output channel. The channel is only the "not told yet" message.
+const listed = openedUntitled.map((document) => document.getText()).join('\n')
 assert.ok(
   /workbench\.action\.findInFiles\s+shift\+cmd\+f/.test(listed),
   `:actionlist did not print the chord VS Code's own defaults bind. Got:\n${listed}`,
