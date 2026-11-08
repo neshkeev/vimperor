@@ -30,6 +30,7 @@ import com.maddyhome.idea.vim.diagnostic.debug
 import com.maddyhome.idea.vim.diagnostic.vimLogger
 import com.maddyhome.idea.vim.helper.currentTimeMillis
 import com.maddyhome.idea.vim.mark.Jump
+import com.maddyhome.idea.vim.mark.JumpSource
 import com.maddyhome.idea.vim.mark.Mark
 import com.maddyhome.idea.vim.mark.VimMark
 import com.maddyhome.idea.vim.state.mode.Mode
@@ -235,7 +236,10 @@ abstract class VimMarkServiceBase : VimMarkService {
       markChar.isLocalMark() -> {
         if (caret.isPrimary) {
           if (mark.key == BEFORE_JUMP_MARK) {
-            val jump = Jump(mark.line, mark.col, mark.filepath, mark.protocol)
+            // The jump is in the same place as one recorded from this editor, e.g. on a side of a diff. Without the
+            // same source the two would be separate jumps.
+            val source = injector.jumpService.jumpAtCaret(editor)?.source ?: JumpSource.File
+            val jump = Jump(mark.line, mark.col, mark.filepath, mark.protocol, source)
             injector.jumpService.addJump(editor, jump, true)
           }
           // Vim's changelist is defined as where the `.` mark has been, and this is the one place

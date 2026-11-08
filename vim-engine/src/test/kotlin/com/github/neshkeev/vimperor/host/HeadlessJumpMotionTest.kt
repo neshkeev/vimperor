@@ -15,14 +15,19 @@ import com.maddyhome.idea.vim.handler.Motion
 import com.maddyhome.idea.vim.host.HeadlessExecutionContext
 import com.maddyhome.idea.vim.host.HeadlessFile
 import com.maddyhome.idea.vim.host.HeadlessInjector
+import com.maddyhome.idea.vim.host.HeadlessOutputPanelService
 import com.maddyhome.idea.vim.host.TestVimCaret
 import com.maddyhome.idea.vim.host.TestVimEditor
 import com.maddyhome.idea.vim.key.KeySource
+import com.maddyhome.idea.vim.mark.DiffSide
 import com.maddyhome.idea.vim.mark.Jump
+import com.maddyhome.idea.vim.mark.JumpSource
+import com.maddyhome.idea.vim.vimscript.model.CommandLineVimLContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * `<C-O>` across files.
@@ -138,6 +143,85 @@ class HeadlessJumpMotionTest {
     assertIs<Motion.AbsoluteOffset>(motion)
     assertEquals(s.editor.bufferPositionToOffset(BufferPosition(2, 1, false)), motion.offset)
     assertFalse(injector.messages.isError())
+  }
+
+  @Test
+  fun `test a diff jump whose side is the file lands in that file when no diff is open`() {
+    val s = session()
+    s.openOther()
+    val source = JumpSource.Diff("left\u0000right", DiffSide.RIGHT, isInFile = true)
+    s.record(Jump(1, 2, s.other.getPath(), "file", source))
+
+    val motion = injector.motion.moveCaretToJump(s.editor, s.caret, -1)
+
+    assertEquals(Motion.NoMotion, motion)
+    assertEquals(1 to 2, s.otherCaret.lineAndColumn())
+    assertEquals(2, s.caret.offset, "the editor the key was typed in is not moved")
+    assertFalse(injector.messages.isError())
+  }
+
+  @Test
+  fun `test a diff jump that is not the file is dropped and the next file jump runs`() {
+    val s = session()
+    s.openOther()
+    s.record(Jump(1, 2, s.other.getPath(), "file"))
+    val closed = JumpSource.Diff("old\u0000new", DiffSide.LEFT, isInFile = false)
+    s.record(Jump(4, 0, "/work/changed.txt", "git", closed))
+
+    val motion = injector.motion.moveCaretToJump(s.editor, s.caret, -1)
+
+    assertEquals(Motion.NoMotion, motion)
+    assertEquals(1 to 2, s.otherCaret.lineAndColumn())
+    assertEquals(2, s.caret.offset)
+    assertFalse(injector.messages.isError())
+    assertTrue(injector.jumpService.getJumps(s.editor.projectId).none { it.source is JumpSource.Diff })
+  }
+
+  @Test
+  fun `test a diff jump that is not the file is an error when nothing else remains`() {
+    val s = session()
+    val closed = JumpSource.Diff("old\u0000new", DiffSide.LEFT, isInFile = false)
+    s.record(Jump(4, 0, "/work/changed.txt", "git", closed))
+
+    val motion = injector.motion.moveCaretToJump(s.editor, s.caret, -1)
+
+    assertEquals(Motion.Error, motion)
+    assertEquals(2, s.caret.offset)
+    assertTrue(injector.jumpService.getJumps(s.editor.projectId).none { it.source is JumpSource.Diff })
+  }
+
+  @Test
+  fun `test control-O at the newest end goes to the older jump when the caret is already the newest`() {
+    val s = session()
+    s.record(Jump(2, 1, s.editor.getPath(), "file"))
+    val here = s.editor.offsetToBufferPosition(s.caret.offset)
+    s.record(Jump(here.line, here.column, s.editor.getPath(), "file"))
+
+    s.press("<C-O>")
+
+    assertEquals(2 to 1, s.caret.lineAndColumn())
+    assertFalse(injector.messages.isError())
+  }
+
+  @Test
+  fun `test jumps prints a diff jump with its side and not this editor's line`() {
+    val s = session()
+    s.record(
+      Jump(1, 0, s.editor.getPath(), "file", JumpSource.Diff("diff-1", DiffSide.RIGHT, isInFile = true)),
+    )
+
+    injector.vimscriptExecutor.execute(
+      "jumps",
+      s.editor,
+      HeadlessExecutionContext,
+      skipHistory = true,
+      indicateErrors = true,
+      CommandLineVimLContext,
+    )
+
+    val printed = (injector.outputPanel as HeadlessOutputPanelService).lines.joinToString("\n")
+    assertTrue("(diff, right)" in printed, printed)
+    assertFalse("bbbb" in printed, "a diff jump is not this editor's line: $printed")
   }
 }
 

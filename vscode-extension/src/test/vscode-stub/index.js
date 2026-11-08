@@ -81,6 +81,17 @@ class TabInputText {
   }
 }
 
+/**
+ * A diff tab: two URIs and no single `uri`. The label is whatever the caller passes, so a test can
+ * show that a match uses the URIs and not the title.
+ */
+class TabInputTextDiff {
+  constructor(original, modified) {
+    this.original = original
+    this.modified = modified
+  }
+}
+
 /*
  * Tabs, which a test can arrange: `:tabclose` and `:tabmove` read how many there are and which one
  * is current before they can work out what to tell VS Code to do, so a stub with no tabs would let
@@ -117,6 +128,31 @@ const tabGroups = {
   _openFiles(paths) {
     this._groups = [group(paths.map((path, index) => tab(path, index === 0)), true)]
     return this._groups[0].tabs
+  },
+
+  /**
+   * Appends a diff tab to the active group. [label] is not derived from the paths.
+   *
+   * Each side is a scheme and a path. A `git` original is not the file; a `file` modified is.
+   */
+  _openDiff(label, originalScheme, originalPath, modifiedScheme, modifiedPath) {
+    const uri = (scheme, path) => ({ scheme, path, fsPath: path })
+    const tab = {
+      label,
+      isActive: false,
+      isDirty: false,
+      input: new TabInputTextDiff(uri(originalScheme, originalPath), uri(modifiedScheme, modifiedPath)),
+    }
+    this.activeTabGroup.tabs.push(tab)
+    return tab
+  },
+
+  /** Drops every diff tab and leaves the plain ones. Mutates the arrays the getters already hold. */
+  _closeDiffs() {
+    for (const group of this._groups) {
+      const kept = group.tabs.filter((tab) => !(tab.input instanceof TabInputTextDiff))
+      group.tabs.splice(0, group.tabs.length, ...kept)
+    }
   },
 
   /** Puts the files in two groups, so that a list built across groups can be told from one that is not. */
@@ -187,8 +223,22 @@ const commands = {
   registerCommand: () => ({ dispose() {} }),
   handlers: {},
   executed: [],
+  /**
+   * The same calls, with arguments a test can read. A URI becomes `scheme://path`, so a diff reveal
+   * is not the same record as `showTextDocument` opening a plain file (`window.shownPaths`).
+   */
+  calls: [],
   executeCommand(command, ...args) {
     commands.executed.push(command)
+    commands.calls.push({
+      command,
+      args: args.map((arg) => {
+        if (arg && typeof arg === 'object' && typeof arg.scheme === 'string' && arg.path != null) {
+          return arg.scheme + '://' + arg.path
+        }
+        return typeof arg === 'string' ? arg : ''
+      }),
+    })
     const handler = commands.handlers[command]
     const result = handler ? handler(...args) : undefined
     return { then: (onFulfilled) => (onFulfilled && onFulfilled(result), { then: () => {} }) }
@@ -405,4 +455,4 @@ class RelativePattern {
 
 const ConfigurationTarget = { Global: 1, Workspace: 2, WorkspaceFolder: 3 }
 
-module.exports = { ConfigurationTarget, RelativePattern, extensions, Position, Range, Selection, Uri, TabInputText, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }
+module.exports = { ConfigurationTarget, RelativePattern, extensions, Position, Range, Selection, Uri, TabInputText, TabInputTextDiff, EndOfLine, TextEditorSelectionChangeKind, TextEditorCursorStyle, TextEditorLineNumbersStyle, TextEditorRevealType, StatusBarAlignment, ThemeColor, window, commands, workspace, env, languages, openedDocuments }

@@ -39,7 +39,7 @@ abstract class VimJumpServiceBase : VimJumpService {
   override fun addJump(projectId: String, jump: Jump, reset: Boolean) {
     lastJumpTimeStamp = currentTimeMillis() + JUMP_NAVIGATION_SUPPRESS_MS
     val jumps = projectToJumps.getOrPut(projectId) { mutableListOf() }
-    jumps.removeAll { it.filepath == jump.filepath && it.line == jump.line }
+    jumps.removeAll { it.isSamePlaceAs(jump) }
     jumps.add(jump)
 
     projectToJumpSpot[projectId] = if (reset) -1 else (projectToJumpSpot[projectId] ?: -1) + 1
@@ -51,6 +51,14 @@ abstract class VimJumpServiceBase : VimJumpService {
 
   override var recordingSuppressed: Boolean = false
 
+  override fun jumpAtCaret(editor: VimEditor): Jump? {
+    val virtualFile = editor.getVirtualFile() ?: return null
+    val position = editor.offsetToBufferPosition(editor.currentCaret().offset)
+    return Jump(position.line, position.column, virtualFile.path, virtualFile.protocol)
+  }
+
+  override fun showInDiff(editor: VimEditor, jump: Jump): Boolean = false
+
   override fun saveJumpLocation(editor: VimEditor) {
     if (recordingSuppressed) return
     addJump(editor, true)
@@ -59,7 +67,7 @@ abstract class VimJumpServiceBase : VimJumpService {
   }
 
   override fun removeJump(projectId: String, jump: Jump) {
-    projectToJumps[projectId]?.removeAll { it == jump }
+    projectToJumps[projectId]?.removeAll { it.isSamePlaceAs(jump) }
   }
 
   override fun dropLastJump(projectId: String) {

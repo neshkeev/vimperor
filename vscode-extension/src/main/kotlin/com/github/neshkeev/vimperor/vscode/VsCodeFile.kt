@@ -370,8 +370,14 @@ internal class VsCodeFile(
    */
   override fun getProjectId(project: Any): String = "vscode"
 
+  /**
+   * An editor that is already open, or null. Does not open one.
+   *
+   * A jump stores [VimEditor.getPath], which this host spells `scheme://path`. A document's file
+   * name is the path alone. Callers have used both, and they name the same editor.
+   */
   override fun selectEditor(projectId: String, documentPath: String, protocol: String): VimEditor? =
     injector.editorGroup.getEditors()
       .filterIsInstance<VsCodeEditor>()
-      .firstOrNull { it.nativeEditor.document.fileName == documentPath }
+      .firstOrNull { it.getPath() == documentPath || it.nativeEditor.document.fileName == documentPath }
 }

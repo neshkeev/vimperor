@@ -1011,13 +1011,7 @@ open class VsCodeInjector(
    */
   override val visualMotionGroup: VimVisualMotionGroup by lazy { object : VimVisualMotionGroupBase() {} }
 
-  override val jumpService: VimJumpService by lazy {
-    object : VimJumpServiceBase() {
-      /** VS Code's own go-back history, which this does not yet contribute to. */
-      override fun includeCurrentCommandAsNavigation(editor: VimEditor) {}
-      override var lastJumpTimeStamp: Long = 0
-    }
-  }
+  override val jumpService: VimJumpService by lazy { VsCodeJumpService() }
 
   override val engineEditorHelper: EngineEditorHelper by lazy {
     object : EngineEditorHelperBase() {

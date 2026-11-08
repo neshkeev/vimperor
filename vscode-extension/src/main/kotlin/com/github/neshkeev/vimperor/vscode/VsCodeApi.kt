@@ -676,7 +676,7 @@ external interface Tab {
    * What kind of thing the tab holds, and where its file is.
    *
    * A union in the real API - a text file, a diff, a notebook, a terminal, a webview - so this is
-   * typed loosely and narrowed with [TabInputText], which is the only kind that is a Vim buffer.
+   * typed loosely and narrowed with [TabInputText] or [TabInputTextDiff].
    */
   val input: Any?
 }
@@ -690,6 +690,20 @@ external interface Tab {
  */
 external class TabInputText {
   val uri: Uri
+}
+
+/**
+ * The tab kind that is a diff of two files.
+ *
+ * A class, like [TabInputText], because narrowing to it is `instanceof`. It has an original and a
+ * modified URI and no single `uri`, which is why `:ls` does not list it as a buffer. There is no
+ * `focus` on [Tab]; revealing one that is already open is [commands.executeCommand] of `vscode.diff`
+ * with these two URIs, which the editor matches to the existing tab. Calling that when the tab is
+ * gone would open it again, so a closed diff is not revealed that way.
+ */
+external class TabInputTextDiff {
+  val original: Uri
+  val modified: Uri
 }
 
 /** VS Code's `EndOfLine`, which is a numeric enum on the module object. There are only these two. */
