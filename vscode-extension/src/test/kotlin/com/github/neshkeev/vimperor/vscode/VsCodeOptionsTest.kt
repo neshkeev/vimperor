@@ -1335,6 +1335,7 @@ class VsCodeOptionsTest {
       "cexpr 'x'", "caddexpr 'x'", "lexpr 'x'", "laddexpr 'x'", "cbuffer", "lbuffer",
       "clist", "copen", "cwindow", "cclose", "llist", "lopen", "lwindow", "lclose",
       "cnext", "cprevious", "cfirst", "clast", "cc", "lnext", "lprevious", "lfirst", "llast", "ll",
+      "cnfile", "cpfile", "cNfile", "lnfile", "lpfile", "lNfile",
       "cfile", "lfile", "smagic/x/y/", "snomagic/x/y/",
       "enew", "new", "vnew", "tabnew", "tabedit", "wincmd l", "bfirst", "blast", "pwd",
       "bufdo echo 1", "windo echo 1", "tabdo echo 1", "argdo echo 1",

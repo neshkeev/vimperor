@@ -84,6 +84,52 @@ class QuickfixList {
     return entries[position]
   }
 
+  /**
+   * Moves by files rather than by entries, which is `:cnfile` and `:cpfile`.
+   *
+   * A file is a run of the same [QuickfixEntry.path]. A null path is not a file, so a line nothing
+   * could be parsed from does not split the files on either side of it and is not one itself.
+   * Forward lands on the first valid entry of the next file; backward lands on the last valid
+   * entry of the previous one.
+   *
+   * A [count] that runs out of files stops on the last file it did reach and still returns it.
+   * Null is only "there was nowhere to go": already on the last file, or the first, so the index
+   * does not move. Callers report that as E42.
+   */
+  fun stepFile(count: Int): QuickfixEntry? {
+    if (entries.isEmpty()) return null
+    if (count == 0) return entries.getOrNull(index)
+    val forward = count > 0
+    var position = index
+    var moved = false
+    repeat(kotlin.math.abs(count)) {
+      val next = fileFrom(position, forward) ?: return if (moved) land(position) else null
+      position = next
+      moved = true
+    }
+    return land(position)
+  }
+
+  private fun land(position: Int): QuickfixEntry {
+    index = position
+    return entries[position]
+  }
+
+  /** The first different file in [forward]'s direction, skipping lines that have no path. */
+  private fun fileFrom(from: Int, forward: Boolean): Int? {
+    val current = entries.getOrNull(from)?.path
+    val step = if (forward) 1 else -1
+    var i = from + step
+    while (i in entries.indices) {
+      val path = entries[i].path
+      // Going backward, the first entry of a file we meet is its last one: the scan started at
+      // the near end. Going forward, it is the first.
+      if (path != null && path != current) return i
+      i += step
+    }
+    return null
+  }
+
   fun moveTo(position: Int): QuickfixEntry? {
     val entry = entries.getOrNull(position) ?: return null
     index = position

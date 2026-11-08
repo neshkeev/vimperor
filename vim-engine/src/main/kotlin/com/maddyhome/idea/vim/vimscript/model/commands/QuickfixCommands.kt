@@ -9,9 +9,12 @@
 package com.maddyhome.idea.vim.vimscript.model.commands
 
 import com.intellij.vim.annotations.ExCommand
+import com.maddyhome.idea.vim.api.BufferPosition
 import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.Options
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.globalOptions
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
@@ -35,10 +38,10 @@ import com.maddyhome.idea.vim.vimscript.model.ExecutionResult
  *
  * All of it is engine work. Running a process is something both hosts already answer for `:!`,
  * opening a file at a line is what `:edit` and `:buffer` already do, and the list itself is a list.
- * The two places this is not Vim are written down where they happen: `'errorformat'` is declared and
- * not read (see [com.maddyhome.idea.vim.quickfix.parseQuickfixLines] for what is read instead), and
- * `:copen` prints into the output panel rather than opening a buffer you can put the caret in -
- * neither host lets an extension make a buffer out of nothing to hold it.
+ * The one place this is not Vim is `'errorformat'`, which is declared and not read (see
+ * [com.maddyhome.idea.vim.quickfix.parseQuickfixLines] for what is read instead). `:copen` opens a
+ * read-only buffer, one line per entry, and Enter on a line jumps to it. `:clist` still prints the
+ * table to the output panel.
  */
 sealed class QuickfixCommand(
   range: Range,
@@ -51,7 +54,22 @@ sealed class QuickfixCommand(
   override val argFlags: CommandHandlerFlags =
     flags(RangeFlag.RANGE_OPTIONAL, ArgumentFlag.ARGUMENT_OPTIONAL, Access.READ_ONLY)
 
-  protected fun list(editor: VimEditor): QuickfixList = Quickfix.listFor(editor, isLocation)
+  /**
+   * The list this command walks.
+   *
+   * Typed in the window that shows the list, the list is the one that window was opened from.
+   * The location list lives on that window, and the window itself has none of its own, so `:lnext`
+   * in the location window would otherwise be E42 on an empty list. The quickfix list is the
+   * session's, and naming the original window does not change which one that is.
+   */
+  protected fun list(editor: VimEditor): QuickfixList {
+    val source = if (editor.getVirtualBufferKind() == windowKind()) {
+      editor.getCmdwinOriginalEditor() ?: editor
+    } else {
+      editor
+    }
+    return Quickfix.listFor(source, isLocation)
+  }
 
   /**
    * Goes to [entry], which is what every stepping command does once it has found one.
@@ -59,28 +77,8 @@ sealed class QuickfixCommand(
    * The file is opened by name and the caret moved by line and column, so a jump into a file that
    * is not open opens it - as Vim's does.
    */
-  protected fun jumpTo(editor: VimEditor, context: ExecutionContext, entry: QuickfixEntry?): ExecutionResult {
-    if (entry == null) throw exExceptionMessage("E42")
-    val path = entry.path ?: throw exExceptionMessage("E42")
-
-    val failure = injector.file.openFile(path, context)
-    if (failure != null) {
-      injector.messages.showErrorMessage(editor, failure)
-      return ExecutionResult.Error
-    }
-
-    // The editor that is focused now, which is the one the file was opened into. Falling back to
-    // the editor the command was typed in covers a host that opens asynchronously: the caret then
-    // lands in the wrong window rather than nowhere, and the message still names the right place.
-    val target = injector.editorGroup.getFocusedEditor() ?: editor
-    val line = (entry.line - 1).coerceIn(0, (target.lineCount() - 1).coerceAtLeast(0))
-    val column = (entry.column - 1).coerceAtLeast(0)
-    target.currentCaret().moveToBufferPosition(com.maddyhome.idea.vim.api.BufferPosition(line, column))
-    injector.scroll.scrollCaretIntoView(target)
-
-    injector.messages.showStatusBarMessage(target, "(${list(editor).index + 1} of ${list(editor).size}) ${entry.text}")
-    return ExecutionResult.Success
-  }
+  protected fun jumpTo(editor: VimEditor, context: ExecutionContext, entry: QuickfixEntry?): ExecutionResult =
+    jumpToQuickfixEntry(editor, context, entry, list(editor))
 
   /** Replaces or extends the list, and goes to the first entry when Vim would. */
   protected fun fill(
@@ -92,11 +90,80 @@ sealed class QuickfixCommand(
   ): ExecutionResult {
     val list = list(editor)
     if (add) list.add(entries) else list.replaceWith(entries)
-    if (!jump) return ExecutionResult.Success
-    val first = list.end(last = false) ?: return ExecutionResult.Success
-    return jumpTo(editor, context, first)
+    val result = if (!jump) {
+      ExecutionResult.Success
+    } else {
+      val first = list.end(last = false)
+      if (first == null) ExecutionResult.Success else jumpTo(editor, context, first)
+    }
+    // The window follows the list when it is open, and is not opened by a jump.
+    syncWindow(editor, context)
+    return result
+  }
+
+  /** The read-only window for this command's list. Quickfix and location are different buffers. */
+  protected fun windowKind(): VirtualBufferKind = if (isLocation) LocationWindow else QuickfixWindow
+
+  /**
+   * Rewrites the open window so its caret line is the current entry.
+   *
+   * No window means nothing: `:cnext` with the list hidden must not open one. The text and the
+   * caret are one call, so a step that does not change the lines still moves the caret.
+   */
+  protected fun syncWindow(editor: VimEditor, context: ExecutionContext) {
+    val kind = windowKind()
+    val group = injector.virtualBufferGroup
+    if (!group.isOpen(context, kind)) return
+    val list = list(editor)
+    group.refresh(context, kind, renderQuickfixList(list), list.index)
   }
 }
+
+/**
+ * Goes to [entry] in [editor], which is the file rather than the quickfix window.
+ *
+ * The focused editor is where a host puts a file it has just opened. It is the wrong one while the
+ * quickfix window is what has focus: the caret would move in the list. A command typed in the list
+ * itself means the editor the list was opened from.
+ */
+private fun jumpToQuickfixEntry(
+  editor: VimEditor,
+  context: ExecutionContext,
+  entry: QuickfixEntry?,
+  list: QuickfixList,
+): ExecutionResult {
+  if (entry == null) throw exExceptionMessage("E42")
+  val path = entry.path ?: throw exExceptionMessage("E42")
+
+  val failure = injector.file.openFile(path, context)
+  if (failure != null) {
+    injector.messages.showErrorMessage(editor, failure)
+    return ExecutionResult.Error
+  }
+
+  val focused = injector.editorGroup.getFocusedEditor()
+  val target = when {
+    focused != null && !focused.isQuickfixWindow() -> focused
+    !editor.isQuickfixWindow() -> editor
+    else -> editor.getCmdwinOriginalEditor() ?: editor
+  }
+  val line = (entry.line - 1).coerceIn(0, (target.lineCount() - 1).coerceAtLeast(0))
+  val column = (entry.column - 1).coerceAtLeast(0)
+  target.currentCaret().moveToBufferPosition(BufferPosition(line, column))
+  injector.scroll.scrollCaretIntoView(target)
+
+  injector.messages.showStatusBarMessage(target, "(${list.index + 1} of ${list.size}) ${entry.text}")
+  return ExecutionResult.Success
+}
+
+private fun VimEditor.isQuickfixWindow(): Boolean =
+  getVirtualBufferKind().let { it == QuickfixWindow || it == LocationWindow }
+
+/** One line per entry, no header, so the caret line is the entry's index. An invalid entry is its text. */
+private fun renderQuickfixList(list: QuickfixList): String =
+  list.all().joinToString("\n") { entry ->
+    if (entry.isValid) "${entry.path}:${entry.line} col ${entry.column}: ${entry.text}" else entry.text
+  }
 
 // ---- Filling the list
 
@@ -272,6 +339,7 @@ sealed class QuickfixProgramCommand(
     val entries = parseQuickfixLines(output.orEmpty().split("\n"))
     if (entries.none { it.isValid }) {
       list(editor).replaceWith(entries)
+      syncWindow(editor, context)
       injector.messages.showMessage(editor, injector.messages.message("E42"))
       return ExecutionResult.Success
     }
@@ -314,12 +382,10 @@ data class LGrepCommand(val range: Range, val modifier: CommandModifier, val arg
 // ---- Reading the list
 
 /**
- * see "h :clist" / "h :llist" / "h :copen" / "h :lopen"
+ * see "h :clist" / "h :llist"
  *
- * Vim opens a *buffer* holding the list, and moving the caret in it and pressing Enter jumps.
- * Neither host lets an extension make a buffer out of nothing, so the list is printed to the output
- * panel instead - the same place `:ls` and `:registers` print - and `:cnext` and `:cc` are how you
- * move through it. `:cclose` clears that panel, which is the nearest thing to closing the window.
+ * Prints the list to the output panel, the same place `:ls` and `:registers` print. The current
+ * entry is marked with `>`. An empty list is E42. `:copen` is the window, not this command.
  */
 sealed class QuickfixListCommand(
   range: Range,
@@ -351,23 +417,93 @@ sealed class QuickfixListCommand(
   }
 }
 
-/** see "h :clist" - `:copen` and `:cwindow` print the same table; see [QuickfixListCommand]. */
+/** see "h :clist" */
 @ExCommand(
-  command = "cl[ist],cope[n],cw[indow]",
-  description = "Show the quickfix list.",
+  command = "cl[ist]",
+  description = "Print the quickfix list.",
 )
 data class CListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixListCommand(range, modifier, argument, isLocation = false)
 
 /** see "h :llist" */
 @ExCommand(
-  command = "lli[st],lop[en],lw[indow]",
-  description = "Show the location list of the current window.",
+  command = "lli[st]",
+  description = "Print the location list of the current window.",
 )
 data class LListCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixListCommand(range, modifier, argument, isLocation = true)
 
-/** see "h :cclose" - clears the panel the list was printed to. */
+/**
+ * see "h :copen" / "h :cwindow" / "h :lopen" / "h :lwindow"
+ *
+ * One line per entry and no header, so the line the caret is on is the entry. `:copen` opens even
+ * when the list is empty. `:cwindow` opens only when some entry has a file, and closes the window
+ * when one is open and none does. A height argument is accepted and ignored.
+ */
+sealed class QuickfixOpenCommand(
+  range: Range,
+  modifier: CommandModifier,
+  argument: String,
+  isLocation: Boolean,
+  private val onlyWhenValid: Boolean,
+) : QuickfixCommand(range, modifier, argument, isLocation) {
+
+  override fun processCommand(
+    editor: VimEditor,
+    context: ExecutionContext,
+    operatorArguments: OperatorArguments,
+  ): ExecutionResult {
+    val list = list(editor)
+    val kind = windowKind()
+    val group = injector.virtualBufferGroup
+    if (onlyWhenValid && list.all().none { it.isValid }) {
+      if (group.isOpen(context, kind)) group.close(context, kind)
+      return ExecutionResult.Success
+    }
+    group.open(context, editor, kind, renderQuickfixList(list), caretLine = list.index)
+    return ExecutionResult.Success
+  }
+}
+
+/** see "h :copen" */
+@ExCommand(
+  command = "cope[n]",
+  description = "Open a window showing the quickfix list.",
+)
+data class COpenCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixOpenCommand(range, modifier, argument, isLocation = false, onlyWhenValid = false)
+
+/** see "h :cwindow" */
+@ExCommand(
+  command = "cw[indow]",
+  description = "Open the quickfix window when the list has a valid entry, and close it when not.",
+)
+data class CWindowCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixOpenCommand(range, modifier, argument, isLocation = false, onlyWhenValid = true)
+
+/** see "h :lopen" */
+@ExCommand(
+  command = "lop[en]",
+  description = "Open a window showing the location list of the current window.",
+)
+data class LOpenCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixOpenCommand(range, modifier, argument, isLocation = true, onlyWhenValid = false)
+
+/** see "h :lwindow" */
+@ExCommand(
+  command = "lw[indow]",
+  description = "Open the location window when the list has a valid entry, and close it when not.",
+)
+data class LWindowCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixOpenCommand(range, modifier, argument, isLocation = true, onlyWhenValid = true)
+
+/**
+ * see "h :cclose" / "h :lclose"
+ *
+ * Closes the window and leaves the list. Nothing open is not an error. The output panel is not the
+ * window: closing one must not dismiss what `:registers` printed. Typed in the window itself, the
+ * editor the window was opened from is shown afterwards, when that editor is still there.
+ */
 sealed class QuickfixCloseCommand(
   range: Range,
   modifier: CommandModifier,
@@ -380,7 +516,10 @@ sealed class QuickfixCloseCommand(
     context: ExecutionContext,
     operatorArguments: OperatorArguments,
   ): ExecutionResult {
-    injector.outputPanel.getCurrentOutputPanel()?.close()
+    val kind = windowKind()
+    val original = if (editor.getVirtualBufferKind() == kind) editor.getCmdwinOriginalEditor() else null
+    injector.virtualBufferGroup.close(context, kind)
+    if (original != null) injector.virtualBufferGroup.showOriginal(original) {}
     return ExecutionResult.Success
   }
 }
@@ -403,7 +542,7 @@ data class LCloseCommand(val range: Range, val modifier: CommandModifier, val ar
 
 // ---- Walking the list
 
-/** `:cnext`, `:cprevious`, `:cfirst`, `:clast` and `:cc`, and their `l` twins. */
+/** `:cnext`, `:cprevious`, `:cfirst`, `:clast`, `:cc`, `:cnfile` and `:cpfile`, and their `l` twins. */
 sealed class QuickfixStepCommand(
   range: Range,
   modifier: CommandModifier,
@@ -412,7 +551,7 @@ sealed class QuickfixStepCommand(
   private val step: Step,
 ) : QuickfixCommand(range, modifier, argument, isLocation) {
 
-  protected enum class Step { NEXT, PREVIOUS, FIRST, LAST, AT }
+  protected enum class Step { NEXT, PREVIOUS, FIRST, LAST, AT, NEXT_FILE, PREVIOUS_FILE }
 
   override fun processCommand(
     editor: VimEditor,
@@ -430,8 +569,19 @@ sealed class QuickfixStepCommand(
       Step.LAST -> list.end(last = true)
       // Vim numbers the list from one; `:cc` with no number goes to the entry it is already on.
       Step.AT -> if (count == null) list.at(list.index) else list.moveTo(count - 1)
+      // `:2cnfile` arrives as a range, `:cnfile 2` as the argument. Same count either way. The other
+      // steps stay on the argument, which is how they already worked.
+      Step.NEXT_FILE -> list.stepFile(fileCount(editor, count))
+      Step.PREVIOUS_FILE -> list.stepFile(-fileCount(editor, count))
     }
+    syncWindow(editor, context)
     return jumpTo(editor, context, entry)
+  }
+
+  private fun fileCount(editor: VimEditor, fromArgument: Int?): Int {
+    if (fromArgument != null) return fromArgument
+    if (isRangeSpecified()) return getCountFromRange(editor, editor.currentCaret()).coerceAtLeast(1)
+    return 1
   }
 }
 
@@ -514,3 +664,82 @@ data class LLastCommand(val range: Range, val modifier: CommandModifier, val arg
 )
 data class LLCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
   QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.AT)
+
+/** see "h :cnfile" */
+@ExCommand(
+  command = "cnf[ile]",
+  description = "Go to the first error in the [count] next file in the quickfix list.",
+)
+data class CNextFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.NEXT_FILE)
+
+/** see "h :cpfile" */
+@ExCommand(
+  command = "cpf[ile],cNf[ile]",
+  description = "Go to the last error in the [count] previous file in the quickfix list.",
+)
+data class CPreviousFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixStepCommand(range, modifier, argument, isLocation = false, step = Step.PREVIOUS_FILE)
+
+/** see "h :lnfile" */
+@ExCommand(
+  command = "lnf[ile]",
+  description = "Go to the first error in the [count] next file in the location list.",
+)
+data class LNextFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.NEXT_FILE)
+
+/** see "h :lpfile" */
+@ExCommand(
+  command = "lpf[ile],lNf[ile]",
+  description = "Go to the last error in the [count] previous file in the location list.",
+)
+data class LPreviousFileCommand(val range: Range, val modifier: CommandModifier, val argument: String) :
+  QuickfixStepCommand(range, modifier, argument, isLocation = true, step = Step.PREVIOUS_FILE)
+
+/**
+ * The read-only window `:copen` opens. An already open one is reused, and it is not exclusive:
+ * `q:` still refuses another buffer, and this one is refused while `q:` is up.
+ *
+ * Enter jumps to the caret's line in the editor the window was opened from. The list stays open.
+ * The line index is the entry: the text is not parsed back.
+ */
+internal data object QuickfixWindow : VirtualBufferKind(), VirtualBufferKind.EnterHandler {
+  override val fileName: String = "[Quickfix List]"
+  override val readOnly: Boolean = true
+  override val reuseOpen: Boolean = true
+
+  override fun onEnter(buffer: VimEditor, caret: ImmutableVimCaret, context: ExecutionContext) {
+    quickfixWindowEnter(isLocation = false, buffer, caret, context)
+  }
+}
+
+/** The same window for the location list. A different buffer, so both may be open. */
+internal data object LocationWindow : VirtualBufferKind(), VirtualBufferKind.EnterHandler {
+  override val fileName: String = "[Location List]"
+  override val readOnly: Boolean = true
+  override val reuseOpen: Boolean = true
+
+  override fun onEnter(buffer: VimEditor, caret: ImmutableVimCaret, context: ExecutionContext) {
+    quickfixWindowEnter(isLocation = true, buffer, caret, context)
+  }
+}
+
+private fun quickfixWindowEnter(
+  isLocation: Boolean,
+  buffer: VimEditor,
+  caret: ImmutableVimCaret,
+  context: ExecutionContext,
+) {
+  // The line under the caret, read before focus moves. That index is the entry.
+  val line = caret.getBufferPosition().line
+  val from = buffer.getCmdwinOriginalEditor() ?: return
+  val list = Quickfix.listFor(from, isLocation)
+  val entry = list.at(line) ?: return
+  if (!entry.isValid) return
+  list.moveTo(line)
+  // Show the file first. A host that still has the list focused would otherwise move the caret there.
+  injector.virtualBufferGroup.showOriginal(from) {
+    jumpToQuickfixEntry(from, context, entry, list)
+  }
+}

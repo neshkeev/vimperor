@@ -42,6 +42,8 @@ import com.github.neshkeev.vimperor.sign.Signs
 import com.github.neshkeev.vimperor.sign.VimSignDisplay
 import com.github.neshkeev.vimperor.redirect.Redirection
 import com.github.neshkeev.vimperor.profile.Profile
+import com.maddyhome.idea.vim.api.VirtualBufferGroup
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.quickfix.Quickfix
 import com.github.neshkeev.vimperor.script.SourcedScripts
 import com.github.neshkeev.vimperor.tags.Tags
@@ -449,6 +451,14 @@ class HeadlessInjector : HeadlessInjectorBase() {
    * have tested the stand-in.
    */
   override val outputPanel: VimOutputPanelService by lazy { HeadlessOutputPanelService() }
+
+  /**
+   * Records the quickfix window instead of throwing.
+   *
+   * The engine refreshes that window on every `:cnext` and `:cexpr`. A `TODO` here would fail
+   * those commands, which this host already runs, the moment the refresh is unconditional.
+   */
+  override val virtualBufferGroup: VirtualBufferGroup by lazy { HeadlessVirtualBuffers() }
 
   /**
    * `VimRegexServiceBase` is the engine's own regex engine with nothing host-shaped in it.
@@ -1092,6 +1102,59 @@ class HeadlessRedrawService : VimRedrawService {
   }
 }
 
+/**
+ * The quickfix and location windows, remembered rather than drawn.
+ *
+ * Content and the caret line, per kind. Opening a [VirtualBufferKind.reuseOpen] kind again
+ * rewrites the one buffer. What a headless test reads to see that `:copen` did not print.
+ */
+class HeadlessVirtualBuffers : VirtualBufferGroup {
+  class Shown(var content: String, var caretLine: Int)
+
+  private val buffers = mutableMapOf<VirtualBufferKind, Shown>()
+
+  /** How many buffers were created. A reuse must leave this alone. */
+  var openCount: Int = 0
+    private set
+
+  fun contentOf(kind: VirtualBufferKind): String? = buffers[kind]?.content
+
+  fun caretOf(kind: VirtualBufferKind): Int? = buffers[kind]?.caretLine
+
+  override fun open(
+    context: ExecutionContextApi,
+    editor: VimEditor,
+    kind: VirtualBufferKind,
+    content: String,
+    focus: Boolean,
+    caretLine: Int,
+  ) {
+    if (kind.reuseOpen && kind in buffers) {
+      refresh(context, kind, content, caretLine)
+      return
+    }
+    openCount += 1
+    buffers[kind] = Shown(content, caretLine)
+  }
+
+  override fun close(editor: VimEditor) {
+    val kind = editor.getVirtualBufferKind() ?: return
+    buffers.remove(kind)
+  }
+
+  override fun close(context: ExecutionContextApi, kind: VirtualBufferKind) {
+    buffers.remove(kind)
+  }
+
+  override fun isOpen(context: ExecutionContextApi, kind: VirtualBufferKind): Boolean = kind in buffers
+
+  override fun refresh(context: ExecutionContextApi, kind: VirtualBufferKind, content: String, caretLine: Int?) {
+    val shown = buffers[kind] ?: return
+    shown.content = content
+    if (caretLine != null) shown.caretLine = caretLine
+  }
+}
+
 class HeadlessOutputPanelService : VimOutputPanelServiceBase() {
   private val panel = HeadlessOutputPanel()
 
@@ -1105,6 +1168,9 @@ class HeadlessOutputPanelService : VimOutputPanelServiceBase() {
 class HeadlessOutputPanel : VimOutputPanel {
   val lines: MutableList<String> = mutableListOf()
 
+  /** Set by [close], which `:cclose` must not call: that would dismiss `:registers`. */
+  var closed: Boolean = false
+
   override val text: String get() = lines.joinToString("\n")
   override var statusText: String = ""
 
@@ -1113,7 +1179,9 @@ class HeadlessOutputPanel : VimOutputPanel {
   }
 
   override fun show(requireHitEnter: Boolean) {}
-  override fun close() {}
+  override fun close() {
+    closed = true
+  }
 
   override fun clearText() {
     lines.clear()

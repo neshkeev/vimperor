@@ -15,7 +15,8 @@ import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 
 /**
- * A light editor over no file: the command-line window (`q:`, `q/`, `q?`), `:help`, and `:actionlist`.
+ * A light editor over no file: the command-line window (`q:`, `q/`, `q?`), `:help`, `:actionlist`,
+ * and the quickfix and location windows.
  *
  * ## Untitled, not virtual
  *
@@ -33,8 +34,9 @@ import com.maddyhome.idea.vim.api.injector
  *
  * An untitled document cannot be marked read-only in VS Code, so [VirtualBufferKind.readOnly] is
  * what refuses a user edit: [VsCodeEditor.isWritable] answers false and [com.maddyhome.idea.vim.KeyHandler]
- * declines `x` and `i`. `:help` and the action list set the flag. Replacing the text from here still
- * goes through [VsCodeEditor.replaceString], which is the host's own write and does not ask.
+ * declines `x` and `i`. `:help`, the action list and the quickfix window set the flag. Replacing
+ * the text from here still goes through [VsCodeEditor.replaceString], which is the host's own write
+ * and does not ask, so a refresh of the list still replaces it.
  *
  * How a kind opens — exclusive, reused, a viewer — is on the kind. `ControlCharsEditor` and
  * `SubstitutePreview` have no caller on this host; the preview is the one kind that still opens
@@ -65,7 +67,7 @@ internal class VsCodeVirtualBuffers(
     if (kind.reuseOpen) {
       val existing = open.entries.firstOrNull { it.value.kind == kind }
       if (existing != null) {
-        refresh(context, kind, content)
+        refresh(context, kind, content, caretLine = null)
         placeCaret(existing.key, caretLine)
         if (focus) showDocument(existing.value.document, caretLine)
         return
@@ -106,13 +108,27 @@ internal class VsCodeVirtualBuffers(
   override fun isOpen(context: ExecutionContext, kind: VirtualBufferKind): Boolean =
     open.values.any { it.kind == kind }
 
-  override fun refresh(context: ExecutionContext, kind: VirtualBufferKind, content: String) {
+  override fun refresh(context: ExecutionContext, kind: VirtualBufferKind, content: String, caretLine: Int?) {
     val identity = open.entries.firstOrNull { it.value.kind == kind }?.key ?: return
     val editor = editorOf(identity) ?: return
-    if (editor.text().contentEquals(content)) return
-    // [VsCodeEditor.replaceString] does not ask [VsCodeEditor.isWritable], so a read-only kind can
-    // still take a new listing. A user key cannot: that path asks first.
-    editor.replaceString(0, editor.text().length, content)
+    if (!editor.text().contentEquals(content)) {
+      // [VsCodeEditor.replaceString] does not ask [VsCodeEditor.isWritable], so a read-only kind can
+      // still take a new listing. A user key cannot: that path asks first.
+      editor.replaceString(0, editor.text().length, content)
+    }
+    // After the text, so a list that did not change still moves the caret onto the current entry.
+    if (caretLine != null) placeCaret(identity, caretLine)
+  }
+
+  override fun showOriginal(editor: VimEditor, after: () -> Unit) {
+    val document = (editor as? VsCodeEditor)?.nativeEditor?.document
+    if (document == null) {
+      after()
+      return
+    }
+    // Resolves when that editor has the focus, which is the moment a jump may move its caret.
+    // A test's double resolves inside the call. Both halves, so a rejection still runs [after].
+    window.showTextDocument(document).then({ after() }, { after() })
   }
 
   /** The caret goes to the start of [caretLine]. A reused `:help {subject}` is how it moves. */

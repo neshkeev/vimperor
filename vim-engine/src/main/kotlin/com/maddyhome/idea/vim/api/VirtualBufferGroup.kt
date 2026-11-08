@@ -43,6 +43,23 @@ interface VirtualBufferGroup {
   /** Returns whether a virtual buffer of [kind] is currently open in the project associated with [context]. */
   fun isOpen(context: ExecutionContext, kind: VirtualBufferKind): Boolean
 
-  /** Replaces the content of an already-open virtual buffer of [kind] in place. */
-  fun refresh(context: ExecutionContext, kind: VirtualBufferKind, content: String)
+  /**
+   * Replaces the content of an already-open virtual buffer of [kind] in place.
+   *
+   * [caretLine] puts the caret on that line when it is not null. Null leaves the caret alone, which
+   * is what `:help` and `:actionlist` want — they place it themselves after this returns. Does
+   * nothing when no buffer of [kind] is open.
+   */
+  fun refresh(context: ExecutionContext, kind: VirtualBufferKind, content: String, caretLine: Int? = null)
+
+  /**
+   * Shows [editor], then runs [after].
+   *
+   * Enter in the quickfix window, and `:cclose` typed in that window, use this so the file the
+   * window was opened from has the focus before a jump. A host whose edits follow focus shows the
+   * editor first. The default runs [after] immediately, which is a host with no window to show.
+   */
+  fun showOriginal(editor: VimEditor, after: () -> Unit) {
+    after()
+  }
 }

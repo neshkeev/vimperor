@@ -34,8 +34,8 @@ import com.maddyhome.idea.vim.vimscript.model.commands.CommandModifier
  * at a `Type number and <Enter>` prompt; this host draws its output in a panel and its prompt on
  * the status bar, and a prompt over a list the reader cannot see while answering is worse than no
  * prompt. So the list is printed, numbered as Vim numbers it, and `:tnext`, `:tfirst` and `:tlast`
- * walk it - which is the same journey by a different door. `:copen` diverges the same way and for
- * the same reason.
+ * walk it - which is the same journey by a different door. `:copen` is a window now; a tag list
+ * is still this print, because there is no window for it.
  */
 sealed class TagCommandBase(
   range: Range,

@@ -240,6 +240,11 @@
     "standardConstructor": true,
     "description": "Go to the [count] previous error in the quickfix list."
   },
+  "cNf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the last error in the [count] previous file in the quickfix list."
+  },
   "c[hange]": {
     "class": "com.github.neshkeev.vimperor.vimscript.model.commands.ChangeLinesCommand",
     "standardConstructor": true,
@@ -323,7 +328,7 @@
   "cl[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
     "standardConstructor": true,
-    "description": "Show the quickfix list."
+    "description": "Print the quickfix list."
   },
   "cla[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CLastCommand",
@@ -354,6 +359,11 @@
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CNextCommand",
     "standardConstructor": true,
     "description": "Go to the [count] next error in the quickfix list."
+  },
+  "cnf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CNextFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the first error in the [count] next file in the quickfix list."
   },
   "cno[remap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
@@ -397,14 +407,19 @@
     "description": "Run {cmd} and ask rather than fail when it would lose a change."
   },
   "cope[n]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.COpenCommand",
     "standardConstructor": true,
-    "description": "Show the quickfix list."
+    "description": "Open a window showing the quickfix list."
   },
   "cp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousCommand",
     "standardConstructor": true,
     "description": "Go to the [count] previous error in the quickfix list."
+  },
+  "cpf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CPreviousFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the last error in the [count] previous file in the quickfix list."
   },
   "cq[uit]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.CQuitCommand",
@@ -427,9 +442,9 @@
     "description": "Remove abbreviation {lhs} for the mode of the command. Use <buffer> to remove a buffer-local abbreviation."
   },
   "cw[indow]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CListCommand",
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.CWindowCommand",
     "standardConstructor": true,
-    "description": "Show the quickfix list."
+    "description": "Open the quickfix window when the list has a valid entry, and close it when not."
   },
   "d[elete]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.DeleteLinesCommand",
@@ -808,6 +823,11 @@
     "standardConstructor": true,
     "description": "Go to the [count] previous error in the location list."
   },
+  "lNf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the last error in the [count] previous file in the location list."
+  },
   "l[ist]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.ListCommand",
     "standardConstructor": true,
@@ -901,7 +921,7 @@
   "lli[st]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
     "standardConstructor": true,
-    "description": "Show the location list of the current window."
+    "description": "Print the location list of the current window."
   },
   "lm[ap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.MapCommand",
@@ -928,6 +948,11 @@
     "standardConstructor": true,
     "description": "Go to the [count] next error in the location list."
   },
+  "lnf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LNextFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the first error in the [count] next file in the location list."
+  },
   "loadk[eymap]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.mapping.LoadKeymapCommand",
     "standardConstructor": false,
@@ -951,14 +976,19 @@
     "description": "Lock the variable {name} so it can no longer be changed. A [depth] also locks nested List and Dictionary items."
   },
   "lop[en]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LOpenCommand",
     "standardConstructor": true,
-    "description": "Show the location list of the current window."
+    "description": "Open a window showing the location list of the current window."
   },
   "lp[revious]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousCommand",
     "standardConstructor": true,
     "description": "Go to the [count] previous error in the location list."
+  },
+  "lpf[ile]": {
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LPreviousFileCommand",
+    "standardConstructor": true,
+    "description": "Go to the last error in the [count] previous file in the location list."
   },
   "lrewind": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.LFirstCommand",
@@ -996,9 +1026,9 @@
     "description": "Like :lvimgrep, adding to the location list rather than replacing it."
   },
   "lw[indow]": {
-    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LListCommand",
+    "class": "com.maddyhome.idea.vim.vimscript.model.commands.LWindowCommand",
     "standardConstructor": true,
-    "description": "Show the location list of the current window."
+    "description": "Open the location window when the list has a valid entry, and close it when not."
   },
   "m[ove]": {
     "class": "com.maddyhome.idea.vim.vimscript.model.commands.MoveTextCommand",
