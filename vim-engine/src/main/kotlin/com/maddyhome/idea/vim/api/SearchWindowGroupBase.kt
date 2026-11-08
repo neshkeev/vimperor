@@ -84,11 +84,8 @@ open class SearchWindowGroupBase : SearchWindowGroup {
         }
       }
 
-      // Neither is a command line, so `<CR>` in one executes nothing. Help is read-only.
-      VirtualBufferKind.ControlCharsEditor,
-      VirtualBufferKind.SubstitutePreview,
-      VirtualBufferKind.Help,
-      -> {}
+      // A command line runs. Every other kind answers `<CR>` on its own, or not at all.
+      else -> {}
     }
   }
 

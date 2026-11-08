@@ -1540,8 +1540,12 @@ class VsCodeEditor(val nativeEditor: TextEditor) : VimEditorBase(), MutableVimEd
    */
   override var insertMode: Boolean = true
 
-  override fun isWritable(): Boolean = true
-  override fun isDocumentWritable(): Boolean = true
+  /**
+   * [VirtualBufferKind.readOnly] refuses an edit. An untitled document stays writable to VS Code,
+   * so `:help` and the action list are ordinary documents and the engine is what declines `x` and `i`.
+   */
+  override fun isWritable(): Boolean = getVirtualBufferKind()?.readOnly != true
+  override fun isDocumentWritable(): Boolean = isWritable()
   override fun isDisposed(): Boolean = false
 
   /** IntelliJ's one-line editors are inline input fields; VS Code has no such thing. */

@@ -138,7 +138,25 @@ const tabGroups = {
 
 const window = {
   activeTextEditor: undefined,
-  showTextDocument: (document) => Promise.resolve({ document, selections: [], options: {} }),
+  /**
+   * Resolves inside the call. `:actionlist`'s `<CR>` runs its command in this callback, and a test
+   * asserts the dispatch before the keystroke returns. A real window's promise resolves once the
+   * editor has focus, which is the same moment.
+   */
+  /** Paths `showTextDocument` was asked to reveal, in order. The editor it returns is a new object. */
+  shownPaths: [],
+  showTextDocument: (document) => {
+    const uri = document && document.uri
+    window.shownPaths.push(uri && uri.path != null ? String(uri.path) : "")
+    const editor = { document, selections: [], options: {}, revealRange() {} }
+    const thenable = {
+      then(onFulfilled) {
+        if (typeof onFulfilled === "function") onFulfilled(editor)
+        return thenable
+      },
+    }
+    return thenable
+  },
   visibleTextEditors: [],
   tabGroups,
   createStatusBarItem: () => ({ text: '', tooltip: '', color: undefined, backgroundColor: undefined, show() {}, hide() {}, dispose() {} }),

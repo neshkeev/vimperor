@@ -10,9 +10,11 @@ package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.action.engineCommandProvider
 import com.maddyhome.idea.vim.api.ExecutionContext
+import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.NativeAction
 import com.maddyhome.idea.vim.api.VimActionExecutor
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.OperatorArguments
 import com.maddyhome.idea.vim.ex.ranges.Range
@@ -307,7 +309,7 @@ private sealed interface ResolvedAction {
 }
 
 /**
- * `:actionlist [pattern]` - every command this VS Code has, filtered.
+ * `:actionlist [pattern]` - every command this VS Code has, filtered, in a read-only buffer.
  *
  * IdeaVim's, in the terms this editor uses. The pattern is split on `*` and every piece has to
  * appear in the line, case-insensitively, so `:actionlist git*commit` finds
@@ -318,6 +320,10 @@ private sealed interface ResolvedAction {
  * read instead and the column is as complete as they are - see [KeybindingTable]. The pattern is
  * matched against the whole line, chord included, so `:actionlist cmd+k` is a question this can
  * answer as well as `:actionlist git`.
+ *
+ * The list opens in [ActionList]. Running it again reuses that buffer with the new filter.
+ * `<CR>` on a command line runs that command in the editor the list was opened from, and the list
+ * stays open. The header and the `--- N of M ---` footer are not commands.
  *
  * A host command rather than an engine one, for the same reason as [TutorCommand]: IdeaVim has its
  * own `:actionlist`, in its own module, over `ActionManager`.
@@ -357,7 +363,7 @@ data class ActionListCommand(val range: Range, val modifier: CommandModifier, va
       matching.forEach { appendLine(it) }
       appendLine("--- ${matching.size} of ${ids.size} ---")
     }
-    injector.outputPanel.output(editor, context, text)
+    injector.virtualBufferGroup.open(context, editor, ActionList, text, caretLine = 0)
     return ExecutionResult.Success
   }
 
@@ -365,4 +371,54 @@ data class ActionListCommand(val range: Range, val modifier: CommandModifier, va
     /** Where the chords start, which is IdeaVim's column and wide enough for most VS Code ids. */
     const val NAME_COLUMN = 50
   }
+}
+
+/**
+ * The read-only window `:actionlist` opens. An already open one is reused.
+ *
+ * `<CR>` runs the action on the caret line in the editor the list was opened from. A VS Code
+ * command lands on whatever has focus, so that editor is shown first — `cursorDown` would
+ * otherwise move the caret in the list.
+ */
+internal data object ActionList : VirtualBufferKind(), VirtualBufferKind.EnterHandler {
+  override val fileName: String = "[Action List]"
+  override val readOnly: Boolean = true
+  override val reuseOpen: Boolean = true
+
+  override fun onEnter(buffer: VimEditor, caret: ImmutableVimCaret, context: ExecutionContext) {
+    // Read before the focus moves. The line under the caret is the one the user means.
+    val actionId = buffer.getLineText(caret.getBufferPosition().line).trim().substringBefore(' ')
+    // The header and the `--- N of M ---` footer are not actions, and [getAction] answers null for both.
+    val action = injector.actionExecutor.getAction(actionId) ?: return
+    // The editor the list was opened from. Gone means there is nowhere to run it; the list is not a target.
+    val from = buffer.getCmdwinOriginalEditor() ?: return
+    val fromContext = injector.executionContextManager.getEditorExecutionContext(from)
+    showOriginal(from) {
+      // `:action`'s split. The show above is what gives [from] the focus; its callback is that moment.
+      // A unit test runs the command directly, and this host's `runAfterGotFocus` runs it once focus
+      // has arrived. The test double resolves the show inside the call, so the dispatch is visible
+      // before the keystroke returns.
+      if (injector.application.isUnitTest()) {
+        injector.actionExecutor.executeAction(from, action, fromContext)
+      } else {
+        injector.application.runAfterGotFocus { injector.actionExecutor.executeAction(from, action, fromContext) }
+      }
+    }
+  }
+}
+
+/**
+ * Shows [editor] and then runs [after].
+ *
+ * `showTextDocument` resolves when that editor has the focus, which is the moment a command may
+ * run against it. A test's double resolves inside the call, so the dispatch is visible before the
+ * keystroke returns.
+ */
+private fun showOriginal(editor: VimEditor, after: () -> Unit) {
+  val document = (editor as? VsCodeEditor)?.nativeEditor?.document
+  if (document == null) {
+    after()
+    return
+  }
+  window.showTextDocument(document).then({ after() }, { after() })
 }

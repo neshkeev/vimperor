@@ -40,7 +40,7 @@ internal object VsCodeExCommandProvider : ExCommandProvider {
     "actionl[ist]" to LazyExCommandInstance(
       ActionListCommand::class,
       { range, modifier, argument -> ActionListCommand(range, modifier, argument) },
-      description = "List the VS Code commands :action can run, filtered by [pattern].",
+      description = "List the VS Code commands :action can run, filtered by [pattern]. The list opens in a read-only window, an already open one is reused. <CR> in that window executes the action on the cursor line in the window the list was opened from.",
     ),
     "setf[iletype]" to command(
       "Set the language of this buffer, unless one has been set already.",

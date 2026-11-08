@@ -17,9 +17,10 @@ interface VirtualBufferGroup {
   /**
    * Opens a virtual buffer of [kind] populated with [content].
    *
-   * Command-line / search history buffers and the control-chars editor refuse to open while another
-   * such buffer is already open, since these buffers cannot be nested (`:help cmdwin`). The
-   * substitute preview is transient and does not participate in that restriction.
+   * How it opens is [kind]'s own flags. An [exclusive][VirtualBufferKind.exclusive] buffer already
+   * on screen refuses another (`:help cmdwin` is E1292). A [reused][VirtualBufferKind.reuseOpen]
+   * buffer takes the new [content] instead of a second window. The substitute preview is transient
+   * and still opens beside an exclusive one.
    *
    * @param focus when false, the buffer is shown without stealing focus (used by `inccommand=split`).
    * @param caretLine the line to put the caret on, which is how `:help {subject}` reaches its tag.

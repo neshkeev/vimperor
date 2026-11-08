@@ -15,10 +15,7 @@ import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 
 /**
- * A light editor over no file, which is what Vim's command-line window is: `q:`, `q/` and `q?`.
- *
- * The last part of this host that the engine could reach and not find - every other key now lands
- * on something built, or on a refusal that is itself an answer.
+ * A light editor over no file: the command-line window (`q:`, `q/`, `q?`), `:help`, and `:actionlist`.
  *
  * ## Untitled, not virtual
  *
@@ -26,20 +23,23 @@ import com.maddyhome.idea.vim.api.injector
  * editable. A `TextDocumentContentProvider` serves a custom scheme and is **read only**, which is
  * how this host reads VS Code's own default keybindings; an untitled document is an ordinary
  * editable buffer with no path yet. The command-line window has to be editable - the whole point is
- * that you can change the line before running it - so it is untitled.
+ * that you can change the line before running it - so every one of these is untitled.
  *
  * The cost is that VS Code would ask to save it on the way out, which is exactly wrong for a
  * scratch buffer. [VsCodeCommands.REVERT_AND_CLOSE] is the way past that: it discards the content
  * and closes in one step, with nothing to ask about.
  *
- * ## Two of the four kinds arrive here
+ * ## Read-only is an engine flag
  *
- * [VirtualBufferKind] has four cases and this host can only ever see two. `ControlCharsEditor` is
- * opened by an IntelliJ action and `SubstitutePreview` by IntelliJ's `:` prompt for
- * `inccommand=split`; neither has a caller outside `src/main/java`. They are handled the same way
- * regardless, because the difference is in who calls rather than in what is asked for - except that
- * a preview should be read-only and an untitled document cannot be, which is recorded here rather
- * than discovered later.
+ * An untitled document cannot be marked read-only in VS Code, so [VirtualBufferKind.readOnly] is
+ * what refuses a user edit: [VsCodeEditor.isWritable] answers false and [com.maddyhome.idea.vim.KeyHandler]
+ * declines `x` and `i`. `:help` and the action list set the flag. Replacing the text from here still
+ * goes through [VsCodeEditor.replaceString], which is the host's own write and does not ask.
+ *
+ * How a kind opens — exclusive, reused, a viewer — is on the kind. `ControlCharsEditor` and
+ * `SubstitutePreview` have no caller on this host; the preview is the one kind that still opens
+ * while an exclusive buffer is up, and [VirtualBufferKind.viewer] records that its content can be
+ * replaced. There is no viewer API here to hang that on.
  */
 internal class VsCodeVirtualBuffers(
   private val hostCommands: HostCommandRunner,
@@ -50,7 +50,7 @@ internal class VsCodeVirtualBuffers(
   /** What is open, by the document identity the rest of this host keys editors on. */
   private val open: MutableMap<String, Buffer> = mutableMapOf()
 
-  private class Buffer(val kind: VirtualBufferKind, val originalPath: String?)
+  private class Buffer(val kind: VirtualBufferKind, val originalPath: String?, val document: TextDocument)
 
   override fun open(
     context: ExecutionContext,
@@ -60,16 +60,31 @@ internal class VsCodeVirtualBuffers(
     focus: Boolean,
     caretLine: Int,
   ) {
-    // A preview is transient and the help is read-only, so neither blocks; the rest refuse to nest,
-    // which is Vim's own rule - `:help cmdwin` - and the reason `q:` inside `q:` says E1292 rather
-    // than opening two. The help is still *blocked* by one, as Vim blocks `:help` in the cmdwin.
-    if (kind != VirtualBufferKind.SubstitutePreview && refuseIfAlreadyOpen(editor)) return
-    // `:help x` and then `:help y` is one window in Vim, so the one that is open gives way.
-    if (kind == VirtualBufferKind.Help) close(context, VirtualBufferKind.Help)
+    // A second `:actionlist` or `:help` is the same buffer with new text. Checked before the
+    // exclusive refusal, so the one already open is updated rather than reported as in the way.
+    if (kind.reuseOpen) {
+      val existing = open.entries.firstOrNull { it.value.kind == kind }
+      if (existing != null) {
+        refresh(context, kind, content)
+        placeCaret(existing.key, caretLine)
+        if (focus) showDocument(existing.value.document, caretLine)
+        return
+      }
+    }
+    // An exclusive buffer is the command-line window or the control-chars editor. Anything else
+    // opened while one is up gets that buffer's message — `:help` inside `q:` is E1292 — except the
+    // substitute preview, which is transient and opens beside them.
+    if (kind != VirtualBufferKind.SubstitutePreview) {
+      val blocking = open.values.firstOrNull { it.kind.exclusive }
+      if (blocking != null) {
+        injector.messages.showErrorMessage(editor, blocking.kind.alreadyOpenMessage)
+        return
+      }
+    }
 
     val originalPath = editor.getPath()
     openDocument(content) { document ->
-      open[identityOf(document)] = Buffer(kind, originalPath)
+      open[identityOf(document)] = Buffer(kind, originalPath, document)
       // `focus` is false only for the substitute preview, which cannot reach this host - so this
       // always shows and focuses, and the parameter is honoured rather than assumed away.
       if (focus) showDocument(document, caretLine)
@@ -93,12 +108,22 @@ internal class VsCodeVirtualBuffers(
 
   override fun refresh(context: ExecutionContext, kind: VirtualBufferKind, content: String) {
     val identity = open.entries.firstOrNull { it.value.kind == kind }?.key ?: return
-    val editor = injector.editorGroup.getEditors()
-      .filterIsInstance<VsCodeEditor>()
-      .firstOrNull { it.getPath() == identity } ?: return
+    val editor = editorOf(identity) ?: return
     if (editor.text().contentEquals(content)) return
+    // [VsCodeEditor.replaceString] does not ask [VsCodeEditor.isWritable], so a read-only kind can
+    // still take a new listing. A user key cannot: that path asks first.
     editor.replaceString(0, editor.text().length, content)
   }
+
+  /** The caret goes to the start of [caretLine]. A reused `:help {subject}` is how it moves. */
+  private fun placeCaret(identity: String, caretLine: Int) {
+    val editor = editorOf(identity) ?: return
+    val line = caretLine.coerceIn(0, editor.lineCount() - 1)
+    editor.primaryCaret().moveToOffset(editor.getLineStartOffset(line))
+  }
+
+  private fun editorOf(identity: String): VsCodeEditor? =
+    injector.editorGroup.getEditors().filterIsInstance<VsCodeEditor>().firstOrNull { it.getPath() == identity }
 
   /** What kind of virtual buffer [path] is hosting, or null if it is an ordinary editor. */
   fun kindOf(path: String?): VirtualBufferKind? = path?.let { open[it]?.kind }
@@ -114,29 +139,6 @@ internal class VsCodeVirtualBuffers(
     return injector.editorGroup.getEditors().firstOrNull { it.getPath() == originalPath }
   }
 
-  private fun refuseIfAlreadyOpen(editor: VimEditor): Boolean {
-    val alreadyOpen = open.values.firstOrNull { cannotNest(it.kind) } ?: return false
-    injector.messages.showErrorMessage(editor, alreadyOpenMessage(alreadyOpen.kind))
-    return true
-  }
-
-  private fun alreadyOpenMessage(kind: VirtualBufferKind): String = when (kind) {
-    VirtualBufferKind.Command, is VirtualBufferKind.Search -> "E1292: Command-line window is already open"
-    VirtualBufferKind.ControlCharsEditor -> "A control characters editor is already open"
-    VirtualBufferKind.SubstitutePreview -> "A substitute preview is already open"
-    VirtualBufferKind.Help -> "The help is already open"
-  }
-
-  /**
-   * Whether an open buffer of this kind stops another from opening.
-   *
-   * A search window is a `data class` rather than an object, because it carries its direction, so this is a `when`
-   * and not a set - a set would silently stop blocking on `q/`.
-   */
-  private fun cannotNest(kind: VirtualBufferKind): Boolean = when (kind) {
-    VirtualBufferKind.Command, is VirtualBufferKind.Search, VirtualBufferKind.ControlCharsEditor -> true
-    VirtualBufferKind.SubstitutePreview, VirtualBufferKind.Help -> false
-  }
 }
 
 /** The identity the rest of this host keys editors on - see `VimHost.identityOf`. */

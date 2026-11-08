@@ -13,6 +13,7 @@ import com.intellij.vim.annotations.Mode
 import com.maddyhome.idea.vim.api.ExecutionContext
 import com.maddyhome.idea.vim.api.ImmutableVimCaret
 import com.maddyhome.idea.vim.api.VimEditor
+import com.maddyhome.idea.vim.api.VirtualBufferKind
 import com.maddyhome.idea.vim.api.injector
 import com.maddyhome.idea.vim.command.Argument
 import com.maddyhome.idea.vim.command.MotionType
@@ -56,11 +57,10 @@ class EnterNormalAction : MotionActionHandler.ForEachCaret() {
     argument: Argument?,
     operatorArguments: OperatorArguments,
   ): Motion {
-    if (editor.isInHistoryWindow()) {
-      // Vim's cmdwin has a single caret. Multi-caret on the cmdwin must not re-dispatch.
-      if (caret.id == editor.primaryCaret().id) {
-        injector.searchWindowGroup.executeCurrentLineAndClose(editor, caret, context)
-      }
+    val virtualBufferKind = editor.getVirtualBufferKind()
+    if (virtualBufferKind is VirtualBufferKind.EnterHandler) {
+      // Vim's cmdwin has a single caret. A second caret in the same buffer must not run the line again.
+      if (caret.id == editor.primaryCaret().id) virtualBufferKind.onEnter(editor, caret, context)
       return Motion.NoMotion
     }
     val templateState = injector.templateManager.getTemplateState(editor)

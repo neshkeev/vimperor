@@ -48,6 +48,10 @@ class ActionCommandTest {
     val dispatched: MutableList<String> = mutableListOf()
     val errors: MutableList<String> = mutableListOf()
 
+    /** How many times `:actionlist` asked for a new document. A reuse must leave this alone. */
+    var opens: Int = 0
+    var list: FakeEditor? = null
+
     val host = VimHost(
       sink = object : MessageSink {
         override fun message(text: String?) {}
@@ -61,9 +65,18 @@ class ActionCommandTest {
         onDone(known == null || command in known || command in IdeaActionAliases.targets)
       },
       outputPanel = OutputChannelPanelService(channel),
+      // The same immediate open `q:`'s tests use. The promise VS Code returns cannot be pressed
+      // into, and the list is a buffer a key has to land in.
+      openVirtualBuffer = { content, onOpen ->
+        opens += 1
+        val opened = FakeEditor(content, path = "/test/actions")
+        list = opened
+        onOpen(opened.document)
+      },
     ).also { it.start() }
 
     init {
+      shownPathsRaw().length = 0
       // What activation does when `commands.getCommands` resolves. Null models the window where it
       // has not resolved yet, which is a real state and the one the fallback is for.
       known?.let { host.rememberActions(it) }
@@ -94,6 +107,13 @@ class ActionCommandTest {
     }
 
     val printed: String get() = channel.lines.joinToString("\n")
+
+    /** The action list's text. The output channel is only the "not told yet" message. */
+    val listed: String get() = list?.document?.content.orEmpty()
+
+    /** The engine has to know the list before a key in it means anything. */
+    fun enterList(): VsCodeEditor = host.editorFor(list!!)
+    fun keyInList(notation: String) = host.key(list!!, notation)
   }
 
   private companion object {
@@ -672,10 +692,11 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionlist")
 
-    val listed = session.printed.lines().filter { it in SOME_COMMANDS }
+    val listed = session.listed.lines().filter { it in SOME_COMMANDS }
     assertEquals(SOME_COMMANDS.sorted(), listed, "every command, in an order a reader can scan")
-    assertTrue("--- Actions ---" in session.printed, "IdeaVim's header, which is the engine's string")
-    assertTrue("--- 6 of 6 ---" in session.printed, "and how much of the list is showing")
+    assertTrue("--- Actions ---" in session.listed, "IdeaVim's header, which is the engine's string")
+    assertTrue("--- 6 of 6 ---" in session.listed, "and how much of the list is showing")
+    assertEquals("", session.printed, "the list is a buffer, and the output panel stays shut")
   }
 
   @Test
@@ -683,9 +704,9 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionlist git")
 
-    assertTrue("git.pull" in session.printed)
-    assertTrue("cursorDown" !in session.printed, "the ones that do not match should be gone")
-    assertTrue("--- 2 of 6 ---" in session.printed)
+    assertTrue("git.pull" in session.listed)
+    assertTrue("cursorDown" !in session.listed, "the ones that do not match should be gone")
+    assertTrue("--- 2 of 6 ---" in session.listed)
   }
 
   /** IdeaVim's `*`, which splits the pattern rather than matching anything. */
@@ -694,9 +715,9 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionlist git*commit")
 
-    assertTrue("git.commitStagedAll" in session.printed)
-    assertTrue("git.pull" !in session.printed, "`pull` has no `commit` in it")
-    assertTrue("--- 1 of 6 ---" in session.printed)
+    assertTrue("git.commitStagedAll" in session.listed)
+    assertTrue("git.pull" !in session.listed, "`pull` has no `commit` in it")
+    assertTrue("--- 1 of 6 ---" in session.listed)
   }
 
   @Test
@@ -704,8 +725,8 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionlist FORMATDOCUMENT")
 
-    assertTrue("editor.action.formatDocument" in session.printed)
-    assertTrue("--- 1 of 6 ---" in session.printed)
+    assertTrue("editor.action.formatDocument" in session.listed)
+    assertTrue("--- 1 of 6 ---" in session.listed)
   }
 
   @Test
@@ -714,7 +735,7 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionl git")
 
-    assertTrue("git.pull" in session.printed)
+    assertTrue("git.pull" in session.listed)
     assertEquals(emptyList(), session.dispatched, "`:actionl` is not `:action` with an argument")
   }
 
@@ -726,7 +747,7 @@ class ActionCommandTest {
     session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
     session.run("actionlist git.pull")
 
-    val line = session.printed.lines().single { it.startsWith("git.pull") }
+    val line = session.listed.lines().single { it.startsWith("git.pull") }
     assertTrue(line.endsWith("shift+cmd+p"), "the chord should follow the name: '$line'")
     assertTrue(line.startsWith("git.pull "), "and the name should still be the start of the line")
   }
@@ -738,7 +759,7 @@ class ActionCommandTest {
     session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
     session.run("actionlist")
 
-    assertTrue("cursorDown" in session.printed.lines(), "got ${session.printed}")
+    assertTrue("cursorDown" in session.listed.lines(), "got ${session.listed}")
   }
 
   /**
@@ -751,8 +772,8 @@ class ActionCommandTest {
     session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
     session.run("actionlist cmd+p")
 
-    assertTrue("git.pull" in session.printed)
-    assertTrue("--- 1 of 6 ---" in session.printed, "got ${session.printed}")
+    assertTrue("git.pull" in session.listed)
+    assertTrue("--- 1 of 6 ---" in session.listed, "got ${session.listed}")
   }
 
   @Test
@@ -761,7 +782,7 @@ class ActionCommandTest {
     session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "cmd+g"), Keybinding("git.pull", "cmd+shift+g")))
     session.run("actionlist git.pull")
 
-    val line = session.printed.lines().single { it.startsWith("git.pull") }
+    val line = session.listed.lines().single { it.startsWith("git.pull") }
     assertTrue(line.endsWith("cmd+g  cmd+shift+g"), "got '$line'")
   }
 
@@ -771,8 +792,8 @@ class ActionCommandTest {
     val session = Session()
     session.run("actionlist")
 
-    assertTrue("git.pull" in session.printed.lines(), "got ${session.printed}")
-    assertTrue("--- 6 of 6 ---" in session.printed)
+    assertTrue("git.pull" in session.listed.lines(), "got ${session.listed}")
+    assertTrue("--- 6 of 6 ---" in session.listed)
   }
 
   @Test
@@ -784,5 +805,92 @@ class ActionCommandTest {
       "has not been told what commands this VS Code has" in session.printed,
       "an empty list would read as an editor that can do nothing: ${session.printed}",
     )
+    assertEquals(null, session.list, "there is nothing to open a buffer for")
   }
+
+  /** A second listing is the same buffer. Opening another would be a second untitled document. */
+  @Test
+  fun `test a second actionlist replaces the open buffer`() {
+    val session = Session()
+    session.run("actionlist git")
+    session.enterList()
+
+    session.run("actionlist cursor")
+
+    assertEquals(1, session.opens, "the opener runs once; the second call rewrites the buffer")
+    assertTrue("cursorDown" in session.listed, "got ${session.listed}")
+    assertTrue("git.pull" !in session.listed, "the first filter should be gone")
+    assertTrue("--- 1 of 6 ---" in session.listed)
+  }
+
+  /**
+   * `<CR>` runs the id on that line in the file the list was opened from, and leaves the list up.
+   *
+   * The chord sits in the same line, padded out to its column, and has to stay out of the id.
+   */
+  @Test
+  fun `test enter on a command line runs it in the original file`() {
+    val session = Session("hello world")
+    session.host.keybindings.setDefaults(listOf(Keybinding("git.pull", "shift+cmd+p")))
+    session.run("actionlist git.pull")
+    session.enterList()
+    val before = session.listed
+    val shownBefore = shownPaths().toList()
+
+    session.keyInList("j")
+    session.keyInList("<CR>")
+
+    assertEquals(listOf("git.pull"), session.dispatched)
+    assertEquals(before, session.listed, "the list stays, and stays as it was")
+    assertEquals("hello world", session.fake.document.content, "the command is dispatched, not typed into the file")
+    assertEquals("/test/buffer.txt", shownPaths().last(), "focus goes to the file the list was opened from, got ${shownPaths()}")
+    assertTrue(shownBefore.last() == "/test/actions", "opening the list shows the list: $shownBefore")
+  }
+
+  /** The header and the count footer are chrome. `<CR>` on either leaves the focus where it is. */
+  @Test
+  fun `test enter on the header and the footer runs nothing`() {
+    val session = Session()
+    session.run("actionlist git.pull")
+    session.enterList()
+    val shown = shownPaths().size
+
+    session.keyInList("<CR>")
+    // Header, the one command, the footer, then the empty line a trailing newline opens. `jj` is the footer.
+    session.keyInList("jj")
+    session.keyInList("<CR>")
+
+    assertEquals(emptyList(), session.dispatched)
+    assertEquals(shown, shownPaths().size, "a line that is not an action does not move the focus: ${shownPaths()}")
+  }
+
+  @Test
+  fun `test x in the list does not change it`() {
+    val session = Session()
+    session.run("actionlist")
+    session.enterList()
+    val before = session.listed
+
+    session.keyInList("x")
+
+    assertEquals(before, session.listed)
+  }
+
+  @Test
+  fun `test opening the list leaves the file alone`() {
+    val session = Session("hello world")
+
+    session.run("actionlist")
+
+    assertEquals("hello world", session.fake.document.content)
+    assertEquals(1, session.opens)
+  }
+}
+
+/** What `showTextDocument` was asked to reveal. The editor it hands back is a new object. */
+private fun shownPathsRaw(): dynamic = js("require('vscode')").window.shownPaths
+
+private fun shownPaths(): List<String> {
+  val raw = shownPathsRaw()
+  return (0 until (raw.length as Int)).map { raw[it] as String }
 }
