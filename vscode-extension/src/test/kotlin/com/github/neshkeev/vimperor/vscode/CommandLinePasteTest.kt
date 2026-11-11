@@ -111,6 +111,52 @@ class CommandLinePasteTest {
     session.type("+")
 
     assertEquals(":e /tmp/notes.txt", session.prompt)
+    assertEquals(session.prompt!!.length, session.display.caret, "the caret follows the register, as it follows a typed character")
+  }
+
+  /**
+   * The caret moves past what was pasted, so the next character is typed after it.
+   *
+   * `:%s/` and then a paste of the pattern used to leave the caret on the `/`. The `/` that closed
+   * the pattern was then typed in front of the paste, and the command that ran was `:%s//…` with
+   * the pattern after the replacement.
+   */
+  @Test
+  fun `test the caret moves past a paste into the substitution pattern`() {
+    val session = Session("one two three", clipboardHolds = "two")
+    session.type(":%s/")
+
+    session.paste()
+
+    assertEquals(":%s/two", session.prompt)
+    assertEquals(session.prompt!!.length, session.display.caret, "the caret is after the pasted pattern")
+
+    session.type("/TWO/")
+    assertEquals(":%s/two/TWO/", session.prompt)
+    session.key("<CR>")
+
+    assertEquals("one TWO three", session.content)
+  }
+
+  /**
+   * Moving the caret to the end of the line would pass the test above and still be wrong: a paste
+   * in the middle of a command has text after it, and the caret belongs after the paste.
+   */
+  @Test
+  fun `test a paste in the middle of the pattern leaves the caret after it`() {
+    val session = Session("one two three", clipboardHolds = "two")
+    session.type(":%s//TWO/")
+    // ":%s//TWO/" is 9 characters and the caret starts at the end. Five <Left>s land on the
+    // second slash, so the paste is inserted into the empty pattern.
+    repeat(5) { session.key("<Left>") }
+
+    session.paste()
+
+    assertEquals(":%s/two/TWO/", session.prompt)
+    assertEquals(":%s/two".length, session.display.caret, "after the paste, in front of the replacement")
+    session.key("<CR>")
+
+    assertEquals("one TWO three", session.content)
   }
 
   @Test

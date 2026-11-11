@@ -316,6 +316,39 @@ class VsCodeCommandLineTest {
    * an offset and `handleKey` has always inserted there. What was missing was any way to see where
    * that offset was, which made editing a typed command a guess.
    */
+  /**
+   * Overstrike replaces the character under the caret and still steps one place forward.
+   *
+   * The net length of the line does not change, so a caret that moved by "how much longer the
+   * line got" would stay on the character it had just written.
+   */
+  @Test
+  fun `test overstrike steps past the character it replaces`() {
+    val session = Session("one two")
+    session.type(":set nu")
+    session.key("<Home>")
+    session.key("<Insert>")
+    session.type("x")
+
+    assertEquals(":xet nu", session.display.shown)
+    assertEquals(2, session.display.caret)
+  }
+
+  /**
+   * An abbreviation is a delete and an insert, and the caret has to come out after the expansion.
+   * The trigger character is typed after that, so it belongs at the end.
+   */
+  @Test
+  fun `test an abbreviation leaves the caret after the expansion`() {
+    val session = Session("one two")
+    session.type(":cabbrev ab expanded")
+    session.key("<CR>")
+    session.type(":ab ")
+
+    assertEquals(":expanded ", session.display.shown)
+    assertEquals(":expanded ".length, session.display.caret)
+  }
+
   @Test
   fun `test typing goes in at the caret`() {
     val session = Session("one two")

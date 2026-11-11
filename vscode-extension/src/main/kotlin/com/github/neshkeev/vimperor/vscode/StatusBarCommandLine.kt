@@ -123,13 +123,32 @@ internal class StatusBarCommandLine(
 
   override val modelessSelection: String get() = ""
 
+  /**
+   * Inserts [string] at [offset] and moves the caret with the text.
+   *
+   * The caret is the host's here, as in [deleteText]. The engine's inserts — `<C-R>`, a paste, a
+   * digraph, an abbreviation — leave it where it was, because IntelliJ's command line is a text
+   * field that moves its own caret when text arrives. A paste into `:%s/` then sat under the
+   * caret, and the `/` that closed the pattern was typed in front of what had just been pasted.
+   *
+   * Overstrike removes the characters the insertion covers before writing the new ones. A caret
+   * past that span moves by the change in length; a caret on the insertion ends up after the new
+   * text, which is also where typing one character lands.
+   */
   override fun insertText(offset: Int, string: String) {
     val at = offset.coerceIn(0, content.length)
-    if (isReplaceMode) {
+    val overwritten = if (isReplaceMode) {
       val end = minOf(at + string.length, content.length)
       content.deleteRange(at, end)
+      end - at
+    } else {
+      0
     }
     content.insert(at, string)
+    if (caret.offset >= at) {
+      val removedBeforeCaret = minOf(overwritten, caret.offset - at)
+      caret.offset += string.length - removedBeforeCaret
+    }
     render()
   }
 
@@ -168,8 +187,8 @@ internal class StatusBarCommandLine(
   override fun handleKey(key: VimKeyStroke) {
     val character = key.keyChar
     if (character.code == 0 || character.code == 65535) return
+    // [insertText] advances the caret. Stepping it here as well would skip a character.
     insertText(caret.offset, character.toString())
-    caret.offset += 1
   }
 
   override fun setPromptCharacter(promptCharacter: Char) {

@@ -2,6 +2,16 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Fixed
+
+- **A paste into the substitution pattern left the caret in front of the pasted text.** `:%s/`
+  and then a paste inserted the pattern and left the caret on the `/`, so the `/` that closed
+  the pattern was typed in front of it. The command that ran was `:%s//…`, with the pattern
+  after the replacement. A paste is `<C-R>+`, and the command line did not move its caret when
+  text was inserted. The caret now moves past the inserted text.
+
 ## [0.0.15] - 2026-11-05
 
 ### Added
