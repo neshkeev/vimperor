@@ -17,6 +17,7 @@ import com.maddyhome.idea.vim.options.helpers.LangMapOptionHelper
 import com.maddyhome.idea.vim.vimscript.model.datatypes.VimString
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 /**
@@ -35,8 +36,8 @@ import kotlin.test.assertTrue
  */
 class KeyboardLayoutTest {
 
-  private class Session {
-    val fake = FakeEditor("one two three\nfour five six\nseven (eight) nine")
+  private class Session(text: String = "one two three\nfour five six\nseven (eight) nine") {
+    val fake = FakeEditor(text)
     val errors: MutableList<String> = mutableListOf()
     val statuses: MutableList<String> = mutableListOf()
     val host = VimHost(
@@ -69,8 +70,8 @@ class KeyboardLayoutTest {
   }
 
   /** Runs [keys] with [layout] enabled (empty for none) and returns the text and the mode. */
-  private fun run(keys: String, layout: String = "", langmap: String = ""): String {
-    val session = Session()
+  private fun run(keys: String, layout: String = "", langmap: String = "", text: String? = null): String {
+    val session = if (text == null) Session() else Session(text)
     injector.optionGroup.setOptionValue(Options.keyboardlayout, OptionAccessScope.GLOBAL(null), VimString(layout))
     injector.optionGroup.setOptionValue(Options.langmap, OptionAccessScope.GLOBAL(null), VimString(langmap))
     session.host.key(session.fake, "<Esc>")
@@ -79,8 +80,8 @@ class KeyboardLayoutTest {
   }
 
   /** The same edit twice: US keys with no layout, Cyrillic keys with one. They must agree. */
-  private fun same(latin: String, cyrillic: String, layout: String = "russian") {
-    assertEquals(run(latin), run(cyrillic, layout), "`$cyrillic` should do what `$latin` does")
+  private fun same(latin: String, cyrillic: String, layout: String = "russian", text: String? = null) {
+    assertEquals(run(latin, text = text), run(cyrillic, layout, text = text), "`$cyrillic` should do what `$latin` does")
   }
 
   @Test
@@ -116,6 +117,46 @@ class KeyboardLayoutTest {
 
   @Test
   fun `test Visual mode`() = same("vex", "муч")
+
+  @Test
+  fun `test a quote and э are different characters to find`() {
+    // `э` sits on the same physical key as `'`. It is not that character. `f` searches for the
+    // character that was typed, so `маэ` selects up to `э` and `vf'` selects up to the quote.
+    val text = "a'bэc"
+    assertEquals("bэc\n--- NORMAL", run("vf'x", "russian", text = text))
+    assertEquals("c\n--- NORMAL", run("vfэx", text = text))
+    assertEquals(run("vfэx", text = text), run("маэч", "russian", text = text))
+    assertNotEquals(run("vf'x", text = text), run("маэч", "russian", text = text))
+    // An operator translates the keys around the character. The character stays the character,
+    // so `dаэ` deletes through `э` and not through the quote.
+    assertEquals(run("dfэ", text = text), run("dаэ", "russian", text = text))
+    assertNotEquals(run("df'", text = text), run("dаэ", "russian", text = text))
+  }
+
+  @Test
+  fun `test a backslash is the character f searches for`() {
+    same("vf\\x", "ма\\ч", text = "ab\\cd")
+  }
+
+  @Test
+  fun `test a find still searches for a Cyrillic letter`() {
+    // The other half of the same rule. `а` maps to `f` as a command, and as the character `f`
+    // searches for it is the letter `а`.
+    same("fаx", "fач", text = "xаy")
+  }
+
+  @Test
+  fun `test replace types the letter`() {
+    // `r` inserts a character. `э` is the letter, not the `'` key.
+    assertEquals("э\n--- NORMAL", run("rэ<Esc>", "russian", text = "x"))
+  }
+
+  @Test
+  fun `test langmap still does not convert a find character`() {
+    // Vim's rule, and the one `'keyboardlayout'` does not take over. `langmap=am` leaves `fa`
+    // searching for `a`.
+    assertEquals(run("fax", text = "xaym"), run("fax", langmap = "am", text = "xaym"))
+  }
 
   @Test
   fun `test linewise Visual mode`() = same("Vd", "Мв")

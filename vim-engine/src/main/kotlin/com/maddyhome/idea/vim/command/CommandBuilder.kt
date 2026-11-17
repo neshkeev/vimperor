@@ -133,6 +133,19 @@ class CommandBuilder private constructor(
   val isAwaitingArgument: Boolean
     get() = expectedArgumentType != null && (motionArgument?.let { it.argument == null } ?: (argument == null))
 
+  /**
+   * True while `f`, `F`, `t` or `T` is waiting for the character it searches for.
+   *
+   * That character is text. Operator-pending otherwise translates every key, which would turn `э`
+   * into `'` on the way into the search.
+   */
+  val characterArgumentIsText: Boolean
+    get() {
+      if (!isAwaitingArgument) return false
+      val handler = motionArgument?.motion ?: action
+      return handler?.characterArgumentIsText == true
+    }
+
   fun isAwaitingCharacterBasedArgument(): Boolean {
     val awaiting = expectedArgumentType == Argument.Type.CHARACTER
       || expectedArgumentType == Argument.Type.REGISTER

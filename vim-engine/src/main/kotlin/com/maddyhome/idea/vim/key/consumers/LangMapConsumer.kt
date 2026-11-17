@@ -70,6 +70,12 @@ class LangMapConsumer : KeyConsumer {
         return true
       }
 
+      // `f` and `t` search for the character typed. Operator-pending translates every other key,
+      // and `э` would become `'` on the way in.
+      if (commandBuilder.characterArgumentIsText) {
+        return false
+      }
+
       if (editor.mode is Mode.OP_PENDING) {
         return true
       }

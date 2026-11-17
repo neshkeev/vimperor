@@ -2,6 +2,15 @@
 
 The Marketplace renders this file on the extension's page, under Changelog.
 
+## [Unreleased]
+
+### Fixed
+
+- **`dаэ` deleted through the quote.** `э` and `'` are different characters, and `f` searches
+  for the character that was typed. After an operator every key was translated, so `э` became
+  `'` on the way in and the delete stopped on the quote. The character `f`, `F`, `t` and `T`
+  search for is now left as it was typed.
+
 ## [0.0.16] - 2026-11-11
 
 ### Fixed

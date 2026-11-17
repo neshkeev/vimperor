@@ -91,6 +91,15 @@ abstract class EditorActionHandlerBase(private val myRunForEachCaret: Boolean) {
   open val argumentType: Argument.Type? = null
 
   /**
+   * The character this action is waiting for is text, so `'langmap'` and `'keyboardlayout'` leave
+   * it alone.
+   *
+   * `f`, `t` and `r` take the character that was typed. `э` is not `'`, even though the two share
+   * a key.
+   */
+  open val characterArgumentIsText: Boolean = false
+
+  /**
    * This method will be executed only for actions with [argumentType != null]
    * when such actions start to await for their argument
    */
