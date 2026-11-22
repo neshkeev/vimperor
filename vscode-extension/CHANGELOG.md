@@ -6,6 +6,11 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **`<C-V>a` inserted the mapping of `a`.** The character after `<C-V>`, and the character a
+  `<C-K>` digraph makes, were handed back through the key handler with mappings on. With
+  `inoremap a b`, `<C-V>a` inserted `b`. Both are inserted as typed now. The next key is mapped
+  again.
+
 - **`>>` on a tab-indented line added a space.** A tab counted as one column and the new indent
   was built in tab stops, so `\tfoo` became `\t foo` and `<<` on `\t\tfoo` wiped the indent. The
   indent is now measured by `'tabstop'`. A space in front of a tab counts as part of that stop.
