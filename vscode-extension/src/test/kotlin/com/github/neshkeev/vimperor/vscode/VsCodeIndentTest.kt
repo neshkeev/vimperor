@@ -262,6 +262,58 @@ class VsCodeIndentTest {
   }
 
   /**
+   * The indent already on the line is measured in the same columns the new one is built in.
+   *
+   * The buffer column counts a tab as one character. Rebuilding that as a tab stop writes the
+   * shortfall as a space, so `>>` on `\tfoo` came out `\t foo` and a second shift drifted further.
+   * A tab advances to the next `'tabstop'`, and a space in front of one is already part of that stop.
+   */
+  @Test
+  fun `test a shift measures a tab by its width`() {
+    val session = Session("\tfoo", spaces = false, width = 4)
+    session.type(">>")
+
+    assertEquals("\t\tfoo", session.content)
+    session.type(">>")
+    assertEquals("\t\t\tfoo", session.content)
+  }
+
+  @Test
+  fun `test a left shift removes one tab width`() {
+    val session = Session("\t\tfoo", spaces = false, width = 4)
+    session.type("<<")
+
+    assertEquals("\tfoo", session.content)
+  }
+
+  @Test
+  fun `test a shift measures a tab that follows a space to the tab stop`() {
+    val session = Session(" \tfoo", spaces = false, width = 4)
+    session.type(">>")
+
+    assertEquals("\t\tfoo", session.content)
+  }
+
+  /** `'expandtab'` rebuilds the measured width as spaces. A tab of four plus a shift of four is eight. */
+  @Test
+  fun `test a shift of a tabbed line with expandtab is the tab width in spaces`() {
+    val session = Session("\tfoo", width = 4)
+    session.type(">>")
+
+    assertEquals("        foo", session.content)
+  }
+
+  /** A shift that does not fill the next tab is the remainder, written as spaces after the tab. */
+  @Test
+  fun `test a shift narrower than the tab adds spaces after it`() {
+    val session = Session("\tfoo", spaces = false, width = 8)
+    session.run("set shiftwidth=2")
+    session.type(">>")
+
+    assertEquals("\t  foo", session.content)
+  }
+
+  /**
    * `:set tabstop?` answers the editor, not Vim's default of eight.
    *
    * This is what makes the option honest for a user who has set nothing, and it is the thing the

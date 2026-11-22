@@ -6,6 +6,10 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **`>>` on a tab-indented line added a space.** A tab counted as one column and the new indent
+  was built in tab stops, so `\tfoo` became `\t foo` and `<<` on `\t\tfoo` wiped the indent. The
+  indent is now measured by `'tabstop'`. A space in front of a tab counts as part of that stop.
+
 - **`ds(` left the spaces inside the brackets.** `foo( a )` came out as `foo a `, and `ds[`,
   `ds{` and `ds<` did the same. The spaces were trimmed only when a new pair asked for it, and a
   delete has no new pair. An opening bracket now strips the spaces and tabs at both ends. `ds)`

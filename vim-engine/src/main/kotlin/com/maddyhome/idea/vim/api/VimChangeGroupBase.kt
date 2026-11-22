@@ -2396,7 +2396,9 @@ abstract class VimChangeGroupBase : VimChangeGroup {
         val soff = editor.getLineStartOffset(l)
         val eoff = editor.getLineEndOffset(l, true)
         val woff = injector.motion.moveCaretToLineStartSkipLeading(editor, l)
-        val col = editor.offsetToBufferPosition(woff).column
+        // The buffer column counts a tab as one character. The indent is rebuilt in tab stops,
+        // so the width has to be measured the same way or each shift writes a space into the gap.
+        val col = indentConfig.getIndentWidth(editor.text().subSequence(soff, woff))
         val limit = max(0.0, (col + dir * indentConfig.getIndentSize(count)).toDouble())
           .toInt()
         if (col > 0 || soff != eoff) {

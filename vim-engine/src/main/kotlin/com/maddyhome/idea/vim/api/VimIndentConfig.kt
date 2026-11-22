@@ -16,4 +16,9 @@ interface VimIndentConfig {
    * size in spaces
    */
   fun createIndentBySize(size: Int): String
+
+  /**
+   * How many columns [indent] occupies. A tab advances to the next stop.
+   */
+  fun getIndentWidth(indent: CharSequence): Int
 }

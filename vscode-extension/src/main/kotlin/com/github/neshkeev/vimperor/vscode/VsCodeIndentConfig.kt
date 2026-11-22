@@ -97,6 +97,18 @@ internal class VsCodeIndentConfig(private val editor: VsCodeEditor) : VimIndentC
   }
 
   /**
+   * The inverse of [createIndentBySize].
+   *
+   * A buffer column is a character index, so `\tfoo` is column 1 and a shift of four rebuilt it as
+   * a tab plus a space. A tab stops at the next multiple of [tabWidth], which is what a space
+   * already sitting in front of it costs.
+   */
+  override fun getIndentWidth(indent: CharSequence): Int {
+    val tab = tabWidth
+    return indent.fold(0) { width, char -> if (char == '\t') width - width % tab + tab else width + 1 }
+  }
+
+  /**
    * What to indent by when nothing will say.
    *
    * Only reachable through an option set to zero that has no Vim fallback, which `'tabstop'` does
