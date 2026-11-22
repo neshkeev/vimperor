@@ -295,11 +295,14 @@ private class CSurroundHandler : ExtensionHandler {
       surroundings
         .filter { it.isValidSurrounding } // we do nothing with carets that are not inside the surrounding
         .map { surrounding ->
-          val innerValue = injector.parser.toPrintableString(surrounding.innerText!!)
-          val text = newSurround?.let {
-            val trimmedValue = if (newSurround.shouldTrim) innerValue.trim() else innerValue
-            it.first + trimmedValue + it.second
-          } ?: innerValue
+          val rawInnerValue = injector.parser.toPrintableString(surrounding.innerText!!)
+          // vim-surround strips the padding when the pair is named by its opening bracket, and
+          // when the new pair says so. A delete has no new pair, so `ds(` used to leave `( a )`
+          // as ` a `. Spaces and tabs only: a newline is the line structure, and `String.trim`
+          // would take that too.
+          val shouldTrim = charFrom in OPENING_BRACKETS || newSurround?.shouldTrim == true
+          val innerValue = if (shouldTrim) rawInnerValue.trim { it == ' ' || it == '\t' } else rawInnerValue
+          val text = newSurround?.let { it.first + innerValue + it.second } ?: innerValue
           val textData =
             PutData.TextData(null, injector.clipboardManager.dumbCopiedText(text), SelectionType.CHARACTER_WISE)
           val putData =
@@ -448,6 +451,9 @@ private const val OPERATOR_FUNC = "SurroundOperatorFunc"
 private val tagNameAndAttributesCapturePattern = Regex("([^\\s>]+)([^>]*)>?")
 
 private data class SurroundPair(val first: String, val second: String, val shouldTrim: Boolean)
+
+/** `(` `[` `{` `<`. `b` `r` and `a` are the closing aliases, and a closing bracket keeps the padding. */
+private const val OPENING_BRACKETS = "([{<"
 
 private val SURROUND_PAIRS = mapOf(
   'b' to SurroundPair("(", ")", false),

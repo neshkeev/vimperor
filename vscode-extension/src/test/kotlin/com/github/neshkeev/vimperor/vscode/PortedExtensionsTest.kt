@@ -824,6 +824,67 @@ class PortedExtensionsTest {
     assertEquals("hello world\n", session.content)
   }
 
+  /**
+   * An opening bracket is the padded form, and deleting it takes the padding with it.
+   *
+   * `ds(` on `( a )` used to leave the spaces, because a delete has no new pair and the trim
+   * lived only on the pair being inserted. vim-surround strips spaces and tabs from both ends.
+   * `ds)` is the closing bracket and keeps them, and so does `dsb`, which is that closing alias.
+   */
+  @Test
+  fun `test ds opening bracket trims inner spaces`() {
+    assertEquals("fooa", surround("foo( a )", "fads("))
+    assertEquals("fooa", surround("foo{ a }", "fads{"))
+    assertEquals("fooa", surround("foo[ a ]", "fads["))
+    assertEquals("fooa", surround("foo< a >", "fads<"))
+    assertEquals("fooa", surround("foo(\ta\t)", "fads("))
+  }
+
+  @Test
+  fun `test ds closing bracket keeps inner spaces`() {
+    assertEquals("foo a ", surround("foo( a )", "fads)"))
+    assertEquals("foo a ", surround("foo( a )", "fadsb"))
+    assertEquals("foo a ", surround("foo< a >", "fadsa"))
+  }
+
+  /**
+   * The same trim on a change. `)` asks for it, and so does naming the original pair by its
+   * opening bracket: `cs({` on `( a )` is `{ a }`. `cs)}` lands on `}`, which trims, so the
+   * padding goes. `cs){` names the closing bracket as the original and `{` as the new pair,
+   * and `{` keeps what it finds, then adds a space of its own.
+   *
+   * A newline at the edge of the text is not padding. `String.trim` would flatten
+   * `(\n\n  a\n)` to `(a)`. The line `a` sits on stays.
+   */
+  @Test
+  fun `test cs trims spaces and keeps a blank line`() {
+    assertEquals("(a)", surround("( a )", "facs()"))
+    assertEquals("{ a }", surround("( a )", "facs({"))
+    assertEquals("{a}", surround("( a )", "facs)}"))
+    assertEquals("{  a  }", surround("( a )", "facs){"))
+    assertEquals("(\n  a\n)", surround("(\n\n  a\n)", "facs()"))
+  }
+
+  /**
+   * `ds(` on a call whose body is a block. The newline after `(` and the line the `)` sits on
+   * already belong to the brackets. What is left in front of `{` is indent, and an opening
+   * bracket takes that too, so the block joins the call. The lines inside keep their shape.
+   */
+  @Test
+  fun `test ds opening bracket joins a block and keeps its lines`() {
+    val before = "function someFnc() {}\nsomeFnc(\n  {\n    test: \"\"\n  }\n);"
+    val after = "function someFnc() {}\nsomeFnc{\n    test: \"\"\n  }\n;"
+
+    assertEquals(after, surround(before, "f{ds("))
+  }
+
+  /** The keys start with a motion that lands inside the pair. Each call is its own session. */
+  private fun surround(text: String, keys: String): String {
+    val session = Session(text, "surround")
+    session.type(keys)
+    return session.content
+  }
+
   /** `S` in visual mode, which has to leave visual mode *after* the surround rather than before. */
   @Test
   fun `test S wraps a visual selection`() {

@@ -6,6 +6,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **`ds(` left the spaces inside the brackets.** `foo( a )` came out as `foo a `, and `ds[`,
+  `ds{` and `ds<` did the same. The spaces were trimmed only when a new pair asked for it, and a
+  delete has no new pair. An opening bracket now strips the spaces and tabs at both ends. `ds)`
+  and `dsb` keep them. A newline at the edge of the text stays, so the lines inside a call stay
+  lines.
+
 - **`dаэ` deleted through the quote.** `э` and `'` are different characters, and `f` searches
   for the character that was typed. After an operator every key was translated, so `э` became
   `'` on the way in and the delete stopped on the quote. The character `f`, `F`, `t` and `T`
