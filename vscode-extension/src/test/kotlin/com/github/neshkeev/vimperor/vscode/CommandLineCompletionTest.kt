@@ -9,6 +9,8 @@
 package com.github.neshkeev.vimperor.vscode
 
 import com.maddyhome.idea.vim.KeyHandler
+import com.maddyhome.idea.vim.api.injector
+import com.maddyhome.idea.vim.extension.ExtensionBean
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -76,6 +78,43 @@ class CommandLineCompletionTest {
       "git.pull",
       "cursorDown",
     )
+  }
+
+  /**
+   * `:Educate` is a user command the extension registers, not a built-in, so the ex command table
+   * Tab was reading had never heard of it.
+   */
+  @Test
+  fun `test Tab completes a user command from its prefix`() {
+    val session = Session()
+    injector.extensionLoader.enableExtension(
+      ExtensionBean("textobj-quote", VsCodeExtensions.PLUGIN_ID, "init", ""),
+    )
+
+    session.type(":Ed")
+    session.key("<Tab>")
+    assertEquals(":Educate", session.display.shown)
+
+    session.key("<Esc>")
+    session.type(":No")
+    session.key("<Tab>")
+    assertEquals(":NoEducate", session.display.shown)
+
+    session.key("<Esc>")
+    session.type(":Tog")
+    session.key("<Tab>")
+    assertEquals(":ToggleEducate", session.display.shown)
+  }
+
+  /** The names are the extension's, and they go when it does. */
+  @Test
+  fun `test Tab does not offer Educate while textobj-quote is off`() {
+    val session = Session()
+
+    session.type(":Ed")
+    session.key("<Tab>")
+
+    assertEquals(":Ed", session.display.shown)
   }
 
   @Test

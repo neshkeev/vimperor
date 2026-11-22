@@ -212,8 +212,8 @@ it tells you what to do here instead.
 host has registered rather than kept in a file, so it cannot drift from them: a command missing
 from the help is a command Vimperor does not have.
 
-**28 of IdeaVim's 30 bundled extensions are here, plus `easymotion` written for this fork** —
-twenty-nine in all, enabled with `set <name>` or a `Plug` line:
+**29 of IdeaVim's bundled extensions are here, plus `easymotion` written for this fork** —
+thirty in all, enabled with `set <name>` or a `Plug` line:
 `surround`, `sneak`, `clever-f`, `commentary`, `targets`, `easymotion`, `multiple-cursors`,
 `visual-multi`,
 `highlightedyank`, `exchange`, `abolish`, `argtextobj`, `camelcasemotion`, `indentwise`, `yankring`,
@@ -228,9 +228,8 @@ twenty-nine in all, enabled with `set <name>` or a `Plug` line:
   the Command Palette entry runs a built-in command no extension can see. After it, `:set wrap` and
   `:set nowrap` mean the opposite in that file until you close it or press `Alt+Z`. Two splits of
   one file share a wrap, because VS Code attaches it to the document.
-- **Vim plugins.** There is no `pack/` directory. 2 of IdeaVim's 30 bundled extensions are absent —
-  `matchit` and `VimEverywhere` want IDE machinery VS Code has nothing shaped like. Everything else
-  IdeaVim bundles is here.
+- **Vim plugins.** There is no `pack/` directory. `matchit` and `VimEverywhere` want IDE machinery
+  VS Code has nothing shaped like. `lion` and `fugitive` are not ported.
 - **Windows and tabs are VS Code's.** `:split` and `:vsplit` open its editor groups, so `<C-w>`
   movements go where VS Code's do. No preview window, so `:pedit` has nothing to open into.
 - **A terminal, channels and jobs.** No `:terminal`, no `job_start()`, no `timer_start()`.

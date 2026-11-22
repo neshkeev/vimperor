@@ -47,6 +47,8 @@ import com.maddyhome.idea.vim.extension.signature.disposeSignature
 import com.maddyhome.idea.vim.extension.signature.init as signatureInit
 import com.maddyhome.idea.vim.extension.visualstarsearch.init as visualStarSearchInit
 import com.maddyhome.idea.vim.extension.textobjindent.init as textObjIndentInit
+import com.maddyhome.idea.vim.extension.textobjquote.disposeTextObjQuote
+import com.maddyhome.idea.vim.extension.textobjquote.init as textObjQuoteInit
 import com.maddyhome.idea.vim.extension.textobjuser.init as textObjUserInit
 import com.maddyhome.idea.vim.extension.textobjuser.unregisterTextObjUserFunctions
 import com.maddyhome.idea.vim.extension.youcompleteme.init as youCompleteMeInit
@@ -165,6 +167,10 @@ internal object VsCodeExtensions {
     // `argtextobj.vim`: `ia` and `aa` for one argument of a call, commas and nesting and quoted
     // strings all accounted for.
     "argtextobj" to { api -> api.argTextObjInit() },
+
+    // `vim-textobj-quote`: `iq`/`aq` inside and around curly double quotes, `iQ`/`aQ` for single
+    // ones. `:Educate` turns a typed `"` and `'` into those quotes. Off until asked.
+    "textobj-quote" to { api -> api.textObjQuoteInit() },
 
     // `vim-commentary`: `gc{motion}`, `gcc`, `gcu` and `:Commentary`. The comment syntax is VS
     // Code's, from the language configuration - see `VsCodeCommentService`. `dgc`, the text object
@@ -300,6 +306,9 @@ internal object VsCodeExtensions {
 
     // Its six ex commands, held by the command group.
     "NERDTree" to { disposeNerdTree() },
+
+    // `:Educate`, `:NoEducate` and `:ToggleEducate`, held by the command group.
+    "textobj-quote" to { disposeTextObjQuote() },
   )
 
   /** The id a bundled extension belongs to, which for this host is the extension itself. */
@@ -577,6 +586,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "script.php?script_id=2610" to "textobj-entire",
       "vim-textobj-entire" to "textobj-entire",
       "vim-textobj-line" to "textobj-line",
+      "vim-textobj-quote" to "textobj-quote",
       "vim-visual-star-search" to "visual-star-search",
       "vim-signature" to "signature",
       "vim-indent-object" to "textobj-indent",

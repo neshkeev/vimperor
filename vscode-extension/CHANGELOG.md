@@ -4,6 +4,22 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ## [Unreleased]
 
+### Added
+
+- **Curly quotes are a text object.** `iq` and `aq` select inside and around `“”`, and `iQ` and
+  `aQ` do the same for `‘’`. A `’` followed by a letter or a digit is an apostrophe, so `don’t`
+  and `’70s` stay inside the quote. Nested quotes of the same kind are skipped. Turn it on with
+  `set textobj-quote` or `Plug 'preservim/vim-textobj-quote'`. The keys and the quote characters
+  are `g:textobj#quote#doubleMotion`, `g:textobj#quote#singleMotion`, `g:textobj#quote#doubleDefault`
+  and `g:textobj#quote#singleDefault`.
+
+  `:Educate` turns `"` and `'` typed in Insert mode into those quotes: an opening one at the start
+  of a line, after a space or after `[({&`, and a closing one elsewhere, so `don't` is typed as
+  `don’t`. `:NoEducate` and `:ToggleEducate` turn it off or switch it. Tab on the command line
+  completes all three. It is off until asked, and the choice is per buffer.
+  `g:textobj#quote#educate` turns it on for every buffer that has not chosen. `<C-V>"` still
+  inserts a straight quote.
+
 ### Fixed
 
 - **`let g:foo#bar = 1` did nothing.** A variable name could not contain `#`, so a setting written

@@ -162,7 +162,11 @@ private fun findMatches(
 }
 
 private fun findCommandNameMatches(parsed: CommandNameCompletionContext): List<String> {
-  return injector.vimscriptParser.exCommands.findFullCommandsByPrefix(parsed.prefix)
+  // An extension's `:command` is an alias, kept beside the ex command table rather than in it.
+  // `:Educate` is one. Vim offers those names on Tab along with the built-in commands.
+  val commands = injector.vimscriptParser.exCommands.findFullCommandsByPrefix(parsed.prefix)
+  val aliases = injector.commandGroup.listAliases().map { it.key }.filter { it.startsWith(parsed.prefix) }
+  return (commands + aliases).distinct().sorted()
 }
 
 private fun findArgumentMatches(
