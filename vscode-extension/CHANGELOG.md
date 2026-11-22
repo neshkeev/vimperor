@@ -6,6 +6,10 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **`let g:foo#bar = 1` did nothing.** A variable name could not contain `#`, so a setting written
+  the way an autoload plugin is configured was skipped, and a config runs with errors suppressed.
+  The name is kept whole, the same way a function name already was.
+
 - **`<C-V>a` inserted the mapping of `a`.** The character after `<C-V>`, and the character a
   `<C-K>` digraph makes, were handed back through the key handler with mappings on. With
   `inoremap a b`, `<C-V>a` inserted `b`. Both are inserted as typed now. The next key is mapped

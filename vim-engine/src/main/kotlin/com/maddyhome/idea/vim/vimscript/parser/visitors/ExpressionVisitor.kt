@@ -450,7 +450,13 @@ object ExpressionVisitor : VimscriptBaseVisitor<Expression?>() {
 
   override fun visitVariable(ctx: VariableContext): VariableExpression {
     val scope = if (ctx.variableScope() == null) null else Scope.getByValue(ctx.variableScope()!!.text)
-    val result = VariableExpression(scope, visitCurlyBracesName(ctx.variableName().curlyBracesName()))
+    // `foo#bar#` is part of the name, the same way it is on a function call. Without it,
+    // `let g:foo#bar = 1` does not parse, and a config runs with errors suppressed.
+    val name = prependAutoloadPrefix(
+      ctx.anyCaseNameWithDigitsAndUnderscores(),
+      visitCurlyBracesName(ctx.variableName().curlyBracesName()),
+    )
+    val result = VariableExpression(scope, name)
     result.originalString = ctx.text
     return result
   }
