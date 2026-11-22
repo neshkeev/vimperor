@@ -349,13 +349,13 @@ class VimHost(
    * is text the user typed: `parseKeys` reads `<` as the start of a key notation, so typing a
    * less-than sign would begin a keystroke that never finishes.
    */
-  fun type(textEditor: TextEditor, text: String) {
-    handle(textEditor, injector.parser.stringToKeys(text))
+  fun type(textEditor: TextEditor, text: String, onDone: () -> Unit = {}) {
+    handle(textEditor, injector.parser.stringToKeys(text), onDone)
   }
 
   /** A key named the way Vim names it - `<Esc>`, `<C-W>` - from a keybinding rather than typing. */
-  fun key(textEditor: TextEditor, notation: String) {
-    handle(textEditor, injector.parser.parseKeys(notation))
+  fun key(textEditor: TextEditor, notation: String, onDone: () -> Unit = {}) {
+    handle(textEditor, injector.parser.parseKeys(notation), onDone)
   }
 
   // ---- Dead keys and input methods.
@@ -640,12 +640,16 @@ class VimHost(
    * per-key hooks - was outside the corpus. A fixture that turned on one of them could not pass and
    * could not be seen to fail for the right reason.
    */
-  internal fun handle(textEditor: TextEditor, keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>) {
-    if (pending > 0) {
-      // A VS Code command the engine asked for has not finished. Running these keys now would
-      // compute them against text the command is about to change, and the command would then land
-      // on top - so they wait, in order, rather than racing it.
-      queued += { handle(textEditor, keys) }
+  internal fun handle(
+    textEditor: TextEditor,
+    keys: List<com.maddyhome.idea.vim.key.VimKeyStroke>,
+    onDone: () -> Unit = {},
+  ) {
+    if (pending > 0 || clipboardReads > 0) {
+      // A VS Code command the engine asked for has not finished, or a paste is still reading the
+      // clipboard. Running these keys now would compute them against text that is about to change,
+      // and that change would then land on top - so they wait, in order, rather than racing it.
+      queued += { handle(textEditor, keys, onDone) }
       return
     }
 
@@ -666,18 +670,78 @@ class VimHost(
     // formatter, a language server. The engine reads the buffer, so it has to be told first.
     if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
 
+    drain(editor, keys.toMutableList(), mutableListOf(), clipboardReady = false, onDone)
+  }
+
+  /**
+   * Whether [stroke] is about to put from the system clipboard.
+   *
+   * `p` and `P`, in Normal and Visual, when the register they will read is `*` or `+`. With
+   * `'clipboard'` containing `unnamed` or `unnamedplus` that register is the default one, so a plain
+   * `p` is a clipboard read. The read has to be current: `yy` and then `Cmd+C` leaves the yanked
+   * line in the mirror and the copied text on the system clipboard, and the window never lost focus
+   * so nothing else refreshed the mirror.
+   *
+   * A character `f` is waiting for, and a register name, are the letter `p` without being a put.
+   * An explicit `"a` is a register the clipboard has nothing to do with.
+   */
+  private fun putWillReadTheClipboard(stroke: com.maddyhome.idea.vim.key.VimKeyStroke): Boolean {
+    if (stroke.modifiers != 0 || stroke.onKeyRelease) return false
+    if (stroke.keyChar != 'p' && stroke.keyChar != 'P') return false
+    val mode = injector.vimState.mode
+    if (mode !is Mode.NORMAL && mode !is Mode.VISUAL) return false
+    val builder = KeyHandler.getInstance().keyHandlerState.commandBuilder
+    if (builder.isRegisterPending || builder.isAwaitingCharacterBasedArgument()) return false
+    val register = builder.registerSnapshot ?: injector.registerGroup.currentRegister
+    return injector.registerGroup.isSystemClipboard(register)
+  }
+
+  /**
+   * Handles [typed] and [posted], refreshing the clipboard before a put that will read it.
+   *
+   * [clipboardReady] is set for the continuation that runs once that refresh has landed, so the put
+   * it was waiting on is handled instead of starting the read again.
+   *
+   * [onDone] runs when these keys have been handled. A paste waits out a promise, and the trace is
+   * written from there: writing it when the key arrives would describe the editor before the text
+   * was inserted.
+   */
+  private fun drain(
+    editor: VsCodeEditor,
+    typed: MutableList<com.maddyhome.idea.vim.key.VimKeyStroke>,
+    posted: MutableList<com.maddyhome.idea.vim.key.VimKeyStroke>,
+    clipboardReady: Boolean,
+    onDone: () -> Unit,
+  ) {
     val handler = KeyHandler.getInstance()
     val state = handler.keyHandlerState
+    var ready = clipboardReady
     // Two queues rather than one, because the two kinds of key are not interchangeable. What the
     // user pressed goes through `handleUserKey`, which reports it to a `VimKeyTypedListener` -
     // `keylog`, and Vim's `-w {scriptout}`. What the engine posted for itself did not come from a
     // keyboard: `<C-V>065x` ends its literal on the `x`, which the engine hands back to be handled
     // next. `KeySource` cannot tell them apart; both are TYPED as far as the command machinery goes.
-    val typed = keys.toMutableList()
-    val posted = mutableListOf<com.maddyhome.idea.vim.key.VimKeyStroke>()
     while (posted.isNotEmpty() || typed.isNotEmpty()) {
       val fromUser = posted.isEmpty()
       val stroke = if (fromUser) typed.removeAt(0) else posted.removeAt(0)
+      if (!ready && putWillReadTheClipboard(stroke)) {
+        if (fromUser) typed.add(0, stroke) else posted.add(0, stroke)
+        clipboardReads++
+        clipboard.refresh {
+          clipboardReads--
+          try {
+            // A click during the read is a caret the paste has to land on.
+            if (editor.buffer.syncIfDocumentMoved()) editor.syncCaretsFromEditor()
+            drain(editor, typed, posted, clipboardReady = true, onDone)
+          } catch (e: Throwable) {
+            sink.error("Vimperor: pasting from the clipboard failed - " + (e.message ?: e::class.simpleName))
+            onDone()
+            releaseQueuedKeys()
+          }
+        }
+        return
+      }
+      ready = false
       val caretBefore = editor.primaryCaret().offset
       if (fromUser) {
         handler.handleUserKey(editor, stroke, VsCodeExecutionContext, state)
@@ -706,6 +770,13 @@ class VimHost(
       // because Vim replays it immediately.
       posted.addAll(0, postedKeys())
     }
+    finishKeystroke(editor)
+    onDone()
+    releaseQueuedKeys()
+  }
+
+  /** Writes the keystroke out, including an edit a command-line window made to another buffer. */
+  private fun finishKeystroke(editor: VsCodeEditor) {
     editor.flush { applied ->
       if (!applied) {
         // The document moved between the command running and its edit landing, so what the engine
@@ -737,6 +808,10 @@ class VimHost(
   // is independent of it.
 
   private var pending: Int = 0
+
+  /** A paste is reading the clipboard. Keys typed while it does wait, the same way [pending] holds them. */
+  private var clipboardReads: Int = 0
+
   private val queued: MutableList<() -> Unit> = mutableListOf()
 
   /** Whether a host command is in flight, so keys are waiting rather than running. */
@@ -950,6 +1025,17 @@ class VimHost(
     // Nothing else will: the keystroke that asked for the command flushed long before this.
     if (after.isNotEmpty()) editors.values.forEach { it.flush() }
 
+    releaseQueuedKeys()
+  }
+
+  /**
+   * Runs the keys that arrived while a host command or a clipboard read was in flight.
+   *
+   * Either one still outstanding keeps them: a paste that has not read the clipboard yet, and a
+   * command that has not rewritten the document yet, are the same kind of wait.
+   */
+  private fun releaseQueuedKeys() {
+    if (pending > 0 || clipboardReads > 0) return
     val waiting = queued.toList()
     queued.clear()
     waiting.forEach { it() }

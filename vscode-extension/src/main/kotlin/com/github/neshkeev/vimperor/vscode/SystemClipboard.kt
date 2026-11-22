@@ -16,13 +16,14 @@ package com.github.neshkeev.vimperor.vscode
  * so the question is which way to be wrong.
  *
  * Writing is the easy half: `"+y` can hand the text over and not wait, because nothing depends on
- * when it lands. Reading keeps a copy of what the clipboard last said, and refreshes it at the
- * moments the clipboard can have changed without this process knowing - which is when the window
- * regains focus, since that is what a user copying from a browser and switching back does.
+ * when it lands. Reading keeps a copy of what the clipboard last said. The window regaining focus
+ * refreshes it - a user copying in a browser and switching back - and a paste refreshes it again
+ * and waits, because `Cmd+C` in this same window never takes the focus away. See [VimHost]'s put
+ * path for that wait.
  *
- * What stays wrong: copying in another application *while* VS Code has focus, and pasting without
- * clicking away and back. That window is small and the alternative is making paste asynchronous,
- * which is a change to the key path rather than to the clipboard.
+ * A write that has not landed yet is newer than a read of whatever is still on the clipboard.
+ * `yyp` types the `p` a moment after the yank, and refreshing there has to paste the yank rather
+ * than whatever the clipboard held before the write arrived.
  */
 interface SystemClipboard {
   /** What the clipboard said when it was last read. */
@@ -55,22 +56,49 @@ interface SystemClipboard {
   }
 }
 
+/**
+ * What a refresh should leave in the mirror.
+ *
+ * [pendingWrite] is text this host has handed to the system and not yet been told has landed. A
+ * read that disagrees with it is the clipboard as it was before that write, and pasting it would
+ * put back whatever `yyp` had just replaced. Once the write has landed there is no pending text,
+ * and the read is the truth - a `Cmd+C` made after the yank included.
+ */
+internal fun textAfterClipboardRead(pendingWrite: String?, read: String): String =
+  if (pendingWrite != null && read != pendingWrite) pendingWrite else read
+
 class VsCodeClipboard : SystemClipboard {
   private var mirror: String? = null
+
+  /** The latest write handed to VS Code, until that write is acknowledged. */
+  private var pendingText: String? = null
+
+  /** So an earlier write's acknowledgement cannot clear a later one. */
+  private var writeGeneration: Int = 0
 
   override fun read(): String? = mirror
 
   override fun write(text: String) {
     mirror = text
+    val generation = ++writeGeneration
+    pendingText = text
     // Nothing waits for this. A failed write leaves the mirror ahead of the system clipboard, which
-    // is the same state as a user copying elsewhere - and the next refresh corrects it.
-    env.clipboard.writeText(text)
+    // is the same state as a user copying elsewhere - and the next refresh corrects it, once
+    // [pendingText] has been dropped.
+    env.clipboard.writeText(text).then(
+      { acknowledge(generation) },
+      { acknowledge(generation) },
+    )
+  }
+
+  private fun acknowledge(generation: Int) {
+    if (generation == writeGeneration) pendingText = null
   }
 
   override fun refresh(onDone: () -> Unit) {
     env.clipboard.readText().then(
       { text ->
-        mirror = text
+        mirror = textAfterClipboardRead(pendingText, text)
         onDone()
       },
       // A clipboard that will not be read is not a reason to drop the gesture: the caller carries

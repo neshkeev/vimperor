@@ -11,14 +11,13 @@ package com.github.neshkeev.vimperor.vscode
 import com.maddyhome.idea.vim.KeyHandler
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 /**
  * Vim's `"+` register, which *is* the system clipboard.
  *
- * The awkward one. VS Code will only talk about the clipboard in promises, and `"+p` is a register
- * read in the middle of a command, so it has to answer now. What it answers with is what the
- * clipboard last said - refreshed when the window regains focus, because a user copying in a
- * browser and switching back is the case that has to work.
+ * VS Code will only talk about the clipboard in promises, and `p` has to insert text. The paste
+ * waits for a fresh read and then runs. A test completes that read with [DeferredClipboard.completeRefresh].
  */
 class ClipboardTest {
 
@@ -91,9 +90,11 @@ class ClipboardTest {
   fun `test pasting from the plus register uses the clipboard`() {
     val session = Session("one")
     session.clipboard.system = " and two"
-    session.clipboard.completeRefresh()
 
     session.type("\"+p")
+    // The paste waits for the read. Until it lands, the buffer is the buffer.
+    assertEquals("one", session.content)
+    session.clipboard.completeRefresh()
 
     // `p` puts after the caret, which is on the first character - so this is Vim being right and
     // not the clipboard being wrong.
@@ -102,30 +103,97 @@ class ClipboardTest {
 
   @Test
   fun `test text copied elsewhere arrives when the window regains focus`() {
-    // The workflow this exists for: copy in a browser, switch to VS Code, paste. The refresh
-    // happens on focus, so the answer is there before the key is pressed.
+    // Copy in a browser, switch to VS Code, paste. Focus refreshes the mirror, and the paste reads
+    // it again, which is the same answer.
     val session = Session("one")
     session.clipboard.system = " and two"
 
     session.host.refreshClipboard()
     session.clipboard.completeRefresh()
     session.type("\"+p")
+    session.clipboard.completeRefresh()
 
     assertEquals("o and twone", session.content)
   }
 
   @Test
-  fun `test text copied elsewhere is not seen until a refresh`() {
-    // The known limit, written down: copying in another application *while* VS Code has focus, and
-    // pasting without clicking away and back, pastes what the clipboard said before. Making this
-    // right means making paste asynchronous, which is a change to the key path.
-    val session = Session("one")
-    session.type("\"+yiw")
-    session.clipboard.system = "copied elsewhere"
+  fun `test a copy made while the window kept focus is what p pastes`() {
+    // `yy`, then `Cmd+C`. The yank is on the mirror and the copy is on the system clipboard, and
+    // the window never lost focus, so nothing refreshed the mirror until the paste itself.
+    val session = Session("hello\nsecond")
+    session.ex("set clipboard^=unnamed,unnamedplus")
+    session.type("yy")
+    assertEquals("hello\n", session.clipboard.system)
 
-    session.type("\"+p")
+    session.clipboard.system = "copied"
+    session.type("p")
+    assertEquals("hello\nsecond", session.content, "the paste waits for the clipboard")
+    session.clipboard.completeRefresh()
 
-    assertEquals("oonene", session.content, "the paste should use the copy Vim made, not the newer one")
+    assertEquals("hcopiedello\nsecond", session.content)
+  }
+
+  @Test
+  fun `test a key typed while the clipboard is being read waits for the paste`() {
+    val session = Session("ab")
+    session.ex("set clipboard=unnamedplus")
+    session.clipboard.system = "Z"
+    session.clipboard.completeRefresh()
+
+    session.type("p")
+    session.type("x")
+    assertEquals("ab", session.content, "x has to wait until the paste has the text")
+    session.clipboard.completeRefresh()
+
+    // `p` puts `Z` after the first character, and `x` deletes it. The caret is left on `b`.
+    // `x` first would have left `bZ`, and neither running would have left the caret on `a`.
+    assertEquals("ab", session.content)
+    assertEquals(1, session.host.editorFor(session.fake).primaryCaret().offset)
+  }
+
+  @Test
+  fun `test an explicit register is pasted without reading the clipboard`() {
+    val session = Session("hello\nsecond")
+    session.ex("set clipboard=unnamedplus")
+    session.type("\"ayy")
+    session.clipboard.system = "copied"
+
+    session.type("\"ap")
+
+    assertEquals(0, session.clipboard.pendingReads, "register a is not the clipboard")
+    assertNotEquals("hello\nsecond", session.content)
+  }
+
+  @Test
+  fun `test p in insert mode is the letter`() {
+    val session = Session("x")
+    session.ex("set clipboard=unnamedplus")
+    session.clipboard.system = "copied"
+
+    session.type("ip")
+
+    assertEquals(0, session.clipboard.pendingReads)
+    assertEquals("px", session.content)
+  }
+
+  @Test
+  fun `test the character f searches for is not a paste`() {
+    val session = Session("abp")
+    session.ex("set clipboard=unnamedplus")
+    session.clipboard.system = "copied"
+
+    session.type("fp")
+
+    assertEquals(0, session.clipboard.pendingReads)
+    assertEquals("abp", session.content)
+    assertEquals(2, session.host.editorFor(session.fake).primaryCaret().offset)
+  }
+
+  @Test
+  fun `test a write that has not landed is newer than the clipboard read`() {
+    assertEquals("yanked", textAfterClipboardRead("yanked", "previous"))
+    assertEquals("yanked", textAfterClipboardRead("yanked", "yanked"))
+    assertEquals("copied", textAfterClipboardRead(null, "copied"))
   }
 
   @Test
@@ -248,6 +316,7 @@ class ClipboardTest {
     val session = Session("one\ntwo")
     session.ex("set clipboard=unnamed")
     session.type("yyp")
+    session.clipboard.completeRefresh()
 
     assertEquals("one\none\ntwo", session.content, "charwise would have made this `oonene`")
     assertEquals("one\n", session.clipboard.system, "and the newline is what the clipboard carries")
@@ -262,6 +331,7 @@ class ClipboardTest {
     session.clipboard.completeRefresh()
 
     session.type("p")
+    session.clipboard.completeRefresh()
 
     assertEquals("o and twone", session.content)
   }

@@ -247,9 +247,10 @@ fun activate(context: ExtensionContext) {
           traceLine(output, "$id: committed '" + decision.text + "' with no editor of this host's: dropped")
         } else {
           reporting(output, "the composed text '" + decision.text + "'") {
-            vim.type(editor, decision.text)
-            refreshMode()
-            trace(output, vim, editor, "composed '" + decision.text + "'")
+            vim.type(editor, decision.text) {
+              refreshMode()
+              trace(output, vim, editor, "composed '" + decision.text + "'")
+            }
           }
         }
       }
@@ -280,9 +281,10 @@ fun activate(context: ExtensionContext) {
       commands.executeCommand("default:type", arguments)
     } else {
       reporting(output, "typing '" + text + "'") {
-        vim.type(editor, text)
-        refreshMode()
-        trace(output, vim, editor, "'" + text + "'")
+        vim.type(editor, text) {
+          refreshMode()
+          trace(output, vim, editor, "'" + text + "'")
+        }
       }
     }
   }
@@ -337,9 +339,10 @@ fun activate(context: ExtensionContext) {
 
     if (editor != null && notation != null) {
       reporting(output, "the key " + notation) {
-        vim.key(editor, notation)
-        refreshMode()
-        trace(output, vim, editor, notation)
+        vim.key(editor, notation) {
+          refreshMode()
+          trace(output, vim, editor, notation)
+        }
       }
     } else {
       traceLine(output, "the key " + notation + " with no editor of this host's: dropped")

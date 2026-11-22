@@ -22,6 +22,12 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Fixed
 
+- **`p` pasted the last yank instead of the text copied after it.** With
+  `clipboard=unnamed,unnamedplus`, `yy` and then `Cmd+C` inserted the yanked line.
+  `p` reads the system clipboard from a copy taken when the window last gained
+  focus, and a copy made in the same window never leaves it. `p` and `P` now
+  wait for a fresh read of the clipboard before they insert.
+
 - **`let g:foo#bar = 1` did nothing.** A variable name could not contain `#`, so a setting written
   the way an autoload plugin is configured was skipped, and a config runs with errors suppressed.
   The name is kept whole, the same way a function name already was.
