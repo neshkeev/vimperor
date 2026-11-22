@@ -175,6 +175,7 @@ class ExtensionProviderTest {
     assertEquals("easymotion", registrator.getExtensionNameByAlias("easymotion/vim-easymotion"))
     assertEquals("textobj-quote", registrator.getExtensionNameByAlias("preservim/vim-textobj-quote"))
     assertEquals("textobj-quote", registrator.getExtensionNameByAlias("reedes/vim-textobj-quote"))
+    assertEquals("lion", registrator.getExtensionNameByAlias("tommcdo/vim-lion"))
   }
 
   /** And the resolved name has to name something, which is the half an alias table cannot check. */
@@ -191,6 +192,7 @@ class ExtensionProviderTest {
       "jeetsukumaran/vim-indentwise",
       "easymotion/vim-easymotion",
       "preservim/vim-textobj-quote",
+      "tommcdo/vim-lion",
     )
     repositories.forEach {
       assertTrue(injector.extensionRegistrator.setOptionByPluginAlias(it), "`Plug '$it'` enabled nothing")

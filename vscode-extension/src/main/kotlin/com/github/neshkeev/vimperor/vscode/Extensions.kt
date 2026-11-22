@@ -25,6 +25,7 @@ import com.maddyhome.idea.vim.extension.highlightedyank.disposeHighlightedYank
 import com.maddyhome.idea.vim.extension.highlightedyank.init as highlightedYankInit
 import com.maddyhome.idea.vim.extension.keylog.disposeKeyLog
 import com.maddyhome.idea.vim.extension.keylog.init as keyLogInit
+import com.maddyhome.idea.vim.extension.lion.init as lionInit
 import com.maddyhome.idea.vim.extension.cleverf.disposeCleverF
 import com.maddyhome.idea.vim.extension.cleverf.init as cleverFInit
 import com.maddyhome.idea.vim.extension.indentwise.init as indentWiseInit
@@ -185,6 +186,11 @@ internal object VsCodeExtensions {
     // `-w {scriptout}`. Only what you pressed: a mapping's right-hand side, a macro and a `.` are
     // not reported. It buffers and writes on a timer, because the listener runs in the keystroke.
     "keylog" to { api -> api.keyLogInit() },
+
+    // `vim-lion`: `gl{motion}{char}` lines the character up by inserting spaces in front of it,
+    // and `gL` lines up the text after the character. The character arrives through modal input,
+    // the same way surround's pair does, because the read cannot block.
+    "lion" to { api -> api.lionInit() },
 
     // `vim-exchange`: `cx{motion}` marks a region, `cx` on a second one swaps the two. `cxx` for
     // lines, `X` in visual, `cxc` to forget the mark.
@@ -570,6 +576,7 @@ internal class VsCodeExtensionRegistrator : VimExtensionRegistrator {
       "clever-f.vim" to "clever-f",
       "vim-highlightedyank" to "highlightedyank",
       "vim-indentwise" to "indentwise",
+      "vim-lion" to "lion",
       "matchit" to "matchit",
       "vim-matchit" to "matchit",
       "mini.ai" to "mini-ai",

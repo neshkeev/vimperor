@@ -70,6 +70,11 @@
     "className": "com.maddyhome.idea.vim.extension.keylog.KeyLogKt"
   },
   {
+    "extensionName": "lion",
+    "functionName": "init",
+    "className": "com.maddyhome.idea.vim.extension.lion.LionExtensionKt"
+  },
+  {
     "extensionName": "mini-ai",
     "functionName": "init",
     "className": "com.maddyhome.idea.vim.extension.miniai.MiniAINewApiKt"

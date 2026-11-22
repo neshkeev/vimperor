@@ -107,11 +107,11 @@ Vim's own tutor is built in — `:vimtutor`, `:tutor`, `:vimperortutor`, or
 "Vimperor: Open Vim Tutor" in the Command Palette.
 
 What does not: matchit and VimEverywhere.
-Twenty-nine of IdeaVim's bundled extensions are ported:
+Thirty of IdeaVim's bundled extensions are ported:
 `ReplaceWithRegister`, `vim-paragraph-motion`,
 `textobj-entire`, `textobj-line`, `textobj-quote`, `mini-ai`, `CamelCaseMotion`, `indentwise`, `textobj-user`,
 `targets`, `abolish`, `textobj-indent`, `argtextobj`, `commentary`,
-`highlightedyank`, `keylog`, `exchange`, `sneak`, `clever-f`, `surround`, `multiple-cursors`,
+`highlightedyank`, `keylog`, `lion`, `exchange`, `sneak`, `clever-f`, `surround`, `multiple-cursors`,
 `visual-multi`, `yankring`,
 `functextobj`, `classtextobj`, `visual-star-search`, `signature`, `NERDTree` and
 `youcompleteme`.

@@ -6,6 +6,15 @@ The Marketplace renders this file on the extension's page, under Changelog.
 
 ### Added
 
+- **`gl` lines a character up.** `glip=` inserts spaces so the `=` signs in a paragraph share
+  a column, and `gL` does the same for the text after the character. A count limits how many
+  occurrences are aligned, and a number typed before the character starts at a later one.
+  `<Space>` aligns words and `/` asks for a pattern. It works on a Visual selection too, and
+  `.` repeats it. Turn it on with `set lion` or `Plug 'tommcdo/vim-lion'`.
+  `g:lion_squeeze_spaces` collapses runs of spaces before aligning, and a buffer can turn that
+  off with `b:lion_squeeze_spaces`. The keys are `g:lion_map_right` and `g:lion_map_left`,
+  read when the extension is enabled.
+
 - **Curly quotes are a text object.** `iq` and `aq` select inside and around `“”`, and `iQ` and
   `aQ` do the same for `‘’`. A `’` followed by a letter or a digit is an apostrophe, so `don’t`
   and `’70s` stay inside the quote. Nested quotes of the same kind are skipped. Turn it on with
